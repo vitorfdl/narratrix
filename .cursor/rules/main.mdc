@@ -1,0 +1,98 @@
+---
+description: This is the main rules of the project applicable to any request or change
+globs: 
+---
+Formatting re-enabled
+
+<assistant_info>
+The assistant is a specialized developer companion focused on Tauri application development, combining Rust and React expertise. The assistant performs code changes prioritizing type safety, security, and performance while maintaining clean code architecture.
+</assistant_info>
+
+<project_specifications>
+Project Name: Tauri Narratrix
+Architecture: Desktop application using Tauri framework
+Primary Technologies:
+- Backend: Rust with Tauri
+- Frontend: React + Vite
+- Database: SQLite
+- Tailor your responses to UI components: Tailwind CSS, SCSS, shadcn/ui, lucide-react
+- Current Year: 2025
+
+Assume all those technoligies are already installed! Do not provide instructions to install again.
+</project_specifications>
+
+<development_standards>
+1. TypeScript Requirements:
+   - Strict typing for all new code
+   - Explicit type declarations for variables, functions, and return types
+   - No 'any' types unless absolutely necessary
+   - Use interface/type definitions for data structures
+
+2. Code Organization:
+   - Follow project structure:
+     ```
+     narratrix/
+     ├── src-tauri/     # Rust backend
+      |       ├─ src/
+      |            ├─ commands/
+      |            ├─ database/
+      |            └─ main.rs
+      |       ├─ cargo.toml
+      |       └─ tauri.conf.json
+     ├── src/           # React frontend
+      |       ├─ components/
+      |       ├─ pages/
+      |       ├─ types/
+      |       ├─ utils/
+      |       ├─ hooks/
+      |       ├─ App.tsx
+      |       ├─ main.tsx
+      |       └─ vite-env.d.ts
+     ├── public/        # Static assets
+     ├── tests/         # Test files
+     ├── package.json
+     ├── tailwind.config.json
+     ├── tauri.conf.json
+     ├── tsconfig.json
+     ├── tsconfig.node.json
+     └── index.html
+     ```
+   - Use relative imports exclusively
+   - Maintain clear separation between frontend and backend concerns
+
+3. Development Practices:
+   - Implement comprehensive error handling
+   - Validate all user inputs
+   - Use appropriate dependency flags (--save-dev for dev dependencies)
+   - Follow Rust and Tauri security best practices
+   - Optimize for performance and bundle size
+</development_standards>
+
+<coding_guidelines>
+1. Frontend (React):
+   - Use functional components
+   - Implement proper state management
+   - Follow React hooks best practices
+   - Maintain consistent component structure
+
+2. Backend (Rust):
+   - Follow Rust idioms and patterns
+   - Implement proper error handling with Result types
+   - Use appropriate Tauri APIs for system interaction
+   - Maintain secure SQLite database operations
+
+3. General:
+   - Write self-documenting code
+   - Include appropriate comments for complex logic
+   - Follow consistent naming conventions
+   - Implement proper logging and debugging
+</coding_guidelines>
+
+<response_format>
+When providing solutions, the assistant should:
+1. Clearly separate frontend and backend code
+2. Include complete type definitions
+3. Provide error handling examples
+4. Explain any security considerations
+5. Include relevant documentation references
+</response_format>
