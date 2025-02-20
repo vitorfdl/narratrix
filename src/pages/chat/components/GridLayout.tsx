@@ -1,11 +1,17 @@
 // src/components/GridLayout.tsx
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { GridStack, GridStackOptions } from "gridstack";
 import "gridstack/dist/gridstack.min.css";
 import "@/pages/chat/styles/gridstack.css";
 import { GridCard } from "./GridCard";
 import { GridPosition } from "@/types/grid";
-import GridSidebar from "./GridSidebar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Pin } from "lucide-react";
+
+// Import the widget registry
+import { WidgetId, renderWidget, widgetConfigurations } from "@/pages/chat/hooks/registry";
+import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
 
 const STORAGE_KEY_PREFIX = "grid-layout-positions";
 const MIN_CELL_HEIGHT = 60; // defines a minimum for consistency
@@ -36,6 +42,43 @@ const defaultPositions: GridPosition[] = [
   { x: 0, y: 0, w: 2, h: 1, id: "memory", title: "Memory", hidden: true },
   { x: 0, y: 0, w: 2, h: 1, id: "database", title: "Database", hidden: true },
   { x: 0, y: 0, w: 2, h: 1, id: "chapters", title: "Chapters", hidden: true },
+];
+
+const messages = [
+  {
+    id: "0",
+    content: ["You are a helpful assistant that can answer questions and help with tasks."],
+    timestamp: new Date(),
+    type: "system",
+  },
+  {
+    id: "1",
+    content: ["Hello, how are you?"],
+    timestamp: new Date(),
+    avatar: "/avatars/vitor.png",
+    type: "user",
+  },
+  {
+    id: "2",
+    content: ["I'm fine, thank you!"],
+    timestamp: new Date(),
+    avatar: "/avatars/ash.png",
+    type: "assistant",
+  },
+  {
+    id: "3",
+    content: ["What is the weather in Tokyo?"],
+    timestamp: new Date(),
+    avatar: "/avatars/vitor.png",
+    type: "user",
+  },
+  {
+    id: "4",
+    content: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam neque felis, ultrices id molestie non, condimentum ac odio. In eleifend accumsan tortor nec rhoncus. Aliquam et elit id elit tristique gravida ac sed turpis. Maecenas sit amet porttitor tellus. Nam ac augue justo. Donec nec elit sit amet mauris ornare bibendum. Quisque faucibus elit eu mi ornare, eget vestibulum diam maximus. Etiam ut nulla vitae orci ultricies feugiat sed nec ipsum. Aliquam elementum felis eget mauris pretium, vel gravida sem feugiat. Praesent at neque at mauris scelerisque cursus. Morbi magna ex, tincidunt in scelerisque ac, faucibus ac mi. Praesent consequat molestie massa id placerat. Praesent consequat sapien et vehicula pulvinar. Nulla tincidunt turpis at convallis scelerisque.", "The weather in Tokyo is sunny and warm."],
+    timestamp: new Date(),
+    avatar: "/avatars/ash2.png",
+    type: "assistant",
+  }
 ];
 
 export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
@@ -172,11 +215,6 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
             node.locked = true;
           }
         });
-
-        // Force a resize and compact to ensure proper layout
-        // gridRef.current.compact();
-        // Update the grid size
-        // gridRef.current.column(12, 'moveScale');
     };
 
     initializeGrid();
@@ -190,7 +228,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
         gridRef.current = undefined;
       }
     };
-  }, [tabId, hiddenWidgets]); // Only re-run when tabId changes
+  }, [tabId, hiddenWidgets, handlePositionChange]); // Only re-run when tabId changes
 
   const toggleCard = (cardId: string) => {
     const pos = positions.find((pos) => pos.id === cardId);
@@ -202,32 +240,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
         prev.map((p) => p.id === cardId ? { ...p, hidden: false } : p)
       );
       setHiddenWidgets((prev) => prev.filter((id) => id !== cardId));
-      // Wait for DOM to update with the new element
-      // setTimeout(() => {
-      //   if (gridRef.current && containerRef.current) {
-      //     const widgetEl = containerRef.current.querySelector(
-      //       `[gs-id="${cardId}"]`,
-      //     ) as GridItemHTMLElement;
-      //     if (widgetEl && !widgetEl.gridstackNode) {
-      //       gridRef.current.makeWidget(widgetEl, {
-      //         autoPosition: true,
-      //         w: pos.w,
-      //         h: pos.h,
-      //       });
-      //     }
-      //   }
-      // }, 100);
     } else {
-      // if (gridRef.current && containerRef.current) {
-      //   const widgetEl = containerRef.current.querySelector(
-      //     `[gs-id="${cardId}"]`,
-      //   ) as GridItemHTMLElement;
-
-      //   if (widgetEl) {
-      //     // Remove widget and its DOM element completely
-      //     gridRef.current.removeWidget(widgetEl, true);
-      //   }
-      // }
       setPositions((prev) =>
         prev.map((p) =>
           p.id === cardId ? { ...p, hidden: true, x: 0, y: 0, w: 2, h: 1 } : p
@@ -237,14 +250,54 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
     }
   };
 
-  const hiddedWidgets = positions.filter((pos) => pos.hidden).map((pos) => ({
-    id: pos.id,
-    title: pos.title,
-  }));
+  const hiddenWidgetsList = positions
+    .filter((pos) => pos.hidden)
+    .map((pos) => ({
+      id: pos.id,
+      title: pos.title,
+    }));
+
   return (
     <div className="flex h-full overflow-hidden">
       <div className="w-auto h-full">
-        <GridSidebar hiddenWidgets={hiddedWidgets} toggleCard={toggleCard} />
+        <div className="left-0 top-0 h-full flex flex-col items-start mt-1 gap-2">
+          {hiddenWidgetsList.map((widget) => (
+            <Popover key={widget.id}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="secondary"
+                  style={{
+                    writingMode: "vertical-rl",
+                    transform: "rotate(-180deg)",
+                    textOrientation: "mixed",
+                    fontSize: "0.75rem",
+                    height: "auto",
+                  }}
+                  className="h-auto whitespace-nowrap text-xs p-0.5 pt-1 pb-1 font-light"
+                >
+                  {widget.title}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="right" className="max-w-[80vw] w-auto">
+                <div className="flex items-top justify-between">
+                  <span className="text-xs font-semibold">{widget.title}</span>
+                  <button 
+                    onClick={() => toggleCard(widget.id)}
+                    className="p-1 hover:bg-accent rounded"
+                  >
+                    <Pin className="w-3 h-3" />
+                  </button>
+                </div>
+              <ResizablePopoverContent className="p-4">
+                {/* Render the same widget content as in the GridCard */}
+                <div className="mt-2">
+                  {renderWidget(widget.id as WidgetId, tabId)}
+                </div>
+                </ResizablePopoverContent>
+              </PopoverContent>
+            </Popover>
+          ))}
+        </div>
       </div>
       <div
         ref={containerRef}
@@ -252,27 +305,28 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
       >
         {positions
           .filter((pos) => !pos.hidden)
-          .map((pos) => (
-            <div
-              key={pos.id}
-              className="grid-stack-item"
-              gs-x={pos.x}
-              gs-y={pos.y}
-              gs-w={pos.w}
-              gs-h={pos.h}
-              gs-id={pos.id}
-            >
-              <GridCard
-                id={pos.id}
-                title={pos.title}
-                onClose={() => toggleCard(pos.id)}
+          .map((pos) => {
+            const widgetContent = renderWidget(pos.id as WidgetId, tabId);
+            return (
+              <div
+                key={pos.id}
+                className="grid-stack-item"
+                gs-x={pos.x}
+                gs-y={pos.y}
+                gs-w={pos.w}
+                gs-h={pos.h}
+                gs-id={pos.id}
               >
-                <div className="h-full flex items-center text-muted-foreground">
-                  {pos.title} Content
-                </div>
-              </GridCard>
-            </div>
-          ))}
+                <GridCard
+                  id={pos.id}
+                  title={pos.title}
+                  onClose={() => toggleCard(pos.id)}
+                >
+                  {widgetContent}
+                </GridCard>
+              </div>
+            );
+          })}
       </div>
     </div>
   );

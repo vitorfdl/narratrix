@@ -27,13 +27,13 @@ export default function Models() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-1 space-y-8 p-8 pt-6">
+            <div className="flex-1 space-y-2 p-8 pt-6">
                 {mockModels.map((group) => (
-                    <div key={group.type} className="space-y-4">
+                    <div key={group.type} className="space-y-2">
                         <h2 className="text-base font-semibold tracking-tight text-white">
                             {group.title}
                         </h2>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
                             {group.models.map((model) => (
                                 <ModelCard
                                     key={model.id}

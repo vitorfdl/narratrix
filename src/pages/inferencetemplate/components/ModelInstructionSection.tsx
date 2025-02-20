@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { TemplatePicker, Template } from "./TemplatePicker";
 
 interface MessageFormatting {
     prefix: string;
@@ -24,6 +25,9 @@ interface ModelInstructionSectionProps {
         suffix: string;
     };
     customStopStrings: string[];
+    templates: Template[];
+    selectedTemplateId: string | null;
+    onTemplateSelect: (templateId: string) => void;
     onUpdate: (updates: Partial<{
         systemPromptFormatting: MessageFormatting;
         userMessageFormatting: MessageFormatting;
@@ -39,6 +43,11 @@ interface ModelInstructionSectionProps {
         };
         customStopStrings: string[];
     }>) => void;
+    onDeleteTemplate: () => void;
+    onNewTemplate: () => void;
+    onEditTemplateName: () => void;
+    onTemplateImport: () => void;
+    onTemplateExport: () => void;
 }
 
 export function ModelInstructionSection({
@@ -47,11 +56,32 @@ export function ModelInstructionSection({
     assistantMessageFormatting,
     agentMessageFormatting,
     customStopStrings,
-    onUpdate
+    templates,
+    selectedTemplateId,
+    onTemplateSelect,
+    onUpdate,
+    onDeleteTemplate,
+    onNewTemplate,
+    onEditTemplateName,
+    onTemplateImport,
+    onTemplateExport
 }: ModelInstructionSectionProps) {
     return (
-        <Card>
+        <Card className="rounded-sm">
             <CardContent className="p-6 space-y-6">
+                <h3 className="inference-section-header">Inference Template</h3>
+                <div className="mb-4">
+                    <TemplatePicker
+                        templates={templates}
+                        selectedTemplateId={selectedTemplateId}
+                        onTemplateSelect={onTemplateSelect}
+                        onDelete={onDeleteTemplate}
+                        onNewTemplate={onNewTemplate}
+                        onEditName={onEditTemplateName}
+                        onImport={onTemplateImport}
+                        onExport={onTemplateExport}
+                    />
+                </div>
                 <div className="space-y-4">
                     <h3 className="text-lg font-medium">System Prompt Formatting</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -158,7 +188,8 @@ export function ModelInstructionSection({
                             />
                         </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
                         <Label>Assistant Prefill</Label>
                         <Input
                             value={assistantMessageFormatting.prefill}
@@ -172,7 +203,8 @@ export function ModelInstructionSection({
                             }
                             placeholder="[INT]"
                         />
-                        <div className="flex items-center space-x-2">
+                        </div>
+                        <div className="flex items-center align-middle space-x-2">
                             <Checkbox
                                 id="prefillOnlyCharacters"
                                 checked={assistantMessageFormatting.prefillOnlyCharacters}
@@ -185,7 +217,7 @@ export function ModelInstructionSection({
                                     })
                                 }
                             />
-                            <Label htmlFor="prefillOnlyCharacters">
+                            <Label className="font-normal" htmlFor="prefillOnlyCharacters">
                                 Prefill only on Characters
                             </Label>
                         </div>
@@ -194,7 +226,7 @@ export function ModelInstructionSection({
 
                 <div className="space-y-4">
                     <h3 className="text-lg font-medium">Agent Message Formatting</h3>
-                    <div className="flex space-x-4 mb-2">
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="flex items-center space-x-2">
                             <Checkbox
                                 id="useSameAsUser"
@@ -208,7 +240,7 @@ export function ModelInstructionSection({
                                     })
                                 }
                             />
-                            <Label htmlFor="useSameAsUser">
+                            <Label className="font-normal" htmlFor="useSameAsUser">
                                 Use same as User
                             </Label>
                         </div>
@@ -272,9 +304,7 @@ export function ModelInstructionSection({
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => onUpdate({
-                                customStopStrings: [...customStopStrings, ""]
-                            })}
+                            onClick={() => onUpdate({ customStopStrings: [...customStopStrings, ""] })}
                         >
                             <Plus className="h-4 w-4" />
                         </Button>

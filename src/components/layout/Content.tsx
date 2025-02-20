@@ -10,7 +10,7 @@ interface ContentProps {
 
 const Content: React.FC<ContentProps> = ({ activeSection }) => {
     return (
-        <div className="flex-1 p-0 bg-gray-900 overflow-auto">
+        <div className="flex-1 p-0 bg-content text-foreground overflow-auto">
             {activeSection === 'models' && <Models />}
             {activeSection === 'inference' && <InferenceTemplatePage />}
             {activeSection === 'chat' && <ChatPage />}

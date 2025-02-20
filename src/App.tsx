@@ -7,7 +7,7 @@ const App: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('models');
 
   return (
-    <div className="flex h-screen">
+    <div className="dark flex h-screen select-none text-sm">
       <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
       <Content activeSection={activeSection} />
     </div>

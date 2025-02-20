@@ -1,19 +1,14 @@
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Plus, Trash, Edit, FileDown, FileUp } from "lucide-react";
 import { TemplateSettings } from "@/types/inference";
+import { TemplatePicker, Template } from "./TemplatePicker";
 
 interface TemplateHeaderProps {
     settings: TemplateSettings;
+    templates: Template[];
+    selectedTemplateId: string | null;
+    onTemplateSelect: (templateId: string) => void;
     onUpdate: (updates: Partial<{ settings: TemplateSettings }>) => void;
     onDelete: () => void;
     onNewTemplate: () => void;
@@ -24,6 +19,9 @@ interface TemplateHeaderProps {
 
 export function TemplateHeader({
     settings,
+    templates,
+    selectedTemplateId,
+    onTemplateSelect,
     onUpdate,
     onDelete,
     onNewTemplate,
@@ -32,40 +30,22 @@ export function TemplateHeader({
     onExport
 }: TemplateHeaderProps) {
     return (
-        <div className="space-y-4 bg-card p-4 rounded-lg border">
-            <div className="flex items-center space-x-2">
-                <Select>
-                    <SelectTrigger className="w-[300px]">
-                        <SelectValue placeholder="Select Template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="template1">Template 1</SelectItem>
-                        <SelectItem value="template2">Template 2</SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <div className="flex items-center space-x-1">
-                    <Button variant="outline" size="icon" onClick={onDelete}>
-                        <Trash className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={onNewTemplate}>
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={onEditName}>
-                        <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={onImport}>
-                        <FileDown className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={onExport}>
-                        <FileUp className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+        <div className="space-y-4 bg-card p-4 rounded-sm border">
+            <TemplatePicker
+                templates={templates}
+                selectedTemplateId={selectedTemplateId}
+                onTemplateSelect={onTemplateSelect}
+                onDelete={onDelete}
+                onNewTemplate={onNewTemplate}
+                onEditName={onEditName}
+                onImport={onImport}
+                onExport={onExport}
+            />
 
             <div className="grid grid-cols-3 gap-8">
                 {/* Left Column - Checkboxes */}
                 <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">Text Cleanup</h3>
                     <div className="flex items-center space-x-2">
                         <Checkbox
                             id="trimAssistant"
@@ -79,7 +59,7 @@ export function TemplateHeader({
                                 })
                             }
                         />
-                        <Label htmlFor="trimAssistant" className="text-sm text-muted-foreground">
+                        <Label htmlFor="trimAssistant">
                             Trim Assistant Incomplete Sequences
                         </Label>
                     </div>
@@ -96,7 +76,7 @@ export function TemplateHeader({
                                 })
                             }
                         />
-                        <Label htmlFor="trimSpaces" className="text-sm text-muted-foreground">
+                        <Label htmlFor="trimSpaces">
                             Trim Double+ Spaces
                         </Label>
                     </div>
@@ -113,7 +93,7 @@ export function TemplateHeader({
                                 })
                             }
                         />
-                        <Label htmlFor="collapseLines" className="text-sm text-muted-foreground">
+                        <Label htmlFor="collapseLines">
                             Collapse Consecutive Lines
                         </Label>
                     </div>
@@ -122,7 +102,7 @@ export function TemplateHeader({
                 {/* Middle Column - Template Type and Prefix Messages */}
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label className="text-sm font-medium">Template Type</Label>
+                        <Label className="font-medium text-muted-foreground">Template Type</Label>
                         <RadioGroup
                             value={settings.chatCompletion ? "chat" : "text"}
                             onValueChange={(value) =>
@@ -138,17 +118,17 @@ export function TemplateHeader({
                         >
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="chat" id="chat" />
-                                <Label htmlFor="chat" className="text-sm text-muted-foreground">Chat Completion</Label>
+                                <Label htmlFor="chat">Chat Completion</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="text" id="text" />
-                                <Label htmlFor="text" className="text-sm text-muted-foreground">Text Completion</Label>
+                                <Label htmlFor="text">Text Completion</Label>
                             </div>
                         </RadioGroup>
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-sm font-medium">Prefix Messages with Character Names</Label>
+                        <Label className="font-medium text-muted-foreground">Prefix Messages with Character Names</Label>
                         <RadioGroup
                             value={settings.prefixMessages.type}
                             onValueChange={(value) =>
@@ -166,15 +146,15 @@ export function TemplateHeader({
                         >
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="never" id="never" />
-                                <Label htmlFor="never" className="text-sm text-muted-foreground">Never</Label>
+                                <Label htmlFor="never">Never</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="always" id="always" />
-                                <Label htmlFor="always" className="text-sm text-muted-foreground">Always</Label>
+                                <Label htmlFor="always">Always</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="characters" id="characters" />
-                                <Label htmlFor="characters" className="text-sm text-muted-foreground">Only 2+ Characters</Label>
+                                <Label htmlFor="characters">Only 2+ Characters</Label>
                             </div>
                         </RadioGroup>
                     </div>
@@ -182,6 +162,7 @@ export function TemplateHeader({
 
                 {/* Right Column - Additional Checkboxes */}
                 <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Message Formatting</h3>
                     <div className="flex items-center space-x-2">
                         <Checkbox
                             id="mergeMessages"
@@ -198,7 +179,7 @@ export function TemplateHeader({
                                 })
                             }
                         />
-                        <Label htmlFor="mergeMessages" className="text-sm text-muted-foreground">
+                        <Label htmlFor="mergeMessages">
                             Merge all messages on User
                         </Label>
                     </div>
@@ -208,7 +189,7 @@ export function TemplateHeader({
                             checked={false} // Add to settings if needed
                             onCheckedChange={() => {}}
                         />
-                        <Label htmlFor="applyCensorship" className="text-sm text-muted-foreground">
+                        <Label htmlFor="applyCensorship">
                             Apply censorship to messages
                         </Label>
                     </div>
@@ -218,7 +199,7 @@ export function TemplateHeader({
                             checked={false} // Add to settings if needed
                             onCheckedChange={() => {}}
                         />
-                        <Label htmlFor="mergeSubsequent" className="text-sm text-muted-foreground">
+                        <Label htmlFor="mergeSubsequent">
                             Merge subsquent Messages
                         </Label>
                     </div>

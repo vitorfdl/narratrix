@@ -1,7 +1,3 @@
----
-description: This is the main rules of the project applicable to any request or change
-globs: 
----
 Formatting re-enabled
 
 <assistant_info>
@@ -13,7 +9,7 @@ Project Name: Tauri Narratrix
 Architecture: Desktop application using Tauri framework
 Primary Technologies:
 - Backend: Rust with Tauri
-- Frontend: React + Vite
+- Frontend: React + Vite (Deno to run, PNPM to manage dependencies)
 - Database: SQLite
 - Tailor your responses to UI components: Tailwind CSS, SCSS, shadcn/ui, lucide-react
 - Current Year: 2025
@@ -31,31 +27,37 @@ Assume all those technoligies are already installed! Do not provide instructions
 2. Code Organization:
    - Follow project structure:
      ```
-     narratrix/
-     ├── src-tauri/     # Rust backend
-      |       ├─ src/
-      |            ├─ commands/
-      |            ├─ database/
-      |            └─ main.rs
-      |       ├─ cargo.toml
-      |       └─ tauri.conf.json
-     ├── src/           # React frontend
-      |       ├─ components/
-      |       ├─ pages/
-      |       ├─ types/
-      |       ├─ utils/
-      |       ├─ hooks/
-      |       ├─ App.tsx
-      |       ├─ main.tsx
-      |       └─ vite-env.d.ts
-     ├── public/        # Static assets
-     ├── tests/         # Test files
-     ├── package.json
-     ├── tailwind.config.json
-     ├── tauri.conf.json
-     ├── tsconfig.json
-     ├── tsconfig.node.json
-     └── index.html
+      narratrix/
+      ├── src-tauri/                # Rust backend
+      │   ├── src/
+      │   │   ├── commands/
+      │   │   ├── database/
+      │   │   └── main.rs
+      │   ├── cargo.toml
+      │   └── tauri.conf.json
+      ├── src/                      # React frontend
+      │   ├── components/           # Global components
+      │   │   ├── layout/           # Global Layout
+      │   │   ├── shared/           # Shared components
+      │   │   └── ui/               # Shared ui such as shadcn/ui
+      │   ├── pages/
+      │   │   └── **/
+      │   │       ├── components/   # Page-specific components for the page
+      │   │       └── styles/       # Page-specific styles for the page
+      │   ├── types/
+      │   ├── utils/
+      │   ├── hooks/
+      │   ├── App.tsx
+      │   ├── main.tsx
+      │   └── vite-env.d.ts
+      ├── public/                   # Static assets
+      ├── tests/                    # Test files
+      ├── package.json
+      ├── tailwind.config.json
+      ├── tauri.conf.json
+      ├── tsconfig.json
+      ├── tsconfig.node.json
+      └── index.html
      ```
    - Use relative imports exclusively
    - Maintain clear separation between frontend and backend concerns

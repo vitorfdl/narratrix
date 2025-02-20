@@ -87,12 +87,12 @@ export default function Characters() {
             />
 
             <div className="flex flex-1 flex-col">
-                <div className="flex items-center gap-4 border-b p-4">
+                <div className="flex items-center gap-1 border-b p-4">
                     <Input
                         placeholder="Search characters..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="max-w-sm"
+                        className="w-full"
                     />
                     <Button variant="outline" size="icon">
                         <RefreshCw className="h-4 w-4" />
@@ -164,7 +164,7 @@ export default function Characters() {
 
                 <div className="flex-1 overflow-auto p-4">
                     <div
-                        className="grid gap-4"
+                        className="grid gap-2"
                         style={{
                             gridTemplateColumns: `repeat(${view.cardsPerRow}, minmax(0, 1fr))`,
                         }}

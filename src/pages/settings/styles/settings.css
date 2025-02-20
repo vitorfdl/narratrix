@@ -1,0 +1,7 @@
+.settings-section {
+    @apply flex items-center w-full p-3 bg-muted hover:bg-accent rounded-lg;
+}
+
+.settings-section-option {
+    @apply flex items-center w-full p-3 bg-muted rounded-lg;
+}

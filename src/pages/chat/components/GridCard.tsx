@@ -1,6 +1,6 @@
 // src/components/GridCard.tsx
 import { CardProps } from "@/types/grid";
-import { Grip, PinOffIcon } from "lucide-react";
+import { EyeOffIcon, Grip, PinOffIcon } from "lucide-react";
 
 export const GridCard: React.FC<CardProps> = ({ 
   id, 
@@ -22,10 +22,18 @@ export const GridCard: React.FC<CardProps> = ({
           {buttons.map((button, index) => (
             <div key={index}>{button}</div>
           ))}
+          <button 
+              onClick={onClose}
+              className="p-1 hover:bg-accent rounded"
+              title="Hide Borders"
+            >
+              <EyeOffIcon className="w-3 h-3" />
+            </button>
           {onClose && (
             <button 
               onClick={onClose}
               className="p-1 hover:bg-accent rounded"
+              title="Pin Card to Sidebar"
             >
               <PinOffIcon className="w-3 h-3" />
             </button>
@@ -34,7 +42,7 @@ export const GridCard: React.FC<CardProps> = ({
       </div>
       
       {/* Content */}
-      <div className="p-1 overflow-auto">
+      <div className="p-1 overflow-auto h-full">
         {children}
       </div>
     </div>

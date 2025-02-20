@@ -129,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) =>
             id: 'patreon', 
             label: 'Become a Patreon', 
             icon: <Heart className="w-5 h-5" />,
-            href: 'https://www.patreon.com/narratrix'
+            href: 'https://www.patreon.com/NarratrixAI'
         },
         { 
             id: 'discord', 
@@ -141,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) =>
     ];
 
     return (
-        <div className={`flex flex-col h-screen shadow-lg bg-black text-white ${isCollapsed ? 'w-10' : 'w-52'}`}>
+        <div className={`flex flex-col h-screen shadow-lg bg-sidebar ${isCollapsed ? 'w-10' : 'w-52'}`}>
             {/* Top Header */}
             <div className="p-1 flex justify-between items-center">
                 <button

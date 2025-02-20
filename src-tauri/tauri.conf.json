@@ -28,10 +28,10 @@
     "active": true,
     "targets": "all",
     "icon": [
-      "icons/32x32.png",
+      "icons/favicon-96x96",
       "icons/192x192Logo.png",
       "icons/Square512x512Logo.png",
-      "icons/icon.icns",
+      "icons/favicon.svg",
       "icons/icon.ico"
     ]
   }

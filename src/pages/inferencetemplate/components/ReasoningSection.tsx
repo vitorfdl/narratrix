@@ -13,9 +13,9 @@ export function ReasoningSection({
     onUpdate
 }: ReasoningSectionProps) {
     return (
-        <Card>
+        <Card className="rounded-sm">
             <CardHeader>
-                <CardTitle>Reasoning</CardTitle>
+                <CardTitle className="inference-section-header">Reasoning</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
                 <div>

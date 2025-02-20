@@ -1,0 +1,7 @@
+.inference-section {
+  @apply space-y-4 bg-card p-4 rounded-lg border;
+}
+
+.inference-section-header {
+  @apply text-lg font-medium text-foreground;
+}

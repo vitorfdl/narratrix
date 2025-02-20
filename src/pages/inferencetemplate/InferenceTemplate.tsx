@@ -109,7 +109,7 @@ export default function InferenceTemplatePage() {
     };
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-6 space-y-2">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-white">Inference Template</h1>
                 <Sheet open={isDocOpen} onOpenChange={setIsDocOpen}>
@@ -141,64 +141,70 @@ export default function InferenceTemplatePage() {
                 onEditName={handleEditName}
                 onImport={handleImport}
                 onExport={handleExport}
+                templates={[]}
+                selectedTemplateId={null}
+                onTemplateSelect={function (templateId: string): void {
+                    throw new Error("Function not implemented.");
+                }}
             />
 
-            <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-6">
-                    <ModelInstructionSection
-                        {...template.modelInstructions}
-                        onUpdate={(updates) => 
-                            setTemplate(prev => ({
-                                ...prev,
-                                modelInstructions: {
-                                    ...prev.modelInstructions,
-                                    ...updates
+            <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+
+                    <div>
+                        <DndContext
+                            collisionDetection={closestCenter}
+                            onDragEnd={({ active, over }) => {
+                                if (over && active.id !== over.id) {
+                                    const oldIndex = template.systemPrompts.findIndex(
+                                        item => item.id === active.id
+                                    );
+                                    const newIndex = template.systemPrompts.findIndex(
+                                        item => item.id === over.id
+                                    );
+
+                                    const newItems = [...template.systemPrompts];
+                                    const [removed] = newItems.splice(oldIndex, 1);
+                                    newItems.splice(newIndex, 0, removed);
+
+                                    handleSystemPromptReorder(newItems);
                                 }
-                            }))
-                        }
-                    />
-                    
+                            }}
+                        >
+                            <SortableContext
+                                items={template.systemPrompts}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <SystemPromptSection
+                                    prompts={template.systemPrompts}
+                                    onUpdate={(prompts) =>
+                                        setTemplate(prev => ({ ...prev, systemPrompts: prompts }))
+                                    }
+                                />
+                            </SortableContext>
+                        </DndContext>
+                    </div>
+
                     <ReasoningSection
                         reasoning={template.reasoning}
-                        onUpdate={(reasoning) => 
+                        onUpdate={(reasoning) =>
                             setTemplate(prev => ({ ...prev, reasoning }))
                         }
                     />
                 </div>
 
-                <div>
-                    <DndContext
-                        collisionDetection={closestCenter}
-                        onDragEnd={({ active, over }) => {
-                            if (over && active.id !== over.id) {
-                                const oldIndex = template.systemPrompts.findIndex(
-                                    item => item.id === active.id
-                                );
-                                const newIndex = template.systemPrompts.findIndex(
-                                    item => item.id === over.id
-                                );
-
-                                const newItems = [...template.systemPrompts];
-                                const [removed] = newItems.splice(oldIndex, 1);
-                                newItems.splice(newIndex, 0, removed);
-                                
-                                handleSystemPromptReorder(newItems);
+                <ModelInstructionSection
+                    {...template.modelInstructions}
+                    onUpdate={(updates) =>
+                        setTemplate(prev => ({
+                            ...prev,
+                            modelInstructions: {
+                                ...prev.modelInstructions,
+                                ...updates
                             }
-                        }}
-                    >
-                        <SortableContext
-                            items={template.systemPrompts}
-                            strategy={verticalListSortingStrategy}
-                        >
-                            <SystemPromptSection
-                                prompts={template.systemPrompts}
-                                onUpdate={(prompts) => 
-                                    setTemplate(prev => ({ ...prev, systemPrompts: prompts }))
-                                }
-                            />
-                        </SortableContext>
-                    </DndContext>
-                </div>
+                        }))
+                    }
+                />
             </div>
         </div>
     );

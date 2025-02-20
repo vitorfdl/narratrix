@@ -1,4 +1,7 @@
-# Tauri + Vanilla
+<br/>
+<p align="center">
+  <img src="/public/full_logo.png" width="250px" alt="Narratrix"></img>
+</p>
 
 This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
 
