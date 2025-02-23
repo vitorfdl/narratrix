@@ -3,15 +3,16 @@ import { ConfigFields } from "@/types/configFields";
 export const configFields: ConfigFields = [
   {
     name: "temperature",
-    type: "spinbox_slider",
+    type: "stepbutton_slider",
     title: "Temperature",
     description: "The temperature of the widget",
     min: 0,
+    max: 5,
     step: 0.25,
   },
   {
     name: "top_p",
-    type: "spinbox",
+    type: "stepbutton",
     title: "Top P",
     description: "The top p of the widget",
     min: 0,
@@ -21,7 +22,7 @@ export const configFields: ConfigFields = [
   },
   {
     name: "top_k",
-    type: "spinbox",
+    type: "stepbutton",
     title: "Top K",
     description: "The top k of the widget",
     min: 0,
@@ -31,7 +32,7 @@ export const configFields: ConfigFields = [
   },
   {
     name: "min_p",
-    type: "spinbox_slider",
+    type: "stepbutton_slider",
     title: "Min P",
     description: "The min p of the widget",
     min: 0,
@@ -41,7 +42,7 @@ export const configFields: ConfigFields = [
   },
   {
     name: "top_a",
-    type: "spinbox",
+    type: "stepbutton",
     title: "Top A",
     description: "The top a of the widget",
     min: 0,
@@ -51,7 +52,7 @@ export const configFields: ConfigFields = [
   },
   {
     name: "frequency_penalty",
-    type: "spinbox",
+    type: "stepbutton",
     title: "Frequency Penalty",
     description: "The frequency penalty of the widget",
     min: -2,
@@ -61,7 +62,7 @@ export const configFields: ConfigFields = [
   },
   {
     name: "presence_penalty",
-    type: "spinbox",
+    type: "stepbutton",
     title: "Presence Penalty",
     description: "The presence penalty of the widget",
     min: -2,
@@ -71,7 +72,7 @@ export const configFields: ConfigFields = [
   },
   {
     name: "repetition_penalty",
-    type: "spinbox",
+    type: "stepbutton",
     title: "Repetition Penalty",
     description: "The repetition penalty of the widget",
     min: 1,
@@ -96,7 +97,7 @@ export const configFields: ConfigFields = [
     fields: [
       {
         name: "smoothing_factor",
-        type: "spinbox",
+        type: "stepbutton",
         title: "Smooth Factor",
         description: "The smooth factor of the widget",
         min: 0,
@@ -106,7 +107,7 @@ export const configFields: ConfigFields = [
       },
       {
         name: "smoothing_curve",
-        type: "spinbox",
+        type: "stepbutton",
         title: "Smooth Curve",
         description: "The smooth curve of the widget",
         min: 1,
@@ -124,7 +125,7 @@ export const configFields: ConfigFields = [
     fields: [
       {
         name: "dry_multiplier",
-        type: "spinbox_slider",
+        type: "stepbutton_slider",
         title: "Multiplier",
         description: "The dry multiplier of the widget",
         min: 0,
@@ -134,7 +135,7 @@ export const configFields: ConfigFields = [
       },
       {
         name: "dry_base",
-        type: "spinbox",
+        type: "stepbutton",
         title: "Base",
         description: "The dry base of the widget",
         min: 1,
@@ -144,7 +145,7 @@ export const configFields: ConfigFields = [
       },
       {
         name: "dry_allowed_length",
-        type: "spinbox", 
+        type: "stepbutton", 
         title: "Allowed Length",
         description: "Maximum allowed length of repeated sequences",
         min: 0,
@@ -154,7 +155,7 @@ export const configFields: ConfigFields = [
       },
       {
         name: "dry_penalty_last_n",
-        type: "spinbox",
+        type: "stepbutton",
         title: "Penalty Range",
         description: "Number of tokens to look back for repetition penalty",
         min: 0,
@@ -167,7 +168,7 @@ export const configFields: ConfigFields = [
         type: "string_array",
         title: "Sequence Breakers",
         description: "Sequence breakers for dry repetition penalty",
-        default: ["\n", ":", "\"", "*"],
+        default: ["\\n", ":", "\"", "*"],
       }
     ],
   },
@@ -179,7 +180,7 @@ export const configFields: ConfigFields = [
     fields: [
       {
         name: "xtc_threshold",
-        type: "spinbox_slider",
+        type: "stepbutton_slider",
         title: "Threshold",
         description: "Number of top tokens to exclude from sampling",
         min: 0,
@@ -189,7 +190,7 @@ export const configFields: ConfigFields = [
       },
       {
         name: "xtc_probability", 
-        type: "spinbox_slider",
+        type: "stepbutton_slider",
         title: "Probability",
         description: "Probability of applying XTC during sampling",
         min: 0,

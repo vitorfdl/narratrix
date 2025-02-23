@@ -8,8 +8,8 @@ export interface CardProps {
   }
   
   export interface GridPosition {
-    x: number;
-    y: number;
+    x?: number;
+    y?: number;
     w: number;
     h: number;
     id: string;

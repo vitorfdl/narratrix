@@ -101,7 +101,7 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfig<any>> = {
  * This function can be extended to fetch dynamic props based on tabId and widgetId.
  * Currently, it optionally injects the mocked messages for testing.
  */
-const getDynamicExtraProps = (tabId: string, widgetId: WidgetId): Partial<any> => {
+const getDynamicExtraProps = (_tabId: string, widgetId: WidgetId): Partial<any> => {
   // For example, if widget is "messages" we merge in dynamic messages data (from SQL later)
   if (widgetId === "messages") {
     // Here you'd eventually query your SQL database with tabId and fetch the messages.
@@ -124,7 +124,7 @@ const getDynamicExtraProps = (tabId: string, widgetId: WidgetId): Partial<any> =
         id: "2",
         content: ["I'm fine, thank you!"],
         timestamp: new Date(),
-        avatar: "/avatars/ash.png",
+        avatar: "/avatars/narratrixav.jpeg",
         type: "assistant",
       },
       {
@@ -141,7 +141,7 @@ const getDynamicExtraProps = (tabId: string, widgetId: WidgetId): Partial<any> =
           "The weather in Tokyo is sunny and warm.",
         ],
         timestamp: new Date(),
-        avatar: "/avatars/ash2.png",
+        avatar: "/avatars/narratrixav.jpeg",
         type: "assistant",
       },
     ];

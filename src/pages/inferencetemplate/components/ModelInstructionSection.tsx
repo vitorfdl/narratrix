@@ -1,10 +1,53 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { TemplatePicker, Template } from "./TemplatePicker";
+import { Template, TemplatePicker } from "./TemplatePicker";
+import { StringArray } from "@/components/ui/string-array";
+
+// Helper component for labeled input to reduce nesting
+interface LabeledInputProps {
+    label: string;
+    value: string;
+    placeholder?: string;
+    disabled?: boolean;
+    onChange: (value: string) => void;
+}
+
+export const LabeledInput: React.FC<LabeledInputProps> = ({ label, value, placeholder, disabled, onChange }) => (
+    <div>
+        <Label>{label}</Label>
+        <Input
+            value={value}
+            placeholder={placeholder}
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.value)}
+        />
+    </div>
+);
+
+// Helper component for checkbox with label
+interface CheckboxWithLabelProps {
+    id: string;
+    label: string;
+    checked: boolean;
+    disabled?: boolean;
+    onCheckedChange: (checked: boolean) => void;
+}
+
+export const CheckboxWithLabel: React.FC<CheckboxWithLabelProps> = ({ id, label, checked, disabled, onCheckedChange }) => (
+    <div className="flex items-center space-x-2">
+        <Checkbox
+            id={id}
+            checked={checked}
+            disabled={disabled}
+            onCheckedChange={(checked) => onCheckedChange(checked as boolean)}
+        />
+        <Label htmlFor={id} className="font-normal">
+            {label}
+        </Label>
+    </div>
+);
 
 interface MessageFormatting {
     prefix: string;
@@ -28,26 +71,28 @@ interface ModelInstructionSectionProps {
     templates: Template[];
     selectedTemplateId: string | null;
     onTemplateSelect: (templateId: string) => void;
-    onUpdate: (updates: Partial<{
-        systemPromptFormatting: MessageFormatting;
-        userMessageFormatting: MessageFormatting;
-        assistantMessageFormatting: MessageFormatting & {
-            prefill: string;
-            prefillOnlyCharacters: boolean;
-        };
-        agentMessageFormatting: {
-            useSameAsUser: boolean;
-            useSameAsSystemPrompt: boolean;
-            prefix: string;
-            suffix: string;
-        };
-        customStopStrings: string[];
-    }>) => void;
-    onDeleteTemplate: () => void;
+    onUpdate: (
+        updates: Partial<{
+            systemPromptFormatting: MessageFormatting;
+            userMessageFormatting: MessageFormatting;
+            assistantMessageFormatting: MessageFormatting & {
+                prefill: string;
+                prefillOnlyCharacters: boolean;
+            };
+            agentMessageFormatting: {
+                useSameAsUser: boolean;
+                useSameAsSystemPrompt: boolean;
+                prefix: string;
+                suffix: string;
+            };
+            customStopStrings: string[];
+        }>,
+    ) => void;
+    onDeleteTemplate: (templateId: string) => void;
     onNewTemplate: () => void;
-    onEditTemplateName: () => void;
-    onTemplateImport: () => void;
-    onTemplateExport: () => void;
+    onEditTemplateName: (templateId: string) => void;
+    onTemplateImport: (templateId: string) => void;
+    onTemplateExport: (templateId: string) => void;
 }
 
 export function ModelInstructionSection({
@@ -64,267 +109,205 @@ export function ModelInstructionSection({
     onNewTemplate,
     onEditTemplateName,
     onTemplateImport,
-    onTemplateExport
+    onTemplateExport,
 }: ModelInstructionSectionProps) {
     return (
-        <Card className="rounded-sm">
-            <CardContent className="p-6 space-y-6">
-                <h3 className="inference-section-header">Inference Template</h3>
-                <div className="mb-4">
+        <div className="space-y-6">
+            <Card className="rounded-sm">
+                <CardHeader>
+                    <CardTitle className="inference-section-header">
+                        Inference Template
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
                     <TemplatePicker
                         templates={templates}
                         selectedTemplateId={selectedTemplateId}
                         onTemplateSelect={onTemplateSelect}
-                        onDelete={onDeleteTemplate}
+                        onDelete={() => onDeleteTemplate(selectedTemplateId ?? '')}
                         onNewTemplate={onNewTemplate}
-                        onEditName={onEditTemplateName}
-                        onImport={onTemplateImport}
-                        onExport={onTemplateExport}
+                        onEditName={() => onEditTemplateName(selectedTemplateId ?? '')}
+                        onImport={() => onTemplateImport(selectedTemplateId ?? '')}
+                        onExport={() => onTemplateExport(selectedTemplateId ?? '')}
                     />
-                </div>
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">System Prompt Formatting</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Suffix</Label>
-                            <Input
-                                value={systemPromptFormatting.suffix}
-                                onChange={(e) =>
-                                    onUpdate({
-                                        systemPromptFormatting: {
-                                            ...systemPromptFormatting,
-                                            suffix: e.target.value
-                                        }
-                                    })
-                                }
-                                placeholder="[INT]"
-                            />
-                        </div>
-                        <div>
-                            <Label>Prefix</Label>
-                            <Input
-                                value={systemPromptFormatting.prefix}
-                                onChange={(e) =>
-                                    onUpdate({
-                                        systemPromptFormatting: {
-                                            ...systemPromptFormatting,
-                                            prefix: e.target.value
-                                        }
-                                    })
-                                }
-                                placeholder="[INT]"
-                            />
-                        </div>
-                    </div>
-                </div>
 
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">User Message Formatting</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Suffix</Label>
-                            <Input
-                                value={userMessageFormatting.suffix}
-                                onChange={(e) =>
-                                    onUpdate({
-                                        userMessageFormatting: {
-                                            ...userMessageFormatting,
-                                            suffix: e.target.value
-                                        }
-                                    })
-                                }
-                                placeholder="[INT]"
-                            />
-                        </div>
-                        <div>
-                            <Label>Prefix</Label>
-                            <Input
-                                value={userMessageFormatting.prefix}
-                                onChange={(e) =>
-                                    onUpdate({
-                                        userMessageFormatting: {
-                                            ...userMessageFormatting,
-                                            prefix: e.target.value
-                                        }
-                                    })
-                                }
-                                placeholder="[INT]"
-                            />
-                        </div>
-                    </div>
-                </div>
+                    <Card className="rounded-sm">
+                        <CardHeader>
+                            <CardTitle>System Prompt Formatting</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-2 gap-4">
+                                <LabeledInput
+                                    label="Suffix"
+                                    value={systemPromptFormatting.suffix}
+                                    placeholder="[INT]"
+                                    onChange={(val) =>
+                                        onUpdate({
+                                            systemPromptFormatting: { ...systemPromptFormatting, suffix: val },
+                                        })}
+                                />
+                                <LabeledInput
+                                    label="Prefix"
+                                    value={systemPromptFormatting.prefix}
+                                    placeholder="[INT]"
+                                    onChange={(val) =>
+                                        onUpdate({
+                                            systemPromptFormatting: { ...systemPromptFormatting, prefix: val },
+                                        })}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Assistant Message Formatting</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Suffix</Label>
-                            <Input
-                                value={assistantMessageFormatting.suffix}
-                                onChange={(e) =>
-                                    onUpdate({
-                                        assistantMessageFormatting: {
-                                            ...assistantMessageFormatting,
-                                            suffix: e.target.value
-                                        }
-                                    })
-                                }
-                                placeholder="[INT]"
-                            />
-                        </div>
-                        <div>
-                            <Label>Prefix</Label>
-                            <Input
-                                value={assistantMessageFormatting.prefix}
-                                onChange={(e) =>
-                                    onUpdate({
-                                        assistantMessageFormatting: {
-                                            ...assistantMessageFormatting,
-                                            prefix: e.target.value
-                                        }
-                                    })
-                                }
-                                placeholder="[INT]"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                        <Label>Assistant Prefill</Label>
-                        <Input
-                            value={assistantMessageFormatting.prefill}
-                            onChange={(e) =>
-                                onUpdate({
-                                    assistantMessageFormatting: {
-                                        ...assistantMessageFormatting,
-                                        prefill: e.target.value
-                                    }
-                                })
-                            }
-                            placeholder="[INT]"
-                        />
-                        </div>
-                        <div className="flex items-center align-middle space-x-2">
-                            <Checkbox
-                                id="prefillOnlyCharacters"
-                                checked={assistantMessageFormatting.prefillOnlyCharacters}
-                                onCheckedChange={(checked) =>
-                                    onUpdate({
-                                        assistantMessageFormatting: {
-                                            ...assistantMessageFormatting,
-                                            prefillOnlyCharacters: checked as boolean
-                                        }
-                                    })
-                                }
-                            />
-                            <Label className="font-normal" htmlFor="prefillOnlyCharacters">
-                                Prefill only on Characters
-                            </Label>
-                        </div>
-                    </div>
-                </div>
+                    <Card className="rounded-sm">
+                        <CardHeader>
+                            <CardTitle>User Message Formatting</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-2 gap-4">
+                                <LabeledInput
+                                    label="Suffix"
+                                    value={userMessageFormatting.suffix}
+                                    placeholder="[INT]"
+                                    onChange={(val) =>
+                                        onUpdate({
+                                            userMessageFormatting: { ...userMessageFormatting, suffix: val },
+                                        })}
+                                />
+                                <LabeledInput
+                                    label="Prefix"
+                                    value={userMessageFormatting.prefix}
+                                    placeholder="[INT]"
+                                    onChange={(val) =>
+                                        onUpdate({
+                                            userMessageFormatting: { ...userMessageFormatting, prefix: val },
+                                        })}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Agent Message Formatting</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="useSameAsUser"
-                                checked={agentMessageFormatting.useSameAsUser}
-                                onCheckedChange={(checked) =>
-                                    onUpdate({
-                                        agentMessageFormatting: {
-                                            ...agentMessageFormatting,
-                                            useSameAsUser: checked as boolean
-                                        }
-                                    })
-                                }
-                            />
-                            <Label className="font-normal" htmlFor="useSameAsUser">
-                                Use same as User
-                            </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="useSameAsSystemPrompt"
-                                checked={agentMessageFormatting.useSameAsSystemPrompt}
-                                onCheckedChange={(checked) =>
-                                    onUpdate({
-                                        agentMessageFormatting: {
-                                            ...agentMessageFormatting,
-                                            useSameAsSystemPrompt: checked as boolean
-                                        }
-                                    })
-                                }
-                            />
-                            <Label htmlFor="useSameAsSystemPrompt">
-                                Use same as System Prompt
-                            </Label>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Suffix</Label>
-                            <Input
-                                value={agentMessageFormatting.suffix}
-                                onChange={(e) =>
-                                    onUpdate({
-                                        agentMessageFormatting: {
-                                            ...agentMessageFormatting,
-                                            suffix: e.target.value
-                                        }
-                                    })
-                                }
-                                placeholder="[INT]"
-                                disabled={agentMessageFormatting.useSameAsUser || agentMessageFormatting.useSameAsSystemPrompt}
-                            />
-                        </div>
-                        <div>
-                            <Label>Prefix</Label>
-                            <Input
-                                value={agentMessageFormatting.prefix}
-                                onChange={(e) =>
-                                    onUpdate({
-                                        agentMessageFormatting: {
-                                            ...agentMessageFormatting,
-                                            prefix: e.target.value
-                                        }
-                                    })
-                                }
-                                placeholder="[INT]"
-                                disabled={agentMessageFormatting.useSameAsUser || agentMessageFormatting.useSameAsSystemPrompt}
-                            />
-                        </div>
-                    </div>
-                </div>
+                    <Card className="rounded-sm">
+                        <CardHeader>
+                            <CardTitle>Assistant Message Formatting</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <LabeledInput
+                                        label="Suffix"
+                                        value={assistantMessageFormatting.suffix}
+                                        placeholder="[INT]"
+                                        onChange={(val) =>
+                                            onUpdate({
+                                                assistantMessageFormatting: { ...assistantMessageFormatting, suffix: val },
+                                            })}
+                                    />
+                                    <LabeledInput
+                                        label="Prefix"
+                                        value={assistantMessageFormatting.prefix}
+                                        placeholder="[INT]"
+                                        onChange={(val) =>
+                                            onUpdate({
+                                                assistantMessageFormatting: { ...assistantMessageFormatting, prefix: val },
+                                            })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <LabeledInput
+                                        label="Assistant Prefill"
+                                        value={assistantMessageFormatting.prefill}
+                                        placeholder="[INT]"
+                                        onChange={(val) =>
+                                            onUpdate({
+                                                assistantMessageFormatting: { ...assistantMessageFormatting, prefill: val },
+                                            })}
+                                    />
+                                    <CheckboxWithLabel
+                                        id="prefillOnlyCharacters"
+                                        label="Prefill only on Characters"
+                                        checked={assistantMessageFormatting.prefillOnlyCharacters}
+                                        onCheckedChange={(checked) =>
+                                            onUpdate({
+                                                assistantMessageFormatting: {
+                                                    ...assistantMessageFormatting,
+                                                    prefillOnlyCharacters: checked,
+                                                },
+                                            })}
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium">Custom Stop Strings</h3>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => onUpdate({ customStopStrings: [...customStopStrings, ""] })}
-                        >
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    <div className="space-y-2">
-                        {customStopStrings.map((stopString, index) => (
-                            <Input
-                                key={index}
-                                value={stopString}
-                                onChange={(e) => {
-                                    const newStopStrings = [...customStopStrings];
-                                    newStopStrings[index] = e.target.value;
-                                    onUpdate({ customStopStrings: newStopStrings });
-                                }}
+                    <Card className="rounded-sm">
+                        <CardHeader>
+                            <CardTitle>Agent Message Formatting</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <CheckboxWithLabel
+                                        id="useSameAsUser"
+                                        label="Use same as User"
+                                        checked={agentMessageFormatting.useSameAsUser}
+                                        disabled={agentMessageFormatting.useSameAsSystemPrompt}
+                                        onCheckedChange={(checked) =>
+                                            onUpdate({
+                                                agentMessageFormatting: { ...agentMessageFormatting, useSameAsUser: checked },
+                                            })}
+                                    />
+                                    <CheckboxWithLabel
+                                        id="useSameAsSystemPrompt"
+                                        label="Use same as System Prompt"
+                                        checked={agentMessageFormatting.useSameAsSystemPrompt}
+                                        disabled={agentMessageFormatting.useSameAsUser}
+                                        onCheckedChange={(checked) =>
+                                            onUpdate({
+                                                agentMessageFormatting: { ...agentMessageFormatting, useSameAsSystemPrompt: checked },
+                                            })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <LabeledInput
+                                        label="Suffix"
+                                        value={agentMessageFormatting.suffix}
+                                        placeholder="[INT]"
+                                        disabled={agentMessageFormatting.useSameAsUser || agentMessageFormatting.useSameAsSystemPrompt}
+                                        onChange={(val) =>
+                                            onUpdate({
+                                                agentMessageFormatting: { ...agentMessageFormatting, suffix: val },
+                                            })}
+                                    />
+                                    <LabeledInput
+                                        label="Prefix"
+                                        value={agentMessageFormatting.prefix}
+                                        placeholder="[INT]"
+                                        disabled={agentMessageFormatting.useSameAsUser || agentMessageFormatting.useSameAsSystemPrompt}
+                                        onChange={(val) =>
+                                            onUpdate({
+                                                agentMessageFormatting: { ...agentMessageFormatting, prefix: val },
+                                            })}
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-sm">
+                        <CardHeader>
+                            <CardTitle>Custom Stop Strings</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <StringArray
+                                values={customStopStrings}
                                 placeholder="Enter stop string"
+                                onChange={(newValues) => onUpdate({ customStopStrings: newValues })}
                             />
-                        ))}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+                        </CardContent>
+                    </Card>
+                </CardContent>
+            </Card>
+        </div>
     );
-} 
+}

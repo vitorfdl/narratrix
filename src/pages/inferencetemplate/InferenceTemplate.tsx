@@ -7,7 +7,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { InferenceTemplate, SystemPrompt, SystemPromptType } from "@/types/inference";
 import { TemplateHeader } from "./components/TemplateHeader";
 import { ModelInstructionSection } from "./components/ModelInstructionSection";
-import { ReasoningSection } from "./components/ReasoningSection";
+import { ExtraSections } from "./components/ExtrasSection";
 import { SystemPromptSection } from "./components/SystemPromptSection";
 
 // Mock data - replace with API call later
@@ -110,7 +110,7 @@ export default function InferenceTemplatePage() {
 
     return (
         <div className="container mx-auto p-6 space-y-2">
-            <div className="flex justify-between items-center">
+            <div className="flex gap-2 items-center">
                 <h1 className="text-2xl font-bold text-white">Inference Template</h1>
                 <Sheet open={isDocOpen} onOpenChange={setIsDocOpen}>
                     <SheetTrigger asChild>
@@ -143,7 +143,7 @@ export default function InferenceTemplatePage() {
                 onExport={handleExport}
                 templates={[]}
                 selectedTemplateId={null}
-                onTemplateSelect={function (templateId: string): void {
+                onTemplateSelect={function (_templateId: string): void {
                     throw new Error("Function not implemented.");
                 }}
             />
@@ -180,12 +180,33 @@ export default function InferenceTemplatePage() {
                                     onUpdate={(prompts) =>
                                         setTemplate(prev => ({ ...prev, systemPrompts: prompts }))
                                     }
+                                    templates={[]}
+                                    selectedTemplateId={null}
+                                    onTemplateSelect={function (_templateId: string): void {
+                                        throw new Error("Function not implemented.");
+                                    }}
+                                    onDeleteTemplate={function (_templateId: string): void {
+                                        throw new Error("Function not implemented.");
+                                    }}
+                                    onNewTemplate={function (): void {
+                                        throw new Error("Function not implemented.");
+                                    }}
+                                    onEditTemplateName={function (_templateId: string): void {
+                                        throw new Error("Function not implemented.");
+                                    }}
+                                    onTemplateImport={function (_templateId: string): void {
+                                        throw new Error("Function not implemented.");
+                                    }}
+                                    onTemplateExport={function (_templateId: string): void {
+                                        throw new Error("Function not implemented.");
+                                    }}
+
                                 />
                             </SortableContext>
                         </DndContext>
                     </div>
 
-                    <ReasoningSection
+                    <ExtraSections
                         reasoning={template.reasoning}
                         onUpdate={(reasoning) =>
                             setTemplate(prev => ({ ...prev, reasoning }))
@@ -204,6 +225,26 @@ export default function InferenceTemplatePage() {
                             }
                         }))
                     }
+                    templates={[]}
+                    selectedTemplateId={null}
+                    onTemplateSelect={function (_templateId: string): void {
+                        throw new Error("Function not implemented.");
+                    }}
+                    onDeleteTemplate={function (_templateId: string): void {
+                        throw new Error("Function not implemented.");
+                    }}
+                    onNewTemplate={function (): void {
+                        throw new Error("Function not implemented.");
+                    }}
+                    onEditTemplateName={function (_templateId: string): void {
+                        throw new Error("Function not implemented.");
+                    }}
+                    onTemplateImport={function (_templateId: string): void {
+                        throw new Error("Function not implemented.");
+                    }}
+                    onTemplateExport={function (_templateId: string): void {
+                        throw new Error("Function not implemented.");
+                    }}
                 />
             </div>
         </div>

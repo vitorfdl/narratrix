@@ -12,7 +12,7 @@ export interface BaseField {
  * Interface for numeric input fields with spinbox or slider
  */
 export interface NumericField extends BaseField {
-  type: 'spinbox' | 'spinbox_slider';
+  type: 'stepbutton' | 'stepbutton_slider';
   min: number;
   max?: number;
   step: number;

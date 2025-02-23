@@ -15,14 +15,14 @@ html, body, #root {
     --card-foreground: 240 10% 3.9%; /* #0A0A0B */
     --popover: 0 0% 100%; /* #FFFFFF */
     --popover-foreground: 240 10% 3.9%; /* #0A0A0B */
-    --primary: 240 5.9% 10%; /* #191919 */
+    --primary: 293 59% 74%; /* #db9ee5 */
     --primary-foreground: 0 0% 98%; /* #FAFAFA */
     --secondary: 240 4.8% 95.9%; /* #F4F4F5 */
     --secondary-foreground: 240 5.9% 10%; /* #191919 */
     --muted: 240 4.8% 95.9%; /* #F4F4F5 */
     --muted-foreground: 240 3.8% 46.1%; /* #71717A */
     --accent: 240 4.8% 95.9%; /* #F4F4F5 */
-    --accent-foreground: 240 5.9% 10%; /* #191919 */
+    --accent-foreground: 293 59% 74%; /* #db9ee5 */
     --destructive: 0 84.2% 60.2%; /* #EF4444 */
     --destructive-foreground: 0 0% 98%; /* #FAFAFA */
     --border: 240 5.9% 90%; /* #E4E4E7 */
@@ -51,7 +51,7 @@ html, body, #root {
     --muted: 0 0% 20%; /* #333333 */
     --muted-foreground: 223 2% 54%; /* #878B8D */
     --accent: 0 0% 15%; /* #252525 */
-    --accent-foreground: 217 89% 64%; /* #5389F4 */
+    --accent-foreground: 293 59% 74%; /* #db9ee5 */
     --destructive: 0 62% 45%; /* #C2362E */
     --destructive-foreground: 0 0% 98%; /* #FAFAFA */
     --border: 223 6% 27%; /* #43454A */
@@ -85,3 +85,46 @@ html, body, #root {
   margin: 0;
   /* ... other styles ... */
 }
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary)) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--primary) / 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--primary) / 0.8);
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+} 

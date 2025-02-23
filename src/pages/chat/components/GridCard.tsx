@@ -10,7 +10,7 @@ export const GridCard: React.FC<CardProps> = ({
   buttons = []
 }) => {
   return (
-    <div className="grid-stack-item-content flex flex-col bg-background border rounded-sm overflow-hidden" id={id}>
+    <div className="grid-stack-item-content flex flex-col bg-background border overflow-hidden" id={id}>
       {/* Title bar */}
       <div 
         className="flex items-center px-3 py-0.5 bg-card border-b cursor-move"
@@ -42,7 +42,7 @@ export const GridCard: React.FC<CardProps> = ({
       </div>
       
       {/* Content */}
-      <div className="p-1 overflow-auto h-full">
+      <div className="p-1 overflow-auto h-full custom-scrollbar">
         {children}
       </div>
     </div>

@@ -62,7 +62,7 @@ const NavGroup: React.FC<NavGroupProps> = ({
     return (
         <div className={containerClassName}>
             {navItems.map((item, index) => {
-                const commonClasses = `w-54 flex items-center gap-2 text-sm px-2 py-3 transition-colors relative ${
+                const commonClasses = `w-full flex items-center gap-2 text-sm px-2 py-3 transition-colors relative ${
                     activeSection === item.id
                         ? 'bg-zinc-800/50 text-white'
                         : 'hover:bg-zinc-800/30 text-zinc-400'

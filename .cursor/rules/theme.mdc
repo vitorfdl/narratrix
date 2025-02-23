@@ -1,0 +1,5 @@
+---
+description: CSS for theme of the application
+globs: *.tsx, *.css
+---
+[index.css](mdc:src/index.css)

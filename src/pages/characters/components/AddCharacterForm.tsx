@@ -34,8 +34,8 @@ const mockLorebooks = [
 
 // Mock data for expressions
 const mockExpressions = [
-    { id: "1", name: "Happy", url: "/avatars/ash.png" },
-    { id: "2", name: "Sad", url: "/avatars/ash.png" },
+    { id: "1", name: "Happy", url: "/avatars/narratrix.jpeg" },
+    { id: "2", name: "Sad", url: "/avatars/narratrix.jpeg" },
 ];
 
 export function AddCharacterForm({ onSuccess }: AddCharacterFormProps) {

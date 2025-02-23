@@ -113,7 +113,7 @@
         "npm:autoprefixer@^10.4.20",
         "npm:class-variance-authority@~0.7.1",
         "npm:clsx@^2.1.1",
-        "npm:cmdk@1.0.0",
+        "npm:cmdk@^1.0.4",
         "npm:gridstack@^11.3.0",
         "npm:lodash@^4.17.21",
         "npm:lucide-react@0.474",

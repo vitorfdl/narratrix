@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
     Bell, 
     ChevronDown, 
@@ -9,10 +9,10 @@ import {
     Languages, 
     Download, 
     Folder, 
-    Info
 } from "lucide-react";
 import { AppSettings, mockSettings } from "../../types/settings";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
     Select,
     SelectContent,
@@ -29,6 +29,18 @@ import "./styles/settings.css";
 
 export default function Settings() {
     const [settings, setSettings] = useState<AppSettings>(mockSettings);
+    const { theme, setTheme } = useTheme();
+
+    // Sync theme from context to settings on mount
+    useEffect(() => {
+        setSettings(prev => ({
+            ...prev,
+            appearance: {
+                ...prev.appearance,
+                theme
+            }
+        }));
+    }, []);
 
     const handleSettingChange = (section: keyof AppSettings, key: string, value: any) => {
         setSettings(prev => ({
@@ -38,6 +50,11 @@ export default function Settings() {
                 [key]: value
             }
         }));
+
+        // Sync theme changes with ThemeContext
+        if (section === 'appearance' && key === 'theme') {
+            setTheme(value);
+        }
     };
 
     return (

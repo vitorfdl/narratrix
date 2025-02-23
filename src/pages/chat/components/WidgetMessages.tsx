@@ -9,7 +9,6 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
-import '../styles/scrollbar.css';
 import {
   Dialog,
   DialogContent,
@@ -48,7 +47,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
   onTranslate,
   onExcludeFromPrompt,
 }) => {
-  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [, setHoveredMessageId] = useState<string | null>(null);
   const [contentIndices, setContentIndices] = useState<Record<string, number>>({});
 
   // Calculate total characters up to each message
@@ -86,7 +85,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
   };
 
   return (
-    <div className="flex flex-col w-full h-full gap-2 p-1 overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col gap-2 p-1">
       {messagesWithCharCount.map((message, index) => {
         const isContextCut = index === contextCutIndex;
         const currentIndex = contentIndices[message.id] || 0;
@@ -120,8 +119,8 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
                 <div className="flex-shrink-0 select-none">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <button className="transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary rounded-lg" title="View Full Size Avatar">
-                        <Avatar className="w-28 h-36 ring-2 ring-border overflow-hidden rounded-xl hover:ring-primary">
+                      <button className="transition-transform rounded-lg" title="View Full Size Avatar">
+                        <Avatar className="w-24 h-24 ring-2 ring-border overflow-hidden rounded-full hover:ring-primary">
                           {message.avatar ? (
                             <img
                               src={message.avatar}
@@ -157,9 +156,69 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
               )}>
                 <p className="text-foreground text-sm select-text">{getCurrentContent(message)}</p>
                 
-                {message.type === 'assistant' && (
-                  <div className="absolute bottom-0 right-0 flex items-center gap-1">
-                    {currentIndex > 0 && (
+                {/* Bottom controls container */}
+                <div className="absolute bottom-0 w-full flex justify-between items-center">
+                  {/* Action buttons - Right side for assistant, Left side for user */}
+                  <div
+                    className={cn(
+                      "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1",
+                      message.type === 'user' ? "order-1" : "order-2"
+                    )}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 hover:bg-accent"
+                      onClick={() => onEditMessage(message.id)}
+                      title="Edit Message"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => onDeleteMessage(message.id)}
+                      title="Delete Message"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" title="More Options">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => onTranslate(message.id)}>
+                          <Languages className="w-4 h-4 mr-2" />
+                          Translate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onCreateCheckpoint(message.id)}>
+                          <Flag className="w-4 h-4 mr-2" />
+                          Create Checkpoint
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onGenerateImage(message.id)}>
+                          <Image className="w-4 h-4 mr-2" />
+                          Generate Image
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onExcludeFromPrompt(message.id)}>
+                          <BookmarkMinus className="w-4 h-4 mr-2" />
+                          Exclude from Prompt
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Version controls - Left side for assistant, hidden for user */}
+                  {message.type === 'assistant' && (
+                    <div className={cn(
+                      "flex items-center gap-1",
+                      message.type === 'assistant' ? "order-1" : "order-2"
+                    )}>
+                    <span className="text-xs text-muted-foreground ml-1">
+                      {currentIndex + 1}/{message.content.length}
+                    </span>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -169,75 +228,17 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleSwipe(message.id, 'right')}
-                      title="Next Version"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      {currentIndex + 1}/{message.content.length}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Action buttons */}
-              <div
-                className={cn(
-                  "absolute top-2 opacity-0 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1",
-                  hoveredMessageId === message.id && "opacity-100",
-                  message.type === 'user' ? "left-2" : "right-2"
-                )}
-              >
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-accent"
-                    onClick={() => onEditMessage(message.id)}
-                    title="Edit Message"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-destructive hover:text-destructive-foreground"
-                    onClick={() => onDeleteMessage(message.id)}
-                    title="Delete Message"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="hover:bg-accent" title="More Options">
-                        <MoreHorizontal className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleSwipe(message.id, 'right')}
+                        title="Next Version"
+                      >
+                        <ChevronRight className="w-4 h-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => onTranslate(message.id)}>
-                        <Languages className="w-4 h-4 mr-2" />
-                        Translate
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onCreateCheckpoint(message.id)}>
-                        <Flag className="w-4 h-4 mr-2" />
-                        Create Checkpoint
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onGenerateImage(message.id)}>
-                        <Image className="w-4 h-4 mr-2" />
-                        Generate Image
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onExcludeFromPrompt(message.id)}>
-                        <BookmarkMinus className="w-4 h-4 mr-2" />
-                        Exclude from Prompt
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

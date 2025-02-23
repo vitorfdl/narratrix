@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Pin } from "lucide-react";
 
 // Import the widget registry
-import { WidgetId, renderWidget, widgetConfigurations } from "@/pages/chat/hooks/registry";
+import { WidgetId, renderWidget } from "@/pages/chat/hooks/registry";
 import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
 
 const STORAGE_KEY_PREFIX = "grid-layout-positions";
-const MIN_CELL_HEIGHT = 60; // defines a minimum for consistency
+const MIN_CELL_HEIGHT = 120; // defines a minimum for consistency
 
 const defaultPositions: GridPosition[] = [
   { x: 0, y: 0, w: 6, h: 4, id: "messages", title: "Messages", hidden: false },
@@ -29,56 +29,17 @@ const defaultPositions: GridPosition[] = [
     title: "Participants",
     hidden: false,
   },
-  { x: 0, y: 0, w: 2, h: 1, id: "scripts", title: "Scripts", hidden: true },
+  { w: 2, h: 1, id: "scripts", title: "Scripts", hidden: true },
   {
-    x: 0,
-    y: 0,
     w: 2,
     h: 1,
     id: "character_sheet",
     title: "Character Sheet",
     hidden: true,
   },
-  { x: 0, y: 0, w: 2, h: 1, id: "memory", title: "Memory", hidden: true },
-  { x: 0, y: 0, w: 2, h: 1, id: "database", title: "Database", hidden: true },
-  { x: 0, y: 0, w: 2, h: 1, id: "chapters", title: "Chapters", hidden: true },
-];
-
-const messages = [
-  {
-    id: "0",
-    content: ["You are a helpful assistant that can answer questions and help with tasks."],
-    timestamp: new Date(),
-    type: "system",
-  },
-  {
-    id: "1",
-    content: ["Hello, how are you?"],
-    timestamp: new Date(),
-    avatar: "/avatars/vitor.png",
-    type: "user",
-  },
-  {
-    id: "2",
-    content: ["I'm fine, thank you!"],
-    timestamp: new Date(),
-    avatar: "/avatars/ash.png",
-    type: "assistant",
-  },
-  {
-    id: "3",
-    content: ["What is the weather in Tokyo?"],
-    timestamp: new Date(),
-    avatar: "/avatars/vitor.png",
-    type: "user",
-  },
-  {
-    id: "4",
-    content: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam neque felis, ultrices id molestie non, condimentum ac odio. In eleifend accumsan tortor nec rhoncus. Aliquam et elit id elit tristique gravida ac sed turpis. Maecenas sit amet porttitor tellus. Nam ac augue justo. Donec nec elit sit amet mauris ornare bibendum. Quisque faucibus elit eu mi ornare, eget vestibulum diam maximus. Etiam ut nulla vitae orci ultricies feugiat sed nec ipsum. Aliquam elementum felis eget mauris pretium, vel gravida sem feugiat. Praesent at neque at mauris scelerisque cursus. Morbi magna ex, tincidunt in scelerisque ac, faucibus ac mi. Praesent consequat molestie massa id placerat. Praesent consequat sapien et vehicula pulvinar. Nulla tincidunt turpis at convallis scelerisque.", "The weather in Tokyo is sunny and warm."],
-    timestamp: new Date(),
-    avatar: "/avatars/ash2.png",
-    type: "assistant",
-  }
+  { w: 2, h: 1, id: "memory", title: "Memory", hidden: true },
+  { w: 2, h: 1, id: "database", title: "Database", hidden: true },
+  { w: 2, h: 1, id: "chapters", title: "Chapters", hidden: true },
 ];
 
 export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
@@ -235,6 +196,11 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
     if (!pos) return;
 
     if (pos.hidden) {
+          // Check if there is space before unhiding the card using Gridstack.willItFit.
+    if (gridRef.current && !gridRef.current.willItFit({ w: pos.w, h: pos.h, id: cardId})) {
+      alert("Not enough free space to unhide the widget.");
+      return; // Do not proceed if there isn’t enough room.
+    }
       // Unhiding the card
       setPositions((prev) =>
         prev.map((p) => p.id === cardId ? { ...p, hidden: false } : p)
@@ -243,7 +209,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
     } else {
       setPositions((prev) =>
         prev.map((p) =>
-          p.id === cardId ? { ...p, hidden: true, x: 0, y: 0, w: 2, h: 1 } : p
+          p.id === cardId ? { ...p, hidden: true, x: undefined, y: undefined, w: 2, h: 1 } : p
         )
       );
       setHiddenWidgets((prev) => [...prev, cardId]);
@@ -265,7 +231,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
             <Popover key={widget.id}>
               <PopoverTrigger asChild>
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   style={{
                     writingMode: "vertical-rl",
                     transform: "rotate(-180deg)",
@@ -273,7 +239,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
                     fontSize: "0.75rem",
                     height: "auto",
                   }}
-                  className="h-auto whitespace-nowrap text-xs p-0.5 pt-1 pb-1 font-light"
+                  className="h-auto bg-transparent whitespace-nowrap text-xs p-0.5 pt-1 pb-1 font-light"
                 >
                   {widget.title}
                 </Button>
@@ -288,11 +254,9 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
                     <Pin className="w-3 h-3" />
                   </button>
                 </div>
-              <ResizablePopoverContent className="p-4">
+              <ResizablePopoverContent className="p-0">
                 {/* Render the same widget content as in the GridCard */}
-                <div className="mt-2">
                   {renderWidget(widget.id as WidgetId, tabId)}
-                </div>
                 </ResizablePopoverContent>
               </PopoverContent>
             </Popover>

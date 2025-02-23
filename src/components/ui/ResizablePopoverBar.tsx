@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 // Import the scrollbar styles so that the CSS is available for this component
-import "@/pages/chat/styles/scrollbar.css";
 
 export interface ResizablePopoverContentProps
   extends React.HTMLAttributes<HTMLDivElement> {

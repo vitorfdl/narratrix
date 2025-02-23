@@ -19,7 +19,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import '@/pages/chat/styles/scrollbar.css';
 
 // Types
 export interface Participant {
@@ -86,7 +85,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
           <img
             src={participant.avatar}
             alt={participant.name}
-            className="w-8 h-8 rounded-full flex-shrink-0"
+            className="w-8 h-8 object-cover rounded-full flex-shrink-0"
           />
         ) : (
           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
@@ -145,8 +144,8 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({
   // Mock data for testing
   const mockParticipants: Participant[] = [
     { id: '1', name: 'User', type: 'user', avatar: '/avatars/vitor.png' },
-    { id: '2', name: 'Assistant', type: 'agent', avatar: '/avatars/ash.png', isEnabled: false },
-    { id: '3', name: 'Character 1', type: 'character', avatar: '/avatars/ash2.png', isEnabled: true },
+    { id: '2', name: 'Assistant', type: 'agent', avatar: '/avatars/assistant.png', isEnabled: false },
+    { id: '3', name: 'Character 1', type: 'character', avatar: '/avatars/narratrixav.jpeg', isEnabled: true },
   ];
 
   const [items, setItems] = useState<Participant[]>(participants.length > 0 ? participants : mockParticipants);

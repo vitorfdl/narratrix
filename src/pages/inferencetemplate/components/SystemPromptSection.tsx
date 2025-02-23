@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Plus, Trash, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
 import { SystemPrompt, SystemPromptType } from "@/types/inference";
 import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
@@ -97,11 +98,11 @@ interface SystemPromptSectionProps {
     selectedTemplateId: string | null;
     onTemplateSelect: (templateId: string) => void;
     onUpdate: (prompts: SystemPrompt[]) => void;
-    onDeleteTemplate: () => void;
+    onDeleteTemplate: (templateId: string) => void;
     onNewTemplate: () => void;
-    onEditTemplateName: () => void;
-    onTemplateImport: () => void;
-    onTemplateExport: () => void;
+    onEditTemplateName: (templateId: string) => void;
+    onTemplateImport: (templateId: string) => void;
+    onTemplateExport: (templateId: string) => void;
 }
 
 export function SystemPromptSection({
@@ -117,7 +118,6 @@ export function SystemPromptSection({
     onTemplateExport
 }: SystemPromptSectionProps) {
     const [useGlobal, setUseGlobal] = useState(false);
-    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     const handleAddPrompt = (type: SystemPromptType) => {
         const newPrompt: SystemPrompt = {
@@ -138,7 +138,6 @@ export function SystemPromptSection({
         };
 
         onUpdate([...prompts, newPrompt]);
-        setIsPopoverOpen(false);
     };
 
     const handleUpdatePrompt = (id: string, updates: Partial<SystemPrompt>) => {
@@ -179,11 +178,11 @@ export function SystemPromptSection({
                             templates={templates}
                             selectedTemplateId={selectedTemplateId}
                             onTemplateSelect={onTemplateSelect}
-                            onDelete={onDeleteTemplate}
+                            onDelete={() => onDeleteTemplate(selectedTemplateId ?? '')}
                             onNewTemplate={onNewTemplate}
-                            onEditName={onEditTemplateName}
-                            onImport={onTemplateImport}
-                            onExport={onTemplateExport}
+                            onEditName={() => onEditTemplateName(selectedTemplateId ?? '')}
+                            onImport={() => onTemplateImport(selectedTemplateId ?? '')}
+                            onExport={() => onTemplateExport(selectedTemplateId ?? '')}
                         />
                     </div>
                 )}
@@ -202,8 +201,8 @@ export function SystemPromptSection({
                 
                 {availableTypes.length > 0 && (
                     <div className="flex justify-center pt-1">
-                        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                            <PopoverTrigger asChild>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -212,25 +211,22 @@ export function SystemPromptSection({
                                     <Plus className="h-4 w-4 mr-1" />
                                     Add Section
                                 </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-56" align="center">
-                                <div className="space-y-1">
-                                    {availableTypes.map((type) => (
-                                        <Button
-                                            key={type}
-                                            variant="ghost"
-                                            className="w-full justify-start text-sm"
-                                            onClick={() => handleAddPrompt(type)}
-                                        >
-                                            {type
-                                                .replace(/([A-Z])/g, " $1")
-                                                .toLowerCase()
-                                                .replace(/^./, (str) => str.toUpperCase())}
-                                        </Button>
-                                    ))}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="center" className="w-56">
+                                {availableTypes.map((type) => (
+                                    <DropdownMenuItem
+                                        key={type}
+                                        onClick={() => handleAddPrompt(type)}
+                                        className="font-normal font-sans text-xs"
+                                    >
+                                        {type
+                                            .replace(/([A-Z])/g, " $1")
+                                            .toLowerCase()
+                                            .replace(/^./, (str) => str.toUpperCase())}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 )}
             </CardContent>
