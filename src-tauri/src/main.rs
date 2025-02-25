@@ -3,6 +3,12 @@
     windows_subsystem = "windows"
 )]
 
+// Declare module dependencies
+mod database;
+mod commands;
+
+use database::init_db;
+use commands::db_commands;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use std::sync::Mutex;
@@ -37,7 +43,15 @@ fn main() {
 
     tauri::Builder::default()
         .manage(app_state)
-        .invoke_handler(tauri::generate_handler![greet])
+        .setup(|app| {
+            // Initialize the database plugin and apply migrations.
+            init_db(app)
+        })
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            db_commands::create_profile,
+            db_commands::get_profiles
+        ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("Error while running Tauri application");
 }

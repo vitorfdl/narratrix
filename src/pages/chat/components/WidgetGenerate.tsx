@@ -3,6 +3,7 @@ import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 import { Wand2, SpellCheck2, Languages } from "lucide-react";
+import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 
 interface WidgetGenerateProps {
     onSubmit?: (text: string) => void;
@@ -33,11 +34,13 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = ({ onSubmit }) => {
 
     return (
         <div className="flex h-full flex-col gap-1 p-1">
-            <ResizableTextarea
+            <AutosizeTextarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full h-[90%]"
+                className="w-full"
+                minHeight={50}
+                maxHeight={200}
                 placeholder="Type your message here... (Ctrl/Cmd + Enter to send)"
             />
             <div className="flex items-center gap-2 px-1">
