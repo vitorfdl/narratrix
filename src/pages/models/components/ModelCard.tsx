@@ -1,5 +1,5 @@
 import { Settings2, MoreVertical } from "lucide-react";
-import { Model } from "../../../types/models";
+import { Model } from "../../../schema/models";
 import {
     Card,
     CardContent,

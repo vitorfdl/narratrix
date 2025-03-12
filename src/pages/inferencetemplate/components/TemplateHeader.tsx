@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { TemplateSettings } from "@/types/inference";
+import { TemplateSettings } from "@/schema/inference";
 import { TemplatePicker, Template } from "./TemplatePicker";
 
 interface TemplateHeaderProps {
@@ -45,7 +45,7 @@ export function TemplateHeader({
             <div className="grid grid-cols-3 gap-8">
                 {/* Left Column - Checkboxes */}
                 <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Text Cleanup</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">Text Cleanup</h3>
                     <div className="flex items-center space-x-2">
                         <Checkbox
                             id="trimAssistant"
@@ -187,7 +187,7 @@ export function TemplateHeader({
                         <Checkbox
                             id="applyCensorship"
                             checked={false} // Add to settings if needed
-                            onCheckedChange={() => {}}
+                            onCheckedChange={() => { }}
                         />
                         <Label htmlFor="applyCensorship">
                             Apply censorship to messages
@@ -197,7 +197,7 @@ export function TemplateHeader({
                         <Checkbox
                             id="mergeSubsequent"
                             checked={false} // Add to settings if needed
-                            onCheckedChange={() => {}}
+                            onCheckedChange={() => { }}
                         />
                         <Label htmlFor="mergeSubsequent">
                             Merge subsquent Messages

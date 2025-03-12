@@ -1,18 +1,28 @@
-pub mod timestamps;
+use argon2::{
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2,
+};
+use rand::rngs::OsRng;
 
-// Re-export commonly used utilities
-pub use timestamps::{add_timestamps, now, update_timestamp, Timestamps};
+// Helper function to hash a password using Argon2
+#[tauri::command(scope = "app")]
+pub fn hash_password(password: &str) -> Result<String, String> {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
 
-pub fn merge_settings(current: &serde_json::Value, new: &serde_json::Value) -> serde_json::Value {
-    if current.is_object() && new.is_object() {
-        let mut result = current.clone();
-        if let Some(result_obj) = result.as_object_mut() {
-            for (key, value) in new.as_object().unwrap() {
-                result_obj.insert(key.clone(), value.clone());
-            }
-        }
-        result
-    } else {
-        new.clone()
-    }
+    argon2
+        .hash_password(password.as_bytes(), &salt)
+        .map(|hash| hash.to_string())
+        .map_err(|e| format!("Failed to hash password: {}", e))
+}
+
+// Helper function to verify a password against its hash
+#[tauri::command(scope = "app")]
+pub fn verify_password(password: &str, hash: &str) -> Result<bool, String> {
+    let parsed_hash =
+        PasswordHash::new(hash).map_err(|e| format!("Failed to parse password hash: {}", e))?;
+
+    Ok(Argon2::default()
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok())
 }

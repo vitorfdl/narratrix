@@ -1,4 +1,4 @@
-import { CharacterOrAgent } from "../../../types/characters";
+import { CharacterOrAgent } from "../../../schema/characters";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 

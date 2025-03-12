@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChatTab } from '@/types/chat';
+import { ChatTab } from '@/schema/chat';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatTabs } from './ChatTabs';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,7 @@ export default function Chat() {
   const handleCloseTab = (tabId: string) => {
     const newTabs = tabs.filter(tab => tab.id !== tabId);
     setTabs(newTabs);
-    
+
     // If we're closing the active tab, switch to the last remaining tab
     if (activeTab === tabId && newTabs.length > 0) {
       setActiveTab(newTabs[newTabs.length - 1].id);

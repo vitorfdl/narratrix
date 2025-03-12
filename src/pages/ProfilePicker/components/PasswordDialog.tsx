@@ -5,10 +5,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from '../../../components/ui/dialog';
+} from '../../../components/ui/dialog.tsx';
 import { LockIcon } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
+import { Button } from '../../../components/ui/button.tsx';
+import { Input } from '../../../components/ui/input.tsx';
 
 interface PasswordDialogProps {
   open: boolean;

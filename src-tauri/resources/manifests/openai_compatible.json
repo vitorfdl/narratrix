@@ -1,0 +1,52 @@
+{
+  "$schema": "../../../model-schema.json",
+  "id": "openai_compatible",
+  "name": "Generic OpenAI API Compatible",
+  "description": "Integration with OpenAI compatible API",
+  "type": "llm",
+  "inference_type": [
+    "chat",
+    "completion"
+  ],
+  "engine": "custom_openai",
+  "inference_fields": [
+    "temperature",
+    "top_p",
+    "frequency_penalty",
+    "presence_penalty",
+    "top_k",
+    "min_p",
+    "top_a",
+    "repetition_penalty",
+    "smoothing_sampling",
+    "xtc",
+    "stop_sequences",
+    "sampling_order"
+  ],
+  "reasoning": {
+    "has_options": [
+      "high",
+      "low"
+    ]
+  },
+  "fields": [
+    {
+      "key": "base_url",
+      "description": "The base URL of the OpenAI compatible API",
+      "required": false,
+      "field_type": "string"
+    },
+    {
+      "key": "api_key",
+      "description": "Your API key (if applicable)",
+      "required": false,
+      "field_type": "secret"
+    },
+    {
+      "key": "model",
+      "description": "The model to use (if applicable)",
+      "required": false,
+      "field_type": "string"
+    }
+  ]
+}

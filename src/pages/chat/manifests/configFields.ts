@@ -1,4 +1,4 @@
-import { ConfigFields } from "@/types/configFields";
+import { ConfigFields } from "@/schema/configFields";
 
 export const configFields: ConfigFields = [
   {
@@ -145,7 +145,7 @@ export const configFields: ConfigFields = [
       },
       {
         name: "dry_allowed_length",
-        type: "stepbutton", 
+        type: "stepbutton",
         title: "Allowed Length",
         description: "Maximum allowed length of repeated sequences",
         min: 0,
@@ -168,8 +168,8 @@ export const configFields: ConfigFields = [
         type: "string_array",
         title: "Sequence Breakers",
         description: "Sequence breakers for dry repetition penalty",
-        default: ["\\n", ":", "\"", "*"],
-      }
+        default: ["\\n", ":", '"', "*"],
+      },
     ],
   },
   {
@@ -186,21 +186,20 @@ export const configFields: ConfigFields = [
         min: 0,
         max: 0.5,
         default: 0.1,
-        step: 0.05
+        step: 0.05,
       },
       {
-        name: "xtc_probability", 
+        name: "xtc_probability",
         type: "stepbutton_slider",
         title: "Probability",
         description: "Probability of applying XTC during sampling",
         min: 0,
         max: 1,
         default: 0,
-        step: 0.05
-      }
-    ]
-  }
-  ,
+        step: 0.05,
+      },
+    ],
+  },
   {
     name: "sampling_order",
     type: "drag_array",
@@ -208,7 +207,6 @@ export const configFields: ConfigFields = [
     description: "Drag to reorder the sampling methods",
     default: ["dry", "xtc", "min_p", "top_p", "top_k", "temperature"],
     options: ["dry", "xtc", "min_p", "top_p", "top_k", "temperature"],
-    readOnly: true
-  }
+    readOnly: true,
+  },
 ];
-

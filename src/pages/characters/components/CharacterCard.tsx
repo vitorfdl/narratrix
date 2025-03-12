@@ -1,5 +1,5 @@
 import { Edit, Trash2 } from "lucide-react";
-import { CharacterOrAgent } from "../../../types/characters";
+import { CharacterOrAgent } from "../../../schema/characters";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";

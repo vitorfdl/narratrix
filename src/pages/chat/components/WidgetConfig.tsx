@@ -8,7 +8,7 @@ import { StringArray } from "@/components/ui/string-array";
 import { DragArray } from "@/components/ui/drag-array";
 import { Plus, Trash } from "lucide-react";
 import { configFields } from "../manifests/configFields";
-import type { ConfigField, DragArrayField, NumericField, RandomNumberField, SectionField, StringArrayField } from "@/types/configFields";
+import type { ConfigField, DragArrayField, NumericField, RandomNumberField, SectionField, StringArrayField } from "@/schema/configFields";
 
 interface ConfigItemProps {
   field: ConfigField;
@@ -96,8 +96,8 @@ const ConfigItem = ({ field, value, onChange, onRemove, isNested = false }: Conf
     }
   };
 
-  const cardClasses = isNested 
-    ? "p-2 space-y-1 bg-foreground/5 rounded-sm" 
+  const cardClasses = isNested
+    ? "p-2 space-y-1 bg-foreground/5 rounded-sm"
     : "p-2 space-y-1 bg-foreground/5";
 
   return (
@@ -138,7 +138,7 @@ const WidgetConfig = () => {
 
     setActiveFields(prev => [...prev, fieldName]);
     setSelectedField("");
-    
+
     if (field.type === 'section') {
       // Initialize section with default values for all nested fields
       const sectionField = field as SectionField;
@@ -148,7 +148,7 @@ const WidgetConfig = () => {
         }
         return acc;
       }, {} as Record<string, any>);
-      
+
       setValues(prev => ({
         ...prev,
         [fieldName]: sectionDefaults

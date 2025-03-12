@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useProfile } from '../../../contexts/ProfileContext';
+import { useProfile } from '../../../contexts/ProfileContext.tsx';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,12 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription
-} from '../../../components/ui/dialog';
+} from '../../../components/ui/dialog.tsx';
 import { UserCircleIcon } from 'lucide-react';
+import { Input } from '../../../components/ui/input.tsx';
+import { Label } from '../../../components/ui/label.tsx';
+import { Checkbox } from '../../../components/ui/checkbox.tsx';
+import { Button } from '../../../components/ui/button.tsx';
 
 interface NewProfileDialogProps {
   open: boolean;
@@ -90,26 +94,26 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
 
           {/* Avatar Generation */}
           <div className="flex justify-center">
-            <button
+            <Button
               type="button"
               onClick={generateRandomAvatar}
-              className="px-3 py-1 text-sm rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              variant="secondary"
+              size="sm"
             >
               Generate Random Avatar
-            </button>
+            </Button>
           </div>
 
           {/* Name Input */}
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">
+            <Label htmlFor="name">
               Profile Name <span className="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border rounded-md border-input bg-background text-foreground"
               placeholder="Enter profile name"
               maxLength={30}
               required
@@ -118,30 +122,27 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
 
           {/* Password Protection */}
           <div className="flex items-center space-x-2">
-            <input
+            <Checkbox
               id="hasPassword"
-              type="checkbox"
               checked={hasPassword}
-              onChange={(e) => setHasPassword(e.target.checked)}
-              className="rounded border-input"
+              onCheckedChange={(checked) => setHasPassword(checked as boolean)}
             />
-            <label htmlFor="hasPassword" className="text-sm font-medium">
+            <Label htmlFor="hasPassword" className="text-sm font-medium">
               Password protect this profile
-            </label>
+            </Label>
           </div>
 
           {/* Password Input (conditional) */}
           {hasPassword && (
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <Label htmlFor="password">
                 Password <span className="text-red-500">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md border-input bg-background text-foreground"
                 placeholder="Enter password"
                 required
               />
@@ -154,19 +155,18 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
           )}
 
           <DialogFooter className="mt-6">
-            <button
+            <Button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 rounded-md border border-input bg-background text-foreground hover:bg-accent"
+              variant="outline"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Create Profile
-            </button>
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

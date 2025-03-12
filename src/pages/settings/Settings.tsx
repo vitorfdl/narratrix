@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
-import { 
-    Bell, 
-    ChevronDown, 
-    MessageSquare, 
-    EyeOff, 
-    UserCircle, 
-    Palette, 
-    Languages, 
-    Download, 
-    Folder, 
+import {
+    Bell,
+    ChevronDown,
+    MessageSquare,
+    EyeOff,
+    UserCircle,
+    Palette,
+    Languages,
+    Download,
+    Folder,
 } from "lucide-react";
-import { AppSettings, mockSettings } from "../../types/settings";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
@@ -26,9 +25,11 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import "./styles/settings.css";
+import { AppSettings } from "@/schema/profiles";
+import { defaultSettings } from "@/schema/default-settings";
 
 export default function Settings() {
-    const [settings, setSettings] = useState<AppSettings>(mockSettings);
+    const [settings, setSettings] = useState<AppSettings>(defaultSettings);
     const { theme, setTheme } = useTheme();
 
     // Sync theme from context to settings on mount
@@ -63,7 +64,7 @@ export default function Settings() {
 
             <div className="space-y-1">
                 <h2 className="text-lg text-muted-foreground">General</h2>
-                
+
                 <Collapsible className="w-full">
                     <CollapsibleTrigger className="settings-section">
                         <Bell className="w-4 h-4 mr-2" />
@@ -100,7 +101,7 @@ export default function Settings() {
 
             <div className="mt-6 space-y-1">
                 <h2 className="text-lg text-muted-foreground">Integrations</h2>
-                
+
                 <Collapsible className="w-full">
                     <CollapsibleTrigger className="settings-section group">
                         <UserCircle className="w-4 h-4 mr-2" />
@@ -114,7 +115,7 @@ export default function Settings() {
 
             <div className="mt-6 space-y-1">
                 <h2 className="text-lg text-muted-foreground">Appearance</h2>
-                
+
                 <div className="settings-section-option">
                     <Palette className="w-4 h-4 mr-2" />
                     <span className="flex-1">Theme</span>
@@ -146,8 +147,6 @@ export default function Settings() {
                         <SelectContent>
                             <SelectItem value="en">English</SelectItem>
                             <SelectItem value="es">Español</SelectItem>
-                            <SelectItem value="fr">Français</SelectItem>
-                            <SelectItem value="de">Deutsch</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -155,7 +154,7 @@ export default function Settings() {
 
             <div className="mt-6 space-y-1">
                 <h2 className="text-lg text-muted-foreground">System</h2>
-                
+
                 <Collapsible className="w-full">
                     <CollapsibleTrigger className="settings-section group">
                         <Download className="w-4 h-4 mr-2" />

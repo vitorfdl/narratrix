@@ -4,7 +4,7 @@ import { GridStack, GridStackOptions } from "gridstack";
 import "gridstack/dist/gridstack.min.css";
 import "@/pages/chat/styles/gridstack.css";
 import { GridCard } from "./GridCard";
-import { GridPosition } from "@/types/grid";
+import { GridPosition } from "@/schema/grid";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Pin } from "lucide-react";
@@ -92,90 +92,90 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
       }
 
       // Small delay to ensure DOM is fully ready
-        if (!containerRef.current) return;
+      if (!containerRef.current) return;
 
-        const containerHeight = containerRef.current.clientHeight ||
-          window.innerHeight;
-        const maxRow = Math.floor(containerHeight / MIN_CELL_HEIGHT) || 1;
-        const cellHeight = containerHeight / maxRow;
+      const containerHeight = containerRef.current.clientHeight ||
+        window.innerHeight;
+      const maxRow = Math.floor(containerHeight / MIN_CELL_HEIGHT) || 1;
+      const cellHeight = containerHeight / maxRow;
 
-        const options: GridStackOptions = {
-          float: true,
-          animate: false,
-          cellHeight,
-          margin: "2px",
-          marginTop: "4px",
-          marginUnit: "em",
-          resizable: {
-            handles: "se",
-            containment: ".grid-stack",
-          } as any,
-          draggable: {
-            handle: "[data-gs-drag-handle]",
-          },
-          maxRow,
-          staticGrid: false,
-          disableResize: false,
-          disableDrag: false,
-        };
+      const options: GridStackOptions = {
+        float: true,
+        animate: false,
+        cellHeight,
+        margin: "2px",
+        marginTop: "4px",
+        marginUnit: "em",
+        resizable: {
+          handles: "se",
+          containment: ".grid-stack",
+        } as any,
+        draggable: {
+          handle: "[data-gs-drag-handle]",
+        },
+        maxRow,
+        staticGrid: false,
+        disableResize: false,
+        disableDrag: false,
+      };
 
-        gridRef.current = GridStack.init(options, containerRef.current);
+      gridRef.current = GridStack.init(options, containerRef.current);
 
-        // Add items to the grid
-        positions.filter((pos) => !pos.hidden).forEach((pos) => {
-          const existingItem = gridRef.current?.engine.nodes.find((n) =>
-            n.id === pos.id
-          );
-          if (!existingItem) {
-            gridRef.current?.addWidget({
-              x: pos.x,
-              y: pos.y,
-              w: pos.w,
-              h: pos.h,
-              id: pos.id,
-              // locked: true,
-              
-              noMove: true,
-            });
-          }
-        });
-
-        // Handle changes with more control
-        gridRef.current.on(
-          "change",
-          (_event, items) => handlePositionChange(items),
+      // Add items to the grid
+      positions.filter((pos) => !pos.hidden).forEach((pos) => {
+        const existingItem = gridRef.current?.engine.nodes.find((n) =>
+          n.id === pos.id
         );
+        if (!existingItem) {
+          gridRef.current?.addWidget({
+            x: pos.x,
+            y: pos.y,
+            w: pos.w,
+            h: pos.h,
+            id: pos.id,
+            // locked: true,
 
-        // Additional event handlers for better control
-        gridRef.current.on("dragstart", (_event, el) => {
-          const node = el.gridstackNode;
-          if (node) {
-            node.locked = false;
-            node.noMove = false;
-          }
-        });
+            noMove: true,
+          });
+        }
+      });
 
-        gridRef.current.on("dragstop", (_event, el) => {
-          const node = el.gridstackNode;
-          if (node) {
-            node.locked = true;
-            node.noMove = true;
-          }
-        });
+      // Handle changes with more control
+      gridRef.current.on(
+        "change",
+        (_event, items) => handlePositionChange(items),
+      );
 
-        gridRef.current.on("resizestart", (_event, el) => {
-          const node = el.gridstackNode;
-          if (node) {
-            node.locked = false;
-          }
-        });
+      // Additional event handlers for better control
+      gridRef.current.on("dragstart", (_event, el) => {
+        const node = el.gridstackNode;
+        if (node) {
+          node.locked = false;
+          node.noMove = false;
+        }
+      });
 
-        gridRef.current.on("resizestop", (_event, el) => {
-          const node = el.gridstackNode;
-          if (node) {
-            node.locked = true;
-          }
-        });
+      gridRef.current.on("dragstop", (_event, el) => {
+        const node = el.gridstackNode;
+        if (node) {
+          node.locked = true;
+          node.noMove = true;
+        }
+      });
+
+      gridRef.current.on("resizestart", (_event, el) => {
+        const node = el.gridstackNode;
+        if (node) {
+          node.locked = false;
+        }
+      });
+
+      gridRef.current.on("resizestop", (_event, el) => {
+        const node = el.gridstackNode;
+        if (node) {
+          node.locked = true;
+        }
+      });
     };
 
     initializeGrid();
@@ -196,11 +196,11 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
     if (!pos) return;
 
     if (pos.hidden) {
-          // Check if there is space before unhiding the card using Gridstack.willItFit.
-    if (gridRef.current && !gridRef.current.willItFit({ w: pos.w, h: pos.h, id: cardId})) {
-      alert("Not enough free space to unhide the widget.");
-      return; // Do not proceed if there isn’t enough room.
-    }
+      // Check if there is space before unhiding the card using Gridstack.willItFit.
+      if (gridRef.current && !gridRef.current.willItFit({ w: pos.w, h: pos.h, id: cardId })) {
+        alert("Not enough free space to unhide the widget.");
+        return; // Do not proceed if there isn’t enough room.
+      }
       // Unhiding the card
       setPositions((prev) =>
         prev.map((p) => p.id === cardId ? { ...p, hidden: false } : p)
@@ -247,15 +247,15 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
               <PopoverContent side="right" className="max-w-[80vw] w-auto">
                 <div className="flex items-top justify-between">
                   <span className="text-xs font-semibold">{widget.title}</span>
-                  <button 
+                  <button
                     onClick={() => toggleCard(widget.id)}
                     className="p-1 hover:bg-accent rounded"
                   >
                     <Pin className="w-3 h-3" />
                   </button>
                 </div>
-              <ResizablePopoverContent className="p-0">
-                {/* Render the same widget content as in the GridCard */}
+                <ResizablePopoverContent className="p-0">
+                  {/* Render the same widget content as in the GridCard */}
                   {renderWidget(widget.id as WidgetId, tabId)}
                 </ResizablePopoverContent>
               </PopoverContent>

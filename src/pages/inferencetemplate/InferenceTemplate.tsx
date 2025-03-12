@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { HelpCircle } from "lucide-react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { InferenceTemplate, SystemPrompt, SystemPromptType } from "@/types/inference";
+import { InferenceTemplate, SystemPrompt, SystemPromptType } from "@/schema/inference";
 import { TemplateHeader } from "./components/TemplateHeader";
 import { ModelInstructionSection } from "./components/ModelInstructionSection";
 import { ExtraSections } from "./components/ExtrasSection";

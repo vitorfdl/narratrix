@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS profiles (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
+    password TEXT,
     avatar_path TEXT,
     settings TEXT NOT NULL DEFAULT '{}', -- JSON string for configuration
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

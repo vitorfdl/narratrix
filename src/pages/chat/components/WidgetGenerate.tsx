@@ -39,7 +39,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = ({ onSubmit }) => {
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="w-full"
-                minHeight={50}
+                minHeight={15}
                 maxHeight={200}
                 placeholder="Type your message here... (Ctrl/Cmd + Enter to send)"
             />
@@ -74,5 +74,4 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = ({ onSubmit }) => {
 };
 
 export default WidgetGenerate;
-  
-  
+

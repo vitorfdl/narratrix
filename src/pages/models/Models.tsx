@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { ModelCard } from "./components/ModelCard";
-import { Model, mockModels } from "../../types/models";
+import { Model, mockModels } from "../../schema/models";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -46,7 +46,7 @@ export default function Models() {
                     </div>
                 ))}
             </div>
-            
+
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                     <Button

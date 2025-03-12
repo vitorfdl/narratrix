@@ -1,8 +1,9 @@
+import { ProfileResponse } from "@/schema/profiles";
 import { useAtom } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
 
-const profileIdAtom = atomWithStorage<string | undefined>("profileId", "", createJSONStorage(() => sessionStorage));
+const profileAtom = atomWithStorage<ProfileResponse | undefined>("profile", undefined, createJSONStorage(() => sessionStorage));
 
-export function useSessionProfileID() {
-  return useAtom(profileIdAtom);
+export function useSessionProfile() {
+  return useAtom(profileAtom);
 }

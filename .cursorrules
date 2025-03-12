@@ -10,7 +10,7 @@ Primary Technologies:
 - Frontend: React + Vite
 - Database: SQLite
 - Tailor your responses to UI components: Tailwind CSS + shadcn/ui + lucide-react
-- Backend cargos: sqlx, uuid, time
+- Backend cargos: tauri-plugin-sql, tauri-plugin-opener, tauri-plugin-dialog, tauri-plugin-fs, argon2
 
 Assume all those technoligies are already installed! Do not provide instructions to install again.
 </project_specifications>

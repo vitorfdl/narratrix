@@ -1,58 +1,44 @@
 {
+  "$schema": "../../../model-schema.json",
   "id": "openai",
   "name": "OpenAI",
   "description": "Integration with OpenAI models like GPT-4",
   "website": "https://openai.com/",
-  "hints": [
+  "type": "llm",
+  "inference_type": [
+    "chat"
+  ],
+  "engine": "openai",
+  "inference_fields": [
+    "temperature",
+    "top_p",
+    "frequency_penalty",
+    "presence_penalty"
+  ],
+  "reasoning": {
+    "has_options": [
+      "high",
+      "low"
+    ]
+  },
+  "fields": [
     {
       "key": "api_key",
       "description": "Your OpenAI API key",
       "required": true,
-      "field_type": "string"
+      "field_type": "secret"
     },
     {
       "key": "model",
       "description": "The OpenAI model to use",
       "required": true,
-      "field_type": "string"
-    },
-    {
-      "key": "temperature",
-      "description": "Controls randomness: 0 is deterministic, higher values make output more random",
-      "required": false,
-      "field_type": "number"
-    },
-    {
-      "key": "max_tokens",
-      "description": "The maximum number of tokens to generate",
-      "required": false,
-      "field_type": "number"
-    },
-    {
-      "key": "top_p",
-      "description": "Controls diversity via nucleus sampling",
-      "required": false,
-      "field_type": "number"
-    },
-    {
-      "key": "frequency_penalty",
-      "description": "Reduces repetition of token sequences",
-      "required": false,
-      "field_type": "number"
-    },
-    {
-      "key": "presence_penalty",
-      "description": "Reduces repetition of topics",
-      "required": false,
-      "field_type": "number"
+      "field_type": "string",
+      "hints": [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "o3-mini",
+        "o1-mini"
+      ]
     }
-  ],
-  "requires_api_key": true,
-  "api_key_name": "api_key",
-  "model_name_key": "model",
-  "example_models": [
-    "gpt-4-turbo",
-    "gpt-4",
-    "gpt-3.5-turbo"
   ]
 }

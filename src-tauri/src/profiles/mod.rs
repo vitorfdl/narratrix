@@ -1,9 +1,5 @@
 use crate::{utils::merge_settings, AppState};
-use argon2::{
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Argon2,
-};
-use rand::rngs::OsRng;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value as JsonValue};
 use tauri::State;
@@ -80,17 +76,6 @@ pub struct ProfileSummary {
     pub avatar_path: Option<String>,
     pub has_password: bool,
     pub created_at: Option<OffsetDateTime>,
-}
-
-// Helper function to hash a password using Argon2
-fn hash_password(password: &str) -> Result<String, String> {
-    let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
-
-    argon2
-        .hash_password(password.as_bytes(), &salt)
-        .map(|hash| hash.to_string())
-        .map_err(|e| format!("Failed to hash password: {}", e))
 }
 
 // Helper function to verify a password against its hash

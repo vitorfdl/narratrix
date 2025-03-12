@@ -1,0 +1,57 @@
+{
+  "$schema": "../../../model-schema.json",
+  "id": "bedrock_anthropic",
+  "name": "AWS Bedrock Anthropic",
+  "description": "Integration with AWS Bedrock Anthropic models",
+  "website": "https://aws.amazon.com/bedrock/",
+  "type": "llm",
+  "inference_type": [
+    "chat"
+  ],
+  "engine": "aws_bedrock",
+  "inference_fields": [
+    "temperature",
+    "top_p",
+    "top_k"
+  ],
+  "reasoning": {
+    "has_budget": true
+  },
+  "fields": [
+    {
+      "key": "aws_access_key_id",
+      "description": "Your AWS Access Key ID",
+      "required": true,
+      "field_type": "string"
+    },
+    {
+      "key": "aws_secret_access_key",
+      "description": "Your AWS Secret Access Key",
+      "required": true,
+      "field_type": "secret"
+    },
+    {
+      "key": "aws_region",
+      "description": "The AWS region to use",
+      "required": true,
+      "field_type": "string",
+      "hints": [
+        "us-east-1",
+        "us-east-2",
+        "us-west-2",
+        "eu-west-1",
+        "ap-northeast-1"
+      ]
+    },
+    {
+      "key": "model",
+      "description": "The Anthropic model to use",
+      "required": true,
+      "field_type": "string",
+      "hints": [
+        "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+        "us.anthropic.claude-3-5-sonnet-20240620-v1:0"
+      ]
+    }
+  ]
+}

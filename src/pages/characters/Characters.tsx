@@ -1,6 +1,6 @@
 import { Plus, RefreshCw, View, SortAsc } from "lucide-react";
 import { useState, useMemo } from "react";
-import { CharacterOrAgent, SortOption, ViewSettings, mockCharactersAndAgents } from "../../types/characters";
+import { CharacterOrAgent, SortOption, ViewSettings, mockCharactersAndAgents } from "../../schema/characters";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,

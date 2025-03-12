@@ -10,7 +10,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus, Trash, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
-import { SystemPrompt, SystemPromptType } from "@/types/inference";
+import { SystemPrompt, SystemPromptType } from "@/schema/inference";
 import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -40,7 +40,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete }: SystemPromptItemProps)
     };
 
     return (
-        <Card ref={setNodeRef} style={{...style, backgroundColor: 'rgba(255, 255, 255, 0.05)'}}>
+        <Card ref={setNodeRef} style={{ ...style, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
             <CardContent className="p-1 space-y-1 select-none">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -198,7 +198,7 @@ export function SystemPromptSection({
                         />
                     ))}
                 </div>
-                
+
                 {availableTypes.length > 0 && (
                     <div className="flex justify-center pt-1">
                         <DropdownMenu>

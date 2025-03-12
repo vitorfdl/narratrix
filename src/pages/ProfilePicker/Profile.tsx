@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { useProfile } from '../../contexts/ProfileContext';
-import { MAX_PROFILES } from '../../types/profiles';
+import { MAX_PROFILES, useProfile } from '../../contexts/ProfileContext.tsx';
 import { PlusCircleIcon, TrashIcon, UserCircleIcon } from 'lucide-react';
-import NewProfileDialog from './components/NewProfileDialog';
-import PasswordDialog from './components/PasswordDialog';
-import { Button } from '../../components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
-import { Card, CardContent } from '../../components/ui/card';
+import NewProfileDialog from './components/NewProfileDialog.tsx';
+import PasswordDialog from './components/PasswordDialog.tsx';
+import { Button } from '../../components/ui/button.tsx';
+import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar.tsx';
+import { Card, CardContent } from '../../components/ui/card.tsx';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -17,7 +16,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../components/ui/alert-dialog';
+} from '../../components/ui/alert-dialog.tsx';
 
 const ProfilePicker: React.FC = () => {
   const { profiles, login, removeProfile } = useProfile();
@@ -29,11 +28,15 @@ const ProfilePicker: React.FC = () => {
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
 
   const handleProfileClick = (id: string) => {
-    if (isManageMode) return;
+    if (isManageMode) {
+      return;
+    }
 
     const profile = profiles.find(p => p.id === id);
 
-    if (!profile) return;
+    if (!profile) {
+      return;
+    }
 
     if (profile.hasPassword) {
       setSelectedProfileId(id);
@@ -41,7 +44,6 @@ const ProfilePicker: React.FC = () => {
     } else {
       login(id).catch(error => {
         console.error('Error during login:', error);
-        toast.error('Login failed. Please try again.');
       });
     }
   };
@@ -77,9 +79,6 @@ const ProfilePicker: React.FC = () => {
         .then(() => {
           setProfileToDelete(null);
           setShowDeleteDialog(false);
-          toast.success("Profile Deleted", {
-            description: "The profile has been successfully removed."
-          });
         })
         .catch(error => {
           console.error('Error deleting profile:', error);

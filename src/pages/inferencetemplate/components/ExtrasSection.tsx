@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LabeledInput } from "./ModelInstructionSection";
-import { Reasoning } from "@/types/inference";
+import { Reasoning } from "@/schema/inference";
 
 interface ExtraSectionsProps {
     reasoning: Reasoning;

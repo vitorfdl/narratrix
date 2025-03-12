@@ -1,14 +1,28 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { Profile, ProfileState, ProfileAction, MAX_PROFILES } from '../types/profiles';
-import { createProfile, getProfiles, deleteProfile, updateProfile, loginProfile } from '../hooks/profiles';
-import type { ProfileResponse, NewProfile, LoginRequest } from '../hooks/profiles';
+import { ProfileListItem, ProfileResponse } from '../schema/profiles';
+import { createProfile, getProfiles, deleteProfile, loginProfile, getProfileById } from '../services/profiles';
 import { toast } from 'sonner';
-import { useSessionProfileID } from '@/utils/session-storage';
+import { useSessionProfile } from '@/utils/session-storage';
+
+export const MAX_PROFILES = 5;
+export interface ProfileState {
+  profiles: ProfileListItem[];
+  currentProfile: ProfileResponse | null;
+  isAuthenticated: boolean;
+}
+
+export type ProfileAction =
+  | { type: "SET_PROFILES"; payload: ProfileListItem[] }
+  | { type: "ADD_PROFILE"; payload: ProfileListItem }
+  | { type: "REMOVE_PROFILE"; payload: string }
+  | { type: "SET_CURRENT_PROFILE"; payload: ProfileResponse }
+  | { type: "LOGOUT" }
+  | { type: "SET_AUTHENTICATED"; payload: boolean };
 
 // Initial state with empty values
 const initialState: ProfileState = {
   profiles: [],
-  currentProfileId: null,
+  currentProfile: null,
   isAuthenticated: false,
 };
 
@@ -31,18 +45,18 @@ const profileReducer = (state: ProfileState, action: ProfileAction): ProfileStat
       return {
         ...state,
         profiles: state.profiles.filter(profile => profile.id !== action.payload),
-        currentProfileId: state.currentProfileId === action.payload ? null : state.currentProfileId,
-        isAuthenticated: state.currentProfileId === action.payload ? false : state.isAuthenticated,
+        currentProfile: state.currentProfile?.id === action.payload ? null : state.currentProfile,
+        isAuthenticated: state.currentProfile?.id === action.payload ? false : state.isAuthenticated,
       };
     case 'SET_CURRENT_PROFILE':
       return {
         ...state,
-        currentProfileId: action.payload,
+        currentProfile: action.payload,
       };
     case 'LOGOUT':
       return {
         ...state,
-        currentProfileId: null,
+        currentProfile: null,
         isAuthenticated: false,
       };
     case 'SET_AUTHENTICATED':
@@ -58,7 +72,7 @@ const profileReducer = (state: ProfileState, action: ProfileAction): ProfileStat
 interface ProfileContextType extends ProfileState {
   addProfile: (name: string, avatar?: string, password?: string) => Promise<void>;
   removeProfile: (id: string) => Promise<void>;
-  setCurrentProfile: (id: string) => void;
+  setCurrentProfile: (profile: ProfileResponse) => void;
   login: (id: string, password?: string) => Promise<boolean>;
   logout: () => void;
   refreshProfiles: () => Promise<void>;
@@ -66,37 +80,19 @@ interface ProfileContextType extends ProfileState {
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
-export const useProfile = (): ProfileContextType => {
-  const context = useContext(ProfileContext);
-  if (context === undefined) {
-    throw new Error('useProfile must be used within a ProfileProvider');
-  }
-  return context;
-};
-
 interface ProfileProviderProps {
   children: ReactNode;
 }
 
 export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(profileReducer, initialState);
-
-  // Convert backend ProfileResponse to our internal Profile type
-  const mapProfileResponse = (profile: ProfileResponse): Profile => ({
-    id: profile.id,
-    name: profile.name,
-    avatar_path: profile.avatar_path || undefined,
-    hasPassword: false, // We can't know this from the backend, so default to false
-    created_at: profile.created_at,
-  });
+  const [savedCurrentProfile, setSessionProfileID] = useSessionProfile();
 
   // Load profiles from the database
   const refreshProfiles = async (): Promise<void> => {
     try {
       const profilesData = await getProfiles();
-      console.log('profilesData', profilesData);
-      const mappedProfiles = profilesData.map(mapProfileResponse);
-      dispatch({ type: 'SET_PROFILES', payload: mappedProfiles });
+      dispatch({ type: 'SET_PROFILES', payload: profilesData });
     } catch (error) {
       console.error('Failed to load profiles:', error);
       toast.error('Failed to load profiles');
@@ -107,45 +103,33 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     // Load profiles on initialization
     refreshProfiles();
 
-    // Retrieve the last selected profile from localStorage (just the ID)
-    const [savedCurrentProfileId] = useSessionProfileID();
-    if (savedCurrentProfileId) {
-      dispatch({ type: 'SET_CURRENT_PROFILE', payload: savedCurrentProfileId });
-      // We don't auto-login - user will need to enter password if required
+    if (savedCurrentProfile) {
+      dispatch({ type: 'SET_CURRENT_PROFILE', payload: savedCurrentProfile });
     }
-  }, []);
+  }, [savedCurrentProfile]);
 
   useEffect(() => {
     // Save current profile ID to localStorage (just for remembering the last selection)
-    const [, setSessionProfileID] = useSessionProfileID();
-    if (state.currentProfileId) {
-      setSessionProfileID(state.currentProfileId);
+    if (state.currentProfile) {
+      setSessionProfileID(state.currentProfile);
     } else {
       setSessionProfileID(undefined);
     }
-  }, [state.currentProfileId]);
+  }, [state.currentProfile]);
 
   const addProfile = async (name: string, avatar?: string, password?: string): Promise<void> => {
     try {
-      const hasPassword = !!password;
-
-      const newProfileData: NewProfile = {
+      const newProfileData = {
         name,
-        password: password || '', // Backend expects a string
-        avatar_path: avatar || null
+        password: password,
+        avatar_path: avatar || undefined
       };
 
       const createdProfile = await createProfile(newProfileData);
-      const mappedProfile: Profile = mapProfileResponse(createdProfile);
 
-      // Add the hasPassword flag since backend doesn't return passwords
-      mappedProfile.hasPassword = hasPassword;
-
-      dispatch({ type: 'ADD_PROFILE', payload: mappedProfile });
-      toast.success('Profile created successfully');
+      dispatch({ type: 'ADD_PROFILE', payload: createdProfile });
     } catch (error) {
       console.error('Failed to create profile:', error);
-      toast.error('Failed to create profile');
       throw error;
     }
   };
@@ -154,16 +138,14 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     try {
       await deleteProfile(id);
       dispatch({ type: 'REMOVE_PROFILE', payload: id });
-      toast.success('Profile deleted successfully');
     } catch (error) {
       console.error('Failed to delete profile:', error);
-      toast.error('Failed to delete profile');
       throw error;
     }
   };
 
-  const setCurrentProfile = (id: string): void => {
-    dispatch({ type: 'SET_CURRENT_PROFILE', payload: id });
+  const setCurrentProfile = (profile: ProfileResponse): void => {
+    dispatch({ type: 'SET_CURRENT_PROFILE', payload: profile });
   };
 
   const login = async (id: string, password?: string): Promise<boolean> => {
@@ -175,22 +157,27 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     }
 
     try {
+      let fullProfile: ProfileResponse | null;
       if (profile.hasPassword) {
         if (!password) {
           return false;
         }
 
-        // Attempt to login with password
-        const loginData: LoginRequest = {
-          name: profile.name,
+        fullProfile = await loginProfile({
+          id: profile.id,
           password: password
-        };
+        });
+      } else {
+        fullProfile = await getProfileById(profile.id);
+      }
 
-        await loginProfile(loginData);
+      if (!fullProfile) {
+        console.error('Login failed:', "Profile not found");
+        return false;
       }
 
       // If we made it here, authentication succeeded
-      dispatch({ type: 'SET_CURRENT_PROFILE', payload: id });
+      dispatch({ type: 'SET_CURRENT_PROFILE', payload: fullProfile });
       dispatch({ type: 'SET_AUTHENTICATED', payload: true });
       return true;
     } catch (error) {
@@ -214,6 +201,14 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   };
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+};
+
+export const useProfile = (): ProfileContextType => {
+  const context = useContext(ProfileContext);
+  if (context === undefined) {
+    throw new Error('useProfile must be used within a ProfileProvider');
+  }
+  return context;
 };
 
 export default ProfileContext; 

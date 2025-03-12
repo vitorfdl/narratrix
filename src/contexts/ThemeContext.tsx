@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { AppearanceSettings } from '@/types/settings';
+import type { AppSettings } from '@/schema/profiles';
 
-type Theme = AppearanceSettings['theme'];
+type Theme = AppSettings["appearance"]['theme'];
 
 interface ThemeContextType {
   theme: Theme;
@@ -11,7 +11,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>('system');
 
   useEffect(() => {
     // Handle system theme preference

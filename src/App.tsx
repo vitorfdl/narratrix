@@ -7,11 +7,11 @@ import { ProfileProvider, useProfile } from './contexts/ProfileContext';
 import { Toaster } from './components/ui/sonner';
 
 const AppContent: React.FC = () => {
-  const { currentProfileId, isAuthenticated } = useProfile();
+  const { currentProfile, isAuthenticated } = useProfile();
   const [activeSection, setActiveSection] = React.useState<string>('models');
 
   // Show Profile Picker if no profile is logged in
-  if (!currentProfileId || !isAuthenticated) {
+  if (!currentProfile || !isAuthenticated) {
     return <ProfilePicker />;
   }
 
