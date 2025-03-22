@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import React from "react";
 
 interface HiddenWidget {
   id: string;
@@ -31,13 +31,15 @@ const SidebarPopover: React.FC<SidebarPopoverProps> = ({ hiddenWidgets }) => {
         <PopoverContent side="left" className="w-48 p-4">
           <div className="flex flex-col space-y-2">
             {hiddenWidgets && hiddenWidgets.length > 0 ? (
-              hiddenWidgets.map(widget => (
+              hiddenWidgets.map((widget) => (
                 <Button
                   key={widget.id}
                   variant="ghost"
                   className="text-start"
                   // onClick handler can be added to trigger the expansion of the widget
-                  onClick={() => { /* handle widget expansion if needed */ }}
+                  onClick={() => {
+                    /* handle widget expansion if needed */
+                  }}
                 >
                   {widget.title}
                 </Button>
@@ -52,4 +54,4 @@ const SidebarPopover: React.FC<SidebarPopoverProps> = ({ hiddenWidgets }) => {
   );
 };
 
-export default SidebarPopover; 
+export default SidebarPopover;

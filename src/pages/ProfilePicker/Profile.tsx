@@ -1,12 +1,6 @@
-import React, { useState } from 'react';
-import { MAX_PROFILES, useProfile } from '../../contexts/ProfileContext.tsx';
-import { PlusCircleIcon, TrashIcon, UserCircleIcon } from 'lucide-react';
-import NewProfileDialog from './components/NewProfileDialog.tsx';
-import PasswordDialog from './components/PasswordDialog.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar.tsx';
-import { Card, CardContent } from '../../components/ui/card.tsx';
-import { toast } from 'sonner';
+import { LockIcon, PlusCircleIcon, TrashIcon, UserCircleIcon } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +10,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../components/ui/alert-dialog.tsx';
+} from "../../components/ui/alert-dialog.tsx";
+import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar.tsx";
+import { Button } from "../../components/ui/button.tsx";
+import { Card, CardContent } from "../../components/ui/card.tsx";
+import { MAX_PROFILES, useProfile } from "../../hooks/ProfileContext.tsx";
+import NewProfileDialog from "./components/NewProfileDialog.tsx";
+import PasswordDialog from "./components/PasswordDialog.tsx";
 
 const ProfilePicker: React.FC = () => {
   const { profiles, login, removeProfile } = useProfile();
@@ -26,13 +26,29 @@ const ProfilePicker: React.FC = () => {
   const [isManageMode, setIsManageMode] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
+  const [isProfilesLoaded, setIsProfilesLoaded] = useState(false);
+
+  useEffect(() => {
+    if (profiles.length === 0 && isProfilesLoaded) {
+      setShowNewProfileDialog(true);
+      setIsManageMode(false);
+    }
+  }, [profiles.length, isProfilesLoaded]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsProfilesLoaded(true);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleProfileClick = (id: string) => {
     if (isManageMode) {
       return;
     }
 
-    const profile = profiles.find(p => p.id === id);
+    const profile = profiles.find((p) => p.id === id);
 
     if (!profile) {
       return;
@@ -42,29 +58,26 @@ const ProfilePicker: React.FC = () => {
       setSelectedProfileId(id);
       setShowPasswordDialog(true);
     } else {
-      login(id).catch(error => {
-        console.error('Error during login:', error);
-      });
+      login(id);
     }
   };
 
-  const handlePasswordSubmit = (password: string) => {
-    if (selectedProfileId) {
-      login(selectedProfileId, password)
-        .then(success => {
-          if (!success) {
-            toast.error("Authentication Error", {
-              description: "Incorrect password. Please try again."
-            });
-          } else {
-            setShowPasswordDialog(false);
-          }
-        })
-        .catch(error => {
-          console.error('Error during login:', error);
-          toast.error('Login failed. Please try again.');
-        });
+  const handlePasswordSubmit = (password: string): Promise<void> => {
+    if (!selectedProfileId) {
+      return Promise.reject("No profile selected");
     }
+
+    return login(selectedProfileId, password)
+      .then((success) => {
+        if (!success) {
+          throw "Incorrect password. Please try again.";
+        }
+        setShowPasswordDialog(false);
+      })
+      .catch((error) => {
+        console.error("Error during login:", error);
+        throw typeof error === "string" ? error : "Login failed. Please try again.";
+      });
   };
 
   const initiateProfileDelete = (id: string, e: React.MouseEvent) => {
@@ -80,9 +93,9 @@ const ProfilePicker: React.FC = () => {
           setProfileToDelete(null);
           setShowDeleteDialog(false);
         })
-        .catch(error => {
-          console.error('Error deleting profile:', error);
-          toast.error('Failed to delete profile. Please try again.');
+        .catch((error) => {
+          console.error("Error deleting profile:", error);
+          toast.error("Failed to delete profile. Please try again.");
         });
     }
   };
@@ -93,14 +106,14 @@ const ProfilePicker: React.FC = () => {
         <h1 className="text-4xl font-bold mb-10 text-foreground">Who's the Game Master?</h1>
 
         <div className="flex flex-wrap justify-center gap-8 mb-12">
-          {profiles.map(profile => (
-            <div
-              key={profile.id}
-              className="relative"
-            >
+          {profiles.map((profile) => (
+            <div key={profile.id} className="relative">
               <Card
-                className={`w-32 border-none transition-all ${isManageMode ? 'cursor-default opacity-80' : 'hover:shadow-md hover:scale-105 hover:cursor-pointer'
-                  }`}
+                className={`w-32 border-none transition-all ${
+                  isManageMode
+                    ? "cursor-default opacity-80"
+                    : "hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"
+                }`}
                 onClick={() => handleProfileClick(profile.id)}
               >
                 <CardContent className="flex flex-col items-center p-3 pt-3">
@@ -113,11 +126,15 @@ const ProfilePicker: React.FC = () => {
                       </AvatarFallback>
                     )}
                   </Avatar>
+
                   <span className="text-foreground text-center break-words w-full">
                     {profile.name}
                   </span>
+
                   {profile.hasPassword && !isManageMode && (
-                    <span className="text-xs text-muted-foreground mt-1">🔒</span>
+                    <span className="absolute -top-0 -right-2 rounded-full w-8 h-8 p-0">
+                      <LockIcon size={20} className="inline text-primary" />
+                    </span>
                   )}
                 </CardContent>
               </Card>
@@ -138,16 +155,16 @@ const ProfilePicker: React.FC = () => {
 
           {profiles.length < MAX_PROFILES && isManageMode && (
             <Card
-              className={`w-32 transition-all hover:shadow-md border-none`}
+              className={
+                "w-32 border-none transition-all hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"
+              }
               onClick={() => setShowNewProfileDialog(true)}
             >
-              <CardContent className="flex flex-col items-center p-3 pt-3 hover:scale-105 hover:cursor-pointer">
-                <div className="w-24 h-24 mb-3 flex items-center justify-center rounded-md bg-accent hover:bg-primary/20">
+              <CardContent className="flex flex-col items-center p-3 pt-3">
+                <div className="w-24 h-24 mb-3 rounded-full flex items-center justify-center">
                   <PlusCircleIcon className="w-12 h-12 text-primary" />
                 </div>
-                <span className="text-foreground text-center">
-                  New Profile
-                </span>
+                <span className="text-foreground text-center break-words w-full">New Profile</span>
               </CardContent>
             </Card>
           )}
@@ -155,9 +172,9 @@ const ProfilePicker: React.FC = () => {
 
         <Button
           onClick={() => setIsManageMode(!isManageMode)}
-          variant="outline"
+          variant={isManageMode ? "default" : "outline"}
           size="lg"
-          className={`px-8 ${isManageMode ? "bg-primary text-destructive-foreground" : ""}`}
+          className={"px-8"}
         >
           {isManageMode ? "Done" : "Manage Profiles"}
         </Button>
@@ -167,6 +184,7 @@ const ProfilePicker: React.FC = () => {
       <NewProfileDialog
         open={showNewProfileDialog}
         onClose={() => setShowNewProfileDialog(false)}
+        canClose={profiles.length > 0}
       />
 
       {/* Password Dialog */}
@@ -174,7 +192,9 @@ const ProfilePicker: React.FC = () => {
         open={showPasswordDialog}
         onClose={() => setShowPasswordDialog(false)}
         onSubmit={handlePasswordSubmit}
-        profileName={selectedProfileId ? profiles.find(p => p.id === selectedProfileId)?.name || '' : ''}
+        profileName={
+          selectedProfileId ? profiles.find((p) => p.id === selectedProfileId)?.name || "" : ""
+        }
       />
 
       {/* Delete Confirmation Dialog */}
@@ -183,15 +203,13 @@ const ProfilePicker: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this profile and all associated data.
-              This action cannot be undone.
+              This will permanently delete this profile and all associated data. This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteProfile}>
-              Delete Profile
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDeleteProfile}>Delete Profile</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

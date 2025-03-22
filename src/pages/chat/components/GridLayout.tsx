@@ -1,17 +1,17 @@
+import { GridStack, GridStackOptions } from "gridstack";
 // src/components/GridLayout.tsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { GridStack, GridStackOptions } from "gridstack";
 import "gridstack/dist/gridstack.min.css";
 import "@/pages/chat/styles/gridstack.css";
-import { GridCard } from "./GridCard";
-import { GridPosition } from "@/schema/grid";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { GridPosition } from "@/schema/grid";
 import { Pin } from "lucide-react";
+import { GridCard } from "./GridCard";
 
+import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
 // Import the widget registry
 import { WidgetId, renderWidget } from "@/pages/chat/hooks/registry";
-import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
 
 const STORAGE_KEY_PREFIX = "grid-layout-positions";
 const MIN_CELL_HEIGHT = 120; // defines a minimum for consistency
@@ -55,26 +55,31 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
   const positionsRef = useRef(positions);
   positionsRef.current = positions;
 
-  const handlePositionChange = useCallback((items: any[]) => {
-    if (!items || items.length === 0) return;
-
-    const newPositions = positionsRef.current.map((pos) => {
-      const item = items.find((i) => i.id === pos.id);
-      if (item) {
-        return {
-          ...pos,
-          x: item.x ?? pos.x,
-          y: item.y ?? pos.y,
-          w: item.w ?? pos.w,
-          h: item.h ?? pos.h,
-        };
+  const handlePositionChange = useCallback(
+    (items: any[]) => {
+      if (!items || items.length === 0) {
+        return;
       }
-      return pos;
-    });
 
-    setPositions(newPositions);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newPositions));
-  }, [STORAGE_KEY]);
+      const newPositions = positionsRef.current.map((pos) => {
+        const item = items.find((i) => i.id === pos.id);
+        if (item) {
+          return {
+            ...pos,
+            x: item.x ?? pos.x,
+            y: item.y ?? pos.y,
+            w: item.w ?? pos.w,
+            h: item.h ?? pos.h,
+          };
+        }
+        return pos;
+      });
+
+      setPositions(newPositions);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newPositions));
+    },
+    [STORAGE_KEY],
+  );
 
   // Initialize or reinitialize grid when tabId changes
   useEffect(() => {
@@ -92,10 +97,11 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
       }
 
       // Small delay to ensure DOM is fully ready
-      if (!containerRef.current) return;
+      if (!containerRef.current) {
+        return;
+      }
 
-      const containerHeight = containerRef.current.clientHeight ||
-        window.innerHeight;
+      const containerHeight = containerRef.current.clientHeight || window.innerHeight;
       const maxRow = Math.floor(containerHeight / MIN_CELL_HEIGHT) || 1;
       const cellHeight = containerHeight / maxRow;
 
@@ -120,12 +126,9 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
       };
 
       gridRef.current = GridStack.init(options, containerRef.current);
-
       // Add items to the grid
-      positions.filter((pos) => !pos.hidden).forEach((pos) => {
-        const existingItem = gridRef.current?.engine.nodes.find((n) =>
-          n.id === pos.id
-        );
+      for (const pos of positions.filter((pos) => !pos.hidden)) {
+        const existingItem = gridRef.current?.engine.nodes.find((n) => n.id === pos.id);
         if (!existingItem) {
           gridRef.current?.addWidget({
             x: pos.x,
@@ -134,17 +137,13 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
             h: pos.h,
             id: pos.id,
             // locked: true,
-
             noMove: true,
           });
         }
-      });
+      }
 
       // Handle changes with more control
-      gridRef.current.on(
-        "change",
-        (_event, items) => handlePositionChange(items),
-      );
+      gridRef.current.on("change", (_event, items) => handlePositionChange(items));
 
       // Additional event handlers for better control
       gridRef.current.on("dragstart", (_event, el) => {
@@ -193,7 +192,9 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
 
   const toggleCard = (cardId: string) => {
     const pos = positions.find((pos) => pos.id === cardId);
-    if (!pos) return;
+    if (!pos) {
+      return;
+    }
 
     if (pos.hidden) {
       // Check if there is space before unhiding the card using Gridstack.willItFit.
@@ -202,15 +203,13 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
         return; // Do not proceed if there isn’t enough room.
       }
       // Unhiding the card
-      setPositions((prev) =>
-        prev.map((p) => p.id === cardId ? { ...p, hidden: false } : p)
-      );
+      setPositions((prev) => prev.map((p) => (p.id === cardId ? { ...p, hidden: false } : p)));
       setHiddenWidgets((prev) => prev.filter((id) => id !== cardId));
     } else {
       setPositions((prev) =>
         prev.map((p) =>
-          p.id === cardId ? { ...p, hidden: true, x: undefined, y: undefined, w: 2, h: 1 } : p
-        )
+          p.id === cardId ? { ...p, hidden: true, x: undefined, y: undefined, w: 2, h: 1 } : p,
+        ),
       );
       setHiddenWidgets((prev) => [...prev, cardId]);
     }
@@ -244,7 +243,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
                   {widget.title}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="right" className="max-w-[80vw] w-auto">
+              <PopoverContent side="right" className="max-w-[80vw] w-auto shadow-md">
                 <div className="flex items-top justify-between">
                   <span className="text-xs font-semibold">{widget.title}</span>
                   <button
@@ -254,6 +253,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
                     <Pin className="w-3 h-3" />
                   </button>
                 </div>
+                <hr className="mb-1 mt-0.2 border-t border-border" />
                 <ResizablePopoverContent className="p-0">
                   {/* Render the same widget content as in the GridCard */}
                   {renderWidget(widget.id as WidgetId, tabId)}
@@ -263,10 +263,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
           ))}
         </div>
       </div>
-      <div
-        ref={containerRef}
-        className="relative grid-stack flex-1 overflow-hidden"
-      >
+      <div ref={containerRef} className="relative grid-stack flex-1 overflow-hidden">
         {positions
           .filter((pos) => !pos.hidden)
           .map((pos) => {
@@ -281,11 +278,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
                 gs-h={pos.h}
                 gs-id={pos.id}
               >
-                <GridCard
-                  id={pos.id}
-                  title={pos.title}
-                  onClose={() => toggleCard(pos.id)}
-                >
+                <GridCard id={pos.id} title={pos.title} onClose={() => toggleCard(pos.id)}>
                   {widgetContent}
                 </GridCard>
               </div>

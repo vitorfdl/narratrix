@@ -1,14 +1,15 @@
-import React from 'react';
-import Sidebar from './components/layout/Sidebar';
-import Content from './components/layout/Content';
-import ProfilePicker from './pages/ProfilePicker/Profile';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { ProfileProvider, useProfile } from './contexts/ProfileContext';
-import { Toaster } from './components/ui/sonner';
+import React from "react";
+import Content from "./components/layout/Content";
+import Sidebar from "./components/layout/Sidebar";
+import { Toaster } from "./components/ui/sonner";
+import { ProfileProvider, useProfile } from "./hooks/ProfileContext";
+import { ThemeProvider } from "./hooks/ThemeContext";
+import ProfilePicker from "./pages/ProfilePicker/Profile";
+import { InferenceProvider } from "./providers/InferenceProvider";
 
 const AppContent: React.FC = () => {
   const { currentProfile, isAuthenticated } = useProfile();
-  const [activeSection, setActiveSection] = React.useState<string>('models');
+  const [activeSection, setActiveSection] = React.useState<string>("models");
 
   // Show Profile Picker if no profile is logged in
   if (!currentProfile || !isAuthenticated) {
@@ -28,8 +29,10 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ProfileProvider>
-        <AppContent />
-        <Toaster position="top-right" />
+        <InferenceProvider>
+          <AppContent />
+          <Toaster position="top-right" />
+        </InferenceProvider>
       </ProfileProvider>
     </ThemeProvider>
   );

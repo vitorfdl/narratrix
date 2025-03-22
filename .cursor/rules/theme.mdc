@@ -1,5 +1,7 @@
 ---
 description: CSS for theme of the application
-globs: *.tsx, *.css
+globs: *.tsx,*.css
+alwaysApply: false
 ---
+Ensure to use themed colors specified in the CSS.
 [index.css](mdc:src/index.css)

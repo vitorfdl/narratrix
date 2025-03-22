@@ -10,7 +10,10 @@ export const dateUtils = {
    * @returns A Zod schema for ISO string dates with default to now
    */
   withDefaultNow: () =>
-    z.string().datetime().default(() => new Date().toISOString()),
+    z
+      .string()
+      .datetime()
+      .default(() => new Date().toISOString()),
 
   /**
    * Creates an optional date schema that transforms null to undefined
@@ -18,9 +21,11 @@ export const dateUtils = {
    * @returns A Zod schema for optional dates
    */
   optional: () =>
-    z.string().datetime().nullable().transform((val) =>
-      val === null ? undefined : val
-    )
+    z
+      .string()
+      .datetime()
+      .nullable()
+      .transform((val) => (val === null ? undefined : val))
       .optional(),
 
   /**
@@ -28,7 +33,10 @@ export const dateUtils = {
    * @returns A Zod schema that transforms ISO strings to Date objects
    */
   fromISOString: () =>
-    z.string().datetime().transform((dateString) => new Date(dateString)),
+    z
+      .string()
+      .datetime()
+      .transform((dateString) => new Date(dateString)),
 };
 
 /**
@@ -45,7 +53,11 @@ export const uuidUtils = {
    * Creates a UUID schema with a default value of a new UUID
    * @returns A Zod schema for UUID strings with default to a new UUID
    */
-  withDefault: () => z.string().uuid().default(() => crypto.randomUUID()),
+  withDefault: () =>
+    z
+      .string()
+      .uuid()
+      .default(() => crypto.randomUUID()),
 
   /**
    * Creates an optional UUID schema that transforms null to undefined
@@ -53,7 +65,10 @@ export const uuidUtils = {
    * @returns A Zod schema for optional UUIDs
    */
   optional: () =>
-    z.string().uuid().nullable().transform((val) =>
-      val === null ? undefined : val
-    ).optional(),
+    z
+      .string()
+      .uuid()
+      .nullable()
+      .transform((val) => (val === null ? undefined : val))
+      .optional(),
 };

@@ -1,30 +1,30 @@
-import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Settings, UserPlus, MessageSquarePlus, Trash2, GripVertical } from "lucide-react";
 import {
   DndContext,
-  closestCenter,
+  DragEndEvent,
   KeyboardSensor,
   PointerSensor,
+  closestCenter,
   useSensor,
   useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
+  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, MessageSquarePlus, Settings, Trash2, UserPlus } from "lucide-react";
+import React, { useState } from "react";
 
 // Types
 export interface Participant {
   id: string;
   name: string;
-  type: 'character' | 'agent' | 'user';
+  type: "character" | "agent" | "user";
   avatar?: string;
   isEnabled?: boolean;
 }
@@ -52,14 +52,9 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
   onTriggerMessage,
   onRemoveParticipant,
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: participant.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: participant.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -71,7 +66,11 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center text-xs justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors min-w-0"
+      className={`flex items-center text-xs justify-between p-2 rounded-lg ${
+        participant.type !== "user" && !participant.isEnabled
+          ? "bg-muted/30 text-muted-foreground"
+          : "bg-muted/50 hover:bg-muted/80"
+      } transition-colors min-w-0`}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div
@@ -85,14 +84,24 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
           <img
             src={participant.avatar}
             alt={participant.name}
-            className="w-8 h-8 object-cover rounded-full flex-shrink-0"
+            className={`w-8 h-8 object-cover rounded-full flex-shrink-0 ${
+              participant.type !== "user" && !participant.isEnabled ? "opacity-50" : ""
+            }`}
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+          <div
+            className={`w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 ${
+              participant.type !== "user" && !participant.isEnabled ? "opacity-50" : ""
+            }`}
+          >
             {participant.name[0]}
           </div>
         )}
-        <div className="min-w-0 flex-1">
+        <div
+          className={`min-w-0 flex-1 ${
+            participant.type !== "user" && !participant.isEnabled ? "opacity-70" : ""
+          }`}
+        >
           <div className="font-medium truncate">{participant.name}</div>
           <div className="text-[0.6rem] text-muted-foreground capitalize truncate">
             {participant.type}
@@ -100,31 +109,34 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
         </div>
       </div>
 
-      {participant.type !== 'user' && (
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+      {participant.type !== "user" && (
+        <div className="flex items-center gap-1 flex-shrink-0 ml-2">
           <Switch
             checked={participant.isEnabled}
             onCheckedChange={() => onToggleParticipant?.(participant.id)}
-            className="h-4 w-7 data-[state=checked]:bg-primary"
-            aria-label={participant.isEnabled ? 'Disable' : 'Enable'}
+            className="h-4 data-[state=checked]:bg-primary"
+            aria-label={participant.isEnabled ? "Disable" : "Enable"}
+            size={"sm"}
           />
           <Button
             variant="ghost"
             size="icon"
-            className="w-8 h-8"
+            className="w-5 h-5"
+            disabled={!participant.isEnabled}
             onClick={() => onTriggerMessage?.(participant.id)}
             title="Trigger Message"
           >
-            <MessageSquarePlus className="h-3 w-3" />
+            <MessageSquarePlus className="h-2 w-2" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="w-8 h-8"
+            className="w-5 h-5"
+            disabled={!participant.isEnabled}
             onClick={() => onRemoveParticipant?.(participant.id)}
             title="Remove"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-2 w-2" />
           </Button>
         </div>
       )}
@@ -143,18 +155,32 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({
 }) => {
   // Mock data for testing
   const mockParticipants: Participant[] = [
-    { id: '1', name: 'User', type: 'user', avatar: '/avatars/vitor.png' },
-    { id: '2', name: 'Assistant', type: 'agent', avatar: '/avatars/assistant.png', isEnabled: false },
-    { id: '3', name: 'Character 1', type: 'character', avatar: '/avatars/narratrixav.jpeg', isEnabled: true },
+    { id: "1", name: "User", type: "user", avatar: "/avatars/vitor.png" },
+    {
+      id: "2",
+      name: "Assistant",
+      type: "agent",
+      avatar: "/avatars/assistant.png",
+      isEnabled: false,
+    },
+    {
+      id: "3",
+      name: "Character 1",
+      type: "character",
+      avatar: "/avatars/narratrixav.jpeg",
+      isEnabled: true,
+    },
   ];
 
-  const [items, setItems] = useState<Participant[]>(participants.length > 0 ? participants : mockParticipants);
+  const [items, setItems] = useState<Participant[]>(
+    participants.length > 0 ? participants : mockParticipants,
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -175,15 +201,8 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({
     <div className="flex flex-col h-full bg-background">
       {/* Participants List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-0.5 custom-scrollbar">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={items}
-            strategy={verticalListSortingStrategy}
-          >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={items} strategy={verticalListSortingStrategy}>
             <div className="space-y-1">
               {items.map((participant) => (
                 <SortableParticipant
@@ -201,20 +220,10 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({
 
       {/* Footer */}
       <div className="py-0.5 px-1 border-t flex justify-start gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onAddParticipant}
-          title="Add Participant"
-        >
+        <Button variant="ghost" size="icon" onClick={onAddParticipant} title="Add Participant">
           <UserPlus className="h-4 w-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onOpenConfig}
-          title="Settings"
-        >
+        <Button variant="ghost" size="icon" onClick={onOpenConfig} title="Settings">
           <Settings className="h-4 w-4" />
         </Button>
       </div>
@@ -223,5 +232,3 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({
 };
 
 export default WidgetParticipants;
-  
-  

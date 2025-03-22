@@ -29,8 +29,10 @@ Assume all those technoligies are already installed! Do not provide instructions
       ├── src-tauri/                # Rust backend
       │   ├── migrations/
       │   ├── src/
-      │   │   ├── commands/         # More generic commands
-      │   │   ├── profiles/         # Profiles database module and profile related commands
+      │   │   ├── database/         # Database migrations and models
+      │   │   ├── inference/        # LLM inference related code
+      │   │   ├── filesystem/       # Filesystem related code, such as opening images and folders
+      │   │   ├── utils/            # Utility functions such as encryption, logging, etc.
       │   │   └── main.rs
       │   ├── cargo.toml
       │   └── tauri.conf.json
@@ -43,11 +45,13 @@ Assume all those technoligies are already installed! Do not provide instructions
       │   │   └── **/
       │   │       ├── components/   # Page-specific components for the page
       │   │       └── styles/       # Page-specific styles for the page
-      │   ├── types/
+      │   ├── schemas/              # Zod schemas 
       │   ├── utils/
-      │   ├── hooks/
+      │   ├── commands/             # Tauri commands
+      │   ├── services/             # Typescript services for the app
       │   ├── App.tsx
       │   ├── main.tsx
+      │   ├── index.css
       │   └── vite-env.d.ts
       ├── public/                   # Static assets
       ├── tests/                    # Test files
@@ -59,12 +63,12 @@ Assume all those technoligies are already installed! Do not provide instructions
       └── index.html
      ```
    - Use relative imports exclusively
-   - Maintain clear separation between frontend and backend concerns
+   - Maintain clear separation between frontend and backend concerns, and only fulfill what the user asks for
 
 3. Development Practices:
    - Implement comprehensive error handling
    - Validate all user inputs
-   - Use appropriate dependency flags (--save-dev for dev dependencies)
+   - Do not install dependencies, assume they are already installed or suggest the correct command to install them
    - Follow Rust and Tauri security best practices
    - Optimize for performance and bundle size
 </development_standards>
@@ -75,16 +79,25 @@ Assume all those technoligies are already installed! Do not provide instructions
    - Implement proper state management
    - Follow React hooks best practices
    - Maintain consistent component structure
+   - Use shadcn/ui for components
+   - Use lucide-react for icons
+   - Use tailwindcss V4 for styling
+   - Use zustand for global state management
+   - Consider using useMemo and useCallback for performance, but only if necessary
 
 2. Backend (Rust/Tauri v2):
    - Follow Rust idioms and patterns
    - Implement proper error handling with Result types
    - Use appropriate Tauri APIs for system interaction
    - Maintain secure SQLite database operations
+   - Use anyhow for error handling
 
 3. General:
    - Write self-documenting code
    - Include appropriate comments for complex logic
    - Follow consistent naming conventions
    - Implement proper logging and debugging
+   - Use Libraries and tools that are already installed
+   - Propose new libraries if would make the code better and cleaner
+   - Fulfill only what the user asks for, prefering to only recommend changes for what the user hadnt specifically asked for.
 </coding_guidelines>

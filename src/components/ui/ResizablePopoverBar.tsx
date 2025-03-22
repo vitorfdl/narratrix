@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 // Import the scrollbar styles so that the CSS is available for this component
 
-export interface ResizablePopoverContentProps
-  extends React.HTMLAttributes<HTMLDivElement> {
-  minWidth?: number;   // Minimum width in pixels (default: 300px)
-  maxHeight?: number;  // Maximum height in pixels (default: 80% of viewport)
+export interface ResizablePopoverContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  minWidth?: number; // Minimum width in pixels (default: 300px)
+  maxHeight?: number; // Maximum height in pixels (default: 80% of viewport)
 }
 
 const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
@@ -23,7 +22,9 @@ const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      if (!isResizing.current) return;
+      if (!isResizing.current) {
+        return;
+      }
 
       const deltaX = e.clientX - startX.current;
       const newWidth = startWidth.current + deltaX;
@@ -58,7 +59,7 @@ const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
 
   // Prepare inline style for the scrollable content container
   const contentContainerStyle: React.CSSProperties = {
-    maxHeight: `${maxHeight}px`
+    maxHeight: `${maxHeight}px`,
   };
 
   return (
@@ -75,10 +76,10 @@ const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
       {/* Resize handle on the right */}
       <div
         onMouseDown={handleMouseDown}
-        className="absolute right-[-0.5rem] top-0 h-full w-2 cursor-ew-resize bg-gray-300 opacity-50 hover:opacity-100"
+        className="absolute right-[-1rem] top-0 h-full w-2 cursor-ew-resize bg-gray-300 opacity-50 hover:opacity-100"
       />
     </div>
   );
 };
 
-export default ResizablePopoverContent; 
+export default ResizablePopoverContent;

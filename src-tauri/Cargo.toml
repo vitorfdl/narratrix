@@ -1,6 +1,6 @@
 [package]
 name = "narratrix"
-version = "0.1.0"
+version = "0.3.0"
 description = "A Tauri App"
 authors = ["vitorfdl"]
 edition = "2021"
@@ -23,11 +23,19 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-window-state = "2.0.0"
-uuid = { version = "1.15.1", features = ["v4"] }
+# uuid = { version = "1.15.1", features = ["v4"] }
 argon2 = { version = "0.5.3" }
 tauri-plugin-single-instance = "2.2.2"
-time = { version = "0.3.38", features = ["serde"] }
+# time = { version = "0.3.38", features = ["serde"] }
 rand = "0.8"
 tauri-plugin-sql = { version = "2.2.0", features = ["sqlite"] }
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
+base64 = "0.22.1"
+aes-gcm = "0.10.3"
+dotenv_codegen = "0.15.0"
+tokio = { version = "1.44", features = ["full"] }
+aws-sdk-bedrockruntime = "1.77.0"
+aws-config = "1.6.0"
+openai = "1.0.0"
+anyhow = "1.0.97"

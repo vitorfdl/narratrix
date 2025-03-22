@@ -1,13 +1,13 @@
-import React from "react";
-import WidgetMessages from "@/pages/chat/components/WidgetMessages";
+import WidgetChapters from "@/pages/chat/components/WidgetChapters";
+import WidgetCharacterSheet from "@/pages/chat/components/WidgetCharacterSheet";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
+import WidgetDatabase from "@/pages/chat/components/WidgetDatabase";
 import WidgetGenerate from "@/pages/chat/components/WidgetGenerate";
+import WidgetMemory from "@/pages/chat/components/WidgetMemory";
+import WidgetMessages from "@/pages/chat/components/WidgetMessages";
 import WidgetParticipants from "@/pages/chat/components/WidgetParticipants";
 import WidgetScript from "@/pages/chat/components/WidgetScript";
-import WidgetCharacterSheet from "@/pages/chat/components/WidgetCharacterSheet";
-import WidgetMemory from "@/pages/chat/components/WidgetMemory";
-import WidgetDatabase from "@/pages/chat/components/WidgetDatabase";
-import WidgetChapters from "@/pages/chat/components/WidgetChapters";
+import React from "react";
 
 // Import types for props if available
 import type { MessageRendererProps } from "@/pages/chat/components/WidgetMessages";
@@ -23,7 +23,7 @@ export type WidgetId =
   | "database"
   | "chapters";
 
-interface WidgetConfig<T = unknown> {
+interface WidgetConfiguration<T = unknown> {
   id: WidgetId;
   title: string;
   component: React.FC<T>;
@@ -31,7 +31,7 @@ interface WidgetConfig<T = unknown> {
 }
 
 // Define widget configurations for each widget id
-export const widgetConfigurations: Record<WidgetId, WidgetConfig<any>> = {
+export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = {
   messages: {
     id: "messages",
     title: "Messages",
@@ -39,12 +39,12 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfig<any>> = {
     defaultProps: {
       messages: [], // Default empty array; will be dynamically merged later
       contextCutNumber: 700,
-      onEditMessage: (id: string) => console.log("Edit", id),
-      onDeleteMessage: (id: string) => console.log("Delete", id),
-      onCreateCheckpoint: (id: string) => console.log("Create checkpoint", id),
-      onGenerateImage: (id: string) => console.log("Generate image", id),
-      onTranslate: (id: string) => console.log("Translate", id),
-      onExcludeFromPrompt: (id: string) => console.log("Exclude", id),
+      onEditMessage: (_id: string) => {},
+      onDeleteMessage: (_id: string) => {},
+      onCreateCheckpoint: (_id: string) => {},
+      onGenerateImage: (_id: string) => {},
+      onTranslate: (_id: string) => {},
+      onExcludeFromPrompt: (_id: string) => {},
     } as MessageRendererProps,
   },
   config: {
@@ -157,7 +157,7 @@ const getDynamicExtraProps = (_tabId: string, widgetId: WidgetId): Partial<any> 
 export function renderWidget(
   widgetId: WidgetId,
   tabId: string,
-  extraProps?: Partial<any>
+  extraProps?: Partial<any>,
 ): JSX.Element | null {
   const config = widgetConfigurations[widgetId];
   if (!config) {

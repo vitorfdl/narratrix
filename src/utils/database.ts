@@ -14,7 +14,6 @@ export async function getDatabase(): Promise<Database> {
   if (!db) {
     try {
       db = await Database.load(DB_URL);
-      console.log("Database connection established");
     } catch (error) {
       console.error("Failed to connect to database:", error);
       throw new Error("Database connection failed");
@@ -26,10 +25,7 @@ export async function getDatabase(): Promise<Database> {
 /**
  * Executes a database query with proper error handling
  */
-export async function executeDBQuery(
-  query: string,
-  params: any[] = [],
-): Promise<QueryResult> {
+export async function executeDBQuery(query: string, params: any[] = []): Promise<QueryResult> {
   const database = await getDatabase();
   try {
     return await database.execute(query, params);
@@ -42,10 +38,7 @@ export async function executeDBQuery(
 /**
  * Performs a select query with proper error handling
  */
-export async function selectDBQuery<T>(
-  query: string,
-  params: any[] = [],
-): Promise<T> {
+export async function selectDBQuery<T>(query: string, params: any[] = []): Promise<T> {
   const database = await getDatabase();
   try {
     return await database.select<T>(query, params);

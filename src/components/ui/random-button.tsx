@@ -1,15 +1,16 @@
-import * as React from "react"
-import { Dice6 } from "lucide-react"
-import { Input } from "./input"
-import { Button } from "./button"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
+import { Dice6 } from "lucide-react";
+import * as React from "react";
+import { Button } from "./button";
+import { Input } from "./input";
 
-interface RandomButtonProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange'> {
-  value: number
-  min?: number
-  max?: number
-  onValueChange: (value: number) => void
-  className?: string
+interface RandomButtonProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
+  value: number;
+  min?: number;
+  max?: number;
+  onValueChange: (value: number) => void;
+  className?: string;
 }
 
 export function RandomButton({
@@ -20,77 +21,80 @@ export function RandomButton({
   className,
   ...props
 }: RandomButtonProps) {
-  const [, setIsFocused] = React.useState(false)
-  const [localValue, setLocalValue] = React.useState(value.toString())
-  const inputRef = React.useRef<HTMLInputElement>(null)
-  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [, setIsFocused] = React.useState(false);
+  const [localValue, setLocalValue] = React.useState(value.toString());
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    setLocalValue(value.toString())
-  }, [value])
+    setLocalValue(value.toString());
+  }, [value]);
 
   const handleRandomize = () => {
-    const newValue = Math.floor(Math.random() * (max - min + 1)) + min
-    onValueChange(newValue)
-  }
+    const newValue = Math.floor(Math.random() * (max - min + 1)) + min;
+    onValueChange(newValue);
+  };
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     // Only blur if the focus is leaving the container entirely
-    const currentTarget = e.currentTarget
+    const currentTarget = e.currentTarget;
     requestAnimationFrame(() => {
       if (!currentTarget.contains(document.activeElement)) {
-        setIsFocused(false)
-        let newValue = parseFloat(localValue)
-        
-        if (isNaN(newValue)) {
-          setLocalValue(value.toString())
-          return
+        setIsFocused(false);
+        let newValue = Number.parseFloat(localValue);
+
+        if (Number.isNaN(newValue)) {
+          setLocalValue(value.toString());
+          return;
         }
 
-        if (min !== undefined && newValue < min) newValue = min
-        if (max !== undefined && newValue > max) newValue = max
-        
-        onValueChange(newValue)
+        if (min !== undefined && newValue < min) {
+          newValue = min;
+        }
+        if (max !== undefined && newValue > max) {
+          newValue = max;
+        }
+
+        onValueChange(newValue);
       }
-    })
-  }
+    });
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
+    const value = e.target.value;
     // Allow empty value or minus sign for typing flexibility
-    if (value === '' || value === '-') {
-      setLocalValue(value)
-      return
+    if (value === "" || value === "-") {
+      setLocalValue(value);
+      return;
     }
 
     // Only allow numbers and decimal point
     if (/^-?\d*\.?\d*$/.test(value)) {
-      const numValue = parseFloat(value)
-      if (!isNaN(numValue)) {
+      const numValue = Number.parseFloat(value);
+      if (!Number.isNaN(numValue)) {
         // If the value is a valid number, check against min/max
-        if ((min === undefined || numValue >= min) && 
-            (max === undefined || numValue <= max)) {
-          setLocalValue(value)
+        if ((min === undefined || numValue >= min) && (max === undefined || numValue <= max)) {
+          setLocalValue(value);
         }
       } else {
-        setLocalValue(value) // Allow incomplete decimal numbers like "1."
+        setLocalValue(value); // Allow incomplete decimal numbers like "1."
       }
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      inputRef.current?.blur()
+      inputRef.current?.blur();
     }
-  }
+  };
 
   const handleButtonMouseDown = (e: React.MouseEvent) => {
     // Prevent default to avoid losing focus
-    e.preventDefault()
-  }
+    e.preventDefault();
+  };
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={cn("group relative inline-block", className)}
       onBlur={handleBlur}
@@ -122,5 +126,5 @@ export function RandomButton({
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

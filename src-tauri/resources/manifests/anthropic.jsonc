@@ -5,27 +5,24 @@
   "description": "Integration with Anthropic Claude models",
   "website": "https://www.anthropic.com/",
   "type": "llm",
-  "inference_type": [
-    "chat"
-  ],
-  "inference_fields": [
-    "temperature",
-    "top_p",
-    "top_k"
-  ],
+  "inference_type": ["chat"],
+  "inference_fields": ["temperature", "top_p", "top_k"],
+  "engine": "anthropic",
   "reasoning": {
     "has_budget": true
   },
   "fields": [
     {
       "key": "api_key",
-      "description": "Your Anthropic API key",
+      "label": "API Key",
+      "placeholder": "Your Anthropic API key",
       "required": true,
       "field_type": "secret"
     },
     {
       "key": "model",
-      "description": "The Claude model to use",
+      "label": "Model",
+      "placeholder": "The Claude model to use",
       "required": true,
       "field_type": "string",
       "hints": [

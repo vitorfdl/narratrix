@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Button } from './button';
-import { Input } from './input';
-import { Plus, Minus } from 'lucide-react';
+import { Minus, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "./button";
+import { Input } from "./input";
 
 interface StringArrayProps {
   values?: string[];
@@ -10,24 +10,26 @@ interface StringArrayProps {
   placeholder?: string;
 }
 
-export function StringArray({ 
-  values = [''],
-  placeholder = 'Enter text...',
+export function StringArray({
+  values = [""],
+  placeholder = "Enter text...",
   onChange,
-  className = ''
+  className = "",
 }: StringArrayProps) {
-  const [strings, setStrings] = useState<string[]>(values.length > 0 ? values : ['']);
+  const [strings, setStrings] = useState<string[]>(values.length > 0 ? values : [""]);
 
   useEffect(() => {
     onChange?.(strings);
   }, [strings, onChange]);
 
   const addNewString = () => {
-    setStrings([...strings, '']);
+    setStrings([...strings, ""]);
   };
 
   const removeString = (index: number) => {
-    if (strings.length <= 1) return; // Prevent removing the last input
+    if (strings.length <= 1) {
+      return; // Prevent removing the last input
+    }
     const newStrings = strings.filter((_, i) => i !== index);
     setStrings(newStrings);
   };
@@ -59,12 +61,7 @@ export function StringArray({
             </Button>
           )}
           {index === strings.length - 1 && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={addNewString}
-              className="h-7 w-7"
-            >
+            <Button variant="outline" size="icon" onClick={addNewString} className="h-7 w-7">
               <Plus className="h-4 w-4" />
             </Button>
           )}

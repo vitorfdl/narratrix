@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
 import {
   DndContext,
-  closestCenter,
+  DragEndEvent,
+  DragStartEvent,
   KeyboardSensor,
   PointerSensor,
+  UniqueIdentifier,
+  closestCenter,
   useSensor,
   useSensors,
-  DragEndEvent,
-  UniqueIdentifier,
-  DragStartEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   SortableContext,
+  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
-  arrayMove,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
+import { useState } from "react";
 
 interface DragArrayProps {
   items: string[];
@@ -34,14 +34,9 @@ interface SortableItemProps {
 }
 
 const SortableItem = ({ id, children }: SortableItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -54,14 +49,10 @@ const SortableItem = ({ id, children }: SortableItemProps) => {
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-2 p-1 mb-2 bg-card rounded-md border ${
-        isDragging ? 'shadow-lg opacity-50' : ''
+        isDragging ? "shadow-lg opacity-50" : ""
       }`}
     >
-      <button
-        className="cursor-grab touch-none"
-        {...attributes}
-        {...listeners}
-      >
+      <button className="cursor-grab touch-none" {...attributes} {...listeners}>
         <GripVertical className="h-5 w-5 text-muted-foreground" />
       </button>
       <span className="flex-1 text-xs">{children}</span>
@@ -69,14 +60,14 @@ const SortableItem = ({ id, children }: SortableItemProps) => {
   );
 };
 
-export function DragArray({ items, onChange, className = '' }: DragArrayProps) {
+export function DragArray({ items, onChange, className = "" }: DragArrayProps) {
   const [, setActiveId] = useState<UniqueIdentifier | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -103,10 +94,7 @@ export function DragArray({ items, onChange, className = '' }: DragArrayProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext
-          items={items}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={items} strategy={verticalListSortingStrategy}>
           <div className="space-y-1">
             {items.map((item) => (
               <SortableItem key={item} id={item}>

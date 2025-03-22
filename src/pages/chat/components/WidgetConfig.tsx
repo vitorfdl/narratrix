@@ -1,14 +1,22 @@
-import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
-import { StepButton } from "@/components/ui/step-button";
-import { RandomButton } from "@/components/ui/random-button";
-import { StringArray } from "@/components/ui/string-array";
 import { DragArray } from "@/components/ui/drag-array";
-import { Plus, Trash } from "lucide-react";
+import { RandomButton } from "@/components/ui/random-button";
+import { StepButton } from "@/components/ui/step-button";
+import { StringArray } from "@/components/ui/string-array";
+import { TemplatePicker } from "@/pages/inferencetemplate/components/TemplatePicker";
+import type {
+  ConfigField,
+  DragArrayField,
+  NumericField,
+  RandomNumberField,
+  SectionField,
+  StringArrayField,
+} from "@/schema/configFields";
+import { PlusIcon, Trash } from "lucide-react";
+import { useMemo, useState } from "react";
 import { configFields } from "../manifests/configFields";
-import type { ConfigField, DragArrayField, NumericField, RandomNumberField, SectionField, StringArrayField } from "@/schema/configFields";
 
 interface ConfigItemProps {
   field: ConfigField;
@@ -21,24 +29,24 @@ interface ConfigItemProps {
 const ConfigItem = ({ field, value, onChange, onRemove, isNested = false }: ConfigItemProps) => {
   const renderField = () => {
     switch (field.type) {
-      case 'stepbutton':
-      case 'stepbutton_slider': {
+      case "stepbutton":
+      case "stepbutton_slider": {
         const numericField = field as NumericField;
-        const numericValue = typeof value === 'number' ? value : numericField.default ?? 0;
+        const numericValue = typeof value === "number" ? value : (numericField.default ?? 0);
         return (
           <StepButton
             value={numericValue}
             min={numericField.min}
             max={numericField.max}
             step={numericField.step}
-            showSlider={field.type === 'stepbutton_slider'}
+            showSlider={field.type === "stepbutton_slider"}
             onValueChange={onChange}
           />
         );
       }
-      case 'random_number': {
+      case "random_number": {
         const numericField = field as RandomNumberField;
-        const numericValue = typeof value === 'number' ? value : numericField.default ?? 0;
+        const numericValue = typeof value === "number" ? value : (numericField.default ?? 0);
         return (
           <RandomButton
             value={numericValue}
@@ -48,27 +56,15 @@ const ConfigItem = ({ field, value, onChange, onRemove, isNested = false }: Conf
           />
         );
       }
-      case 'string_array': {
+      case "string_array": {
         const arrayField = field as StringArrayField;
-        const arrayValue = Array.isArray(value) ? value : arrayField.default ?? [];
-        return (
-          <StringArray
-            values={arrayValue}
-            onChange={onChange}
-            placeholder="Enter value..."
-          />
-        );
+        const arrayValue = Array.isArray(value) ? value : (arrayField.default ?? []);
+        return <StringArray values={arrayValue} onChange={onChange} placeholder="Enter value..." />;
       }
-      case 'drag_array': {
+      case "drag_array": {
         const dragField = field as DragArrayField;
-        const arrayValue = Array.isArray(value) ? value : dragField.default ?? [];
-        return (
-          <DragArray
-            items={arrayValue}
-            onChange={onChange}
-            className="max-w-md"
-          />
-        );
+        const arrayValue = Array.isArray(value) ? value : (dragField.default ?? []);
+        return <DragArray items={arrayValue} onChange={onChange} className="max-w-md" />;
       }
       case "section": {
         const sectionField = field as SectionField;
@@ -82,7 +78,7 @@ const ConfigItem = ({ field, value, onChange, onRemove, isNested = false }: Conf
                 onChange={(newValue) => {
                   onChange({
                     ...value,
-                    [nestedField.name]: newValue
+                    [nestedField.name]: newValue,
                   });
                 }}
                 isNested={true}
@@ -125,63 +121,84 @@ const WidgetConfig = () => {
 
   const availableFields = useMemo(() => {
     return configFields
-      .filter(field => !activeFields.includes(field.name))
-      .map(field => ({
+      .filter((field) => !activeFields.includes(field.name))
+      .map((field) => ({
         label: field.title,
-        value: field.name
+        value: field.name,
       }));
   }, [activeFields]);
 
   const handleAddField = (fieldName: string) => {
-    const field = configFields.find(f => f.name === fieldName);
-    if (!field) return;
+    const field = configFields.find((f) => f.name === fieldName);
+    if (!field) {
+      return;
+    }
 
-    setActiveFields(prev => [...prev, fieldName]);
+    setActiveFields((prev) => [...prev, fieldName]);
     setSelectedField("");
 
-    if (field.type === 'section') {
+    if (field.type === "section") {
       // Initialize section with default values for all nested fields
       const sectionField = field as SectionField;
-      const sectionDefaults = sectionField.fields.reduce((acc, nestedField) => {
-        if ('default' in nestedField) {
-          acc[nestedField.name] = nestedField.default;
-        }
-        return acc;
-      }, {} as Record<string, any>);
+      const sectionDefaults = sectionField.fields.reduce(
+        (acc, nestedField) => {
+          if ("default" in nestedField) {
+            acc[nestedField.name] = nestedField.default;
+          }
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
 
-      setValues(prev => ({
+      setValues((prev) => ({
         ...prev,
-        [fieldName]: sectionDefaults
+        [fieldName]: sectionDefaults,
       }));
-    } else if ('default' in field) {
+    } else if ("default" in field) {
       const defaultValue = field.default;
-      setValues(prev => ({
+      setValues((prev) => ({
         ...prev,
-        [fieldName]: defaultValue
+        [fieldName]: defaultValue,
       }));
     }
   };
 
   const handleRemoveField = (fieldName: string) => {
-    setActiveFields(prev => prev.filter(f => f !== fieldName));
-    setValues(prev => {
+    setActiveFields((prev) => prev.filter((f) => f !== fieldName));
+    setValues((prev) => {
       const { [fieldName]: _, ...rest } = prev;
       return rest;
     });
   };
 
   const handleValueChange = (fieldName: string, newValue: any) => {
-    setValues(prev => ({
+    setValues((prev) => ({
       ...prev,
-      [fieldName]: newValue
+      [fieldName]: newValue,
     }));
   };
 
   return (
     <div className="space-y-1 p-2">
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Inference Settings</h3>
+      <div className="space-y-1 mb-3">
+        <TemplatePicker
+          compact={true}
+          templates={[
+            { id: "none", name: "None" },
+            { id: "default", name: "Default" },
+          ]}
+          selectedTemplateId="none"
+          onTemplateSelect={() => {}}
+          onDelete={() => {}}
+          onNewTemplate={() => {}}
+          onEditName={() => {}}
+          onImport={() => {}}
+          onExport={() => {}}
+        />
+      </div>
 
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-medium mb-2">Inference Settings</h3>
         <Combobox
           items={availableFields}
           onChange={(value) => {
@@ -189,8 +206,8 @@ const WidgetConfig = () => {
             handleAddField(value);
           }}
           trigger={
-            <Button size="sm">
-              <Plus className="h-4 w-4" />
+            <Button size="sm" className="h-5">
+              <PlusIcon />
               Field
             </Button>
           }
@@ -199,9 +216,11 @@ const WidgetConfig = () => {
       </div>
 
       <div className="space-y-2">
-        {activeFields.map(fieldName => {
-          const field = configFields.find(f => f.name === fieldName);
-          if (!field) return null;
+        {activeFields.map((fieldName) => {
+          const field = configFields.find((f) => f.name === fieldName);
+          if (!field) {
+            return null;
+          }
 
           return (
             <ConfigItem
@@ -219,4 +238,3 @@ const WidgetConfig = () => {
 };
 
 export default WidgetConfig;
-

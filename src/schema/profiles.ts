@@ -89,11 +89,9 @@ type AppSettings = z.infer<typeof AppSettingsSchema>;
 type ProfileResponse = Omit<Profile, "password"> & { hasPassword: boolean };
 
 type UpdatePasswordParams = z.infer<typeof UpdatePasswordSchema>;
-type NewProfileParams =
-  & Omit<Profile, "settings" | "id" | "created_at" | "updated_at">
-  & {
-    settings?: Profile["settings"];
-  };
+type NewProfileParams = Omit<Profile, "settings" | "id" | "created_at" | "updated_at"> & {
+  settings?: Profile["settings"];
+};
 type LoginPasswordParams = z.infer<typeof LoginPasswordSchema>;
 type ProfileListItem = Omit<ProfileResponse, "settings">;
 

@@ -1,14 +1,9 @@
-import { Plus, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import { ChatTab } from '@/schema/chat';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { ChatTab } from "@/schema/chat";
+import { PlusIcon, X } from "lucide-react";
 
 interface ChatTabsProps {
   tabs: ChatTab[];
@@ -20,25 +15,23 @@ interface ChatTabsProps {
 
 export function ChatTabs({ tabs, activeTab, onTabChange, onNewChat, onCloseTab }: ChatTabsProps) {
   return (
-    <div className="flex items-center border-b border-border">
+    <div className="flex items-center border-b border-border mt-1">
       <ScrollArea className="flex-1">
         <div className="flex items-center gap-1 px-2">
           {tabs.map((tab) => (
             <div
               key={tab.id}
               className={cn(
-                "group flex items-center px-4 py-1 rounded-t-sm text-sm transition-colors",
+                "group flex items-center px-2 py-1 rounded-t-lg text-sm transition-colors",
                 activeTab === tab.id
-                  ? "bg-background text-foreground border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-accent"
+                  : "bg-background text-muted-foreground hover:text-foreground",
               )}
             >
-              <button
-                onClick={() => onTabChange(tab.id)}
-                className="mr-2"
-              >
+              <button onClick={() => onTabChange(tab.id)} className="mr-2 max-h-6 text-sm">
                 {tab.name}
               </button>
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -46,7 +39,7 @@ export function ChatTabs({ tabs, activeTab, onTabChange, onNewChat, onCloseTab }
                 }}
                 className="opacity-30 group-hover:opacity-100 hover:text-destructive transition-opacity"
               >
-                <X className="h-4 w-4 " />
+                <X className="h-4 w-4" />
               </button>
             </div>
           ))}
@@ -54,12 +47,8 @@ export function ChatTabs({ tabs, activeTab, onTabChange, onNewChat, onCloseTab }
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  size="icon"
-                  onClick={onNewChat}
-                >
-                  <Plus className="h-4 w-4 text-white" />
+                <Button variant="ghost" size="sm" onClick={onNewChat}>
+                  <PlusIcon className="h-4 w-4 text-white" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

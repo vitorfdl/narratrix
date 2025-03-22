@@ -4,11 +4,8 @@
   "name": "Generic OpenAI API Compatible",
   "description": "Integration with OpenAI compatible API",
   "type": "llm",
-  "inference_type": [
-    "chat",
-    "completion"
-  ],
-  "engine": "custom_openai",
+  "inference_type": ["chat", "completion"],
+  "engine": "openai_compatible",
   "inference_fields": [
     "temperature",
     "top_p",
@@ -21,30 +18,31 @@
     "smoothing_sampling",
     "xtc",
     "stop_sequences",
-    "sampling_order"
+    "sampling_order",
+    "reasoning_effort"
   ],
   "reasoning": {
-    "has_options": [
-      "high",
-      "low"
-    ]
+    "has_options": ["high", "low"]
   },
   "fields": [
     {
       "key": "base_url",
-      "description": "The base URL of the OpenAI compatible API",
-      "required": false,
-      "field_type": "string"
+      "label": "Base URL",
+      "placeholder": "The base URL of the OpenAI compatible API",
+      "required": true,
+      "field_type": "url"
     },
     {
       "key": "api_key",
-      "description": "Your API key (if applicable)",
+      "label": "API Key",
+      "placeholder": "Your API key (if applicable)",
       "required": false,
       "field_type": "secret"
     },
     {
       "key": "model",
-      "description": "The model to use (if applicable)",
+      "label": "Model",
+      "placeholder": "The model to use (if applicable)",
       "required": false,
       "field_type": "string"
     }

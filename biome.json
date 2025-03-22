@@ -1,0 +1,44 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+  "organizeImports": {
+    "enabled": true
+  },
+  "files": {
+    "ignore": ["node_modules", "dist", "out", "build", "public", "tsconfig.*"]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "suspicious": {
+        "noConsoleLog": "warn",
+        "noEmptyInterface": "off",
+        "noArrayIndexKey": "warn",
+        "noExplicitAny": "off"
+      },
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "useExhaustiveDependencies": "warn"
+      },
+      "style": {
+        "useBlockStatements": "error",
+        "noNonNullAssertion": "off",
+        "useImportType": "off"
+      },
+      "a11y": {
+        "noRedundantRoles": "warn",
+        "all": false
+      },
+      "performance": {
+        "noDelete": "off"
+      }
+    }
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "enabled": true,
+    "lineWidth": 100,
+    "ignore": ["node_modules", "dist", "out", "build", "public", "tsconfig.*"]
+  }
+}

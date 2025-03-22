@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   Command,
   CommandEmpty,
@@ -6,11 +5,8 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import * as React from "react";
 
 export interface ComboboxItem {
   label: string;
@@ -24,19 +20,12 @@ interface ComboboxProps {
   placeholder?: string;
 }
 
-export function Combobox({
-  items,
-  onChange,
-  trigger,
-  placeholder = "Search..."
-}: ComboboxProps) {
+export function Combobox({ items, onChange, trigger, placeholder = "Search..." }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        {trigger}
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent className="w-[200px] p-0 justify-between">
         <Command>
           <CommandInput placeholder={placeholder} />
@@ -59,4 +48,4 @@ export function Combobox({
       </PopoverContent>
     </Popover>
   );
-} 
+}

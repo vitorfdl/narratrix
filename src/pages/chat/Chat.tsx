@@ -1,23 +1,23 @@
-import { useState } from 'react';
-import { ChatTab } from '@/schema/chat';
-import { v4 as uuidv4 } from 'uuid';
-import { ChatTabs } from './ChatTabs';
-import { cn } from '@/lib/utils';
-import { GridLayout } from './components/GridLayout';
+import { cn } from "@/lib/utils";
+import { ChatTab } from "@/schema/chat";
+import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { ChatTabs } from "./ChatTabs";
+import { GridLayout } from "./components/GridLayout";
 
 export default function Chat() {
   const [tabs, setTabs] = useState<ChatTab[]>([
-    { id: 'default', name: 'New Chat', isActive: true, gridItems: [] },
-    { id: 'default2', name: 'Other Chat', isActive: false, gridItems: [] },
+    { id: "default", name: "New Chat", isActive: true, gridItems: [] },
+    { id: "default2", name: "Other Chat", isActive: false, gridItems: [] },
   ]);
-  const [activeTab, setActiveTab] = useState('default');
+  const [activeTab, setActiveTab] = useState("default");
 
   const handleNewChat = () => {
     const newTab = {
       id: uuidv4(),
       name: `Chat ${tabs.length + 1}`,
       isActive: true,
-      gridItems: []
+      gridItems: [],
     };
     setTabs([...tabs, newTab]);
     setActiveTab(newTab.id);
@@ -28,7 +28,7 @@ export default function Chat() {
   };
 
   const handleCloseTab = (tabId: string) => {
-    const newTabs = tabs.filter(tab => tab.id !== tabId);
+    const newTabs = tabs.filter((tab) => tab.id !== tabId);
     setTabs(newTabs);
 
     // If we're closing the active tab, switch to the last remaining tab
@@ -50,10 +50,7 @@ export default function Chat() {
         {tabs.map((tab) => (
           <div
             key={tab.id}
-            className={cn(
-              "h-full w-full",
-              activeTab === tab.id ? "block" : "hidden"
-            )}
+            className={cn("h-full w-full", activeTab === tab.id ? "block" : "hidden")}
           >
             <GridLayout key={tab.id} tabId={tab.id} />
           </div>

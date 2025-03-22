@@ -5,20 +5,21 @@ import Models from "@/pages/models/Models";
 import Settings from "@/pages/settings/Settings";
 
 interface ContentProps {
-    activeSection: string;
+  activeSection: string;
 }
 
 const Content: React.FC<ContentProps> = ({ activeSection }) => {
-    return (
-        <div className="flex-1 p-0 bg-content text-foreground overflow-auto">
-            {activeSection === 'models' && <Models />}
-            {activeSection === 'inference' && <InferenceTemplatePage />}
-            {activeSection === 'chat' && <ChatPage />}
-            {activeSection === 'characters' && <Characters />}
-            {activeSection === 'lorebooks' && <Lorebooks />}
-            {activeSection === 'settings' && <Settings />}
-        </div>
-    );
+  return (
+    <div className="flex-1 p-0 bg-content text-foreground overflow-auto  custom-scrollbar">
+      {/* {activeSection === 'models' && <Models />} */}
+      {activeSection === "models" && <Models />}
+      {activeSection === "inference" && <InferenceTemplatePage />}
+      {activeSection === "chat" && <ChatPage />}
+      {activeSection === "characters" && <Characters />}
+      {activeSection === "lorebooks" && <Lorebooks />}
+      {activeSection === "settings" && <Settings />}
+    </div>
+  );
 };
 
 // Placeholder components

@@ -26,9 +26,7 @@
   },
   "plugins": {
     "sql": {
-      "preload": [
-        "sqlite:narratrix_main.db"
-      ]
+      "preload": ["sqlite:narratrix_main.db"]
     }
   },
   "bundle": {
@@ -40,6 +38,7 @@
       "icons/Square512x512Logo.png",
       "icons/favicon.svg",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": ["resources/**/*"]
   }
 }

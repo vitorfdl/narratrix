@@ -12,7 +12,7 @@ export interface BaseField {
  * Interface for numeric input fields with spinbox or slider
  */
 export interface NumericField extends BaseField {
-  type: 'stepbutton' | 'stepbutton_slider';
+  type: "stepbutton" | "stepbutton_slider";
   min: number;
   max?: number;
   step: number;
@@ -23,7 +23,7 @@ export interface NumericField extends BaseField {
  * Interface for string array fields
  */
 export interface StringArrayField extends BaseField {
-  type: 'string_array';
+  type: "string_array";
   default: string[];
 }
 
@@ -31,7 +31,7 @@ export interface StringArrayField extends BaseField {
  * Interface for draggable array fields
  */
 export interface DragArrayField extends BaseField {
-  type: 'drag_array';
+  type: "drag_array";
   default: string[];
   options: string[];
   readOnly: boolean;
@@ -41,7 +41,7 @@ export interface DragArrayField extends BaseField {
  * Interface for section fields that contain nested fields
  */
 export interface SectionField extends BaseField {
-  type: 'section';
+  type: "section";
   fields: ConfigField[];
 }
 
@@ -49,7 +49,7 @@ export interface SectionField extends BaseField {
  * Interface for random number fields
  */
 export interface RandomNumberField extends BaseField {
-  type: 'random_number';
+  type: "random_number";
   min: number;
   max: number;
   default: number;
@@ -58,7 +58,12 @@ export interface RandomNumberField extends BaseField {
 /**
  * Union type for all possible field types
  */
-export type ConfigField = NumericField | StringArrayField | DragArrayField | SectionField | RandomNumberField;
+export type ConfigField =
+  | NumericField
+  | StringArrayField
+  | DragArrayField
+  | SectionField
+  | RandomNumberField;
 
 /**
  * Type for the entire configuration fields array
@@ -68,7 +73,7 @@ export type ConfigFields = ConfigField[];
 /**
  * Type for sampling order options
  */
-export type SamplingMethod = 'dry' | 'xtc' | 'min_p' | 'top_p' | 'top_k' | 'temperature';
+export type SamplingMethod = "dry" | "xtc" | "min_p" | "top_p" | "top_k" | "temperature";
 
 /**
  * Interface for the configuration values

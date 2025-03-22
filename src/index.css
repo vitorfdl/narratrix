@@ -1,5 +1,7 @@
 /* Added full height for html, body, and root container */
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 
@@ -15,15 +17,15 @@ html, body, #root {
     --card-foreground: 240 10% 3.9%; /* #0A0A0B */
     --popover: 0 0% 100%; /* #FFFFFF */
     --popover-foreground: 240 10% 3.9%; /* #0A0A0B */
-    --primary: 293 59% 74%; /* #db9ee5 */
+    --primary: 293 59% 74%; /* #DB9EE5 */
     --primary-foreground: 0 0% 98%; /* #FAFAFA */
     --secondary: 240 4.8% 95.9%; /* #F4F4F5 */
     --secondary-foreground: 240 5.9% 10%; /* #191919 */
     --muted: 240 4.8% 95.9%; /* #F4F4F5 */
     --muted-foreground: 240 3.8% 46.1%; /* #71717A */
     --accent: 240 4.8% 95.9%; /* #F4F4F5 */
-    --accent-foreground: 293 59% 74%; /* #db9ee5 */
-    --destructive: 0 84.2% 60.2%; /* #EF4444 */
+    --accent-foreground: 293 59% 74%; /* #DB9EE5 */
+    --destructive: 293 45% 40%; /* #8b3794 */
     --destructive-foreground: 0 0% 98%; /* #FAFAFA */
     --border: 240 5.9% 90%; /* #E4E4E7 */
     --input: 240 5.9% 90%; /* #E4E4E7 */
@@ -33,9 +35,9 @@ html, body, #root {
     --chart-3: 197 37% 24%; /* #264653 */
     --chart-4: 43 74% 66%; /* #ECD662 */
     --chart-5: 27 87% 67%; /* #F4A261 */
-    --radius: 0.5rem
+    --radius: 0.4rem;
   }
-  .dark { 
+  .dark {
     --background: 0 0% 16%; /* #282828 */
     --foreground: 0 0% 85%; /* #D9D9D9 */
     --content: 0 0% 21%; /* #353535 */
@@ -52,7 +54,7 @@ html, body, #root {
     --muted-foreground: 223 2% 54%; /* #878B8D */
     --accent: 0 0% 15%; /* #252525 */
     --accent-foreground: 293 59% 74%; /* #db9ee5 */
-    --destructive: 0 62% 45%; /* #C2362E */
+    --destructive: 0 52% 55%; /* #C2362E */
     --destructive-foreground: 0 0% 98%; /* #FAFAFA */
     --border: 223 6% 27%; /* #43454A */
     --input: 223 6% 27%; /* #43454A */
@@ -62,6 +64,7 @@ html, body, #root {
     --chart-3: 122 35% 46%; /* #4BA04F */
     --chart-4: 24 100% 50%; /* #FF4F00 */
     --chart-5: 340 82% 52%; /* #E91E63 */
+    --radius: 0.4rem;
   }
 }
 @layer base {
@@ -118,8 +121,6 @@ html, body, #root {
   background: transparent;
 }
 
-
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -127,4 +128,4 @@ html, body, #root {
   body {
     @apply bg-background text-foreground;
   }
-} 
+}

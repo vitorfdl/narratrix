@@ -1,0 +1,39 @@
+{
+  "$schema": "../../../model-schema.json",
+  "id": "openai",
+  "name": "OpenAI",
+  "description": "Integration with OpenAI models like GPT-4",
+  "website": "https://openai.com/",
+  "type": "llm",
+  "inference_type": ["chat"],
+  "engine": "openai_compatible",
+  "inference_fields": ["temperature", "top_p", "frequency_penalty", "presence_penalty"],
+  "reasoning": {
+    "has_options": ["high", "low"]
+  },
+  "fields": [
+    {
+      "key": "api_key",
+      "label": "API Key",
+      "placeholder": "Your OpenAI API key",
+      "required": true,
+      "field_type": "secret"
+    },
+    {
+      "key": "model",
+      "label": "Model",
+      "placeholder": "The OpenAI model to use",
+      "required": true,
+      "field_type": "string",
+      "hints": ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1-mini"]
+    },
+    {
+      "key": "base_url",
+      "label": "Base URL",
+      "placeholder": "The base URL of the OpenAI API",
+      "required": true,
+      "default": "https://api.openai.com/v1",
+      "field_type": "hidden"
+    }
+  ]
+}

@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import { LockIcon } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert.tsx";
+import { Button } from "../../../components/ui/button.tsx";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter
-} from '../../../components/ui/dialog.tsx';
-import { LockIcon } from 'lucide-react';
-import { Button } from '../../../components/ui/button.tsx';
-import { Input } from '../../../components/ui/input.tsx';
+} from "../../../components/ui/dialog.tsx";
+import { Input } from "../../../components/ui/input.tsx";
 
 interface PasswordDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (password: string) => void;
+  onSubmit: (password: string) => Promise<void>;
   profileName: string;
 }
 
@@ -21,29 +23,29 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
   open,
   onClose,
   onSubmit,
-  profileName
+  profileName,
 }) => {
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!password.trim()) {
-      setError('Password is required');
+      setError("Password is required");
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    setError("");
 
-    // Wrap the onSubmit to handle async behavior
+    // Make this async/await to properly catch errors
     try {
-      onSubmit(password);
+      await onSubmit(password);
     } catch (error) {
-      setError('An error occurred during authentication');
-      console.error('Authentication error:', error);
+      console.error("Authentication error:", error);
+      setError(typeof error === "string" ? error : "An error occurred during authentication");
     } finally {
       setIsLoading(false);
     }
@@ -51,24 +53,24 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
 
   const handleClose = () => {
     // Reset form state
-    setPassword('');
-    setError('');
+    setPassword("");
+    setError("");
     setIsLoading(false);
     onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={open => !open && handleClose()}>
+    <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Enter Password</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <LockIcon className="w-6 h-6 text-muted-foreground" /> Enter Password
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-              <LockIcon className="w-8 h-8 text-muted-foreground" />
-            </div>
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center" />
           </div>
 
           <p className="text-center text-sm text-muted-foreground">
@@ -86,24 +88,20 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
             />
 
             {error && (
-              <p className="text-sm text-destructive">{error}</p>
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
           </div>
 
           <DialogFooter className="mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Authenticating...' : 'Unlock'}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Authenticating..." : "Unlock"}
             </Button>
           </DialogFooter>
         </form>

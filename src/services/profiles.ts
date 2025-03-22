@@ -1,4 +1,4 @@
-import { hashPassword, verifyPassword } from "../hooks/security.ts";
+import { hashPassword, verifyPassword } from "../commands/security.ts";
 import {
   LoginPasswordParams,
   LoginPasswordSchema,
@@ -16,18 +16,14 @@ function formatDateTime(): string {
 }
 
 // Profile related functions
-export async function createProfile(
-  profileData: NewProfileParams,
-): Promise<ProfileResponse> {
+export async function createProfile(profileData: NewProfileParams): Promise<ProfileResponse> {
   // Validate input with Zod schema
   const profile = await ProfileSchema.parseAsync(profileData);
 
   const id = crypto.randomUUID();
 
   // Hash the password
-  const hashedPassword = profile.password
-    ? await hashPassword(profile.password)
-    : undefined;
+  const hashedPassword = profile.password ? await hashPassword(profile.password) : undefined;
 
   // Use default empty object for settings if not provided
   const settings = profile.settings || {};
@@ -72,12 +68,13 @@ export async function getProfiles() {
   );
 
   // Validate each result with the ProfileSummarySchema
-  return result;
+  return result.map((profile) => ({
+    ...profile,
+    hasPassword: !!profile.hasPassword,
+  }));
 }
 
-export async function getProfileById(
-  id: string,
-): Promise<ProfileResponse | null> {
+export async function getProfileById(id: string): Promise<ProfileResponse | null> {
   // Validate ID input
   const validId = uuidUtils.uuid().parse(id);
 
@@ -100,9 +97,8 @@ export async function getProfileById(
 
   // Parse settings from string to object if needed
   const profile = result[0];
-  profile.settings = typeof profile.settings === "string"
-    ? JSON.parse(profile.settings)
-    : profile.settings;
+  profile.settings =
+    typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
 
   // Validate with ProfileResponseSchema
   return profile;
@@ -186,15 +182,10 @@ export async function deleteProfile(id: string): Promise<void> {
   // Validate ID input
   const validId = uuidUtils.uuid().parse(id);
 
-  await executeDBQuery(
-    "DELETE FROM profiles WHERE id = $1",
-    [validId],
-  );
+  await executeDBQuery("DELETE FROM profiles WHERE id = $1", [validId]);
 }
 
-export async function loginProfile(
-  loginData: LoginPasswordParams,
-): Promise<ProfileResponse> {
+export async function loginProfile(loginData: LoginPasswordParams): Promise<ProfileResponse> {
   // Validate input with Zod schema
   const login = LoginPasswordSchema.parse(loginData);
 
@@ -229,9 +220,8 @@ export async function loginProfile(
   }
 
   // Parse settings from string to object if needed
-  profile.settings = typeof profile.settings === "string"
-    ? JSON.parse(profile.settings)
-    : profile.settings;
+  profile.settings =
+    typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
 
   // Remove password field from the response
   const { password, ...profileResponse } = profile;

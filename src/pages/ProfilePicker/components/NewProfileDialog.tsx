@@ -1,42 +1,43 @@
-import React, { useState } from 'react';
-import { useProfile } from '../../../contexts/ProfileContext.tsx';
+import { UserCircleIcon } from "lucide-react";
+import React, { useState } from "react";
+import { Button } from "../../../components/ui/button.tsx";
+import { Checkbox } from "../../../components/ui/checkbox.tsx";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription
-} from '../../../components/ui/dialog.tsx';
-import { UserCircleIcon } from 'lucide-react';
-import { Input } from '../../../components/ui/input.tsx';
-import { Label } from '../../../components/ui/label.tsx';
-import { Checkbox } from '../../../components/ui/checkbox.tsx';
-import { Button } from '../../../components/ui/button.tsx';
+} from "../../../components/ui/dialog.tsx";
+import { Input } from "../../../components/ui/input.tsx";
+import { Label } from "../../../components/ui/label.tsx";
+import { useProfile } from "../../../hooks/ProfileContext.tsx";
 
 interface NewProfileDialogProps {
   open: boolean;
+  canClose?: boolean;
   onClose: () => void;
 }
 
-const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) => {
+const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canClose = true }) => {
   const { addProfile } = useProfile();
-  const [name, setName] = useState('');
-  const [avatar, setAvatar] = useState('');
+  const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState("");
   const [hasPassword, setHasPassword] = useState(true);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) {
-      setError('Name is required');
+      setError("Name is required");
       return;
     }
 
     if (hasPassword && !password.trim()) {
-      setError('Password is required when password protection is enabled');
+      setError("Password is required when password protection is enabled");
       return;
     }
 
@@ -46,21 +47,24 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
     // Use async/await to handle the addProfile Promise
     addProfile(name, avatar, actualPassword)
       .then(() => {
-        handleClose();
+        handleClose(true);
       })
       .catch((err) => {
-        console.error('Error creating profile:', err);
-        setError('Failed to create profile. Please try again.');
+        console.error("Error creating profile:", err);
+        setError("Failed to create profile. Please try again.");
       });
   };
 
-  const handleClose = () => {
-    // Reset form state
-    setName('');
-    setAvatar('');
-    setPassword('');
-    setError('');
-    onClose();
+  const handleClose = (force = false) => {
+    // Only close if allowed
+    if (canClose || force) {
+      // Reset form state
+      setName("");
+      setAvatar("");
+      setPassword("");
+      setError("");
+      onClose();
+    }
   };
 
   const generateRandomAvatar = () => {
@@ -69,8 +73,13 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
   };
 
   return (
-    <Dialog open={open} onOpenChange={open => !open && handleClose()}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Create New Profile</DialogTitle>
           <DialogDescription>
@@ -82,11 +91,7 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
           {/* Avatar Preview */}
           <div className="flex justify-center mb-4">
             {avatar ? (
-              <img
-                src={avatar}
-                alt="Profile Avatar"
-                className="w-24 h-24 rounded-full"
-              />
+              <img src={avatar} alt="Profile Avatar" className="w-24 h-24 rounded-full" />
             ) : (
               <UserCircleIcon className="w-24 h-24 text-muted-foreground" />
             )}
@@ -94,12 +99,7 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
 
           {/* Avatar Generation */}
           <div className="flex justify-center">
-            <Button
-              type="button"
-              onClick={generateRandomAvatar}
-              variant="secondary"
-              size="sm"
-            >
+            <Button type="button" onClick={generateRandomAvatar} variant="secondary" size="sm">
               Generate Random Avatar
             </Button>
           </div>
@@ -150,23 +150,16 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
           )}
 
           {/* Error Message */}
-          {error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
           <DialogFooter className="mt-6">
-            <Button
-              type="button"
-              onClick={handleClose}
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-            >
-              Create Profile
-            </Button>
+            {canClose && (
+              <Button type="button" onClick={() => handleClose()} variant="outline">
+                Cancel
+              </Button>
+            )}
+
+            <Button type="submit">Create Profile</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -174,4 +167,4 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose }) =>
   );
 };
 
-export default NewProfileDialog; 
+export default NewProfileDialog;

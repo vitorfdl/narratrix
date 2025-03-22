@@ -1,8 +1,14 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { ProfileListItem, ProfileResponse } from '../schema/profiles';
-import { createProfile, getProfiles, deleteProfile, loginProfile, getProfileById } from '../services/profiles';
-import { toast } from 'sonner';
-import { useSessionProfile } from '@/utils/session-storage';
+import { useSessionProfile } from "@/utils/session-storage";
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
+import { toast } from "sonner";
+import { ProfileListItem, ProfileResponse } from "../schema/profiles";
+import {
+  createProfile,
+  deleteProfile,
+  getProfileById,
+  getProfiles,
+  loginProfile,
+} from "../services/profiles";
 
 export const MAX_PROFILES = 5;
 export interface ProfileState {
@@ -28,12 +34,12 @@ const initialState: ProfileState = {
 
 const profileReducer = (state: ProfileState, action: ProfileAction): ProfileState => {
   switch (action.type) {
-    case 'SET_PROFILES':
+    case "SET_PROFILES":
       return {
         ...state,
         profiles: action.payload,
       };
-    case 'ADD_PROFILE':
+    case "ADD_PROFILE":
       if (state.profiles.length >= MAX_PROFILES) {
         return state;
       }
@@ -41,25 +47,26 @@ const profileReducer = (state: ProfileState, action: ProfileAction): ProfileStat
         ...state,
         profiles: [...state.profiles, action.payload],
       };
-    case 'REMOVE_PROFILE':
+    case "REMOVE_PROFILE":
       return {
         ...state,
-        profiles: state.profiles.filter(profile => profile.id !== action.payload),
+        profiles: state.profiles.filter((profile) => profile.id !== action.payload),
         currentProfile: state.currentProfile?.id === action.payload ? null : state.currentProfile,
-        isAuthenticated: state.currentProfile?.id === action.payload ? false : state.isAuthenticated,
+        isAuthenticated:
+          state.currentProfile?.id === action.payload ? false : state.isAuthenticated,
       };
-    case 'SET_CURRENT_PROFILE':
+    case "SET_CURRENT_PROFILE":
       return {
         ...state,
         currentProfile: action.payload,
       };
-    case 'LOGOUT':
+    case "LOGOUT":
       return {
         ...state,
         currentProfile: null,
         isAuthenticated: false,
       };
-    case 'SET_AUTHENTICATED':
+    case "SET_AUTHENTICATED":
       return {
         ...state,
         isAuthenticated: action.payload,
@@ -92,10 +99,10 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const refreshProfiles = async (): Promise<void> => {
     try {
       const profilesData = await getProfiles();
-      dispatch({ type: 'SET_PROFILES', payload: profilesData });
+      dispatch({ type: "SET_PROFILES", payload: profilesData });
     } catch (error) {
-      console.error('Failed to load profiles:', error);
-      toast.error('Failed to load profiles');
+      console.error("Failed to load profiles:", error);
+      toast.error("Failed to load profiles");
     }
   };
 
@@ -104,7 +111,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     refreshProfiles();
 
     if (savedCurrentProfile) {
-      dispatch({ type: 'SET_CURRENT_PROFILE', payload: savedCurrentProfile });
+      dispatch({ type: "SET_CURRENT_PROFILE", payload: savedCurrentProfile });
     }
   }, [savedCurrentProfile]);
 
@@ -122,14 +129,14 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       const newProfileData = {
         name,
         password: password,
-        avatar_path: avatar || undefined
+        avatar_path: avatar || undefined,
       };
 
       const createdProfile = await createProfile(newProfileData);
 
-      dispatch({ type: 'ADD_PROFILE', payload: createdProfile });
+      dispatch({ type: "ADD_PROFILE", payload: createdProfile });
     } catch (error) {
-      console.error('Failed to create profile:', error);
+      console.error("Failed to create profile:", error);
       throw error;
     }
   };
@@ -137,22 +144,22 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const removeProfile = async (id: string): Promise<void> => {
     try {
       await deleteProfile(id);
-      dispatch({ type: 'REMOVE_PROFILE', payload: id });
+      dispatch({ type: "REMOVE_PROFILE", payload: id });
     } catch (error) {
-      console.error('Failed to delete profile:', error);
+      console.error("Failed to delete profile:", error);
       throw error;
     }
   };
 
   const setCurrentProfile = (profile: ProfileResponse): void => {
-    dispatch({ type: 'SET_CURRENT_PROFILE', payload: profile });
+    dispatch({ type: "SET_CURRENT_PROFILE", payload: profile });
   };
 
   const login = async (id: string, password?: string): Promise<boolean> => {
-    const profile = state.profiles.find(p => p.id === id);
+    const profile = state.profiles.find((p) => p.id === id);
 
     if (!profile) {
-      toast.error('Profile not found');
+      toast.error("Profile not found");
       return false;
     }
 
@@ -165,29 +172,29 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
 
         fullProfile = await loginProfile({
           id: profile.id,
-          password: password
+          password: password,
         });
       } else {
         fullProfile = await getProfileById(profile.id);
       }
 
       if (!fullProfile) {
-        console.error('Login failed:', "Profile not found");
+        console.error("Login failed:", "Profile not found");
         return false;
       }
 
       // If we made it here, authentication succeeded
-      dispatch({ type: 'SET_CURRENT_PROFILE', payload: fullProfile });
-      dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+      dispatch({ type: "SET_CURRENT_PROFILE", payload: fullProfile });
+      dispatch({ type: "SET_AUTHENTICATED", payload: true });
       return true;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
       return false;
     }
   };
 
   const logout = (): void => {
-    dispatch({ type: 'LOGOUT' });
+    dispatch({ type: "LOGOUT" });
   };
 
   const value = {
@@ -197,7 +204,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     setCurrentProfile,
     login,
     logout,
-    refreshProfiles
+    refreshProfiles,
   };
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
@@ -206,9 +213,9 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
 export const useProfile = (): ProfileContextType => {
   const context = useContext(ProfileContext);
   if (context === undefined) {
-    throw new Error('useProfile must be used within a ProfileProvider');
+    throw new Error("useProfile must be used within a ProfileProvider");
   }
   return context;
 };
 
-export default ProfileContext; 
+export default ProfileContext;

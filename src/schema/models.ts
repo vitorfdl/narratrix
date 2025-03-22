@@ -1,111 +1,26 @@
-export type ModelType = 'text' | 'image' | 'audio' | 'database' | 'speech';
+import { z } from "zod";
+import { uuidUtils } from "./utils";
 
-export interface Model {
-    id: string;
-    name: string;
-    description: string;
-    type: ModelType;
-    endpoint: string;
-    icon?: string;
-    isEnabled: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-}
+export const ModelTypeSchema = z.enum(["llm", "audio", "image", "database"]);
+export type ModelType = z.infer<typeof ModelTypeSchema>;
+
+export const ModelSchema = z.object({
+  id: uuidUtils.uuid(),
+  profile_id: uuidUtils.uuid(),
+  name: z.string().min(1),
+  type: ModelTypeSchema,
+  manifest_id: z.string(),
+  config: z.record(z.string(), z.any()),
+  max_concurrency: z.number().min(1).max(10).default(1),
+  template_id: z.string().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type Model = z.infer<typeof ModelSchema>;
 
 export interface ModelGroup {
-    type: ModelType;
-    title: string;
-    models: Model[];
+  type: ModelType;
+  title: string;
+  models: Model[];
 }
-
-// Mock data
-export const mockModels: ModelGroup[] = [
-    {
-        type: 'text',
-        title: 'Text Inference Models',
-        models: [
-            {
-                id: '1',
-                name: 'OpenAI',
-                description: 'Chat Completion',
-                type: 'text',
-                endpoint: 'api.openai.com/v1/chat/completions',
-                isEnabled: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                id: '2',
-                name: 'OpenAI Test',
-                description: 'Chat Completion',
-                type: 'text',
-                endpoint: 'api.openai.com/v1/chat/completions',
-                isEnabled: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                id: '5',
-                name: 'OpenAI Test',
-                description: 'Chat Completion',
-                type: 'text',
-                endpoint: 'api.openai.com/v1/chat/completions',
-                isEnabled: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                id: '3',
-                name: 'OpenAI Test',
-                description: 'Chat Completion',
-                type: 'text',
-                endpoint: 'api.openai.com/v1/chat/completions',
-                isEnabled: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                id: '4',
-                name: 'OpenAI Test',
-                description: 'Chat Completion',
-                type: 'text',
-                endpoint: 'api.openai.com/v1/chat/completions',
-                isEnabled: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        ],
-    },
-    {
-        type: 'image',
-        title: 'Image Inference Models',
-        models: [
-            {
-                id: '2',
-                name: 'ComfyUI',
-                description: 'Endpoint',
-                type: 'image',
-                endpoint: 'localhost:3000/api/generate',
-                isEnabled: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        ],
-    },
-    {
-        type: 'speech',
-        title: 'Text to Speech Models',
-        models: [
-            {
-                id: '3',
-                name: 'ElevenLabs',
-                description: 'Endpoint',
-                type: 'speech',
-                endpoint: 'api.elevenlabs.io/v1/text-to-speech',
-                isEnabled: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        ],
-    },
-]; 
