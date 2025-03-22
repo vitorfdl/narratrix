@@ -1,8 +1,8 @@
 import Characters from "@/pages/characters/Characters";
-import ChatPage from "@/pages/chat/Chat";
-import InferenceTemplatePage from "@/pages/inferencetemplate/InferenceTemplate";
-import Models from "@/pages/models/Models";
-import Settings from "@/pages/settings/Settings";
+import ChatPage from "@/pages/chat/ChatPage";
+import InferenceTemplatePage from "@/pages/formatTemplates/FormatTemplatePage";
+import Models from "@/pages/models/ModelsPage";
+import Settings from "@/pages/settings/SettingsPage";
 
 interface ContentProps {
   activeSection: string;

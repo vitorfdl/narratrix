@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { TemplateSettings } from "@/schema/inference-template";
+import { TemplateSettings } from "@/schema/inference-template-schema";
 import { Template, TemplatePicker } from "./TemplatePicker";
 
 interface TemplateHeaderProps {
@@ -122,9 +122,7 @@ export function TemplateHeader({
           </div>
 
           <div className="space-y-2">
-            <Label className="font-medium text-muted-foreground">
-              Prefix Messages with Character Names
-            </Label>
+            <Label className="font-medium text-muted-foreground">Prefix Messages with Character Names</Label>
             <RadioGroup
               value={settings.prefixMessages.type}
               onValueChange={(value) =>

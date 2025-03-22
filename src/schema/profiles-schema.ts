@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dateUtils, uuidUtils } from "./utils.ts";
+import { dateUtils, uuidUtils } from "./utils-schema.ts";
 
 /**
  * Define the Each Settings schema
@@ -96,15 +96,15 @@ type LoginPasswordParams = z.infer<typeof LoginPasswordSchema>;
 type ProfileListItem = Omit<ProfileResponse, "settings">;
 
 export {
-  type AppSettings,
   AppSettingsSchema,
-  type LoginPasswordParams,
   LoginPasswordSchema,
+  ProfileSchema,
+  UpdatePasswordSchema,
+  type AppSettings,
+  type LoginPasswordParams,
   type NewProfileParams,
   type Profile,
   type ProfileListItem,
   type ProfileResponse,
-  ProfileSchema,
   type UpdatePasswordParams,
-  UpdatePasswordSchema,
 };

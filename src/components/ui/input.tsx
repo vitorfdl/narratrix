@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utilsLib";
 import { LightbulbIcon } from "lucide-react";
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -9,14 +9,9 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    { className, type, hints, caseSensitive = false, value, defaultValue, onChange, ...props },
-    ref,
-  ) => {
+  ({ className, type, hints, caseSensitive = false, value, defaultValue, onChange, ...props }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [inputValue, setInputValue] = useState<string>(
-      value !== undefined ? String(value) : defaultValue !== undefined ? String(defaultValue) : "",
-    );
+    const [inputValue, setInputValue] = useState<string>(value !== undefined ? String(value) : defaultValue !== undefined ? String(defaultValue) : "");
     const dropdownRef = useRef<HTMLDivElement>(null);
     const isControlled = value !== undefined;
 
@@ -139,26 +134,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {hints && hints.length > 0 && (
-            <div
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground cursor-pointer"
-              onClick={() => setIsOpen(!isOpen)}
-            >
-              <LightbulbIcon
-                size={16}
-                className={cn(
-                  "transition-colors duration-200",
-                  isOpen ? "text-primary" : "text-muted-foreground/70",
-                )}
-              />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+              <LightbulbIcon size={16} className={cn("transition-colors duration-200", isOpen ? "text-primary" : "text-muted-foreground/70")} />
             </div>
           )}
         </div>
 
         {filteredHints.length > 0 && isOpen && (
           <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-sm shadow-md max-h-[200px] overflow-y-auto">
-            <div className="px-3 py-1 text-[10px] text-muted-foreground/70 bg-muted/30 border-b border-border">
-              Suggestions (or type your own)
-            </div>
+            <div className="px-3 py-1 text-[10px] text-muted-foreground/70 bg-muted/30 border-b border-border">Suggestions (or type your own)</div>
             {filteredHints.map((hint, index) => (
               <div
                 key={index}

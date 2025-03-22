@@ -1,14 +1,8 @@
 import { useSessionProfile } from "@/utils/session-storage";
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
+import React, { createContext, ReactNode, useContext, useEffect, useReducer } from "react";
 import { toast } from "sonner";
-import { ProfileListItem, ProfileResponse } from "../schema/profiles";
-import {
-  createProfile,
-  deleteProfile,
-  getProfileById,
-  getProfiles,
-  loginProfile,
-} from "../services/profiles";
+import { ProfileListItem, ProfileResponse } from "../schema/profiles-schema";
+import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile } from "../services/profile-service";
 
 export const MAX_PROFILES = 5;
 export interface ProfileState {
@@ -52,8 +46,7 @@ const profileReducer = (state: ProfileState, action: ProfileAction): ProfileStat
         ...state,
         profiles: state.profiles.filter((profile) => profile.id !== action.payload),
         currentProfile: state.currentProfile?.id === action.payload ? null : state.currentProfile,
-        isAuthenticated:
-          state.currentProfile?.id === action.payload ? false : state.isAuthenticated,
+        isAuthenticated: state.currentProfile?.id === action.payload ? false : state.isAuthenticated,
       };
     case "SET_CURRENT_PROFILE":
       return {

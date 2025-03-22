@@ -1,4 +1,4 @@
-import { Manifest, ManifestSchema } from "@/schema/manifest";
+import { Manifest, ManifestSchema } from "@/schema/manifest-schema";
 import { BaseDirectory, readDir, readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
 
@@ -16,16 +16,10 @@ export async function getManifestFiles(): Promise<string[]> {
     const entries = await readDir(MANIFESTS_PATH, {
       baseDir: BaseDirectory.Resource,
     });
-    return entries
-      .filter((entry) => entry.name?.endsWith(".jsonc"))
-      .map((entry) => entry.name as string);
+    return entries.filter((entry) => entry.name?.endsWith(".jsonc")).map((entry) => entry.name as string);
   } catch (error) {
     console.error("Failed to read manifests directory:", error);
-    throw new Error(
-      `Failed to read manifests directory: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    throw new Error(`Failed to read manifests directory: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -45,11 +39,7 @@ export async function getManifest(filename: string): Promise<Manifest> {
     return ManifestSchema.parse(parsedData);
   } catch (error) {
     console.error(`Failed to read manifest file ${filename}:`, error);
-    throw new Error(
-      `Failed to read manifest file ${filename}: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    throw new Error(`Failed to read manifest file ${filename}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -83,9 +73,7 @@ export async function getAllManifests(): Promise<Manifest[]> {
     toast.error("Failed to load manifests", {
       description: error instanceof Error ? error.message : String(error),
     });
-    throw new Error(
-      `Failed to read all manifests: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    throw new Error(`Failed to read all manifests: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -100,10 +88,6 @@ export async function getManifestById(id: string): Promise<Manifest | null> {
     return manifests.find((manifest) => manifest.id === id) || null;
   } catch (error) {
     console.error(`Failed to find manifest with ID ${id}:`, error);
-    throw new Error(
-      `Failed to find manifest with ID ${id}: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    throw new Error(`Failed to find manifest with ID ${id}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

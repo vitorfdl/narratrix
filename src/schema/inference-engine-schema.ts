@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { uuidUtils } from "./utils";
+import { uuidUtils } from "./utils-schema";
 
 // Types for inference messages
 const InferenceToolCallSchema = z.object({
@@ -52,18 +52,6 @@ const ModelSpecsSchema = z.object({
 
 type ModelSpecs = z.infer<typeof ModelSpecsSchema>;
 
-export {
-  InferenceMessageSchema,
-  InferenceRequestSchema,
-  InferenceResponseSchema,
-  InferenceToolCallSchema,
-  ModelSpecsSchema,
-};
+export { InferenceMessageSchema, InferenceRequestSchema, InferenceResponseSchema, InferenceToolCallSchema, ModelSpecsSchema };
 
-export type {
-  InferenceMessage,
-  InferenceRequest,
-  InferenceResponse,
-  InferenceToolCall,
-  ModelSpecs,
-};
+export type { InferenceMessage, InferenceRequest, InferenceResponse, InferenceToolCall, ModelSpecs };

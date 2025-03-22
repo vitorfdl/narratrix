@@ -5,15 +5,8 @@ import { DragArray } from "@/components/ui/drag-array";
 import { RandomButton } from "@/components/ui/random-button";
 import { StepButton } from "@/components/ui/step-button";
 import { StringArray } from "@/components/ui/string-array";
-import { TemplatePicker } from "@/pages/inferencetemplate/components/TemplatePicker";
-import type {
-  ConfigField,
-  DragArrayField,
-  NumericField,
-  RandomNumberField,
-  SectionField,
-  StringArrayField,
-} from "@/schema/configFields";
+import { TemplatePicker } from "@/pages/formatTemplates/components/TemplatePicker";
+import type { ConfigField, DragArrayField, NumericField, RandomNumberField, SectionField, StringArrayField } from "@/schema/chat-settings-schema";
 import { PlusIcon, Trash } from "lucide-react";
 import { useMemo, useState } from "react";
 import { configFields } from "../manifests/configFields";
@@ -47,14 +40,7 @@ const ConfigItem = ({ field, value, onChange, onRemove, isNested = false }: Conf
       case "random_number": {
         const numericField = field as RandomNumberField;
         const numericValue = typeof value === "number" ? value : (numericField.default ?? 0);
-        return (
-          <RandomButton
-            value={numericValue}
-            min={numericField.min}
-            max={numericField.max}
-            onValueChange={onChange}
-          />
-        );
+        return <RandomButton value={numericValue} min={numericField.min} max={numericField.max} onValueChange={onChange} />;
       }
       case "string_array": {
         const arrayField = field as StringArrayField;
@@ -92,9 +78,7 @@ const ConfigItem = ({ field, value, onChange, onRemove, isNested = false }: Conf
     }
   };
 
-  const cardClasses = isNested
-    ? "p-2 space-y-1 bg-foreground/5 rounded-sm"
-    : "p-2 space-y-1 bg-foreground/5";
+  const cardClasses = isNested ? "p-2 space-y-1 bg-foreground/5 rounded-sm" : "p-2 space-y-1 bg-foreground/5";
 
   return (
     <Card className={cardClasses}>

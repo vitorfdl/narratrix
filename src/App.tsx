@@ -4,7 +4,7 @@ import Sidebar from "./components/layout/Sidebar";
 import { Toaster } from "./components/ui/sonner";
 import { ProfileProvider, useProfile } from "./hooks/ProfileContext";
 import { ThemeProvider } from "./hooks/ThemeContext";
-import ProfilePicker from "./pages/ProfilePicker/Profile";
+import ProfilePicker from "./pages/profileLogin/ProfilePage";
 import { InferenceProvider } from "./providers/InferenceProvider";
 
 const AppContent: React.FC = () => {

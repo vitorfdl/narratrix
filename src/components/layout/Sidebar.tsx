@@ -124,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) =>
     { id: "models", label: "Models", icon: <Dog className="w-5 h-5" />, isMainNav: true },
     {
       id: "inference",
-      label: "Inference Templates",
+      label: "Formatting Templates",
       icon: <Brain className="w-5 h-5" />,
       isMainNav: true,
     },

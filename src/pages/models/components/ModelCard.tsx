@@ -1,12 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EditIcon, MoreVertical, Trash2 } from "lucide-react";
-import { Model } from "../../../schema/models";
+import { Model } from "../../../schema/models-schema";
 
 interface ModelCardProps {
   model: Model;
@@ -23,12 +18,7 @@ export function ModelCard({ model, onEdit, onDelete }: ModelCardProps) {
     // Use the first non-secret value from config as a descriptive text
     if (config) {
       const firstValue = Object.entries(config).find(([key, value]) => {
-        return (
-          !key.toLowerCase().includes("key") &&
-          !key.toLowerCase().includes("secret") &&
-          !key.toLowerCase().includes("token") &&
-          typeof value === "string"
-        );
+        return !key.toLowerCase().includes("key") && !key.toLowerCase().includes("secret") && !key.toLowerCase().includes("token") && typeof value === "string";
       });
 
       if (firstValue) {
@@ -52,10 +42,7 @@ export function ModelCard({ model, onEdit, onDelete }: ModelCardProps) {
               <EditIcon className="mr-1" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive cursor-pointer"
-              onClick={() => onDelete?.(model)}
-            >
+            <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => onDelete?.(model)}>
               <Trash2 className="mr-1" />
               Delete
             </DropdownMenuItem>

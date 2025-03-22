@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { InferenceTemplate, SystemPrompt, SystemPromptType } from "@/schema/inference-template";
+import { InferenceTemplate, SystemPrompt, SystemPromptType } from "@/schema/inference-template-schema";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { HelpCircle } from "lucide-react";
@@ -94,9 +94,9 @@ export default function InferenceTemplatePage() {
   const handleExport = () => {};
 
   return (
-    <div className="container mx-auto p-6 space-y-2">
+    <div className="container mx-auto space-y-2 page-container">
       <div className="flex gap-2 items-center">
-        <h1 className="text-2xl font-bold text-white">Inference Template</h1>
+        <h1 className="title">Formatting Template</h1>
         <Sheet open={isDocOpen} onOpenChange={setIsDocOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -142,9 +142,7 @@ export default function InferenceTemplatePage() {
               collisionDetection={closestCenter}
               onDragEnd={({ active, over }) => {
                 if (over && active.id !== over.id) {
-                  const oldIndex = template.systemPrompts.findIndex(
-                    (item) => item.id === active.id,
-                  );
+                  const oldIndex = template.systemPrompts.findIndex((item) => item.id === active.id);
                   const newIndex = template.systemPrompts.findIndex((item) => item.id === over.id);
 
                   const newItems = [...template.systemPrompts];
@@ -155,15 +153,10 @@ export default function InferenceTemplatePage() {
                 }
               }}
             >
-              <SortableContext
-                items={template.systemPrompts}
-                strategy={verticalListSortingStrategy}
-              >
+              <SortableContext items={template.systemPrompts} strategy={verticalListSortingStrategy}>
                 <SystemPromptSection
                   prompts={template.systemPrompts}
-                  onUpdate={(prompts) =>
-                    setTemplate((prev) => ({ ...prev, systemPrompts: prompts }))
-                  }
+                  onUpdate={(prompts) => setTemplate((prev) => ({ ...prev, systemPrompts: prompts }))}
                   templates={[]}
                   selectedTemplateId={null}
                   onTemplateSelect={(_templateId: string): void => {
@@ -189,10 +182,7 @@ export default function InferenceTemplatePage() {
             </DndContext>
           </div>
 
-          <ExtraSections
-            reasoning={template.reasoning}
-            onUpdate={(reasoning) => setTemplate((prev) => ({ ...prev, reasoning }))}
-          />
+          <ExtraSections reasoning={template.reasoning} onUpdate={(reasoning) => setTemplate((prev) => ({ ...prev, reasoning }))} />
         </div>
 
         <ModelInstructionSection

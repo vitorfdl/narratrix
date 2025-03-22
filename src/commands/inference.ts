@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
-import type { InferenceRequest, InferenceResponse, ModelSpecs } from "../schema/inference-engine";
+import { listen } from "@tauri-apps/api/event";
+import type { InferenceRequest, InferenceResponse, ModelSpecs } from "../schema/inference-engine-schema";
 
 /**
  * Queue an inference request to be processed by the LLM
@@ -9,10 +9,7 @@ import type { InferenceRequest, InferenceResponse, ModelSpecs } from "../schema/
  * @param specs The model specifications for the request
  * @returns A promise that resolves to the request ID
  */
-export async function queueInferenceRequest(
-  request: InferenceRequest,
-  specs: ModelSpecs,
-): Promise<string> {
+export async function queueInferenceRequest(request: InferenceRequest, specs: ModelSpecs): Promise<string> {
   try {
     return await invoke<string>("queue_inference_request", {
       request,
@@ -57,15 +54,10 @@ export async function cleanInferenceQueues(): Promise<void> {
  * @param callback The callback function to handle inference responses
  * @returns A function to unlisten from inference response events
  */
-export function listenForInferenceResponses(
-  callback: (response: InferenceResponse) => void,
-): () => Promise<void> {
-  const unlisten = listen<InferenceResponse>(
-    "inference-response",
-    (event: Event<InferenceResponse>) => {
-      callback(event.payload);
-    },
-  );
+export function listenForInferenceResponses(callback: (response: InferenceResponse) => void): () => Promise<void> {
+  const unlisten = listen<InferenceResponse>("inference-response", (event: Event<InferenceResponse>) => {
+    callback(event.payload);
+  });
 
   // Return a function to unlisten
   return async () => {

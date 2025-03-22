@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utilsLib";
 import { ChatTab } from "@/schema/chat";
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -39,19 +39,10 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen">
-      <ChatTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onNewChat={handleNewChat}
-        onCloseTab={handleCloseTab}
-      />
+      <ChatTabs tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} onNewChat={handleNewChat} onCloseTab={handleCloseTab} />
       <div className="flex-1">
         {tabs.map((tab) => (
-          <div
-            key={tab.id}
-            className={cn("h-full w-full", activeTab === tab.id ? "block" : "hidden")}
-          >
+          <div key={tab.id} className={cn("h-full w-full", activeTab === tab.id ? "block" : "hidden")}>
             <GridLayout key={tab.id} tabId={tab.id} />
           </div>
         ))}

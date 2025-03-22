@@ -1,5 +1,5 @@
-import { Manifest } from "@/schema/manifest";
-import { getManifestById as fetchManifestById, getAllManifests } from "@/services/manifest";
+import { Manifest } from "@/schema/manifest-schema";
+import { getManifestById as fetchManifestById, getAllManifests } from "@/services/manifest-service";
 import { create } from "zustand";
 
 interface ManifestState {
@@ -28,9 +28,7 @@ export const useManifestStore = create<ManifestState>((set, get) => ({
       set({ manifests, isLoading: false });
     } catch (error) {
       set({
-        error: `Failed to fetch manifests: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: `Failed to fetch manifests: ${error instanceof Error ? error.message : String(error)}`,
         isLoading: false,
       });
     }
@@ -73,9 +71,7 @@ export const useManifestStore = create<ManifestState>((set, get) => ({
       return fetchedManifest;
     } catch (error) {
       set({
-        error: `Failed to fetch manifest with ID ${id}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: `Failed to fetch manifest with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
       });
       return null;
     }

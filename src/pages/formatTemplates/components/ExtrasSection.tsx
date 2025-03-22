@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Reasoning } from "@/schema/inference-template";
+import { Reasoning } from "@/schema/inference-template-schema";
 import { LabeledInput } from "./ModelInstructionSection";
 
 interface ExtraSectionsProps {
@@ -20,18 +20,8 @@ export function ExtraSections({ reasoning, onUpdate }: ExtraSectionsProps) {
               <CardTitle>Reasoning</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <LabeledInput
-                label="Prefix"
-                value={reasoning.prefix}
-                placeholder=""
-                onChange={(val) => onUpdate({ ...reasoning, prefix: val })}
-              />
-              <LabeledInput
-                label="Suffix"
-                value={reasoning.suffix}
-                placeholder=""
-                onChange={(val) => onUpdate({ ...reasoning, suffix: val })}
-              />
+              <LabeledInput label="Prefix" value={reasoning.prefix} placeholder="" onChange={(val) => onUpdate({ ...reasoning, prefix: val })} />
+              <LabeledInput label="Suffix" value={reasoning.suffix} placeholder="" onChange={(val) => onUpdate({ ...reasoning, suffix: val })} />
             </CardContent>
           </Card>
         </CardContent>

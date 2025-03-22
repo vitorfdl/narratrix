@@ -1,4 +1,4 @@
-import { AppSettingsSchema } from "./profiles.ts";
+import { AppSettingsSchema } from "./profiles-schema.ts";
 
 // Default settings based on the mock data
 export const defaultSettings = AppSettingsSchema.parse({

@@ -1,11 +1,10 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utilsLib";
 import { Dice6 } from "lucide-react";
 import * as React from "react";
 import { Button } from "./button";
 import { Input } from "./input";
 
-interface RandomButtonProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
+interface RandomButtonProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
   value: number;
   min?: number;
   max?: number;
@@ -13,14 +12,7 @@ interface RandomButtonProps
   className?: string;
 }
 
-export function RandomButton({
-  value,
-  min = 0,
-  max = 100,
-  onValueChange,
-  className,
-  ...props
-}: RandomButtonProps) {
+export function RandomButton({ value, min = 0, max = 100, onValueChange, className, ...props }: RandomButtonProps) {
   const [, setIsFocused] = React.useState(false);
   const [localValue, setLocalValue] = React.useState(value.toString());
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -94,12 +86,7 @@ export function RandomButton({
   };
 
   return (
-    <div
-      ref={containerRef}
-      className={cn("group relative inline-block", className)}
-      onBlur={handleBlur}
-      tabIndex={-1}
-    >
+    <div ref={containerRef} className={cn("group relative inline-block", className)} onBlur={handleBlur} tabIndex={-1}>
       <div className="relative">
         <Input
           {...props}
@@ -114,13 +101,7 @@ export function RandomButton({
           className="pr-9"
         />
         <div className="absolute right-0.5 top-1/2 -translate-y-1/2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 p-0 hover:bg-accent"
-            onClick={handleRandomize}
-            onMouseDown={handleButtonMouseDown}
-          >
+          <Button variant="ghost" size="icon" className="h-7 w-7 p-0 hover:bg-accent" onClick={handleRandomize} onMouseDown={handleButtonMouseDown}>
             <Dice6 className="h-3 w-3" />
           </Button>
         </div>

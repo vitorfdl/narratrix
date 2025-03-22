@@ -1,25 +1,9 @@
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import {
-  BookmarkMinus,
-  ChevronLeft,
-  ChevronRight,
-  Flag,
-  Image,
-  Languages,
-  MoreHorizontal,
-  Pencil,
-  Scissors,
-  Trash2,
-} from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utilsLib";
+import { BookmarkMinus, ChevronLeft, ChevronRight, Flag, Image, Languages, MoreHorizontal, Pencil, Scissors, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export type MessageType = "user" | "assistant" | "system" | "app";
@@ -59,9 +43,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
 
   // Calculate total characters up to each message
   const messagesWithCharCount = messages.map((msg, index) => {
-    const previousChars = messages
-      .slice(0, index)
-      .reduce((acc, m) => acc + m.content.join("").length, 0);
+    const previousChars = messages.slice(0, index).reduce((acc, m) => acc + m.content.join("").length, 0);
     return {
       ...msg,
       totalChars: previousChars + msg.content.join("").length,
@@ -69,9 +51,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
   });
 
   // Find where to show the context cut line
-  const contextCutIndex = messagesWithCharCount.findIndex(
-    (msg) => msg.totalChars > contextCutNumber,
-  );
+  const contextCutIndex = messagesWithCharCount.findIndex((msg) => msg.totalChars > contextCutNumber);
 
   const handleSwipe = (messageId: string, direction: "left" | "right") => {
     setContentIndices((prev) => {
@@ -128,17 +108,10 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
                 <div className="flex-shrink-0 select-none">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <button
-                        className="transition-transform rounded-lg"
-                        title="View Full Size Avatar"
-                      >
+                      <button className="transition-transform rounded-lg" title="View Full Size Avatar">
                         <Avatar className="w-24 h-24 ring-2 ring-border overflow-hidden rounded-full hover:ring-primary">
                           {message.avatar ? (
-                            <img
-                              src={message.avatar}
-                              alt={`${message.type} avatar`}
-                              className="w-full h-full object-cover hover:cursor-pointer"
-                            />
+                            <img src={message.avatar} alt={`${message.type} avatar`} className="w-full h-full object-cover hover:cursor-pointer" />
                           ) : (
                             <div className="w-full h-full bg-secondary flex items-center justify-center text-secondary-foreground">
                               {message.type === "user" ? "U" : "A"}
@@ -149,11 +122,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl w-fit p-2">
                       {message.avatar && (
-                        <img
-                          src={message.avatar}
-                          alt={`${message.type} avatar full size`}
-                          className="w-auto max-h-[80vh] object-contain rounded-lg"
-                        />
+                        <img src={message.avatar} alt={`${message.type} avatar full size`} className="w-auto max-h-[80vh] object-contain rounded-lg" />
                       )}
                     </DialogContent>
                   </Dialog>
@@ -179,13 +148,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
                       message.type === "user" ? "order-1" : "order-2",
                     )}
                   >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 hover:bg-accent"
-                      onClick={() => onEditMessage(message.id)}
-                      title="Edit Message"
-                    >
+                    <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" onClick={() => onEditMessage(message.id)} title="Edit Message">
                       <Pencil className="w-4 h-4" />
                     </Button>
                     <Button
@@ -199,12 +162,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-accent"
-                          title="More Options"
-                        >
+                        <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" title="More Options">
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -231,12 +189,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
 
                   {/* Version controls - Left side for assistant, hidden for user */}
                   {message.type === "assistant" && (
-                    <div
-                      className={cn(
-                        "flex items-center gap-1",
-                        message.type === "assistant" ? "order-1" : "order-2",
-                      )}
-                    >
+                    <div className={cn("flex items-center gap-1", message.type === "assistant" ? "order-1" : "order-2")}>
                       <span className="text-xs text-muted-foreground ml-1">
                         {currentIndex + 1}/{message.content.length}
                       </span>

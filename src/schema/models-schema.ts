@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { uuidUtils } from "./utils";
+import { uuidUtils } from "./utils-schema";
 
 export const ModelTypeSchema = z.enum(["llm", "audio", "image", "database"]);
 export type ModelType = z.infer<typeof ModelTypeSchema>;

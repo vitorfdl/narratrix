@@ -1,15 +1,7 @@
-import { create } from "zustand";
+import { cancelInferenceRequest, queueInferenceRequest } from "@/commands/inference";
+import type { InferenceMessage, InferenceRequest, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
 import { v4 as uuidv4 } from "uuid";
-import {
-  cancelInferenceRequest,
-  queueInferenceRequest,
-} from "@/commands/inference";
-import type {
-  InferenceMessage,
-  InferenceRequest,
-  InferenceResponse,
-  ModelSpecs,
-} from "@/schema/inference-engine";
+import { create } from "zustand";
 
 // Types for our store
 interface RequestStatus {
@@ -27,12 +19,7 @@ interface InferenceStore {
 
   // Actions
   addRequest: (requestId: string, modelId: string) => void;
-  updateRequestStatus: (
-    requestId: string,
-    status: RequestStatus["status"],
-    response?: InferenceResponse | null,
-    error?: string | null,
-  ) => void;
+  updateRequestStatus: (requestId: string, status: RequestStatus["status"], response?: InferenceResponse | null, error?: string | null) => void;
   removeRequest: (requestId: string) => void;
   clearRequests: () => void;
 
@@ -94,22 +81,14 @@ export const useInferenceStore = create<InferenceStore>((set, get) => ({
       return {
         requests: remaining,
         // If we're removing the latest request, set latestRequestId to null
-        latestRequestId: state.latestRequestId === requestId
-          ? null
-          : state.latestRequestId,
+        latestRequestId: state.latestRequestId === requestId ? null : state.latestRequestId,
       };
     }),
 
   clearRequests: () => set({ requests: {}, latestRequestId: null }),
 
   // API Operations
-  queueRequest: async (
-    messages,
-    modelSpecs,
-    systemPrompt,
-    parameters = {},
-    stream = false,
-  ) => {
+  queueRequest: async (messages, modelSpecs, systemPrompt, parameters = {}, stream = false) => {
     const requestId = uuidv4();
 
     // Create the request
@@ -130,9 +109,7 @@ export const useInferenceStore = create<InferenceStore>((set, get) => ({
       await queueInferenceRequest(request, modelSpecs);
       return requestId;
     } catch (err) {
-      const errorMessage = err instanceof Error
-        ? err.message
-        : "Failed to queue inference request";
+      const errorMessage = err instanceof Error ? err.message : "Failed to queue inference request";
 
       // Update store with error status
       get().updateRequestStatus(requestId, "error", null, errorMessage);

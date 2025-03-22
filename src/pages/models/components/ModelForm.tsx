@@ -1,29 +1,16 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useManifestStore } from "@/hooks/manifestStore";
 import { useInference } from "@/hooks/useInference";
-import { ModelSpecsSchema } from "@/schema/inference-engine";
-import { Manifest } from "@/schema/manifest";
-import { Model, ModelType } from "@/schema/models";
-import { createModel, updateModel } from "@/services/model";
+import { ModelSpecsSchema } from "@/schema/inference-engine-schema";
+import { Manifest } from "@/schema/manifest-schema";
+import { Model, ModelType } from "@/schema/models-schema";
+import { createModel, updateModel } from "@/services/model-service";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle, Eye, EyeOff, Globe, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -100,9 +87,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
   }, [manifests, model]);
 
   // Filter manifests by selected type
-  const filteredManifests = selectedType
-    ? manifests.filter((manifest) => manifest.type === selectedType)
-    : [];
+  const filteredManifests = selectedType ? manifests.filter((manifest) => manifest.type === selectedType) : [];
 
   // Generate dynamic form schema based on selected manifest
   useEffect(() => {
@@ -134,17 +119,13 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
       switch (field.field_type) {
         case "string":
         case "secret":
-          schemaObj[field.key] = field.required
-            ? z.string().min(1, { message: "This field is required." })
-            : z.string().optional();
+          schemaObj[field.key] = field.required ? z.string().min(1, { message: "This field is required." }) : z.string().optional();
           break;
         case "hidden":
           schemaObj[field.key] = z.any();
           break;
         case "number":
-          schemaObj[field.key] = field.required
-            ? z.number({ required_error: "This field is required." })
-            : z.number().optional();
+          schemaObj[field.key] = field.required ? z.number({ required_error: "This field is required." }) : z.number().optional();
           break;
         case "boolean":
           schemaObj[field.key] = field.required ? z.boolean() : z.boolean().optional();
@@ -184,9 +165,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
                 .optional();
           break;
         default:
-          schemaObj[field.key] = field.required
-            ? z.string().min(1, { message: "This field is required." })
-            : z.string().optional();
+          schemaObj[field.key] = field.required ? z.string().min(1, { message: "This field is required." }) : z.string().optional();
       }
     }
 
@@ -554,22 +533,13 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
                           className="absolute right-0 top-0 h-full"
                           onClick={() => toggleSecretVisibility(field.key)}
                         >
-                          {showSecrets[field.key] ? (
-                            <Eye className="h-4 w-4" />
-                          ) : (
-                            <EyeOff className="h-4 w-4" />
-                          )}
+                          {showSecrets[field.key] ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                         </Button>
                       </div>
                     ) : field.field_type === "url" ? (
                       <div className="relative">
                         <Globe className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
-                        <Input
-                          className="pl-8"
-                          placeholder="https://example.com"
-                          defaultValue={field.default as string}
-                          {...formField}
-                        />
+                        <Input className="pl-8" placeholder="https://example.com" defaultValue={field.default as string} {...formField} />
                       </div>
                     ) : (
                       <Input
@@ -590,13 +560,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         <div className="flex gap-2 w-full">
           <Button
             type="button"
-            variant={
-              testResult?.success
-                ? "default"
-                : testResult?.success === false
-                  ? "destructive"
-                  : "outline"
-            }
+            variant={testResult?.success ? "default" : testResult?.success === false ? "destructive" : "outline"}
             disabled={
               !selectedManifest ||
               !selectedType ||

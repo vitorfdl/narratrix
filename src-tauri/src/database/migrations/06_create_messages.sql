@@ -3,8 +3,8 @@ CREATE TABLE IF NOT EXISTS messages (
     chat_id TEXT NOT NULL,
     character_id TEXT, -- NULL for user messages
     type TEXT NOT NULL CHECK (type IN ('user', 'character', 'system')),
-    expression TEXT,
-    message TEXT NOT NULL,
+    message_index INTEGER NOT NULL,
+    messages TEXT NOT NULL, -- JSON Array of messages
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,

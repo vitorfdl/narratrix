@@ -1,4 +1,4 @@
-import type { AppSettings } from "@/schema/profiles";
+import type { AppSettings } from "@/schema/profiles-schema";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = AppSettings["appearance"]["theme"];
@@ -16,9 +16,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Handle system theme preference
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
       document.documentElement.classList.toggle("dark", systemTheme === "dark");
     } else {
       document.documentElement.classList.toggle("dark", theme === "dark");

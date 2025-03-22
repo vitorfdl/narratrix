@@ -1,12 +1,11 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utilsLib";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import * as React from "react";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Slider } from "./slider";
 
-interface StepButtonProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
+interface StepButtonProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
   value: number;
   step?: number;
   min?: number;
@@ -17,17 +16,7 @@ interface StepButtonProps
   ticks?: number; // Number of ticks (undefined means no ticks)
 }
 
-export function StepButton({
-  value,
-  step = 1,
-  min = 0,
-  max = 100,
-  onValueChange,
-  className,
-  showSlider = false,
-  ticks,
-  ...props
-}: StepButtonProps) {
+export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange, className, showSlider = false, ticks, ...props }: StepButtonProps) {
   const [, setIsFocused] = React.useState(false);
   const [localValue, setLocalValue] = React.useState(value.toString());
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -132,12 +121,7 @@ export function StepButton({
   }, [min, max, ticks, showSlider, step]);
 
   return (
-    <div
-      ref={containerRef}
-      className={cn("group relative", className)}
-      onBlur={handleBlur}
-      tabIndex={-1}
-    >
+    <div ref={containerRef} className={cn("group relative", className)} onBlur={handleBlur} tabIndex={-1}>
       <div className="relative">
         <Input
           {...props}
@@ -177,14 +161,7 @@ export function StepButton({
       {showSlider && (
         <div className="mt-0 px-1">
           <div className="relative">
-            <Slider
-              value={[value]}
-              min={min}
-              max={max}
-              step={effectiveStep}
-              onValueChange={(vals) => onValueChange(vals[0])}
-              className="pt-4 pb-2"
-            />
+            <Slider value={[value]} min={min} max={max} step={effectiveStep} onValueChange={(vals) => onValueChange(vals[0])} className="pt-4 pb-2" />
             {tickPositions.length > 0 && (
               <div className="absolute left-0 right-0 bottom-1 flex justify-between pointer-events-none">
                 {tickPositions.map((_, index) => (

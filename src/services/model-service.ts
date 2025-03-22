@@ -1,5 +1,7 @@
-import { Model, ModelSchema, ModelType } from "../schema/models.ts";
-import { uuidUtils } from "../schema/utils.ts";
+import { encryptApiKey } from "@/commands/security.ts";
+import { Manifest } from "@/schema/manifest-schema.ts";
+import { Model, ModelSchema, ModelType } from "../schema/models-schema.ts";
+import { uuidUtils } from "../schema/utils-schema.ts";
 import { executeDBQuery, selectDBQuery } from "../utils/database.ts";
 
 // Helper to format dates
@@ -23,17 +25,38 @@ export interface ModelFilter {
 }
 
 // Create a new model
-export async function createModel(modelData: NewModelParams): Promise<Model> {
+export async function createModel(modelData: NewModelParams, modelManifest?: Manifest): Promise<Model> {
   // Validate profile_id is a valid UUID
   const profileId = uuidUtils.uuid().parse(modelData.profile_id);
 
   const id = crypto.randomUUID();
   const now = formatDateTime();
 
+  // Process and encrypt any secret fields in the config
+  if (modelManifest && modelData.config) {
+    const secretFields = modelManifest.fields.filter((field) => field.field_type === "secret").map((field) => field.key);
+
+    // Create a new config object to avoid mutating the original
+    const processedConfig = { ...modelData.config };
+
+    // Encrypt each secret field
+    for (const key of secretFields) {
+      if (processedConfig[key]) {
+        try {
+          // Encrypt the secret value
+          processedConfig[key] = await encryptApiKey(processedConfig[key]);
+        } catch (error) {
+          console.error(`Failed to encrypt secret field ${key}:`, error);
+          throw new Error(`Failed to encrypt secret field ${key}: ${error}`);
+        }
+      }
+    }
+
+    // Replace the original config with the processed one
+    modelData.config = processedConfig;
+  }
+
   // Ensure config is stored as a string
-  const configStr = typeof modelData.config === "string"
-    ? modelData.config
-    : JSON.stringify(modelData.config);
 
   // Validate the model data against schema
   const validatedModel = ModelSchema.parse({
@@ -47,17 +70,19 @@ export async function createModel(modelData: NewModelParams): Promise<Model> {
     updatedAt: new Date(now),
   });
 
+  const configStr = JSON.stringify(validatedModel.config);
+
   await executeDBQuery(
     `INSERT INTO models (id, profile_id, name, type, config, manifest_id, max_concurrency, created_at, updated_at) 
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
-      id,
-      profileId,
-      modelData.name,
-      modelData.type,
+      validatedModel.id,
+      validatedModel.profile_id,
+      validatedModel.name,
+      validatedModel.type,
       configStr,
-      modelData.manifest_id,
-      1,
+      validatedModel.manifest_id,
+      validatedModel.max_concurrency,
       now,
       now,
     ],
@@ -157,12 +182,7 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
 }
 
 // Update a model
-export async function updateModel(
-  id: string,
-  updateData: Partial<
-    Omit<Model, "id" | "profile_id" | "createdAt" | "updatedAt">
-  >,
-): Promise<Model | null> {
+export async function updateModel(id: string, updateData: Partial<Omit<Model, "id" | "profile_id" | "createdAt" | "updatedAt">>): Promise<Model | null> {
   const validId = uuidUtils.uuid().parse(id);
 
   // Get the current model to ensure it exists
@@ -189,9 +209,7 @@ export async function updateModel(
   }
 
   if (updateData.config !== undefined) {
-    const configStr = typeof updateData.config === "string"
-      ? updateData.config
-      : JSON.stringify(updateData.config);
+    const configStr = typeof updateData.config === "string" ? updateData.config : JSON.stringify(updateData.config);
 
     updates.push(`config = $${paramIndex}`);
     values.push(configStr);
@@ -227,10 +245,7 @@ export async function updateModel(
 
   // Execute update if there are fields to update
   if (updates.length > 0) {
-    await executeDBQuery(
-      `UPDATE models SET ${updates.join(", ")} WHERE id = $${paramIndex}`,
-      values,
-    );
+    await executeDBQuery(`UPDATE models SET ${updates.join(", ")} WHERE id = $${paramIndex}`, values);
   }
 
   // Return the updated model
@@ -242,18 +257,14 @@ export async function deleteModel(id: string): Promise<boolean> {
   // Validate ID input
   const validId = uuidUtils.uuid().parse(id);
 
-  const result = await executeDBQuery("DELETE FROM models WHERE id = $1", [
-    validId,
-  ]);
+  const result = await executeDBQuery("DELETE FROM models WHERE id = $1", [validId]);
 
   // Return true if a row was affected (model was deleted)
   return result.rowsAffected > 0;
 }
 
 // Group models by type
-export async function getModelsByProfileGroupedByType(
-  profileId: string,
-): Promise<Record<ModelType, Model[]>> {
+export async function getModelsByProfileGroupedByType(profileId: string): Promise<Record<ModelType, Model[]>> {
   const validProfileId = uuidUtils.uuid().parse(profileId);
 
   const models = await listModels({ profile_id: validProfileId });

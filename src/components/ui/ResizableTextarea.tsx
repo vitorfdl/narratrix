@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utilsLib";
 import React from "react";
 
 interface ResizableTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -6,12 +6,7 @@ interface ResizableTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAr
   tokens?: number;
 }
 
-export function ResizableTextarea({
-  className,
-  label,
-  tokens = 50,
-  ...props
-}: ResizableTextareaProps) {
+export function ResizableTextarea({ className, label, tokens = 50, ...props }: ResizableTextareaProps) {
   return (
     <>
       {label && <div className="mb-2 text-sm font-medium text-foreground">{label}</div>}

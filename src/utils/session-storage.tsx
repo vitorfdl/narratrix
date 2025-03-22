@@ -1,4 +1,4 @@
-import { ProfileResponse } from "@/schema/profiles";
+import { ProfileResponse } from "@/schema/profiles-schema";
 import { useAtom } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
 

@@ -1,11 +1,7 @@
-import { useCallback, useEffect } from "react";
 import { listenForInferenceResponses } from "@/commands/inference";
-import { useInferenceStore } from "@/stores/inferenceStore";
-import type {
-  InferenceMessage,
-  InferenceResponse,
-  ModelSpecs,
-} from "@/schema/inference-engine";
+import { useInferenceStore } from "@/hooks/inferenceStore";
+import type { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
+import { useCallback, useEffect } from "react";
 
 interface UseInferenceOptions {
   onComplete?: (response: InferenceResponse, requestId: string) => void;
@@ -47,16 +43,9 @@ export function setupInferenceListener() {
           updateRequestStatus(requestId, "streaming", response);
         } else if (response.status === "completed") {
           updateRequestStatus(requestId, "completed", response);
-        } else if (
-          response.status === "error" || response.status === "cancelled"
-        ) {
+        } else if (response.status === "error" || response.status === "cancelled") {
           const errorMessage = response.error || "Unknown error occurred";
-          updateRequestStatus(
-            requestId,
-            response.status,
-            response,
-            errorMessage,
-          );
+          updateRequestStatus(requestId, response.status, response, errorMessage);
         }
       });
 
@@ -86,26 +75,14 @@ setupInferenceListener();
  */
 export function useInference(options: UseInferenceOptions = {}) {
   // Access store state and actions
-  const {
-    requests,
-    latestRequestId,
-    queueRequest,
-    cancelRequest,
-  } = useInferenceStore();
+  const { requests, latestRequestId, queueRequest, cancelRequest } = useInferenceStore();
 
   // Derive loading state and other status information
-  const isLoading = latestRequestId
-    ? requests[latestRequestId]?.status === "queued" ||
-      requests[latestRequestId]?.status === "streaming"
-    : false;
+  const isLoading = latestRequestId ? requests[latestRequestId]?.status === "queued" || requests[latestRequestId]?.status === "streaming" : false;
 
-  const error = latestRequestId
-    ? requests[latestRequestId]?.error || null
-    : null;
+  const error = latestRequestId ? requests[latestRequestId]?.error || null : null;
 
-  const response = latestRequestId
-    ? requests[latestRequestId]?.response || null
-    : null;
+  const response = latestRequestId ? requests[latestRequestId]?.response || null : null;
 
   // Set up effects to call the provided callbacks when request statuses change
   useEffect(() => {
@@ -136,21 +113,9 @@ export function useInference(options: UseInferenceOptions = {}) {
 
   // Run inference by queuing a request through the store
   const runInference = useCallback(
-    async (
-      messages: InferenceMessage[],
-      modelSpecs: ModelSpecs,
-      systemPrompt?: string,
-      parameters: Record<string, any> = {},
-      stream = false,
-    ) => {
+    async (messages: InferenceMessage[], modelSpecs: ModelSpecs, systemPrompt?: string, parameters: Record<string, any> = {}, stream = false) => {
       try {
-        const requestId = await queueRequest(
-          messages,
-          modelSpecs,
-          systemPrompt,
-          parameters,
-          stream,
-        );
+        const requestId = await queueRequest(messages, modelSpecs, systemPrompt, parameters, stream);
         console.log(`Queued inference request ${requestId}`);
         return requestId;
       } catch (err) {
@@ -172,31 +137,21 @@ export function useInference(options: UseInferenceOptions = {}) {
   );
 
   // Cancel the most recent request (for backwards compatibility)
-  const cancelInference = useCallback(
-    async () => {
-      if (latestRequestId) {
-        return await cancelInferenceRequest(latestRequestId);
-      }
-      return false;
-    },
-    [latestRequestId, cancelInferenceRequest],
-  );
+  const cancelInference = useCallback(async () => {
+    if (latestRequestId) {
+      return await cancelInferenceRequest(latestRequestId);
+    }
+    return false;
+  }, [latestRequestId, cancelInferenceRequest]);
 
   // Cancel all active requests
-  const cancelAllRequests = useCallback(
-    async () => {
-      const activeRequestIds = Object.keys(requests).filter((id) =>
-        requests[id].status === "queued" || requests[id].status === "streaming"
-      );
+  const cancelAllRequests = useCallback(async () => {
+    const activeRequestIds = Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming");
 
-      const results = await Promise.all(
-        activeRequestIds.map((id) => cancelInferenceRequest(id)),
-      );
+    const results = await Promise.all(activeRequestIds.map((id) => cancelInferenceRequest(id)));
 
-      return results.every(Boolean);
-    },
-    [requests, cancelInferenceRequest],
-  );
+    return results.every(Boolean);
+  }, [requests, cancelInferenceRequest]);
 
   return {
     // Core functions
@@ -212,13 +167,8 @@ export function useInference(options: UseInferenceOptions = {}) {
 
     // Request info
     latestRequestId,
-    activeRequestIds: Object.keys(requests).filter((id) =>
-      requests[id].status === "queued" || requests[id].status === "streaming"
-    ),
-    activeRequestCount:
-      Object.keys(requests).filter((id) =>
-        requests[id].status === "queued" || requests[id].status === "streaming"
-      ).length,
+    activeRequestIds: Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming"),
+    activeRequestCount: Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming").length,
     requests,
   };
 }

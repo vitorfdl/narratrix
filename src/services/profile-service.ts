@@ -1,13 +1,6 @@
 import { hashPassword, verifyPassword } from "../commands/security.ts";
-import {
-  LoginPasswordParams,
-  LoginPasswordSchema,
-  NewProfileParams,
-  type Profile,
-  type ProfileResponse,
-  ProfileSchema,
-} from "../schema/profiles.ts";
-import { uuidUtils } from "../schema/utils.ts";
+import { LoginPasswordParams, LoginPasswordSchema, NewProfileParams, type Profile, type ProfileResponse, ProfileSchema } from "../schema/profiles-schema.ts";
+import { uuidUtils } from "../schema/utils-schema.ts";
 import { executeDBQuery, selectDBQuery } from "../utils/database.ts";
 
 // Helper to format dates
@@ -31,15 +24,7 @@ export async function createProfile(profileData: NewProfileParams): Promise<Prof
   await executeDBQuery(
     `INSERT INTO profiles (id, name, password, avatar_path, settings, created_at, updated_at) 
      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [
-      id,
-      profile.name,
-      hashedPassword,
-      profile.avatar_path,
-      JSON.stringify(settings),
-      profile.created_at,
-      profile.updated_at,
-    ],
+    [id, profile.name, hashedPassword, profile.avatar_path, JSON.stringify(settings), profile.created_at, profile.updated_at],
   );
 
   // Return a validated ProfileResponse
@@ -97,17 +82,13 @@ export async function getProfileById(id: string): Promise<ProfileResponse | null
 
   // Parse settings from string to object if needed
   const profile = result[0];
-  profile.settings =
-    typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
+  profile.settings = typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
 
   // Validate with ProfileResponseSchema
   return profile;
 }
 
-export async function updateProfile(
-  id: string,
-  updateData: Partial<Profile>,
-): Promise<ProfileResponse> {
+export async function updateProfile(id: string, updateData: Partial<Profile>): Promise<ProfileResponse> {
   const validId = uuidUtils.uuid().parse(id);
   const update = ProfileSchema.parse(updateData);
 
@@ -163,10 +144,7 @@ export async function updateProfile(
 
   // Execute update if there are fields to update
   if (updates.length > 0) {
-    await executeDBQuery(
-      `UPDATE profiles SET ${updates.join(", ")} WHERE id = $${paramIndex}`,
-      values,
-    );
+    await executeDBQuery(`UPDATE profiles SET ${updates.join(", ")} WHERE id = $${paramIndex}`, values);
   }
 
   // Return the updated profile
@@ -211,17 +189,14 @@ export async function loginProfile(loginData: LoginPasswordParams): Promise<Prof
   const profile = profiles[0];
 
   // Verify the password
-  const isValid = profile.password
-    ? await verifyPassword(login.password || "", profile.password)
-    : true;
+  const isValid = profile.password ? await verifyPassword(login.password || "", profile.password) : true;
 
   if (!isValid) {
     throw new Error("Invalid credentials");
   }
 
   // Parse settings from string to object if needed
-  profile.settings =
-    typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
+  profile.settings = typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
 
   // Remove password field from the response
   const { password, ...profileResponse } = profile;

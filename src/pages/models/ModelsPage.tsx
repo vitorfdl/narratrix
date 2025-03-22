@@ -1,19 +1,13 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useManifestStore } from "@/hooks/manifestStore";
 import { useModelsStore } from "@/hooks/modelsStore";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Model, ModelType } from "../../schema/models";
-import { ModelForm } from "./components/ModelForm";
+import { Model, ModelType } from "../../schema/models-schema";
 import { ModelCard } from "./components/ModelCard";
+import { ModelForm } from "./components/ModelForm";
 
 interface ModelGroup {
   type: ModelType;
@@ -103,8 +97,9 @@ export default function Models() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex flex-col h-full page-container">
+      <div className="flex-1 space-y-4">
+        <h1 className="title">Models List</h1>
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
             <p className="text-muted-foreground">Loading models...</p>
@@ -115,12 +110,7 @@ export default function Models() {
               <h2 className="text-base font-semibold tracking-tight">{group.title}</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {group.models.map((model) => (
-                  <ModelCard
-                    key={model.id}
-                    model={model}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
+                  <ModelCard key={model.id} model={model} onEdit={handleEdit} onDelete={handleDelete} />
                 ))}
               </div>
             </div>
@@ -135,10 +125,7 @@ export default function Models() {
       {/* Add Model Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogTrigger asChild>
-          <Button
-            className="w-full rounded-none h-14 bg-accent hover:bg-accent/90 text-accent-foreground"
-            size="lg"
-          >
+          <Button className="w-full rounded-none h-14 bg-accent hover:bg-accent/90 text-accent-foreground" size="lg">
             <Plus className="mr-2 h-5 w-5" />
             Add Model
           </Button>

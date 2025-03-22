@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utilsLib";
 import { ChatTab } from "@/schema/chat";
 import { PlusIcon, X } from "lucide-react";
 
@@ -23,9 +23,7 @@ export function ChatTabs({ tabs, activeTab, onTabChange, onNewChat, onCloseTab }
               key={tab.id}
               className={cn(
                 "group flex items-center px-2 py-1 rounded-t-lg text-sm transition-colors",
-                activeTab === tab.id
-                  ? "bg-primary text-accent"
-                  : "bg-background text-muted-foreground hover:text-foreground",
+                activeTab === tab.id ? "bg-primary text-accent" : "bg-background text-muted-foreground hover:text-foreground",
               )}
             >
               <button onClick={() => onTabChange(tab.id)} className="mr-2 max-h-6 text-sm">

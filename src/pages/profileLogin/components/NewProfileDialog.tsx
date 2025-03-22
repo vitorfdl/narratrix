@@ -24,7 +24,7 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
   const { addProfile } = useProfile();
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [hasPassword, setHasPassword] = useState(true);
+  const [hasPassword, setHasPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 

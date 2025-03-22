@@ -1,4 +1,4 @@
-import { Model, ModelType } from "@/schema/models";
+import { Model, ModelType } from "@/schema/models-schema";
 import {
   ModelFilter,
   NewModelParams,
@@ -8,7 +8,7 @@ import {
   getModelsByProfileGroupedByType as getModelsByProfileGroupedByTypeAPI,
   listModels as listModelsAPI,
   updateModel as updateModelAPI,
-} from "@/services/model";
+} from "@/services/model-service";
 import { create } from "zustand";
 
 interface ModelsState {
@@ -20,10 +20,7 @@ interface ModelsState {
   // CRUD Operations
   createModel: (modelData: NewModelParams) => Promise<Model>;
   getModelById: (id: string) => Promise<Model | null>;
-  updateModel: (
-    id: string,
-    updateData: Partial<Omit<Model, "id" | "profile_id" | "createdAt" | "updatedAt">>,
-  ) => Promise<Model | null>;
+  updateModel: (id: string, updateData: Partial<Omit<Model, "id" | "profile_id" | "createdAt" | "updatedAt">>) => Promise<Model | null>;
   deleteModel: (id: string) => Promise<boolean>;
 
   // List Operations
@@ -90,9 +87,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       return model;
     } catch (error) {
       set({
-        error: `Failed to get model with ID ${id}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: `Failed to get model with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
         isLoading: false,
       });
       return null;
@@ -117,9 +112,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       return updatedModel;
     } catch (error) {
       set({
-        error: `Failed to update model with ID ${id}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: `Failed to update model with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
         isLoading: false,
       });
       return null;
@@ -144,9 +137,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       return success;
     } catch (error) {
       set({
-        error: `Failed to delete model with ID ${id}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: `Failed to delete model with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
         isLoading: false,
       });
       return false;
@@ -186,9 +177,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       return groupedModels;
     } catch (error) {
       set({
-        error: `Failed to get models by type for profile ${profileId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: `Failed to get models by type for profile ${profileId}: ${error instanceof Error ? error.message : String(error)}`,
         isLoading: false,
       });
       return {} as Record<ModelType, Model[]>;
