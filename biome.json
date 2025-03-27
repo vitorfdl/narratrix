@@ -20,6 +20,9 @@
         "noUnusedVariables": "warn",
         "useExhaustiveDependencies": "warn"
       },
+      "complexity": {
+        "noForEach": "warn"
+      },
       "style": {
         "useBlockStatements": "error",
         "noNonNullAssertion": "off",

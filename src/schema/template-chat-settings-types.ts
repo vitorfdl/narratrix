@@ -58,12 +58,7 @@ export interface RandomNumberField extends BaseField {
 /**
  * Union type for all possible field types
  */
-export type ConfigField =
-  | NumericField
-  | StringArrayField
-  | DragArrayField
-  | SectionField
-  | RandomNumberField;
+export type ConfigField = NumericField | StringArrayField | DragArrayField | SectionField | RandomNumberField;
 
 /**
  * Type for the entire configuration fields array
@@ -74,33 +69,3 @@ export type ConfigFields = ConfigField[];
  * Type for sampling order options
  */
 export type SamplingMethod = "dry" | "xtc" | "min_p" | "top_p" | "top_k" | "temperature";
-
-/**
- * Interface for the configuration values
- */
-export interface ConfigValues {
-  temperature?: number;
-  top_p?: number;
-  top_k?: number;
-  min_p?: number;
-  top_a?: number;
-  frequency_penalty?: number;
-  presence_penalty?: number;
-  repetition_penalty?: number;
-  smoothing_sampling?: {
-    smoothing_factor: number;
-    smoothing_curve: number;
-  };
-  dry?: {
-    dry_multiplier: number;
-    dry_base: number;
-    dry_allowed_length: number;
-    dry_penalty_last_n: number;
-    dry_sequence_breakers: string[];
-  };
-  xtc?: {
-    xtc_threshold: number;
-    xtc_probability: number;
-  };
-  sampling_order?: SamplingMethod[];
-}

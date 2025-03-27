@@ -1,31 +1,40 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CharacterUnion } from "@/schema/characters-schema";
 import { Edit, Trash2 } from "lucide-react";
-import { CharacterOrAgent } from "../../../schema/characters";
 
 interface CharacterCardProps {
-  model: CharacterOrAgent;
+  model: CharacterUnion;
   cardSize: "small" | "medium" | "large";
-  onEdit: (model: CharacterOrAgent) => void;
-  onDelete: (model: CharacterOrAgent) => void;
+  onEdit: (model: CharacterUnion) => void;
+  onDelete: (model: CharacterUnion) => void;
 }
 
 export function CharacterCard({ model, cardSize, onEdit, onDelete }: CharacterCardProps) {
+  // Get the avatar URL from settings or custom fields if available
+  const avatarUrl = (model.settings?.avatar_url as string) || (model.custom?.avatar_url as string) || "/default-avatar.png";
+
+  // Get the author from settings or custom fields
+  const author = (model.settings?.author as string) || (model.custom?.author as string) || "Unknown";
+
+  // Get tags with null check
+  const tags = model.tags || [];
+
   return (
     <Card className="group relative overflow-hidden flex flex-col h-full">
       <CardHeader className="relative h-48 p-0">
-        <img src={model.avatar} alt={model.name} className="h-full w-full object-cover" />
+        <img src={avatarUrl} alt={model.name} className="h-full w-full object-cover" />
         <Badge className="absolute left-2 top-2" variant={model.type === "character" ? "default" : "secondary"}>
           {model.type}
         </Badge>
       </CardHeader>
 
-      <CardContent className="p-4 flex-grow">
+      <CardContent className="py-1 px-4 flex-grow">
         <h3 className="text-sm font-semibold">{model.name}</h3>
-        <p className="text-xs text-muted-foreground">by {model.author}</p>
+        <p className="text-xs text-muted-foreground">by {author}</p>
         <div className="mt-2 flex flex-wrap gap-1">
-          {model.tags.map((tag) => (
+          {tags.map((tag: string) => (
             <Badge key={tag} variant="outline" className="text-xs">
               {tag}
             </Badge>
@@ -43,7 +52,7 @@ export function CharacterCard({ model, cardSize, onEdit, onDelete }: CharacterCa
       </div>
 
       <CardFooter className="p-4 pb-2 pt-0 text-xs italic text-muted-foreground mt-auto">
-        Last updated: {model.updatedAt.toLocaleDateString()}
+        Last updated: {new Date(model.updated_at).toLocaleDateString()}
       </CardFooter>
     </Card>
   );

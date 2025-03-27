@@ -1,13 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Expression } from "@/schema/characters-schema";
 import { Edit, Folder, Plus, RefreshCw, Trash2 } from "lucide-react";
-
-interface Expression {
-  id: string;
-  name: string;
-  url: string;
-}
 
 interface ExpressionPackPreviewProps {
   character_id: string;
@@ -75,7 +70,7 @@ export function ExpressionPackPreview({ character_id, expressions }: ExpressionP
               className="group relative aspect-square overflow-hidden border-none bg-card/50 transition-all duration-150 hover:shadow-lg hover:shadow-primary/10 hover:ring-1 hover:ring-primary/20"
             >
               <img
-                src={expression.url}
+                src={expression.image_path}
                 alt={expression.name}
                 className="h-full w-full object-cover transition-transform duration-150 group-hover:scale-105"
               />

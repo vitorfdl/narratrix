@@ -8,6 +8,7 @@ import { useProfile } from "@/hooks/ProfileContext";
 import { usePromptTemplate, usePromptTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-prompt-schema";
 import { DndContext, closestCenter } from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronDown, ChevronUp, GripVertical, Plus, Trash } from "lucide-react";
@@ -72,8 +73,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
         {!prompt.isCollapsed && (
           <div className="space-y-4">
             <div className="mb-2 mr-1 ml-1">
-              <TipTapTextArea initialValue={prompt.content} onChange={(e) => onUpdate(prompt.id, { content: e })} disabled={disabled} />
-              {/* <ResizableTextarea value={prompt.content} onChange={(e) => onUpdate(prompt.id, { content: e.target.value })} disabled={disabled} /> */}
+              <TipTapTextArea initialValue={prompt.content} onChange={(e) => onUpdate(prompt.id, { content: e })} editable={!disabled} />
             </div>
           </div>
         )}
@@ -322,6 +322,7 @@ export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange
         <div className={`space-y-1 ${isDisabled ? "opacity-70" : ""}`}>
           <DndContext
             collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis]}
             onDragEnd={({ active, over }) => {
               if (!isDisabled && over && active.id !== over.id) {
                 const oldIndex = prompts.findIndex((item) => item.id === active.id);

@@ -8,7 +8,7 @@ import { HelpCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ExtraSections } from "./components/ExtrasSection";
 import { InstructTemplateSection } from "./components/InstructTemplateSection";
-import { SystemPromptTemplateSection } from "./components/SystemtemplateSection";
+import { SystemPromptTemplateSection } from "./components/SystemTemplateSection";
 import { TemplateHeader } from "./components/TemplateHeader";
 
 export default function FormatTemplatePage() {

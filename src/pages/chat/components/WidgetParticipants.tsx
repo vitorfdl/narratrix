@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, PlayIcon, Settings, Trash2, UserPlus } from "lucide-react";
@@ -166,7 +167,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({
     <div className="flex flex-col h-full bg-background">
       {/* Participants List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-0.5 custom-scrollbar">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
           <SortableContext items={items} strategy={verticalListSortingStrategy}>
             <div className="space-y-1">
               {items.map((participant) => (

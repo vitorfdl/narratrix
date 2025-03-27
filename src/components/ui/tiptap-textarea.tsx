@@ -29,7 +29,7 @@ export function TipTapTextArea({
         initialValue={initialValue}
         onChange={onChange}
         className={cn(
-          "custom-scrollbar bg-foreground/5 px-3 py-2",
+          "custom-scrollbar bg-foreground/5 px-3 py-2 overflow-auto",
           "border-0 border-b-2 border-b-primary/20",
           "transition-[border] duration-100",
           "focus-within:border-b-primary focus-within:bg-accent",

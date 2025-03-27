@@ -317,8 +317,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         }
       }
 
-      console.log("Testing connection with config:", configFields);
-
       // Create temporary model specs for testing
       const modelSpecs = ModelSpecsSchema.parse({
         id: model?.id || "temp-test-model",
@@ -328,8 +326,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         engine: selectedManifest.engine,
       });
 
-      console.log("Model specs for testing:", modelSpecs);
-
       // Simple test message to verify connection
       const requestId = await runInference(
         [{ role: "user", text: "This is a connection test" }],
@@ -338,8 +334,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         {},
         false,
       );
-
-      console.log("Created test request with ID:", requestId);
 
       // Store the request ID for tracking
       if (requestId) {

@@ -8,81 +8,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
+import { useProfile } from "@/hooks/ProfileContext";
+import { useCharacterActions } from "@/hooks/characterStore";
+import { CharacterUnion } from "@/schema/characters-schema";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { ExpressionPackPreview } from "./ExpressionPackPreview";
 
 interface CharacterFormProps {
   onSuccess: () => void;
-  initialData?: {
-    id?: string;
-    name?: string;
-    author?: string;
-    version?: string;
-    avatar?: string;
-    type?: "character" | "agent";
-    personality?: string;
-    systemPrompt?: string;
-    preserveLastResponse?: boolean;
-  };
+  initialData?: CharacterUnion;
   mode?: "create" | "edit";
 }
-
-// Mock data for lorebooks
-const mockLorebooks = ["Fantasy Guide", "Sci-fi Encyclopedia", "Historical Facts", "Mythology Compendium"];
-
-// Mock data for expressions
-const mockExpressions = [
-  { id: "1", name: "Happy", url: "/avatars/narratrix.jpeg" },
-  { id: "2", name: "Sad", url: "/avatars/narratrix.jpeg" },
-];
 
 // Character-specific form content
 function CharacterFormContent({
   personality = "",
   systemPrompt = "",
+  expressions = [],
+  characterId,
   onPersonalityChange,
   onSystemPromptChange,
 }: {
   personality?: string;
   systemPrompt?: string;
+  expressions?: Array<{ id: string; name: string; image_path: string }>;
+  characterId?: string;
   onPersonalityChange: (value: string) => void;
   onSystemPromptChange: (value: string) => void;
 }) {
-  const [selectedLorebooks, setSelectedLorebooks] = useState<string[]>([]);
-  const [lorebookOpen, setLorebookOpen] = useState(false);
-
   return (
     <>
-      {/* <div className="space-y-2">
-        <Label>Lorebooks</Label>
-        <Popover open={lorebookOpen} onOpenChange={setLorebookOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-start">
-              {selectedLorebooks.length === 0 ? "Select Lorebooks..." : `${selectedLorebooks.length} selected`}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Search lorebooks..." />
-              <CommandEmpty>No lorebooks found.</CommandEmpty>
-              <CommandGroup>
-                {mockLorebooks.map((book) => (
-                  <CommandItem
-                    key={book}
-                    onSelect={() => {
-                      setSelectedLorebooks((prev) => (prev.includes(book) ? prev.filter((b) => b !== book) : [...prev, book]));
-                    }}
-                  >
-                    {book}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div> */}
-
       <div className="space-y-2">
         <TipTapTextArea
           className="max-h-48 min-h-24 overflow-y-auto"
@@ -159,7 +116,8 @@ function CharacterFormContent({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <Separator className="my-2" />
-              <ExpressionPackPreview character_id="1" expressions={mockExpressions} />
+              {characterId && <ExpressionPackPreview character_id={characterId} expressions={expressions} />}
+              {!characterId && <div className="text-sm text-muted-foreground">Save the character first to add expressions.</div>}
             </CollapsibleContent>
           </Collapsible>
         </CardContent>
@@ -200,36 +158,96 @@ function AgentFormContent({
   );
 }
 
-export function CharacterForm({ onSuccess, initialData = {}, mode = "create" }: CharacterFormProps) {
+export function CharacterForm({ onSuccess, initialData, mode = "create" }: CharacterFormProps) {
   const isEditMode = mode === "edit";
-  const [type, setType] = useState<"character" | "agent">(initialData.type || "character");
-  const [name, setName] = useState(initialData.name || "");
-  const [author, setAuthor] = useState(initialData.author || "");
-  const [version, setVersion] = useState(initialData.version || "");
-  const [avatarImage, setAvatarImage] = useState<string | null>(initialData.avatar || null);
-  const [personality, setPersonality] = useState(initialData.personality || "");
-  const [systemPrompt, setSystemPrompt] = useState(initialData.systemPrompt || "");
-  const [preserveLastResponse, setPreserveLastResponse] = useState(initialData.preserveLastResponse || false);
+  const { createCharacter, updateCharacter } = useCharacterActions();
+  const { currentProfile } = useProfile();
+  const profileId = currentProfile!.id;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Form state
+  const [type, setType] = useState<"character" | "agent">(initialData?.type || "character");
+  const [name, setName] = useState(initialData?.name || "");
+  const [version, setVersion] = useState(initialData?.version || "1.0.0");
+  const [avatarImage, setAvatarImage] = useState<string | null>(
+    (initialData?.settings?.avatar_url as string) || (initialData?.custom?.avatar_url as string) || null,
+  );
+  const [tags, setTags] = useState<string[]>(initialData?.tags || []);
+  const [personality, setPersonality] = useState(initialData?.type === "character" ? (initialData?.settings?.personality as string) || "" : "");
+  const [systemPrompt, setSystemPrompt] = useState(initialData?.system_override || (initialData?.settings?.system_prompt as string) || "");
+  const [preserveLastResponse, setPreserveLastResponse] = useState(
+    initialData?.type === "agent" ? (initialData?.settings?.preserve_last_response as boolean) || false : false,
+  );
+  const [expressions, setExpressions] = useState(initialData?.type === "character" ? initialData.expressions || [] : []);
+
+  // Set author from profile settings or use a default
+  const [author, setAuthor] = useState((initialData?.settings?.author as string) || (initialData?.custom?.author as string) || currentProfile?.name);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    const formData = {
-      id: initialData.id,
-      type,
-      name,
-      author,
-      version,
-      avatar: avatarImage,
-      personality,
-      systemPrompt,
-      preserveLastResponse: type === "agent" ? preserveLastResponse : undefined,
-    };
+    try {
+      const settings: Record<string, unknown> = {
+        avatar_url: avatarImage,
+        author,
+      };
 
-    // TODO: Implement form submission for create/update
-    console.log("Form submitted:", formData);
-    onSuccess();
+      // Add type-specific settings
+      if (type === "character") {
+        settings.personality = personality;
+        settings.system_prompt = systemPrompt;
+      } else {
+        settings.preserve_last_response = preserveLastResponse;
+      }
+
+      const formData = {
+        name,
+        type,
+        version,
+        profile_id: profileId,
+        tags,
+        settings,
+        system_override: systemPrompt || null,
+        external_link: null,
+        auto_update: true,
+        custom: {},
+        ...(type === "character"
+          ? {
+              expressions: expressions.length > 0 ? expressions : null,
+              character_manifest_id: null,
+            }
+          : {}),
+      };
+
+      if (isEditMode && initialData) {
+        await updateCharacter(initialData.id, formData);
+        toast.success(`${type === "character" ? "Character" : "Agent"} updated successfully!`);
+      } else {
+        await createCharacter(formData as any);
+        toast.success(`${type === "character" ? "Character" : "Agent"} created successfully!`);
+      }
+
+      onSuccess();
+    } catch (error) {
+      toast.error(`Failed to ${isEditMode ? "update" : "create"} ${type}: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  // Reset form fields when switching between character and agent type
+  useEffect(() => {
+    if (!isEditMode) {
+      if (type === "character") {
+        setSystemPrompt("");
+        setPreserveLastResponse(false);
+      } else {
+        setPersonality("");
+        setExpressions([]);
+      }
+    }
+  }, [type, isEditMode]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
@@ -248,17 +266,25 @@ export function CharacterForm({ onSuccess, initialData = {}, mode = "create" }: 
         <div className="flex-1 space-y-2">
           <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} />
+            <Input id="name" placeholder="Character Name" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="author">Author</Label>
-            <Input id="author" placeholder="John Doe" required value={author} onChange={(e) => setAuthor(e.target.value)} />
+            <Input id="author" placeholder="Your Name" required value={author} onChange={(e) => setAuthor(e.target.value)} />
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="version">Version</Label>
-            <Input id="version" placeholder="1.0" required value={version} onChange={(e) => setVersion(e.target.value)} />
+            <Input
+              id="version"
+              placeholder="1.0.0"
+              pattern="^\d+\.\d+\.\d+$"
+              title="Version must be in format: major.minor.patch"
+              required
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+            />
           </div>
         </div>
 
@@ -282,6 +308,8 @@ export function CharacterForm({ onSuccess, initialData = {}, mode = "create" }: 
         <CharacterFormContent
           personality={personality}
           systemPrompt={systemPrompt}
+          expressions={expressions}
+          characterId={initialData?.id}
           onPersonalityChange={setPersonality}
           onSystemPromptChange={setSystemPrompt}
         />
@@ -294,8 +322,8 @@ export function CharacterForm({ onSuccess, initialData = {}, mode = "create" }: 
         />
       )}
 
-      <Button type="submit" className="w-full">
-        {isEditMode ? "Update" : "Create"} {type === "character" ? "Character" : "Agent"}
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Processing..." : isEditMode ? "Update" : "Create"} {type === "character" ? "Character" : "Agent"}
       </Button>
     </form>
   );

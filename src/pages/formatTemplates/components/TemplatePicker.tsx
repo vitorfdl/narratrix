@@ -37,7 +37,7 @@ export function TemplatePicker({
     <div className="flex items-center space-x-1.5">
       <div className="flex-1">
         <Select value={selectedTemplateId ?? undefined} onValueChange={onTemplateSelect} disabled={!hasTemplates}>
-          <SelectTrigger className="w-full bg-muted h-8 text-xs">
+          <SelectTrigger className="w-full h-8 text-xs">
             <SelectValue placeholder={hasTemplates ? "Select Template" : "No templates available"} />
           </SelectTrigger>
           <SelectContent>

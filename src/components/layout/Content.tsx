@@ -1,4 +1,4 @@
-import Characters from "@/pages/characters/Characters";
+import Characters from "@/pages/characters/CharactersPage";
 import ChatPage from "@/pages/chat/ChatPage";
 import InferenceTemplatePage from "@/pages/formatTemplates/FormatTemplatePage";
 import LexicalTestPage from "@/pages/lorebooks/LorebooksPage";

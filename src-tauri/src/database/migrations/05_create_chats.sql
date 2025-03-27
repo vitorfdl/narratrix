@@ -29,7 +29,6 @@ CREATE TABLE IF NOT EXISTS chat_template (
     id TEXT PRIMARY KEY,
     profile_id TEXT NOT NULL,
     name TEXT NOT NULL,
-    chat_id TEXT NOT NULL, -- foreign key to chats table
     agent_model_id TEXT, -- foreign key to models table
     character_model_id TEXT, -- foreign key to models table
     config TEXT NOT NULL, -- JSON string for configuration { [key: string]: any }
@@ -37,18 +36,11 @@ CREATE TABLE IF NOT EXISTS chat_template (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE,
     FOREIGN KEY (agent_model_id) REFERENCES models(id) ON DELETE SET NULL,
-    FOREIGN KEY (character_model_id) REFERENCES models(id) ON DELETE SET NULL,
-    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
+    FOREIGN KEY (character_model_id) REFERENCES models(id) ON DELETE SET NULL
 ); 
 
 -- Index on profile_id for efficient lookups of templates by profile
 CREATE INDEX idx_chat_template_profile_id ON chat_template(profile_id);
-
--- Index on chat_id for efficient lookups of templates by chat
-CREATE INDEX idx_chat_template_chat_id ON chat_template(chat_id);
-
--- Composite index for finding templates for a specific chat in a profile
-CREATE INDEX idx_chat_template_profile_chat ON chat_template(profile_id, chat_id);
 
 -- Index on created_at for chronological sorting
 CREATE INDEX idx_chat_template_created_at ON chat_template(created_at);

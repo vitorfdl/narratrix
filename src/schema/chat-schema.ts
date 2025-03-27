@@ -20,19 +20,27 @@ interface ChatTab {
   gridItems: GridItem[];
 }
 
+const chatParticipantSchema = z.object({
+  id: z.string(),
+  settings: z.record(z.any()).default({}),
+});
+
+const chatUserSettingsSchema = z.object({
+  id: z.string(),
+  settings: z.record(z.any()).default({}),
+});
+
 /**
  * Chat Schema
  */
 const chatSchema = z.object({
   id: uuidUtils.withDefault(),
   profile_id: z.string(),
-  title: z.string(),
+  name: z.string(),
   chat_template_id: z.string().optional(),
-  participants: z.array(z.string()).default([]), // Array of character IDs
-  chapters: z.array(z.record(z.any())).default([]),
+  participants: chatParticipantSchema.array().default([]),
   user_character_id: z.string().optional(),
-  user_character_settings: z.record(z.any()).default({}),
-  inference_settings: z.record(z.any()).default({}),
+  user_character_settings: chatUserSettingsSchema.array().default([]),
   created_at: dateUtils.withDefaultNow(),
   updated_at: dateUtils.withDefaultNow(),
 });
@@ -50,3 +58,5 @@ export { chatSchema, createChatSchema };
 export type { ChatTab, GridItem };
 export type CreateChatParams = z.infer<typeof createChatSchema>;
 export type Chat = z.infer<typeof chatSchema>;
+export type ChatParticipant = z.infer<typeof chatParticipantSchema>;
+export type ChatUserSettings = z.infer<typeof chatUserSettingsSchema>;

@@ -1,4 +1,4 @@
-import { ConfigFields } from "@/schema/chat-settings-schema";
+import { ConfigFields } from "@/schema/template-chat-settings-types";
 
 export const configFields: ConfigFields = [
   {
