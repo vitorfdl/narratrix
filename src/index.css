@@ -8,27 +8,28 @@ body,
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@plugin "@tailwindcss/typography";
 @layer base {
   :root {
-    --background: 0 0% 100%; /* #FFFFFF */
+    --background: 220 20% 97%; /* #F5F7FA instead of pure white */
     --foreground: 240 10% 3.9%; /* #0A0A0B */
-    --sidebar: 0 0% 100%; /* #FFFFFF */
-    --card: 0 0% 100%; /* #FFFFFF */
+    --sidebar: 223 25% 94%; /* #EDF0F5 softer sidebar */
+    --card: 0 0% 99%; /* #FCFCFC slightly off-white for cards */
     --card-foreground: 240 10% 3.9%; /* #0A0A0B */
-    --popover: 0 0% 100%; /* #FFFFFF */
+    --popover: 220 20% 97%; /* #F5F7FA matches background */
     --popover-foreground: 240 10% 3.9%; /* #0A0A0B */
     --primary: 293 59% 74%; /* #DB9EE5 */
     --primary-foreground: 0 0% 98%; /* #FAFAFA */
-    --secondary: 240 4.8% 95.9%; /* #F4F4F5 */
+    --secondary: 220 14% 90%; /* #E5E9F0 softer secondary */
     --secondary-foreground: 240 5.9% 10%; /* #191919 */
-    --muted: 240 4.8% 95.9%; /* #F4F4F5 */
+    --muted: 220 16% 92%; /* #EBF0F5 softer muted background */
     --muted-foreground: 240 3.8% 46.1%; /* #71717A */
-    --accent: 240 4.8% 95.9%; /* #F4F4F5 */
+    --accent: 225 25% 94%; /* #EEF1F8 soft accent background */
     --accent-foreground: 293 59% 74%; /* #DB9EE5 */
     --destructive: 293 45% 40%; /* #8b3794 */
     --destructive-foreground: 0 0% 98%; /* #FAFAFA */
-    --border: 240 5.9% 90%; /* #E4E4E7 */
-    --input: 240 5.9% 90%; /* #E4E4E7 */
+    --border: 220 13% 85%; /* #D9DEE5 softer border */
+    --input: 220 13% 85%; /* #D9DEE5 softer input */
     --ring: 240 10% 3.9%; /* #18181B */
     --chart-1: 12 76% 61%; /* #E67E67 */
     --chart-2: 173 58% 39%; /* #2A9D8F */
@@ -79,11 +80,32 @@ body,
 
 @layer components {
   .page-container {
-    @apply p-6;
+    @apply p-4 pb-0;
   }  
+
+  .template-card-header {
+    @apply bg-muted/30 h-10 mb-3 !pt-3;
+  }
+
+  .template-card-title {
+    @apply flex items-center gap-2 pt-0 text-sm font-medium text-foreground;
+  }
   
   .title {
     @apply text-xl font-semibold mb-1 pl-3 border-l-4 border-primary;
+  }
+
+  .textarea-special-text {
+    @apply text-primary;
+  }
+
+  /* Tippy styling for suggestions */
+  .tippy-box {
+    @apply !bg-transparent border-none shadow-none;
+  }
+
+  .tippy-content {
+    @apply !p-0;
   }
 }
 

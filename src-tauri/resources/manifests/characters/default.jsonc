@@ -1,0 +1,29 @@
+{
+  "$schema": "../../../../json_schema/character-schema.json",
+  "id": "narratrix-default",
+  "version": "1.0.0",
+  "name": "Default",
+  "description": "Default character card schema for Narratrix",
+  "columns": 1,
+  "sections": [
+    {
+      "id": "base",
+      "columns": 1,
+      "fields": [
+        {
+          "id": "prompt",
+          "label": "Character Prompt/Personality",
+          "type": "textarea",
+          "placeholder": "Enter the prompt of the character"
+        }
+      ]
+    }
+  ],
+  "exported_fields": [
+    {
+      "id": "prompt",
+      "label": "prompt",
+      "value": "# {{character.name}}\n\n{{character.base.prompt}}"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utilsLib";
-import { ChatTab } from "@/schema/chat";
+import { cn } from "@/lib/utils";
+import { ChatTab } from "@/schema/chat-schema";
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { ChatTabs } from "./ChatTabs";

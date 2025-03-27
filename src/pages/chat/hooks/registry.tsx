@@ -12,16 +12,7 @@ import React from "react";
 // Import types for props if available
 import type { MessageRendererProps } from "@/pages/chat/components/WidgetMessages";
 
-export type WidgetId =
-  | "messages"
-  | "config"
-  | "generate"
-  | "participants"
-  | "scripts"
-  | "character_sheet"
-  | "memory"
-  | "database"
-  | "chapters";
+export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "character_sheet" | "memory" | "database" | "chapters";
 
 interface WidgetConfiguration<T = unknown> {
   id: WidgetId;
@@ -129,17 +120,14 @@ const getDynamicExtraProps = (_tabId: string, widgetId: WidgetId): Partial<any> 
       },
       {
         id: "3",
-        content: ["What is the weather in Tokyo?"],
+        content: ['"What is the weather in Tokyo?" *I move around him*\n\nHe entered the alley and looked around.'],
         timestamp: new Date(),
         avatar: "/avatars/vitor.png",
         type: "user",
       },
       {
         id: "4",
-        content: [
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
-          "The weather in Tokyo is sunny and warm.",
-        ],
+        content: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit...", "The weather in Tokyo is sunny and warm."],
         timestamp: new Date(),
         avatar: "/avatars/narratrixav.jpeg",
         type: "assistant",
@@ -154,11 +142,7 @@ const getDynamicExtraProps = (_tabId: string, widgetId: WidgetId): Partial<any> 
  * Helper function to render the proper widget.
  * This function now accepts the tabId so that dynamic props can be merged.
  */
-export function renderWidget(
-  widgetId: WidgetId,
-  tabId: string,
-  extraProps?: Partial<any>,
-): JSX.Element | null {
+export function renderWidget(widgetId: WidgetId, tabId: string, extraProps?: Partial<any>): JSX.Element | null {
   const config = widgetConfigurations[widgetId];
   if (!config) {
     console.error(`No widget configuration found for widget id: ${widgetId}`);

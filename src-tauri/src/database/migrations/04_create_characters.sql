@@ -1,12 +1,17 @@
+-- Used for both agents and characters
 CREATE TABLE IF NOT EXISTS characters (
     id TEXT PRIMARY KEY,
     profile_id TEXT NOT NULL,
     name TEXT NOT NULL,
+    version TEXT NOT NULL, -- 1.0.0 format
+    external_link TEXT, -- optional
+    auto_update BOOLEAN NOT NULL DEFAULT TRUE, -- only used if external_link is provided
     type TEXT NOT NULL CHECK (type IN ('agent', 'character')),
-    avatar_path TEXT,
-    expressions TEXT, -- JSON array of paths
-    personality TEXT,
+    character_manifest_id TEXT, -- future use for character manifest
+    expressions TEXT, -- JSON array of expressions [{id: string, name: string, image_path: string }]
     system_override TEXT,
+    settings TEXT, -- JSON object { [key: string]: any }
+    custom TEXT, -- JSON object { [key: string]: any }
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE

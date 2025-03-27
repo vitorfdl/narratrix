@@ -1,5 +1,5 @@
 import { LockIcon, PlusCircleIcon, TrashIcon, UserCircleIcon } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -110,14 +110,12 @@ const ProfilePicker: React.FC = () => {
             <div key={profile.id} className="relative">
               <Card
                 className={`w-32 border-none transition-all ${
-                  isManageMode
-                    ? "cursor-default opacity-80"
-                    : "hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"
+                  isManageMode ? "cursor-default opacity-80" : "hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"
                 }`}
                 onClick={() => handleProfileClick(profile.id)}
               >
                 <CardContent className="flex flex-col items-center p-3 pt-3">
-                  <Avatar className="w-24 h-24 mb-3">
+                  <Avatar className="w-24 h-24 mb-3 rounded-full">
                     {profile.avatar_path ? (
                       <AvatarImage src={profile.avatar_path} alt={profile.name} />
                     ) : (
@@ -127,9 +125,7 @@ const ProfilePicker: React.FC = () => {
                     )}
                   </Avatar>
 
-                  <span className="text-foreground text-center break-words w-full">
-                    {profile.name}
-                  </span>
+                  <span className="text-foreground text-center break-words w-full">{profile.name}</span>
 
                   {profile.hasPassword && !isManageMode && (
                     <span className="absolute -top-0 -right-2 rounded-full w-8 h-8 p-0">
@@ -155,9 +151,7 @@ const ProfilePicker: React.FC = () => {
 
           {profiles.length < MAX_PROFILES && isManageMode && (
             <Card
-              className={
-                "w-32 border-none transition-all hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"
-              }
+              className={"w-32 border-none transition-all hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"}
               onClick={() => setShowNewProfileDialog(true)}
             >
               <CardContent className="flex flex-col items-center p-3 pt-3">
@@ -170,31 +164,20 @@ const ProfilePicker: React.FC = () => {
           )}
         </div>
 
-        <Button
-          onClick={() => setIsManageMode(!isManageMode)}
-          variant={isManageMode ? "default" : "outline"}
-          size="lg"
-          className={"px-8"}
-        >
+        <Button onClick={() => setIsManageMode(!isManageMode)} variant={isManageMode ? "default" : "outline"} size="lg" className={"px-8"}>
           {isManageMode ? "Done" : "Manage Profiles"}
         </Button>
       </div>
 
       {/* New Profile Dialog */}
-      <NewProfileDialog
-        open={showNewProfileDialog}
-        onClose={() => setShowNewProfileDialog(false)}
-        canClose={profiles.length > 0}
-      />
+      <NewProfileDialog open={showNewProfileDialog} onClose={() => setShowNewProfileDialog(false)} canClose={profiles.length > 0} />
 
       {/* Password Dialog */}
       <PasswordDialog
         open={showPasswordDialog}
         onClose={() => setShowPasswordDialog(false)}
         onSubmit={handlePasswordSubmit}
-        profileName={
-          selectedProfileId ? profiles.find((p) => p.id === selectedProfileId)?.name || "" : ""
-        }
+        profileName={selectedProfileId ? profiles.find((p) => p.id === selectedProfileId)?.name || "" : ""}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -203,8 +186,7 @@ const ProfilePicker: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this profile and all associated data. This action cannot
-              be undone.
+              This will permanently delete this profile and all associated data. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

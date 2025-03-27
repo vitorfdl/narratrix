@@ -1,15 +1,8 @@
-import { UserCircleIcon } from "lucide-react";
 import React, { useState } from "react";
+import { AvatarCrop } from "../../../components/shared/AvatarCrop.tsx";
 import { Button } from "../../../components/ui/button.tsx";
 import { Checkbox } from "../../../components/ui/checkbox.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../../../components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog.tsx";
 import { Input } from "../../../components/ui/input.tsx";
 import { Label } from "../../../components/ui/label.tsx";
 import { useProfile } from "../../../hooks/ProfileContext.tsx";
@@ -67,9 +60,8 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
     }
   };
 
-  const generateRandomAvatar = () => {
-    const seed = Math.random().toString(36).substring(2, 8);
-    setAvatar(`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`);
+  const handleCropComplete = (croppedImage: string) => {
+    setAvatar(croppedImage);
   };
 
   return (
@@ -82,26 +74,20 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
       >
         <DialogHeader>
           <DialogTitle>Create New Profile</DialogTitle>
-          <DialogDescription>
-            Add a new profile to access your personal settings and content.
-          </DialogDescription>
+          <DialogDescription>Add a new profile to access your personal settings and content.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {/* Avatar Preview */}
-          <div className="flex justify-center mb-4">
-            {avatar ? (
-              <img src={avatar} alt="Profile Avatar" className="w-24 h-24 rounded-full" />
-            ) : (
-              <UserCircleIcon className="w-24 h-24 text-muted-foreground" />
-            )}
-          </div>
-
-          {/* Avatar Generation */}
-          <div className="flex justify-center">
-            <Button type="button" onClick={generateRandomAvatar} variant="secondary" size="sm">
-              Generate Random Avatar
-            </Button>
+          {/* Avatar Upload & Crop */}
+          <div className="space-y-2 text-center">
+            <Label htmlFor="avatar" className="mb-2">
+              Avatar
+            </Label>
+            <div className="flex justify-center">
+              <div className="w-24 h-24 rounded-full overflow-hidden">
+                <AvatarCrop onCropComplete={handleCropComplete} existingImage={avatar} cropShape="round" className="w-full h-full" />
+              </div>
+            </div>
           </div>
 
           {/* Name Input */}
@@ -122,11 +108,7 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
 
           {/* Password Protection */}
           <div className="flex items-center space-x-2">
-            <Checkbox
-              id="hasPassword"
-              checked={hasPassword}
-              onCheckedChange={(checked) => setHasPassword(checked as boolean)}
-            />
+            <Checkbox id="hasPassword" checked={hasPassword} onCheckedChange={(checked) => setHasPassword(checked as boolean)} />
             <Label htmlFor="hasPassword" className="text-sm font-medium">
               Password protect this profile
             </Label>

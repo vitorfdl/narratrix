@@ -38,7 +38,7 @@
     "indentStyle": "space",
     "indentWidth": 2,
     "enabled": true,
-    "lineWidth": 160,
+    "lineWidth": 150,
     "ignore": ["node_modules", "dist", "out", "build", "public", "tsconfig.*"]
   }
 }

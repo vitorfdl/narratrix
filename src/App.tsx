@@ -18,7 +18,7 @@ const AppContent: React.FC = () => {
 
   // Otherwise show the main app UI
   return (
-    <div className="flex h-screen select-none text-sm">
+    <div className="flex h-screen select-none text-base">
       <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
       <Content activeSection={activeSection} />
     </div>

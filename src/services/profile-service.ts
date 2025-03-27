@@ -1,12 +1,16 @@
+import { formatDateTime } from "@/utils/date-time.ts";
 import { hashPassword, verifyPassword } from "../commands/security.ts";
-import { LoginPasswordParams, LoginPasswordSchema, NewProfileParams, type Profile, type ProfileResponse, ProfileSchema } from "../schema/profiles-schema.ts";
+import {
+  type AppSettings,
+  LoginPasswordParams,
+  LoginPasswordSchema,
+  NewProfileParams,
+  type Profile,
+  type ProfileResponse,
+  ProfileSchema,
+} from "../schema/profiles-schema.ts";
 import { uuidUtils } from "../schema/utils-schema.ts";
-import { executeDBQuery, selectDBQuery } from "../utils/database.ts";
-
-// Helper to format dates
-function formatDateTime(): string {
-  return new Date().toISOString();
-}
+import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database.ts";
 
 // Profile related functions
 export async function createProfile(profileData: NewProfileParams): Promise<ProfileResponse> {
@@ -98,53 +102,27 @@ export async function updateProfile(id: string, updateData: Partial<Profile>): P
     throw new Error("Profile not found");
   }
 
-  // Build query parts
-  const updates: string[] = [];
-  const values: any[] = [];
-  let paramIndex = 1;
-
-  if (update.name !== undefined) {
-    updates.push(`name = $${paramIndex}`);
-    values.push(update.name);
-    paramIndex++;
-  }
-
-  if (update.password !== undefined) {
-    const hashedPassword = await hashPassword(update.password!);
-    updates.push(`password = $${paramIndex}`);
-    values.push(hashedPassword);
-    paramIndex++;
-  }
-
-  if (update.avatar_path !== undefined) {
-    updates.push(`avatar_path = $${paramIndex}`);
-    values.push(update.avatar_path);
-    paramIndex++;
-  }
-
-  if (update.settings !== undefined) {
-    // Merge with existing settings
-    const mergedSettings = {
+  // Handle settings merge if needed
+  const processedUpdate = { ...update };
+  if (update.settings) {
+    processedUpdate.settings = {
       ...currentProfile.settings,
       ...update.settings,
     };
-    updates.push(`settings = $${paramIndex}`);
-    values.push(JSON.stringify(mergedSettings));
-    paramIndex++;
   }
 
-  // Always update the updated_at timestamp
-  const now = formatDateTime();
-  updates.push(`updated_at = $${paramIndex}`);
-  values.push(now);
-  paramIndex++;
+  // Define field mappings for special transformations
+  const fieldMapping: Partial<Record<keyof Profile, (value: any) => any>> = {
+    password: async (pwd: string) => await hashPassword(pwd),
+    settings: (settings: object) => JSON.stringify(settings),
+  };
 
-  // Add the ID for the WHERE clause
-  values.push(validId);
+  // Build update query using the utility function
+  const { updates, values, whereClause } = buildUpdateParams(validId, processedUpdate, fieldMapping);
 
   // Execute update if there are fields to update
   if (updates.length > 0) {
-    await executeDBQuery(`UPDATE profiles SET ${updates.join(", ")} WHERE id = $${paramIndex}`, values);
+    await executeDBQuery(`UPDATE profiles SET ${updates.join(", ")}${whereClause}`, values);
   }
 
   // Return the updated profile
@@ -190,7 +168,6 @@ export async function loginProfile(loginData: LoginPasswordParams): Promise<Prof
 
   // Verify the password
   const isValid = profile.password ? await verifyPassword(login.password || "", profile.password) : true;
-
   if (!isValid) {
     throw new Error("Invalid credentials");
   }
@@ -202,6 +179,65 @@ export async function loginProfile(loginData: LoginPasswordParams): Promise<Prof
   const { password, ...profileResponse } = profile;
 
   return { ...profileResponse, hasPassword: !!password };
+}
+
+export async function updateProfileSettings(id: string, settings: AppSettings): Promise<ProfileResponse> {
+  const validId = uuidUtils.uuid().parse(id);
+
+  // First get the current profile to ensure it exists
+  const currentProfile = await getProfileById(validId);
+  if (!currentProfile) {
+    throw new Error("Profile not found");
+  }
+
+  const now = formatDateTime();
+
+  // Update just the settings field
+  await executeDBQuery("UPDATE profiles SET settings = $1, updated_at = $2 WHERE id = $3", [JSON.stringify(settings), now, validId]);
+
+  // Return the updated profile
+  const updatedProfile = await getProfileById(validId);
+  if (!updatedProfile) {
+    throw new Error("Profile updated but could not be retrieved");
+  }
+
+  return updatedProfile;
+}
+
+export async function updateProfilePassword(id: string, currentPassword: string, newPassword: string): Promise<ProfileResponse> {
+  const validId = uuidUtils.uuid().parse(id);
+
+  // First get the profile to verify the current password
+  const profiles = await selectDBQuery<Profile[]>("SELECT id, password FROM profiles WHERE id = $1", [validId]);
+
+  if (profiles.length === 0) {
+    throw new Error("Profile not found");
+  }
+
+  const profile = profiles[0];
+
+  // Verify the current password
+  if (profile.password) {
+    const isValid = await verifyPassword(currentPassword, profile.password);
+    if (!isValid) {
+      throw new Error("Invalid current password");
+    }
+  }
+
+  // Hash new password
+  const hashedPassword = await hashPassword(newPassword);
+  const now = formatDateTime();
+
+  // Update the password
+  await executeDBQuery("UPDATE profiles SET password = $1, updated_at = $2 WHERE id = $3", [hashedPassword, now, validId]);
+
+  // Return the updated profile
+  const updatedProfile = await getProfileById(validId);
+  if (!updatedProfile) {
+    throw new Error("Profile updated but could not be retrieved");
+  }
+
+  return updatedProfile;
 }
 
 // Export type definitions

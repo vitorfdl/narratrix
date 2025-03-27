@@ -1,4 +1,5 @@
 import Database, { QueryResult } from "@tauri-apps/plugin-sql";
+import { formatDateTime } from "./date-time";
 
 // Database connection singleton
 let db: Database | null = null;
@@ -27,10 +28,7 @@ export async function getDatabase(): Promise<Database> {
 /**
  * Executes a database query with proper error handling
  */
-export async function executeDBQuery(
-  query: string,
-  params: any[] = [],
-): Promise<QueryResult> {
+export async function executeDBQuery(query: string, params: any[] = []): Promise<QueryResult> {
   const database = await getDatabase();
   try {
     return await database.execute(query, params);
@@ -43,10 +41,7 @@ export async function executeDBQuery(
 /**
  * Performs a select query with proper error handling
  */
-export async function selectDBQuery<T>(
-  query: string,
-  params: any[] = [],
-): Promise<T> {
+export async function selectDBQuery<T>(query: string, params: any[] = []): Promise<T> {
   const database = await getDatabase();
   try {
     return await database.select<T>(query, params);
@@ -54,4 +49,53 @@ export async function selectDBQuery<T>(
     console.error("Select query error:", error);
     throw error;
   }
+}
+
+interface UpdateQueryBuilder {
+  updates: string[];
+  values: any[];
+  paramIndex: number;
+  whereClause: string;
+}
+
+/**
+ * Builds a query for updating a record
+ */
+export function buildUpdateParams<T extends Record<string, any>>(
+  id: string,
+  updateData: Partial<T>,
+  fieldMapping: Partial<Record<keyof T, (value: any) => any>> = {},
+  options: {
+    skipTimestamp?: boolean;
+  } = {},
+): UpdateQueryBuilder {
+  const builder: UpdateQueryBuilder = {
+    updates: [],
+    values: [],
+    paramIndex: 1,
+    whereClause: "",
+  };
+
+  for (const [key, value] of Object.entries(updateData)) {
+    if (value !== undefined) {
+      // Skip undefined values
+      const transformedValue = key in fieldMapping ? fieldMapping[key]!(value) : value;
+      builder.updates.push(`${key.toLowerCase()} = $${builder.paramIndex}`);
+      builder.values.push(transformedValue);
+      builder.paramIndex++;
+    }
+  }
+
+  // Automatically add updated_at timestamp unless explicitly skipped
+  if (!options.skipTimestamp) {
+    builder.updates.push(`updated_at = $${builder.paramIndex}`);
+    builder.values.push(formatDateTime());
+    builder.paramIndex++;
+  }
+
+  // Add WHERE clause if ID field is provided
+  builder.whereClause = ` WHERE id = $${builder.paramIndex}`;
+  builder.values.push(id);
+
+  return builder;
 }

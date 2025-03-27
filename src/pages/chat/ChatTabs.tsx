@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utilsLib";
-import { ChatTab } from "@/schema/chat";
+import { cn } from "@/lib/utils";
+import { ChatTab } from "@/schema/chat-schema";
 import { PlusIcon, X } from "lucide-react";
 
 interface ChatTabsProps {
@@ -46,7 +46,7 @@ export function ChatTabs({ tabs, activeTab, onTabChange, onNewChat, onCloseTab }
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="sm" onClick={onNewChat}>
-                  <PlusIcon className="h-4 w-4 text-white" />
+                  <PlusIcon className="h-4 w-4 text-foreground" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

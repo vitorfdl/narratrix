@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useManifestStore } from "@/hooks/manifestStore";
-import { useModelsStore } from "@/hooks/modelsStore";
+import { useModelManifestsActions } from "@/hooks/manifestStore";
+import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Model, ModelType } from "../../schema/models-schema";
 import { ModelCard } from "./components/ModelCard";
+import { ModelConfigDialog } from "./components/ModelConfigDialog";
 import { ModelForm } from "./components/ModelForm";
 
 interface ModelGroup {
@@ -19,11 +20,14 @@ export default function Models() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const profile = useProfile();
-  const { getModelsByProfileGroupedByType, deleteModel, isLoading } = useModelsStore();
-  const { fetchManifests } = useManifestStore();
+  const { getModelsByProfileGroupedByType, deleteModel, updateModel } = useModelsActions();
+  const { fetchManifests } = useModelManifestsActions();
   const [modelGroups, setModelGroups] = useState<ModelGroup[]>([]);
+  const isLoading = useModelsLoading();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     const loadModels = async () => {
@@ -96,9 +100,26 @@ export default function Models() {
     }
   };
 
+  const handleConfigSave = async (modelId: string, updates: { max_concurrency: number; format_template_id?: string }) => {
+    setIsUpdating(true);
+    try {
+      await updateModel(modelId, updates);
+      await refreshModels();
+    } catch (error) {
+      console.error("Failed to update model configuration:", error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleConfigOpen = (model: Model) => {
+    setSelectedModel(model);
+    setConfigDialogOpen(true);
+  };
+
   return (
-    <div className="flex flex-col h-full page-container">
-      <div className="flex-1 space-y-4">
+    <div className="flex flex-col h-full relative">
+      <div className="flex-1 space-y-4 page-container overflow-y-auto pb-16">
         <h1 className="title">Models List</h1>
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -110,7 +131,13 @@ export default function Models() {
               <h2 className="text-base font-semibold tracking-tight">{group.title}</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {group.models.map((model) => (
-                  <ModelCard key={model.id} model={model} onEdit={handleEdit} onDelete={handleDelete} />
+                  <ModelCard
+                    key={model.id}
+                    model={model}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    setConfigDialogOpen={() => handleConfigOpen(model)}
+                  />
                 ))}
               </div>
             </div>
@@ -125,7 +152,7 @@ export default function Models() {
       {/* Add Model Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogTrigger asChild>
-          <Button className="w-full rounded-none h-14 bg-accent hover:bg-accent/90 text-accent-foreground" size="lg">
+          <Button className="sticky bottom-0 w-full h-14 rounded-none border-t" size="lg">
             <Plus className="mr-2 h-5 w-5" />
             Add Model
           </Button>
@@ -183,6 +210,16 @@ export default function Models() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {selectedModel && (
+        <ModelConfigDialog
+          model={selectedModel}
+          open={configDialogOpen}
+          onOpenChange={setConfigDialogOpen}
+          onSave={handleConfigSave}
+          isUpdating={isUpdating}
+        />
+      )}
     </div>
   );
 }

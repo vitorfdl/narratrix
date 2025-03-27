@@ -39,7 +39,6 @@ export const useInferenceStore = create<InferenceStore>((set, get) => ({
   requests: {},
   latestRequestId: null,
 
-  // Actions
   addRequest: (requestId, modelId) =>
     set((state) => ({
       requests: {

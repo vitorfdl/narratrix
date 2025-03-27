@@ -1,23 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  DndContext,
-  DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MessageSquarePlus, Settings, Trash2, UserPlus } from "lucide-react";
+import { GripVertical, PlayIcon, Settings, Trash2, UserPlus } from "lucide-react";
 import React, { useState } from "react";
 
 // Types
@@ -46,12 +32,7 @@ interface SortableParticipantProps {
   onRemoveParticipant?: (id: string) => void;
 }
 
-const SortableParticipant: React.FC<SortableParticipantProps> = ({
-  participant,
-  onToggleParticipant,
-  onTriggerMessage,
-  onRemoveParticipant,
-}) => {
+const SortableParticipant: React.FC<SortableParticipantProps> = ({ participant, onToggleParticipant, onTriggerMessage, onRemoveParticipant }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: participant.id,
   });
@@ -67,26 +48,18 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
       ref={setNodeRef}
       style={style}
       className={`flex items-center text-xs justify-between p-2 rounded-lg ${
-        participant.type !== "user" && !participant.isEnabled
-          ? "bg-muted/30 text-muted-foreground"
-          : "bg-muted/50 hover:bg-muted/80"
+        participant.type !== "user" && !participant.isEnabled ? "bg-muted/30 text-muted-foreground" : "bg-muted/50 hover:bg-muted/80"
       } transition-colors min-w-0`}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing flex-shrink-0"
-        >
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing flex-shrink-0">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
         {participant.avatar ? (
           <img
             src={participant.avatar}
             alt={participant.name}
-            className={`w-8 h-8 object-cover rounded-full flex-shrink-0 ${
-              participant.type !== "user" && !participant.isEnabled ? "opacity-50" : ""
-            }`}
+            className={`w-8 h-8 object-cover rounded-full flex-shrink-0 ${participant.type !== "user" && !participant.isEnabled ? "opacity-50" : ""}`}
           />
         ) : (
           <div
@@ -97,15 +70,9 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
             {participant.name[0]}
           </div>
         )}
-        <div
-          className={`min-w-0 flex-1 ${
-            participant.type !== "user" && !participant.isEnabled ? "opacity-70" : ""
-          }`}
-        >
+        <div className={`min-w-0 flex-1 ${participant.type !== "user" && !participant.isEnabled ? "opacity-70" : ""}`}>
           <div className="font-medium truncate">{participant.name}</div>
-          <div className="text-[0.6rem] text-muted-foreground capitalize truncate">
-            {participant.type}
-          </div>
+          <div className="text-[0.6rem] text-muted-foreground capitalize truncate">{participant.type}</div>
         </div>
       </div>
 
@@ -126,7 +93,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
             onClick={() => onTriggerMessage?.(participant.id)}
             title="Trigger Message"
           >
-            <MessageSquarePlus className="h-2 w-2" />
+            <PlayIcon className="h-2 w-2" />
           </Button>
           <Button
             variant="ghost"
@@ -172,9 +139,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({
     },
   ];
 
-  const [items, setItems] = useState<Participant[]>(
-    participants.length > 0 ? participants : mockParticipants,
-  );
+  const [items, setItems] = useState<Participant[]>(participants.length > 0 ? participants : mockParticipants);
 
   const sensors = useSensors(
     useSensor(PointerSensor),

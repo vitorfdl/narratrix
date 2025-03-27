@@ -8,6 +8,26 @@ const profileAtom = atomWithStorage<ProfileResponse | undefined>(
   createJSONStorage(() => sessionStorage),
 );
 
+const currentTabAtom = atomWithStorage<string | undefined>(
+  "currentTab",
+  undefined,
+  createJSONStorage(() => sessionStorage),
+);
+
+const currentFormatTemplateAtom = atomWithStorage<string | null>(
+  "currentFormatTemplate",
+  null,
+  createJSONStorage(() => sessionStorage),
+);
+
 export function useSessionProfile() {
   return useAtom(profileAtom);
+}
+
+export function useSessionCurrentTab() {
+  return useAtom(currentTabAtom);
+}
+
+export function useSessionCurrentFormatTemplate() {
+  return useAtom(currentFormatTemplateAtom);
 }

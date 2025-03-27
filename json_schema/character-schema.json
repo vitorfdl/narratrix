@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Character Schema",
+  "description": "Schema for character data in Narratrix",
+  "type": "object",
+  "required": ["id", "name", "type", "version", "sections"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the character schema"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of the schema",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the character schema"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the character schema"
+    },
+    "type": {
+      "type": "string",
+      "description": "Type of the schema",
+      "enum": ["character"]
+    },
+    "sections": {
+      "type": "array",
+      "description": "Sections containing fields for the character",
+      "items": {
+        "type": "object",
+        "required": ["id", "fields"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the section"
+          },
+          "columns": {
+            "type": "integer",
+            "description": "Number of columns to display fields in",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 1
+          },
+          "fields": {
+            "type": "array",
+            "description": "Fields in the section",
+            "items": {
+              "type": "object",
+              "required": ["id", "label", "type"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the field (used in {{character.section.field}} format)"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Display label for the field"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Type of the field",
+                  "enum": ["string", "number", "textarea", "string_array", "output", "stepbutton"]
+                },
+                "placeholder": {
+                  "type": "string",
+                  "description": "Placeholder text for the field"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Expression for calculated output fields"
+                },
+                "default": {
+                  "type": "string",
+                  "description": "Default value for the field"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "exported_fields": {
+      "type": "array",
+      "description": "Fields exported for System Prompt Templates and other contexts",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "value"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the exported field"
+          },
+          "depends": {
+            "type": "array",
+            "description": "List of field IDs that this exported field depends on",
+            "examples": ["base.prompt"],
+            "items": {
+              "type": "string"
+            }
+          },
+          "label": {
+            "type": "string",
+            "description": "Display label for the exported field"
+          },
+          "value": {
+            "type": "string",
+            "description": "Default value markdown for the exported field, may contain variables in {{section.field}} format"
+          }
+        }
+      }
+    }
+  }
+}

@@ -5,10 +5,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useManifestStore } from "@/hooks/manifestStore";
+import { useModelManifests, useModelManifestsActions, useModelManifestsLoading } from "@/hooks/manifestStore";
 import { useInference } from "@/hooks/useInference";
 import { ModelSpecsSchema } from "@/schema/inference-engine-schema";
-import { Manifest } from "@/schema/manifest-schema";
+import { Manifest } from "@/schema/model-manifest-schema";
 import { Model, ModelType } from "@/schema/models-schema";
 import { createModel, updateModel } from "@/services/model-service";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +29,9 @@ interface ModelFormProps {
 export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
   const { currentProfile } = useProfile();
   const profileId = currentProfile!.id;
-  const { manifests, fetchManifests, isLoading } = useManifestStore();
+  const { fetchManifests } = useModelManifestsActions();
+  const manifests = useModelManifests();
+  const isLoading = useModelManifestsLoading();
   const [selectedType, setSelectedType] = useState<ModelType | null>(model?.type || "llm");
   const [selectedManifest, setSelectedManifest] = useState<Manifest | null>(null);
   const [formSchema, setFormSchema] = useState<z.ZodObject<any>>();
@@ -37,12 +39,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [testRequestId, setTestRequestId] = useState<string | null>(null);
 
-  const {
-    runInference,
-    cancelRequest,
-    isLoading: isTestingConnection,
-    requests,
-  } = useInference({
+  const { runInference, cancelRequest, requests } = useInference({
     // Global callbacks to handle inference responses
     onComplete: (response, requestId) => {
       // Only process if it's our test request

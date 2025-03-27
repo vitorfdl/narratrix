@@ -1,5 +1,5 @@
 "use client";
-import { cn } from "@/lib/utilsLib";
+import { cn } from "@/lib/utils";
 import * as React from "react";
 import { useImperativeHandle } from "react";
 
@@ -10,7 +10,12 @@ interface UseAutosizeTextAreaProps {
   triggerAutoSize: string;
 }
 
-export const useAutosizeTextArea = ({ textAreaRef, triggerAutoSize, maxHeight = Number.MAX_SAFE_INTEGER, minHeight = 0 }: UseAutosizeTextAreaProps) => {
+export const useAutosizeTextArea = ({
+  textAreaRef,
+  triggerAutoSize,
+  maxHeight = Number.MAX_SAFE_INTEGER,
+  minHeight = 0,
+}: UseAutosizeTextAreaProps) => {
   const [init, setInit] = React.useState(true);
   React.useEffect(() => {
     // We need to reset the height momentarily to get the correct scrollHeight for the textarea
@@ -80,7 +85,20 @@ export const AutosizeTextarea = React.forwardRef<AutosizeTextAreaRef, AutosizeTe
         value={value}
         ref={textAreaRef}
         className={cn(
-          "flex w-full rounded-sm font-mono text-sm border border-input bg-muted px-2 py-1 ring-offset-background placeholder:text-muted-foreground focus:bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          // Base styles
+          "flex w-full rounded-sm font-mono text-sm",
+
+          // Border and background
+          "border border-input bg-muted px-2 py-1",
+
+          // Focus states
+          "ring-offset-background focus:bg-background",
+          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-2",
+
+          // Placeholder and disabled states
+          "placeholder:text-muted-foreground/50 placeholder:italic",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+
           className,
         )}
         onChange={(e) => {

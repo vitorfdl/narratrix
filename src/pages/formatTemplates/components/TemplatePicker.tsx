@@ -1,17 +1,6 @@
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
 
 export interface Template {
@@ -47,15 +36,9 @@ export function TemplatePicker({
   return (
     <div className="flex items-center space-x-1.5">
       <div className="flex-1">
-        <Select
-          value={selectedTemplateId ?? undefined}
-          onValueChange={onTemplateSelect}
-          disabled={!hasTemplates}
-        >
+        <Select value={selectedTemplateId ?? undefined} onValueChange={onTemplateSelect} disabled={!hasTemplates}>
           <SelectTrigger className="w-full bg-muted h-8 text-xs">
-            <SelectValue
-              placeholder={hasTemplates ? "Select Template" : "No templates available"}
-            />
+            <SelectValue placeholder={hasTemplates ? "Select Template" : "No templates available"} />
           </SelectTrigger>
           <SelectContent>
             {templates.map((template) => (
@@ -87,13 +70,13 @@ export function TemplatePicker({
               <Edit className="h-3.5 w-3.5 mr-1.5" />
               Edit Name
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onImport}>
+            <DropdownMenuItem onClick={onImport} disabled={true}>
               <FileDown className="h-3.5 w-3.5 mr-1.5" />
               Import
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={onExport}
-              disabled={!selectedTemplateId}
+              disabled={!selectedTemplateId || true}
               className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
             >
               <FileUp className="h-3.5 w-3.5 mr-1.5" />
@@ -111,24 +94,11 @@ export function TemplatePicker({
         </DropdownMenu>
       ) : (
         <div className="flex items-center space-x-0.5">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={onEditName}
-            disabled={!selectedTemplateId}
-            title="Edit Template Name"
-          >
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onEditName} disabled={!selectedTemplateId} title="Edit Template Name">
             <Edit className="h-3.5 w-3.5" />
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={onNewTemplate}
-            title="Create New Template"
-          >
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onNewTemplate} title="Create New Template">
             <Plus className="h-3.5 w-3.5" />
           </Button>
 
@@ -139,13 +109,13 @@ export function TemplatePicker({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="text-sm">
-              <DropdownMenuItem onClick={onImport}>
+              <DropdownMenuItem onClick={onImport} disabled={true}>
                 <FileDown className="h-3.5 w-3.5 mr-1.5" />
                 Import
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onExport}
-                disabled={!selectedTemplateId}
+                disabled={!selectedTemplateId || true}
                 className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
               >
                 <FileUp className="h-3.5 w-3.5 mr-1.5" />

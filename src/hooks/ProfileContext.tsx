@@ -3,6 +3,8 @@ import React, { createContext, ReactNode, useContext, useEffect, useReducer } fr
 import { toast } from "sonner";
 import { ProfileListItem, ProfileResponse } from "../schema/profiles-schema";
 import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile } from "../services/profile-service";
+import { useModelManifestsActions } from "./manifestStore";
+import { useTemplateActions } from "./templateStore";
 
 export const MAX_PROFILES = 5;
 export interface ProfileState {
@@ -87,7 +89,8 @@ interface ProfileProviderProps {
 export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(profileReducer, initialState);
   const [savedCurrentProfile, setSessionProfileID] = useSessionProfile();
-
+  const { fetchManifests } = useModelManifestsActions();
+  const { fetchFormatTemplates, fetchInferenceTemplates, fetchPromptTemplates } = useTemplateActions();
   // Load profiles from the database
   const refreshProfiles = async (): Promise<void> => {
     try {
@@ -112,6 +115,10 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     // Save current profile ID to localStorage (just for remembering the last selection)
     if (state.currentProfile) {
       setSessionProfileID(state.currentProfile);
+      fetchManifests();
+      fetchFormatTemplates({ profile_id: state.currentProfile.id });
+      fetchInferenceTemplates({ profile_id: state.currentProfile.id });
+      fetchPromptTemplates({ profile_id: state.currentProfile.id });
     } else {
       setSessionProfileID(undefined);
     }

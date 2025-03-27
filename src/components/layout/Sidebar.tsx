@@ -63,9 +63,7 @@ const NavGroup: React.FC<NavGroupProps> = ({
     <div className={containerClassName}>
       {navItems.map((item, index) => {
         const commonClasses = `w-full flex items-center gap-2 text-sm px-2 py-3 transition-colors relative ${
-          activeSection === item.id
-            ? "bg-zinc-800/50 text-white"
-            : "hover:bg-zinc-800/30 text-muted-foreground"
+          activeSection === item.id ? "bg-zinc-800/50 text-white" : "hover:bg-zinc-800/30 text-muted-foreground"
         }`;
 
         const content = (
@@ -108,10 +106,7 @@ const NavGroup: React.FC<NavGroupProps> = ({
         );
       })}
       {indicatorTop !== null && indicatorHeight !== null && (
-        <div
-          style={{ top: `${indicatorTop}px`, height: `${indicatorHeight}px` }}
-          className={indicatorClassName}
-        />
+        <div style={{ top: `${indicatorTop}px`, height: `${indicatorHeight}px` }} className={indicatorClassName} />
       )}
     </div>
   );
@@ -163,10 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) =>
     <div className={`flex flex-col h-screen shadow-lg bg-sidebar ${isCollapsed ? "w-10" : "w-52"}`}>
       {/* Top Header */}
       <div className="p-1 flex justify-between items-center">
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hover:bg-gray-800 p-2 rounded-md"
-        >
+        <button onClick={() => setIsCollapsed(!isCollapsed)} className="hover:bg-gray-800 p-2 rounded-md">
           <Menu size={15} />
         </button>
       </div>
@@ -178,7 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) =>
         onItemClick={setActiveSection}
         isCollapsed={isCollapsed}
         containerClassName="relative flex-1"
-        indicatorClassName="absolute left-0 w-1 bg-purple-500 transition-all duration-300 ease-out"
+        indicatorClassName="absolute left-0 w-1 bg-primary transition-all duration-300 ease-out"
       />
 
       {/* Bottom Navigation */}
@@ -188,7 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) =>
         onItemClick={setActiveSection}
         isCollapsed={isCollapsed}
         containerClassName="relative border-t border-gray-800"
-        indicatorClassName="absolute left-0 w-1 bg-purple-500 transition-all duration-300 ease-out"
+        indicatorClassName="absolute left-0 w-1 bg-primary transition-all duration-300 ease-out"
         wrapIcon={true}
       />
     </div>

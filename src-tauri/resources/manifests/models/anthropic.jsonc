@@ -1,5 +1,5 @@
 {
-  "$schema": "../../../model-schema.json",
+  "$schema": "../../../../json_schema/model-schema.json",
   "id": "anthropic",
   "name": "Anthropic Claude",
   "description": "Integration with Anthropic Claude models",

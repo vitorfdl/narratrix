@@ -1,100 +1,100 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { InferenceTemplate, SystemPrompt, SystemPromptType } from "@/schema/inference-template-schema";
-import { DndContext, closestCenter } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useProfile } from "@/hooks/ProfileContext";
+import { useFormatTemplate, useFormatTemplateList, useTemplateActions, useTemplateError } from "@/hooks/templateStore";
+import { FormatTemplate } from "@/schema/template-format-schema";
+import { useSessionCurrentFormatTemplate } from "@/utils/session-storage";
 import { HelpCircle } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ExtraSections } from "./components/ExtrasSection";
-import { ModelInstructionSection } from "./components/ModelInstructionSection";
-import { SystemPromptSection } from "./components/SystemPromptSection";
+import { InstructTemplateSection } from "./components/InstructTemplateSection";
+import { SystemPromptTemplateSection } from "./components/SystemtemplateSection";
 import { TemplateHeader } from "./components/TemplateHeader";
 
-// Mock data - replace with API call later
-const mockTemplate: InferenceTemplate = {
-  id: "1",
-  name: "Default Template",
-  description: "A default inference template",
-  modelInstructions: {
-    systemPromptFormatting: {
-      prefix: "[INT]",
-      suffix: "[INT]",
-    },
-    userMessageFormatting: {
-      prefix: "[INT]",
-      suffix: "[INT]",
-    },
-    assistantMessageFormatting: {
-      prefix: "[INT]",
-      suffix: "[INT]",
-      prefill: "[INT]",
-      prefillOnlyCharacters: false,
-    },
-    agentMessageFormatting: {
-      useSameAsUser: false,
-      useSameAsSystemPrompt: false,
-      prefix: "[INT]",
-      suffix: "[INT]",
-    },
-    customStopStrings: ["[INT]"],
-  },
-  systemPrompts: [
-    {
-      id: "1",
-      type: SystemPromptType.Context,
-      name: "System Context",
-      content: "",
-      order: 0,
-      settings: {
-        useGlobal: false,
-        mergeMessages: false,
-        applyCensorship: false,
-      },
-    },
-  ],
-  reasoning: {
-    prefix: "<think>",
-    suffix: "</think>",
-  },
-  settings: {
-    trimAssistantIncomplete: true,
-    trimDoubleSpaces: true,
-    collapseConsecutiveLines: true,
-    chatCompletion: true,
-    textCompletion: false,
-    prefixMessages: {
-      enabled: true,
-      type: "never",
-    },
-    mergeMessagesOnUser: false,
-    applyCensorship: false,
-    mergeSubsequentMessages: false,
-  },
-};
-
-export default function InferenceTemplatePage() {
-  const [template, setTemplate] = useState<InferenceTemplate>(mockTemplate);
+export default function FormatTemplatePage() {
   const [isDocOpen, setIsDocOpen] = useState(false);
+  const profile = useProfile();
+  const [selectedTemplateId, setSelectedTemplateId] = useSessionCurrentFormatTemplate();
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [templateCreationFailed, setTemplateCreationFailed] = useState(false);
+  const error = useTemplateError();
+  const { getFormatTemplatesByProfile, updateFormatTemplate, createFormatTemplate } = useTemplateActions();
 
-  const handleSystemPromptReorder = (items: SystemPrompt[]) => {
-    setTemplate((prev) => ({
-      ...prev,
-      systemPrompts: items,
-    }));
-  };
+  // Find the current template from store based on selected ID using useMemo
+  const formatTemplates = useFormatTemplateList();
+  const currentTemplate = useFormatTemplate(selectedTemplateId ?? "");
 
-  const handleDelete = () => {};
+  // Fetch templates when profile changes
+  useEffect(() => {
+    if (!profile?.currentProfile?.id) {
+      return;
+    }
 
-  const handleNewTemplate = () => {};
+    getFormatTemplatesByProfile(profile.currentProfile.id);
+  }, [profile?.currentProfile?.id]);
 
-  const handleEditName = () => {};
+  // Auto-select first template or create default one if none exists
+  useEffect(() => {
+    const ensureTemplateSelected = async () => {
+      // Skip if we're already creating a template or if creation failed
+      if (isCreatingTemplate || templateCreationFailed) {
+        return;
+      }
 
-  const handleImport = () => {};
+      // Skip if we already have a selected template
+      if (selectedTemplateId && formatTemplates.some((t) => t.id === selectedTemplateId)) {
+        return;
+      }
 
-  const handleExport = () => {};
+      // If templates are loaded but none selected, auto-select the first
+      if (formatTemplates.length > 0 && !selectedTemplateId) {
+        setSelectedTemplateId(formatTemplates[0].id);
+        return;
+      }
+
+      // Create a default template if none exist
+      if (formatTemplates.length === 0 && profile?.currentProfile?.id) {
+        try {
+          setIsCreatingTemplate(true);
+
+          // Create a default template with minimum required fields
+          const newTemplate = await createFormatTemplate({
+            name: "Default Format Template",
+            profile_id: profile.currentProfile.id,
+            inference_template_id: null,
+            prompt_template_id: null,
+          });
+
+          setSelectedTemplateId(newTemplate.id);
+        } catch (err) {
+          console.error("Failed to create default template:", err);
+          setTemplateCreationFailed(true);
+        } finally {
+          setIsCreatingTemplate(false);
+        }
+      }
+    };
+
+    ensureTemplateSelected();
+  }, [formatTemplates, selectedTemplateId, isCreatingTemplate, templateCreationFailed]);
+
+  // Handle template selection change
+  const handleTemplateChange = useCallback((templateId: string | null) => {
+    setSelectedTemplateId(templateId);
+  }, []);
+
+  // Handle updates to the template
+  const handleTemplateUpdate = useCallback(
+    async (updatedData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "createdAt" | "updatedAt">>) => {
+      if (selectedTemplateId) {
+        await updateFormatTemplate(selectedTemplateId, updatedData);
+      }
+    },
+    [selectedTemplateId],
+  );
 
   return (
-    <div className="container mx-auto space-y-2 page-container">
+    <div className="space-y-2 page-container">
       <div className="flex gap-2 items-center">
         <h1 className="title">Formatting Template</h1>
         <Sheet open={isDocOpen} onOpenChange={setIsDocOpen}>
@@ -106,116 +106,40 @@ export default function InferenceTemplatePage() {
           <SheetContent>
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Documentation</h2>
-              <p>Documentation content from public folder will be loaded here.</p>
+              <p>Select a template to view its documentation.</p>
             </div>
           </SheetContent>
         </Sheet>
       </div>
 
-      <TemplateHeader
-        settings={template.settings}
-        onUpdate={(updates) =>
-          setTemplate((prev) => ({
-            ...prev,
-            settings: {
-              ...prev.settings,
-              ...updates.settings,
-            },
-          }))
-        }
-        onDelete={handleDelete}
-        onNewTemplate={handleNewTemplate}
-        onEditName={handleEditName}
-        onImport={handleImport}
-        onExport={handleExport}
-        templates={[]}
-        selectedTemplateId={null}
-        onTemplateSelect={(_templateId: string): void => {
-          throw new Error("Function not implemented.");
-        }}
-      />
+      {error && <div className="text-destructive">{error}</div>}
+      {templateCreationFailed && (
+        <div className="text-destructive">Failed to create default template. Please try refreshing the page or create a template manually.</div>
+      )}
 
-      <div className="grid grid-cols-2 gap-2">
+      <TemplateHeader formatTemplateID={selectedTemplateId} onTemplateChange={handleTemplateChange} />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div className="space-y-2">
-          <div>
-            <DndContext
-              collisionDetection={closestCenter}
-              onDragEnd={({ active, over }) => {
-                if (over && active.id !== over.id) {
-                  const oldIndex = template.systemPrompts.findIndex((item) => item.id === active.id);
-                  const newIndex = template.systemPrompts.findIndex((item) => item.id === over.id);
-
-                  const newItems = [...template.systemPrompts];
-                  const [removed] = newItems.splice(oldIndex, 1);
-                  newItems.splice(newIndex, 0, removed);
-
-                  handleSystemPromptReorder(newItems);
-                }
-              }}
-            >
-              <SortableContext items={template.systemPrompts} strategy={verticalListSortingStrategy}>
-                <SystemPromptSection
-                  prompts={template.systemPrompts}
-                  onUpdate={(prompts) => setTemplate((prev) => ({ ...prev, systemPrompts: prompts }))}
-                  templates={[]}
-                  selectedTemplateId={null}
-                  onTemplateSelect={(_templateId: string): void => {
-                    throw new Error("Function not implemented.");
-                  }}
-                  onDeleteTemplate={(_templateId: string): void => {
-                    throw new Error("Function not implemented.");
-                  }}
-                  onNewTemplate={(): void => {
-                    throw new Error("Function not implemented.");
-                  }}
-                  onEditTemplateName={(_templateId: string): void => {
-                    throw new Error("Function not implemented.");
-                  }}
-                  onTemplateImport={(_templateId: string): void => {
-                    throw new Error("Function not implemented.");
-                  }}
-                  onTemplateExport={(_templateId: string): void => {
-                    throw new Error("Function not implemented.");
-                  }}
-                />
-              </SortableContext>
-            </DndContext>
-          </div>
-
-          <ExtraSections reasoning={template.reasoning} onUpdate={(reasoning) => setTemplate((prev) => ({ ...prev, reasoning }))} />
+          <SystemPromptTemplateSection
+            onTemplateChange={(id) => handleTemplateUpdate({ prompt_template_id: id })}
+            systemTemplateID={currentTemplate?.prompt_template_id || null}
+            useGlobal={currentTemplate?.config.use_global_context || false}
+            setUseGlobal={(useGlobal) =>
+              handleTemplateUpdate({
+                config: {
+                  ...currentTemplate!.config,
+                  use_global_context: useGlobal,
+                },
+              })
+            }
+          />
+          <ExtraSections formatTemplateID={selectedTemplateId} />
         </div>
 
-        <ModelInstructionSection
-          {...template.modelInstructions}
-          onUpdate={(updates) =>
-            setTemplate((prev) => ({
-              ...prev,
-              modelInstructions: {
-                ...prev.modelInstructions,
-                ...updates,
-              },
-            }))
-          }
-          templates={[]}
-          selectedTemplateId={null}
-          onTemplateSelect={(_templateId: string): void => {
-            throw new Error("Function not implemented.");
-          }}
-          onDeleteTemplate={(_templateId: string): void => {
-            throw new Error("Function not implemented.");
-          }}
-          onNewTemplate={(): void => {
-            throw new Error("Function not implemented.");
-          }}
-          onEditTemplateName={(_templateId: string): void => {
-            throw new Error("Function not implemented.");
-          }}
-          onTemplateImport={(_templateId: string): void => {
-            throw new Error("Function not implemented.");
-          }}
-          onTemplateExport={(_templateId: string): void => {
-            throw new Error("Function not implemented.");
-          }}
+        <InstructTemplateSection
+          onTemplateChange={(id) => handleTemplateUpdate({ inference_template_id: id })}
+          instructTemplateID={currentTemplate?.inference_template_id || null}
         />
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utilsLib";
+import { cn } from "@/lib/utils";
 import { LightbulbIcon } from "lucide-react";
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -11,7 +11,9 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, hints, caseSensitive = false, value, defaultValue, onChange, ...props }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [inputValue, setInputValue] = useState<string>(value !== undefined ? String(value) : defaultValue !== undefined ? String(defaultValue) : "");
+    const [inputValue, setInputValue] = useState<string>(
+      value !== undefined ? String(value) : defaultValue !== undefined ? String(defaultValue) : "",
+    );
     const dropdownRef = useRef<HTMLDivElement>(null);
     const isControlled = value !== undefined;
 
@@ -119,9 +121,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               "flex h-7 w-full rounded-sm bg-foreground/5 px-3 py-1/2 text-xs font-mono",
               "border-0 border-b-2 border-b-primary/20",
-              "transition-all duration-200",
+              "transition-all duration-100",
               "focus:border-b-primary focus:bg-accent",
-              "placeholder:text-muted-foreground",
+              "placeholder:text-muted-foreground/40 placeholder:italic",
               "outline-none ring-0",
               "disabled:cursor-not-allowed disabled:opacity-50",
               hints && hints.length > 0 ? "pr-7" : "",

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utilsLib";
+import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import * as React from "react";
 import { Button } from "./button";

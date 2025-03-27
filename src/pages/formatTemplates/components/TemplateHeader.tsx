@@ -1,114 +1,240 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { TemplateSettings } from "@/schema/inference-template-schema";
-import { Template, TemplatePicker } from "./TemplatePicker";
+import { useProfile } from "@/hooks/ProfileContext";
+import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
+import { FormatTemplate, TemplateSettings } from "@/schema/template-format-schema";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDebouncedCallback } from "use-debounce";
+import { TemplatePicker } from "./TemplatePicker";
 
 interface TemplateHeaderProps {
-  settings: TemplateSettings;
-  templates: Template[];
-  selectedTemplateId: string | null;
-  onTemplateSelect: (templateId: string) => void;
-  onUpdate: (updates: Partial<{ settings: TemplateSettings }>) => void;
-  onDelete: () => void;
-  onNewTemplate: () => void;
-  onEditName: () => void;
-  onImport: () => void;
-  onExport: () => void;
+  formatTemplateID: string | null;
+  // Tell the parent that the template has changed
+  onTemplateChange: (templateId: string) => void;
 }
 
-export function TemplateHeader({
-  settings,
-  templates,
-  selectedTemplateId,
-  onTemplateSelect,
-  onUpdate,
-  onDelete,
-  onNewTemplate,
-  onEditName,
-  onImport,
-  onExport,
-}: TemplateHeaderProps) {
+export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateHeaderProps) {
+  // Use atomic selectors for each piece of state/action
+  const formatTemplates = useFormatTemplateList();
+  const { updateFormatTemplate, deleteFormatTemplate, createFormatTemplate, fetchFormatTemplates } = useTemplateActions();
+
+  const [currentTemplate, setCurrentTemplate] = useState<FormatTemplate | null>(null);
+  const [localSettings, setLocalSettings] = useState<TemplateSettings | null>(null);
+
+  // Memoize settings to prevent unnecessary re-renders
+  const memoizedSettings = useMemo(
+    () =>
+      localSettings || {
+        trim_assistant_incomplete: false,
+        trim_double_spaces: true,
+        collapse_consecutive_lines: true,
+        completion_type: "chat" as const,
+        prefix_messages: "never" as const,
+        apply_censorship: false,
+        merge_messages_on_user: false,
+        merge_subsequent_messages: true,
+      },
+    [localSettings],
+  );
+
+  // Memoize finding the current template for better performance
+  const selectedTemplate = useMemo(() => {
+    if (!formatTemplateID || formatTemplates.length === 0) {
+      return null;
+    }
+    return formatTemplates.find((t) => t.id === formatTemplateID) || null;
+  }, [formatTemplateID, formatTemplates]);
+
+  // Instead of using useDebounce hook for values, use useDebouncedCallback for the update function
+  const debouncedUpdate = useDebouncedCallback(async (template: FormatTemplate, settings: TemplateSettings) => {
+    await updateFormatTemplate(template.id, {
+      config: {
+        ...template.config,
+        settings,
+      },
+    });
+  }, 500);
+
+  const profile = useProfile();
+
+  // Fetch templates on component mount if not already loaded
+  useEffect(() => {
+    if (formatTemplates.length === 0) {
+      fetchFormatTemplates();
+    }
+  }, [fetchFormatTemplates, formatTemplates.length]);
+
+  // Update current template when selectedTemplate changes
+  useEffect(() => {
+    setCurrentTemplate(selectedTemplate);
+    if (selectedTemplate?.config.settings) {
+      setLocalSettings(selectedTemplate.config.settings);
+    } else {
+      setLocalSettings(null);
+    }
+  }, [selectedTemplate]);
+
+  // Handler for updating template settings
+  const handleSettingChange = useCallback(
+    <K extends keyof TemplateSettings>(key: K, value: TemplateSettings[K]) => {
+      if (!currentTemplate || !localSettings) {
+        return;
+      }
+
+      // Update local state immediately for responsive UI
+      const updatedSettings = {
+        ...localSettings,
+        [key]: value,
+      };
+
+      setLocalSettings(updatedSettings);
+
+      // Debounce the API call to update the template
+      debouncedUpdate(currentTemplate, updatedSettings);
+    },
+    [currentTemplate, localSettings, debouncedUpdate],
+  );
+
+  // Handler for template selection
+  const handleTemplateSelect = (templateId: string) => {
+    if (templateId !== formatTemplateID) {
+      onTemplateChange(templateId);
+    }
+  };
+
+  // Handler for template deletion
+  const handleDeleteTemplate = async (templateId: string) => {
+    await deleteFormatTemplate(templateId);
+    if (formatTemplateID === templateId) {
+      // If the deleted template was the current one, select another one or null
+      const nextTemplate = formatTemplates.find((t) => t.id !== templateId);
+      onTemplateChange(nextTemplate?.id || "");
+    }
+  };
+
+  // Handler for creating a new template
+  const handleNewTemplate = async () => {
+    const newTemplate = await createFormatTemplate({
+      name: "New Format Template",
+      profile_id: profile?.currentProfile?.id || "",
+      inference_template_id: null,
+      prompt_template_id: null,
+      config: {
+        settings: {
+          trim_assistant_incomplete: false,
+          trim_double_spaces: true,
+          collapse_consecutive_lines: true,
+          completion_type: "chat",
+          prefix_messages: "never",
+          apply_censorship: false,
+          merge_messages_on_user: false,
+          merge_subsequent_messages: true,
+        },
+        reasoning: {
+          prefix: "",
+          suffix: "",
+        },
+        use_global_context: false,
+      },
+    });
+
+    onTemplateChange(newTemplate.id);
+  };
+
+  // Handlers for editing name, importing, and exporting
+  const handleEditName = async (templateId: string, newName: string) => {
+    if (!currentTemplate) {
+      return;
+    }
+    await updateFormatTemplate(templateId, { name: newName });
+  };
+
+  const handleImport = () => {
+    // To be implemented
+    console.log("Import template");
+  };
+
+  const handleExport = (templateId: string) => {
+    // To be implemented
+    console.log("Export template", templateId);
+  };
+
+  // Memoize complex components to prevent re-rendering
+  const templatePickerMemo = useMemo(
+    () => (
+      <TemplatePicker
+        templates={formatTemplates}
+        selectedTemplateId={formatTemplateID}
+        onTemplateSelect={handleTemplateSelect}
+        onDelete={() => formatTemplateID && handleDeleteTemplate(formatTemplateID)}
+        onNewTemplate={handleNewTemplate}
+        onEditName={() => formatTemplateID && handleEditName(formatTemplateID, "Renamed Template")}
+        onImport={handleImport}
+        onExport={() => formatTemplateID && handleExport(formatTemplateID)}
+      />
+    ),
+    [formatTemplateID, formatTemplates],
+  );
+
   return (
     <div className="space-y-4 bg-card p-4 rounded-sm border">
-      <TemplatePicker
-        templates={templates}
-        selectedTemplateId={selectedTemplateId}
-        onTemplateSelect={onTemplateSelect}
-        onDelete={onDelete}
-        onNewTemplate={onNewTemplate}
-        onEditName={onEditName}
-        onImport={onImport}
-        onExport={onExport}
-      />
+      {templatePickerMemo}
 
-      <div className="grid grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 ">
         {/* Left Column - Checkboxes */}
-        <div className="space-y-2">
+        <div className="space-y-2 md:justify-self-start">
           <h3 className="text-sm font-medium text-muted-foreground">Text Cleanup</h3>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="trimAssistant"
-              checked={settings.trimAssistantIncomplete}
-              onCheckedChange={(checked) =>
-                onUpdate({
-                  settings: {
-                    ...settings,
-                    trimAssistantIncomplete: checked as boolean,
-                  },
-                })
-              }
+              checked={memoizedSettings.trim_assistant_incomplete}
+              onCheckedChange={useCallback(
+                (checked: boolean | "indeterminate") => handleSettingChange("trim_assistant_incomplete", checked as boolean),
+                [handleSettingChange],
+              )}
+              disabled={!currentTemplate}
             />
             <Label htmlFor="trimAssistant">Trim Assistant Incomplete Sequences</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="trimSpaces"
-              checked={settings.trimDoubleSpaces}
-              onCheckedChange={(checked) =>
-                onUpdate({
-                  settings: {
-                    ...settings,
-                    trimDoubleSpaces: checked as boolean,
-                  },
-                })
-              }
+              checked={memoizedSettings.trim_double_spaces}
+              onCheckedChange={useCallback(
+                (checked: boolean | "indeterminate") => handleSettingChange("trim_double_spaces", checked as boolean),
+                [handleSettingChange],
+              )}
+              disabled={!currentTemplate}
             />
             <Label htmlFor="trimSpaces">Trim Double+ Spaces</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="collapseLines"
-              checked={settings.collapseConsecutiveLines}
-              onCheckedChange={(checked) =>
-                onUpdate({
-                  settings: {
-                    ...settings,
-                    collapseConsecutiveLines: checked as boolean,
-                  },
-                })
-              }
+              checked={memoizedSettings.collapse_consecutive_lines}
+              onCheckedChange={useCallback(
+                (checked: boolean | "indeterminate") => handleSettingChange("collapse_consecutive_lines", checked as boolean),
+                [handleSettingChange],
+              )}
+              disabled={!currentTemplate}
             />
             <Label htmlFor="collapseLines">Collapse Consecutive Lines</Label>
           </div>
         </div>
 
         {/* Middle Column - Template Type and Prefix Messages */}
-        <div className="space-y-4">
+        <div className="space-y-4 md:justify-self-center">
           <div className="space-y-2">
             <Label className="font-medium text-muted-foreground">Template Type</Label>
             <RadioGroup
-              value={settings.chatCompletion ? "chat" : "text"}
-              onValueChange={(value) =>
-                onUpdate({
-                  settings: {
-                    ...settings,
-                    chatCompletion: value === "chat",
-                    textCompletion: value === "text",
-                  },
-                })
-              }
+              value={memoizedSettings.completion_type}
+              onValueChange={useCallback(
+                (value: string) => handleSettingChange("completion_type", value as "chat" | "text" | "both"),
+                [handleSettingChange],
+              )}
               className="flex space-x-4"
+              disabled={!currentTemplate}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="chat" id="chat" />
@@ -118,25 +244,23 @@ export function TemplateHeader({
                 <RadioGroupItem value="text" id="text" />
                 <Label htmlFor="text">Text Completion</Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="both" id="both" />
+                <Label htmlFor="both">Both</Label>
+              </div>
             </RadioGroup>
           </div>
 
           <div className="space-y-2">
             <Label className="font-medium text-muted-foreground">Prefix Messages with Character Names</Label>
             <RadioGroup
-              value={settings.prefixMessages.type}
-              onValueChange={(value) =>
-                onUpdate({
-                  settings: {
-                    ...settings,
-                    prefixMessages: {
-                      ...settings.prefixMessages,
-                      type: value as "never" | "always" | "characters",
-                    },
-                  },
-                })
-              }
+              value={memoizedSettings.prefix_messages}
+              onValueChange={useCallback(
+                (value: string) => handleSettingChange("prefix_messages", value as "never" | "always" | "characters"),
+                [handleSettingChange],
+              )}
               className="flex space-x-4"
+              disabled={!currentTemplate}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="never" id="never" />
@@ -155,53 +279,41 @@ export function TemplateHeader({
         </div>
 
         {/* Right Column - Additional Checkboxes */}
-        <div className="space-y-2">
+        <div className="space-y-2 md:justify-self-end">
           <h3 className="text-sm font-medium text-muted-foreground">Message Formatting</h3>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="mergeMessages"
-              checked={settings.prefixMessages.enabled}
-              onCheckedChange={(checked) =>
-                onUpdate({
-                  settings: {
-                    ...settings,
-                    prefixMessages: {
-                      ...settings.prefixMessages,
-                      enabled: checked as boolean,
-                    },
-                  },
-                })
-              }
+              checked={memoizedSettings.merge_messages_on_user}
+              onCheckedChange={useCallback(
+                (checked: boolean | "indeterminate") => handleSettingChange("merge_messages_on_user", checked as boolean),
+                [handleSettingChange],
+              )}
+              disabled={!currentTemplate}
             />
             <Label htmlFor="mergeMessages">Merge all messages on User</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="applyCensorship"
-              checked={settings.applyCensorship}
-              onCheckedChange={(checked) =>
-                onUpdate({
-                  settings: {
-                    ...settings,
-                    applyCensorship: checked as boolean,
-                  },
-                })
-              }
+              checked={memoizedSettings.apply_censorship}
+              onCheckedChange={useCallback(
+                (checked: boolean | "indeterminate") => handleSettingChange("apply_censorship", checked as boolean),
+                [handleSettingChange],
+              )}
+              disabled={!currentTemplate}
             />
             <Label htmlFor="applyCensorship">Apply censorship to messages</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="mergeSubsequent"
-              checked={settings.mergeSubsequentMessages}
-              onCheckedChange={(checked) =>
-                onUpdate({
-                  settings: {
-                    ...settings,
-                    mergeSubsequentMessages: checked as boolean,
-                  },
-                })
-              }
+              checked={memoizedSettings.merge_subsequent_messages}
+              onCheckedChange={useCallback(
+                (checked: boolean | "indeterminate") => handleSettingChange("merge_subsequent_messages", checked as boolean),
+                [handleSettingChange],
+              )}
+              disabled={!currentTemplate}
             />
             <Label htmlFor="mergeSubsequent">Merge subsquent Messages</Label>
           </div>

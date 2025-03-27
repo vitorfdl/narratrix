@@ -1,0 +1,803 @@
+{
+  "id": "dnd5e",
+  "version": "1.0.0",
+  "name": "Dungeons & Dragons 5th Edition",
+  "description": "Dungeons & Dragons 5th Edition character card schema",
+  "columns": 1,
+  "sections": [
+    {
+      "id": "basics",
+      "columns": 3,
+      "fields": [
+        {
+          "id": "name",
+          "label": "Character Name",
+          "type": "string",
+          "placeholder": "Enter character name"
+        },
+        {
+          "id": "class",
+          "label": "Class & Level",
+          "type": "string",
+          "placeholder": "Ex: Wizard 5"
+        },
+        {
+          "id": "race",
+          "label": "Race",
+          "type": "string",
+          "placeholder": "Ex: High Elf"
+        },
+        {
+          "id": "background",
+          "label": "Background",
+          "type": "string",
+          "placeholder": "Ex: Sage"
+        },
+        {
+          "id": "alignment",
+          "label": "Alignment",
+          "type": "string",
+          "placeholder": "Ex: Lawful Good"
+        },
+        {
+          "id": "experience",
+          "label": "Experience Points",
+          "type": "number",
+          "placeholder": "Enter XP total"
+        }
+      ]
+    },
+    {
+      "id": "base",
+      "columns": 1,
+      "fields": [
+        {
+          "id": "personality",
+          "label": "Personality",
+          "type": "textarea",
+          "placeholder": "Enter the personality of the character"
+        }
+      ]
+    },
+    {
+      "id": "attributes",
+      "columns": 3,
+      "fields": [
+        {
+          "id": "strength",
+          "label": "Strength",
+          "type": "number",
+          "placeholder": "Enter the strength of the character"
+        },
+        {
+          "id": "dexterity",
+          "label": "Dexterity",
+          "type": "number",
+          "placeholder": "Enter the dexterity of the character"
+        },
+        {
+          "id": "constitution",
+          "label": "Constitution",
+          "type": "number",
+          "placeholder": "Enter the constitution of the character"
+        },
+        {
+          "id": "intelligence",
+          "label": "Intelligence",
+          "type": "number",
+          "placeholder": "Enter the intelligence of the character"
+        },
+        {
+          "id": "wisdom",
+          "label": "Wisdom",
+          "type": "number",
+          "placeholder": "Enter the wisdom of the character"
+        },
+        {
+          "id": "charisma",
+          "label": "Charisma",
+          "type": "number",
+          "placeholder": "Enter the charisma of the character"
+        }
+      ]
+    },
+    {
+      "id": "ability_modifiers",
+      "columns": 3,
+      "fields": [
+        {
+          "id": "str_mod",
+          "label": "STR Modifier",
+          "type": "output",
+          "value": "Math.floor((attributes.strength - 10) / 2)"
+        },
+        {
+          "id": "dex_mod",
+          "label": "DEX Modifier",
+          "type": "output",
+          "value": "Math.floor((attributes.dexterity - 10) / 2)"
+        },
+        {
+          "id": "con_mod",
+          "label": "CON Modifier",
+          "type": "output",
+          "value": "Math.floor((attributes.constitution - 10) / 2)"
+        },
+        {
+          "id": "int_mod",
+          "label": "INT Modifier",
+          "type": "output",
+          "value": "Math.floor((attributes.intelligence - 10) / 2)"
+        },
+        {
+          "id": "wis_mod",
+          "label": "WIS Modifier",
+          "type": "output",
+          "value": "Math.floor((attributes.wisdom - 10) / 2)"
+        },
+        {
+          "id": "cha_mod",
+          "label": "CHA Modifier",
+          "type": "output",
+          "value": "Math.floor((attributes.charisma - 10) / 2)"
+        }
+      ]
+    },
+    {
+      "id": "stats",
+      "columns": 3,
+      "fields": [
+        {
+          "id": "proficiency",
+          "label": "Proficiency Bonus",
+          "type": "number",
+          "placeholder": "Enter proficiency bonus"
+        },
+        {
+          "id": "hp_max",
+          "label": "Max HP",
+          "type": "number",
+          "placeholder": "Enter maximum hit points"
+        },
+        {
+          "id": "hp_current",
+          "label": "Current HP",
+          "type": "number",
+          "placeholder": "Enter current hit points"
+        },
+        {
+          "id": "hp_temp",
+          "label": "Temporary HP",
+          "type": "number",
+          "placeholder": "Enter temporary hit points"
+        },
+        {
+          "id": "ac",
+          "label": "Armor Class",
+          "type": "number",
+          "placeholder": "Enter armor class"
+        },
+        {
+          "id": "initiative",
+          "label": "Initiative",
+          "type": "output",
+          "value": "ability_modifiers.dex_mod"
+        },
+        {
+          "id": "speed",
+          "label": "Speed",
+          "type": "number",
+          "placeholder": "Enter speed in feet"
+        },
+        {
+          "id": "hit_dice",
+          "label": "Hit Dice",
+          "type": "string",
+          "placeholder": "Ex: 5d8"
+        },
+        {
+          "id": "hit_dice_remaining",
+          "label": "Hit Dice Remaining",
+          "type": "string",
+          "placeholder": "Ex: 3d8"
+        }
+      ]
+    },
+    {
+      "id": "saving_throws",
+      "columns": 2,
+      "fields": [
+        {
+          "id": "str_save_prof",
+          "label": "STR Save Proficient",
+          "type": "number",
+          "placeholder": "0 or 1"
+        },
+        {
+          "id": "str_save",
+          "label": "Strength Save",
+          "type": "output",
+          "value": "ability_modifiers.str_mod + (saving_throws.str_save_prof * stats.proficiency)"
+        },
+        {
+          "id": "dex_save_prof",
+          "label": "DEX Save Proficient",
+          "type": "number",
+          "placeholder": "0 or 1"
+        },
+        {
+          "id": "dex_save",
+          "label": "Dexterity Save",
+          "type": "output",
+          "value": "ability_modifiers.dex_mod + (saving_throws.dex_save_prof * stats.proficiency)"
+        },
+        {
+          "id": "con_save_prof",
+          "label": "CON Save Proficient",
+          "type": "number",
+          "placeholder": "0 or 1"
+        },
+        {
+          "id": "con_save",
+          "label": "Constitution Save",
+          "type": "output",
+          "value": "ability_modifiers.con_mod + (saving_throws.con_save_prof * stats.proficiency)"
+        },
+        {
+          "id": "int_save_prof",
+          "label": "INT Save Proficient",
+          "type": "number",
+          "placeholder": "0 or 1"
+        },
+        {
+          "id": "int_save",
+          "label": "Intelligence Save",
+          "type": "output",
+          "value": "ability_modifiers.int_mod + (saving_throws.int_save_prof * stats.proficiency)"
+        },
+        {
+          "id": "wis_save_prof",
+          "label": "WIS Save Proficient",
+          "type": "number",
+          "placeholder": "0 or 1"
+        },
+        {
+          "id": "wis_save",
+          "label": "Wisdom Save",
+          "type": "output",
+          "value": "ability_modifiers.wis_mod + (saving_throws.wis_save_prof * stats.proficiency)"
+        },
+        {
+          "id": "cha_save_prof",
+          "label": "CHA Save Proficient",
+          "type": "number",
+          "placeholder": "0 or 1"
+        },
+        {
+          "id": "cha_save",
+          "label": "Charisma Save",
+          "type": "output",
+          "value": "ability_modifiers.cha_mod + (saving_throws.cha_save_prof * stats.proficiency)"
+        }
+      ]
+    },
+    {
+      "id": "skills",
+      "columns": 2,
+      "fields": [
+        {
+          "id": "acrobatics_prof",
+          "label": "Acrobatics Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "acrobatics",
+          "label": "Acrobatics (DEX)",
+          "type": "output",
+          "value": "ability_modifiers.dex_mod + (skills.acrobatics_prof * stats.proficiency)"
+        },
+        {
+          "id": "animal_handling_prof",
+          "label": "Animal Handling Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "animal_handling",
+          "label": "Animal Handling (WIS)",
+          "type": "output",
+          "value": "ability_modifiers.wis_mod + (skills.animal_handling_prof * stats.proficiency)"
+        },
+        {
+          "id": "arcana_prof",
+          "label": "Arcana Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "arcana",
+          "label": "Arcana (INT)",
+          "type": "output",
+          "value": "ability_modifiers.int_mod + (skills.arcana_prof * stats.proficiency)"
+        },
+        {
+          "id": "athletics_prof",
+          "label": "Athletics Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "athletics",
+          "label": "Athletics (STR)",
+          "type": "output",
+          "value": "ability_modifiers.str_mod + (skills.athletics_prof * stats.proficiency)"
+        },
+        {
+          "id": "deception_prof",
+          "label": "Deception Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "deception",
+          "label": "Deception (CHA)",
+          "type": "output",
+          "value": "ability_modifiers.cha_mod + (skills.deception_prof * stats.proficiency)"
+        },
+        {
+          "id": "history_prof",
+          "label": "History Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "history",
+          "label": "History (INT)",
+          "type": "output",
+          "value": "ability_modifiers.int_mod + (skills.history_prof * stats.proficiency)"
+        },
+        {
+          "id": "insight_prof",
+          "label": "Insight Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "insight",
+          "label": "Insight (WIS)",
+          "type": "output",
+          "value": "ability_modifiers.wis_mod + (skills.insight_prof * stats.proficiency)"
+        },
+        {
+          "id": "intimidation_prof",
+          "label": "Intimidation Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "intimidation",
+          "label": "Intimidation (CHA)",
+          "type": "output",
+          "value": "ability_modifiers.cha_mod + (skills.intimidation_prof * stats.proficiency)"
+        },
+        {
+          "id": "investigation_prof",
+          "label": "Investigation Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "investigation",
+          "label": "Investigation (INT)",
+          "type": "output",
+          "value": "ability_modifiers.int_mod + (skills.investigation_prof * stats.proficiency)"
+        },
+        {
+          "id": "medicine_prof",
+          "label": "Medicine Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "medicine",
+          "label": "Medicine (WIS)",
+          "type": "output",
+          "value": "ability_modifiers.wis_mod + (skills.medicine_prof * stats.proficiency)"
+        },
+        {
+          "id": "nature_prof",
+          "label": "Nature Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "nature",
+          "label": "Nature (INT)",
+          "type": "output",
+          "value": "ability_modifiers.int_mod + (skills.nature_prof * stats.proficiency)"
+        },
+        {
+          "id": "perception_prof",
+          "label": "Perception Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "perception",
+          "label": "Perception (WIS)",
+          "type": "output",
+          "value": "ability_modifiers.wis_mod + (skills.perception_prof * stats.proficiency)"
+        },
+        {
+          "id": "performance_prof",
+          "label": "Performance Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "performance",
+          "label": "Performance (CHA)",
+          "type": "output",
+          "value": "ability_modifiers.cha_mod + (skills.performance_prof * stats.proficiency)"
+        },
+        {
+          "id": "persuasion_prof",
+          "label": "Persuasion Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "persuasion",
+          "label": "Persuasion (CHA)",
+          "type": "output",
+          "value": "ability_modifiers.cha_mod + (skills.persuasion_prof * stats.proficiency)"
+        },
+        {
+          "id": "religion_prof",
+          "label": "Religion Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "religion",
+          "label": "Religion (INT)",
+          "type": "output",
+          "value": "ability_modifiers.int_mod + (skills.religion_prof * stats.proficiency)"
+        },
+        {
+          "id": "sleight_of_hand_prof",
+          "label": "Sleight of Hand Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "sleight_of_hand",
+          "label": "Sleight of Hand (DEX)",
+          "type": "output",
+          "value": "ability_modifiers.dex_mod + (skills.sleight_of_hand_prof * stats.proficiency)"
+        },
+        {
+          "id": "stealth_prof",
+          "label": "Stealth Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "stealth",
+          "label": "Stealth (DEX)",
+          "type": "output",
+          "value": "ability_modifiers.dex_mod + (skills.stealth_prof * stats.proficiency)"
+        },
+        {
+          "id": "survival_prof",
+          "label": "Survival Prof",
+          "type": "number",
+          "placeholder": "0, 1, or 2 for expertise"
+        },
+        {
+          "id": "survival",
+          "label": "Survival (WIS)",
+          "type": "output",
+          "value": "ability_modifiers.wis_mod + (skills.survival_prof * stats.proficiency)"
+        }
+      ]
+    },
+    {
+      "id": "passive_scores",
+      "columns": 3,
+      "fields": [
+        {
+          "id": "passive_perception",
+          "label": "Passive Perception",
+          "type": "output",
+          "value": "10 + skills.perception"
+        },
+        {
+          "id": "passive_investigation",
+          "label": "Passive Investigation",
+          "type": "output",
+          "value": "10 + skills.investigation"
+        },
+        {
+          "id": "passive_insight",
+          "label": "Passive Insight",
+          "type": "output",
+          "value": "10 + skills.insight"
+        }
+      ]
+    },
+    {
+      "id": "combat",
+      "columns": 1,
+      "fields": [
+        {
+          "id": "weapons",
+          "label": "Weapons",
+          "type": "string_array",
+          "placeholder": "Weapon name, attack bonus, damage"
+        }
+      ]
+    },
+    {
+      "id": "equipment",
+      "columns": 1,
+      "fields": [
+        {
+          "id": "equipment_list",
+          "label": "Equipment",
+          "type": "string_array",
+          "placeholder": "Add equipment items"
+        },
+        {
+          "id": "cp",
+          "label": "Copper Pieces",
+          "type": "number",
+          "placeholder": "CP"
+        },
+        {
+          "id": "sp",
+          "label": "Silver Pieces",
+          "type": "number",
+          "placeholder": "SP"
+        },
+        {
+          "id": "gp",
+          "label": "Gold Pieces",
+          "type": "number",
+          "placeholder": "GP"
+        },
+        {
+          "id": "pp",
+          "label": "Platinum Pieces",
+          "type": "number",
+          "placeholder": "PP"
+        }
+      ]
+    },
+    {
+      "id": "features",
+      "columns": 1,
+      "fields": [
+        {
+          "id": "traits",
+          "label": "Personality Traits",
+          "type": "textarea",
+          "placeholder": "Enter character personality traits"
+        },
+        {
+          "id": "ideals",
+          "label": "Ideals",
+          "type": "textarea",
+          "placeholder": "Enter character ideals"
+        },
+        {
+          "id": "bonds",
+          "label": "Bonds",
+          "type": "textarea",
+          "placeholder": "Enter character bonds"
+        },
+        {
+          "id": "flaws",
+          "label": "Flaws",
+          "type": "textarea",
+          "placeholder": "Enter character flaws"
+        },
+        {
+          "id": "features_traits",
+          "label": "Features & Traits",
+          "type": "string_array",
+          "placeholder": "Add class features, racial traits, etc."
+        }
+      ]
+    },
+    {
+      "id": "spellcasting",
+      "columns": 2,
+      "fields": [
+        {
+          "id": "spellcasting_class",
+          "label": "Spellcasting Class",
+          "type": "string",
+          "placeholder": "Ex: Wizard"
+        },
+        {
+          "id": "spellcasting_ability",
+          "label": "Spellcasting Ability",
+          "type": "string",
+          "placeholder": "Ex: Intelligence"
+        },
+        {
+          "id": "spell_save_dc",
+          "label": "Spell Save DC",
+          "type": "number",
+          "placeholder": "Enter spell save DC"
+        },
+        {
+          "id": "spell_attack_bonus",
+          "label": "Spell Attack Bonus",
+          "type": "number",
+          "placeholder": "Enter spell attack bonus"
+        },
+        {
+          "id": "cantrips",
+          "label": "Cantrips",
+          "type": "string_array",
+          "placeholder": "Add cantrip"
+        },
+        {
+          "id": "level1_slots",
+          "label": "Level 1 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level1_spells",
+          "label": "Level 1 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 1 spell"
+        },
+        {
+          "id": "level2_slots",
+          "label": "Level 2 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level2_spells",
+          "label": "Level 2 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 2 spell"
+        },
+        {
+          "id": "level3_slots",
+          "label": "Level 3 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level3_spells",
+          "label": "Level 3 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 3 spell"
+        },
+        {
+          "id": "level4_slots",
+          "label": "Level 4 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level4_spells",
+          "label": "Level 4 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 4 spell"
+        },
+        {
+          "id": "level5_slots",
+          "label": "Level 5 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level5_spells",
+          "label": "Level 5 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 5 spell"
+        },
+        {
+          "id": "level6_slots",
+          "label": "Level 6 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level6_spells",
+          "label": "Level 6 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 6 spell"
+        },
+        {
+          "id": "level7_slots",
+          "label": "Level 7 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level7_spells",
+          "label": "Level 7 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 7 spell"
+        },
+        {
+          "id": "level8_slots",
+          "label": "Level 8 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level8_spells",
+          "label": "Level 8 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 8 spell"
+        },
+        {
+          "id": "level9_slots",
+          "label": "Level 9 Slots",
+          "type": "stepbutton",
+          "placeholder": "0"
+        },
+        {
+          "id": "level9_spells",
+          "label": "Level 9 Spells",
+          "type": "string_array",
+          "placeholder": "Add level 9 spell"
+        }
+      ]
+    },
+    {
+      "id": "notes",
+      "columns": 1,
+      "fields": [
+        {
+          "id": "notes",
+          "label": "Additional Notes",
+          "type": "textarea",
+          "placeholder": "Enter any additional notes for your character"
+        }
+      ]
+    }
+  ],
+  "exported_fields": [
+    {
+      "id": "character_summary",
+      "label": "Character Summary",
+      "value": "# {{basics.name}}\n**Class:** {{basics.class}} | **Race:** {{basics.race}} | **Background:** {{basics.background}} | **Alignment:** {{basics.alignment}}"
+    },
+    {
+      "id": "ability_scores",
+      "label": "Ability Scores",
+      "value": "# Ability Scores\n**STR:** {{attributes.strength}} ({{ability_modifiers.str_mod}})\n**DEX:** {{attributes.dexterity}} ({{ability_modifiers.dex_mod}})\n**CON:** {{attributes.constitution}} ({{ability_modifiers.con_mod}})\n**INT:** {{attributes.intelligence}} ({{ability_modifiers.int_mod}})\n**WIS:** {{attributes.wisdom}} ({{ability_modifiers.wis_mod}})\n**CHA:** {{attributes.charisma}} ({{ability_modifiers.cha_mod}})"
+    },
+    {
+      "id": "combat_stats",
+      "label": "Combat Stats",
+      "value": "# Combat Statistics\n**HP:** {{stats.hp_current}}/{{stats.hp_max}} (+{{stats.hp_temp}} temp)\n**AC:** {{stats.ac}}\n**Initiative:** {{stats.initiative}}\n**Speed:** {{stats.speed}} ft\n**Hit Dice:** {{stats.hit_dice_remaining}}/{{stats.hit_dice}}"
+    },
+    {
+      "id": "skills_summary",
+      "label": "Skills",
+      "value": "# Skills\n**Acrobatics (DEX):** {{skills.acrobatics}}\n**Animal Handling (WIS):** {{skills.animal_handling}}\n**Arcana (INT):** {{skills.arcana}}\n**Athletics (STR):** {{skills.athletics}}\n**Deception (CHA):** {{skills.deception}}\n**History (INT):** {{skills.history}}\n**Insight (WIS):** {{skills.insight}}\n**Intimidation (CHA):** {{skills.intimidation}}\n**Investigation (INT):** {{skills.investigation}}\n**Medicine (WIS):** {{skills.medicine}}\n**Nature (INT):** {{skills.nature}}\n**Perception (WIS):** {{skills.perception}}\n**Performance (CHA):** {{skills.performance}}\n**Persuasion (CHA):** {{skills.persuasion}}\n**Religion (INT):** {{skills.religion}}\n**Sleight of Hand (DEX):** {{skills.sleight_of_hand}}\n**Stealth (DEX):** {{skills.stealth}}\n**Survival (WIS):** {{skills.survival}}"
+    },
+    {
+      "id": "personality",
+      "label": "Personality",
+      "value": "# Personality\n\n{{base.personality}}"
+    },
+    {
+      "id": "background_traits",
+      "label": "Background",
+      "value": "# Background\n\n**Traits:** {{features.traits}}\n\n**Ideals:** {{features.ideals}}\n\n**Bonds:** {{features.bonds}}\n\n**Flaws:** {{features.flaws}}"
+    }
+  ]
+}

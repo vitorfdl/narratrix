@@ -2,7 +2,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utilsLib";
+import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
+import { cn } from "@/lib/utils";
 import { BookmarkMinus, ChevronLeft, ChevronRight, Flag, Image, Languages, MoreHorizontal, Pencil, Scissors, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -40,6 +41,7 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
 }) => {
   const [, setHoveredMessageId] = useState<string | null>(null);
   const [contentIndices, setContentIndices] = useState<Record<string, number>>({});
+  const [isEditingID, setIsEditingID] = useState<string | null>(null);
 
   // Calculate total characters up to each message
   const messagesWithCharCount = messages.map((msg, index) => {
@@ -122,7 +124,11 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl w-fit p-2">
                       {message.avatar && (
-                        <img src={message.avatar} alt={`${message.type} avatar full size`} className="w-auto max-h-[80vh] object-contain rounded-lg" />
+                        <img
+                          src={message.avatar}
+                          alt={`${message.type} avatar full size`}
+                          className="w-auto max-h-[80vh] object-contain rounded-lg"
+                        />
                       )}
                     </DialogContent>
                   </Dialog>
@@ -132,15 +138,23 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
               {/* Message content */}
               <div
                 className={cn(
-                  "flex-grow relative pb-8",
+                  "flex-grow relative pb-4",
                   message.type === "user" && "text-right",
                   (message.type === "system" || message.type === "app") && "text-center max-w-2xl",
                 )}
               >
-                <p className="text-foreground text-sm select-text">{getCurrentContent(message)}</p>
+                <TipTapTextArea
+                  initialValue={getCurrentContent(message)}
+                  editable={isEditingID === message.id}
+                  disableRichText={isEditingID === message.id}
+                  placeholder="Edit message..."
+                  suggestions={[]}
+                  className={cn(isEditingID !== message.id ? "bg-transparent border:none border-b-0" : "text-left ring-1 ring-border rounded-lg")}
+                  onChange={() => {}}
+                />
 
                 {/* Bottom controls container */}
-                <div className="absolute bottom-0 w-full flex justify-between items-center">
+                <div className="absolute bottom-0 w-full flex justify-between items-center translate-y-3">
                   {/* Action buttons - Right side for assistant, Left side for user */}
                   <div
                     className={cn(
@@ -148,7 +162,13 @@ const WidgetMessages: React.FC<MessageRendererProps> = ({
                       message.type === "user" ? "order-1" : "order-2",
                     )}
                   >
-                    <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" onClick={() => onEditMessage(message.id)} title="Edit Message">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 hover:bg-accent"
+                      onClick={() => setIsEditingID(message.id)}
+                      title="Edit Message"
+                    >
                       <Pencil className="w-4 h-4" />
                     </Button>
                     <Button

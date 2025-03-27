@@ -1,29 +1,394 @@
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { useProfile } from "@/hooks/ProfileContext";
 import { useTheme } from "@/hooks/ThemeContext";
 import { defaultSettings } from "@/schema/default-settings";
 import { AppSettings } from "@/schema/profiles-schema";
+import { updateProfile, updateProfilePassword, updateProfileSettings } from "@/services/profile-service";
 import { getVersion } from "@tauri-apps/api/app";
-import { Bell, ChevronDown, Download, EyeOff, Folder, Languages, MessageSquare, Palette, UserCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
+import {
+  Bell,
+  ChevronDown,
+  Download,
+  EyeOff,
+  Folder,
+  KeyIcon,
+  Languages,
+  LogOut,
+  MessageSquare,
+  Palette,
+  Save,
+  Trash,
+  User,
+  UserCircle,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import "./styles/settings.css";
+
+// Extract sections into separate components for better organization
+const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: any; refreshProfiles: () => Promise<void> }) => {
+  const [newProfileName, setNewProfileName] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingName, setIsChangingName] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const { logout } = useProfile();
+  const nameDialogRef = useRef<HTMLButtonElement>(null);
+  const passwordDialogRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (currentProfile?.name) {
+      setNewProfileName(currentProfile.name);
+    }
+  }, [currentProfile?.name]);
+
+  const handleProfileNameChange = async () => {
+    if (!currentProfile) {
+      toast.error("No profile selected");
+      return;
+    }
+
+    if (!newProfileName.trim()) {
+      toast.error("Profile name cannot be empty");
+      return;
+    }
+
+    try {
+      setIsChangingName(true);
+      await updateProfile(currentProfile.id, { name: newProfileName.trim() });
+      await refreshProfiles();
+      toast.success("Profile name updated successfully");
+      // Close the dialog programmatically
+      nameDialogRef.current?.click();
+    } catch (error) {
+      console.error("Failed to update profile name:", error);
+      toast.error("Failed to update profile name");
+    } finally {
+      setIsChangingName(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!currentProfile) {
+      toast.error("No profile selected");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 3) {
+      toast.error("Password must be at least 3 characters long");
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+
+      // Use the appropriate method for password change
+      if (currentProfile.hasPassword) {
+        // For existing passwords, we would need a special method
+        // that handles current password verification
+        await updateProfilePassword(currentProfile.id, currentPassword, newPassword);
+      } else {
+        // For new passwords, just update the profile
+        await updateProfilePassword(currentProfile.id, "", newPassword);
+      }
+
+      await refreshProfiles();
+      toast.success("Password updated successfully");
+
+      // Reset form
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      // Close the dialog programmatically
+      passwordDialogRef.current?.click();
+    } catch (error) {
+      console.error("Failed to update password:", error);
+      toast.error("Failed to update password. Please check your current password.");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleProfileNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !isChangingName && newProfileName.trim() && newProfileName !== currentProfile?.name) {
+      handleProfileNameChange();
+    }
+  };
+
+  const handlePasswordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (!isChangingPassword && newPassword && newPassword === confirmPassword && (!currentProfile?.hasPassword || currentPassword)) {
+        handlePasswordChange();
+      }
+    }
+  };
+
+  const deleteProfile = async () => {
+    if (!currentProfile) {
+      toast.error("No profile selected");
+      return;
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-lg font-medium">Profile</h2>
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <User className="w-4 h-4" />
+              <Label>Profile: {currentProfile.name}</Label>
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Change Profile Name</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Change Profile Name</DialogTitle>
+                  <DialogDescription>Enter a new name for your profile.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-name">Profile Name</Label>
+                    <Input
+                      id="profile-name"
+                      value={newProfileName}
+                      onChange={(e) => setNewProfileName(e.target.value)}
+                      placeholder="New profile name"
+                      onKeyDown={handleProfileNameKeyDown}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="secondary">Cancel</Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button
+                      ref={nameDialogRef}
+                      onClick={handleProfileNameChange}
+                      disabled={isChangingName || !newProfileName.trim() || newProfileName === currentProfile?.name}
+                    >
+                      {isChangingName ? "Saving..." : "Save"}
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <KeyIcon className="w-4 h-4" />
+              <Label>Password</Label>
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Change Password</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Change Password</DialogTitle>
+                  <DialogDescription>
+                    {currentProfile?.hasPassword ? "Enter your current password and a new password." : "Create a new password for your profile."}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  {currentProfile?.hasPassword && (
+                    <div className="space-y-2">
+                      <Label htmlFor="current-password">Current Password</Label>
+                      <Input
+                        id="current-password"
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Current password"
+                        onKeyDown={handlePasswordKeyDown}
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New password"
+                      onKeyDown={handlePasswordKeyDown}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm password"
+                      onKeyDown={handlePasswordKeyDown}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="secondary">Cancel</Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button
+                      ref={passwordDialogRef}
+                      onClick={handlePasswordChange}
+                      disabled={
+                        isChangingPassword || !newPassword || newPassword !== confirmPassword || (currentProfile?.hasPassword && !currentPassword)
+                      }
+                    >
+                      {isChangingPassword ? "Saving..." : "Save"}
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <LogOut className="w-4 h-4" />
+              <Label>Log out from your profile</Label>
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="default" className="flex items-center gap-2">
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Logout</DialogTitle>
+                  <DialogDescription>Are you sure you want to log out from your profile? Any unsaved changes will be lost.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-4">
+                  <DialogClose asChild>
+                    <Button variant="secondary">Cancel</Button>
+                  </DialogClose>
+                  <Button variant="default" onClick={logout} className="flex items-center gap-2">
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Trash className="w-4 h-4" />
+              <Label>Delete your profile</Label>
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="destructive" className="flex items-center gap-2">
+                  <Trash className="w-4 h-4" />
+                  Delete Profile
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Delete Profile</DialogTitle>
+                  <DialogDescription>Are you sure you want to delete your profile? This action cannot be undone.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-4">
+                  <DialogClose asChild>
+                    <Button variant="secondary">Cancel</Button>
+                  </DialogClose>
+                  <Button variant="destructive" onClick={deleteProfile} className="flex items-center gap-2">
+                    <Trash className="w-4 h-4" />
+                    Delete Profile
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const { theme, setTheme } = useTheme();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
+  const { currentProfile, refreshProfiles } = useProfile();
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Sync theme from context to settings on mount
+  // Create a debounce timer ref
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  // Debounced save function
+  const debouncedSave = useCallback(
+    async (settingsToSave: AppSettings) => {
+      if (!currentProfile) {
+        return;
+      }
+
+      try {
+        setIsSaving(true);
+        await updateProfileSettings(currentProfile.id, settingsToSave);
+        await refreshProfiles();
+        toast.success("Settings saved");
+      } catch (error) {
+        console.error("Failed to save settings:", error);
+        toast.error("Failed to save settings");
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [currentProfile, refreshProfiles],
+  );
+
+  // Load settings from profile on mount
   useEffect(() => {
-    setSettings((prev) => ({
-      ...prev,
-      appearance: {
-        ...prev.appearance,
-        theme,
-      },
-    }));
-  }, []);
+    if (currentProfile?.settings) {
+      setSettings(currentProfile.settings);
+      // Also sync the theme to ThemeContext
+      setTheme(currentProfile.settings.appearance.theme);
+    } else {
+      setSettings(defaultSettings);
+    }
+  }, [currentProfile, setTheme]);
 
   // Get app version on component mount
   useEffect(() => {
@@ -40,128 +405,65 @@ export default function Settings() {
     fetchVersion();
   }, []);
 
-  const handleSettingChange = (section: keyof AppSettings, key: string, value: any) => {
-    setSettings((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [key]: value,
-      },
-    }));
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
-    // Sync theme changes with ThemeContext
-    if (section === "appearance" && key === "theme") {
-      setTheme(value);
+  const handleSettingChange = useCallback(
+    (section: keyof AppSettings, key: string, value: any) => {
+      const updatedSettings = {
+        ...settings,
+        [section]: {
+          ...settings[section],
+          [key]: value,
+        },
+      };
+
+      setSettings(updatedSettings);
+
+      // Sync theme changes with ThemeContext immediately for preview
+      if (section === "appearance" && key === "theme") {
+        setTheme(value);
+      }
+
+      // Clear any existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set a new timeout for debounced save (800ms)
+      saveTimeoutRef.current = setTimeout(() => {
+        debouncedSave(updatedSettings);
+      }, 800) as unknown as number;
+    },
+    [settings, setTheme, debouncedSave],
+  );
+
+  const selectDirectory = useCallback(async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: "Select Expression Pack Directory",
+      });
+      if (selected && typeof selected === "string") {
+        handleSettingChange("system", "expressionPackDirectory", selected);
+      }
+    } catch (error) {
+      console.error("Failed to select directory:", error);
+      toast.error("Failed to select directory");
     }
-  };
+  }, [handleSettingChange]);
 
-  return (
-    <div className="flex flex-col h-full bg-background text-foreground page-container">
-      <h1 className="title">Settings</h1>
-
-      <div className="space-y-1">
-        <h2 className="text-lg text-muted-foreground">General</h2>
-
-        <Collapsible className="w-full">
-          <CollapsibleTrigger className="settings-section">
-            <Bell className="w-4 h-4 mr-2" />
-            <span className="flex-1 text-left">Notifications</span>
-            <ChevronDown className="w-4 h-4" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="p-3">{/* Notification settings content */}</CollapsibleContent>
-        </Collapsible>
-
-        <Collapsible className="w-full">
-          <CollapsibleTrigger className="settings-section">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            <span className="flex-1 text-left">Chat / Messages</span>
-            <ChevronDown className="w-4 h-4" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="p-3">{/* Chat settings content */}</CollapsibleContent>
-        </Collapsible>
-
-        <Collapsible className="w-full">
-          <CollapsibleTrigger className="settings-section">
-            <EyeOff className="w-4 h-4 mr-2" />
-            <span className="flex-1 text-left">Censorship Settings</span>
-            <ChevronDown className="w-4 h-4" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="p-3">{/* Censorship settings content */}</CollapsibleContent>
-        </Collapsible>
-      </div>
-
-      <div className="mt-6 space-y-1">
-        <h2 className="text-lg text-muted-foreground">Integrations</h2>
-
-        <Collapsible className="w-full">
-          <CollapsibleTrigger className="settings-section group">
-            <UserCircle className="w-4 h-4 mr-2" />
-            <span className="flex-1 text-left">Accounts</span>
-            <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded">Move to page Settings {">>"} Accounts</div>
-          </CollapsibleTrigger>
-        </Collapsible>
-      </div>
-
-      <div className="mt-6 space-y-1">
-        <h2 className="text-lg text-muted-foreground">Appearance</h2>
-
-        <div className="settings-section-option">
-          <Palette className="w-4 h-4 mr-2" />
-          <span className="flex-1">Theme</span>
-          <Select value={settings.appearance.theme} onValueChange={(value) => handleSettingChange("appearance", "theme", value)}>
-            <SelectTrigger className="w-32 bg-popover border-border">
-              <SelectValue placeholder="Select theme" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="dark">Dark</SelectItem>
-              <SelectItem value="light">Light</SelectItem>
-              <SelectItem value="system">System</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="settings-section-option">
-          <Languages className="w-4 h-4 mr-2" />
-          <span className="flex-1">Language</span>
-          <Select value={settings.general.language} onValueChange={(value) => handleSettingChange("general", "language", value)}>
-            <SelectTrigger className="w-32 bg-popover border-border">
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="es">Español</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="mt-6 space-y-1">
-        <h2 className="text-lg text-muted-foreground">System</h2>
-
-        <Collapsible className="w-full">
-          <CollapsibleTrigger className="settings-section group">
-            <Download className="w-4 h-4 mr-2" />
-            <span className="flex-1 text-left">Updates</span>
-            <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded">Move to page Settings {">>"} Updates</div>
-          </CollapsibleTrigger>
-        </Collapsible>
-
-        <div className="flex flex-col w-full p-3 bg-muted rounded-lg space-y-2">
-          <div className="flex items-center">
-            <Folder className="w-4 h-4 mr-2" />
-            <span className="flex-1">Select new Expression Pack Directory</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex-1 text-sm text-muted-foreground">Current Directory: {settings.system.expressionPackDirectory}</div>
-            <Button variant="secondary" className="bg-secondary hover:bg-secondary/80">
-              Select Directory
-            </Button>
-          </div>
-          <div className="text-sm text-muted-foreground">Doesn't move current data.</div>
-        </div>
-      </div>
-
-      <div className="mt-auto pt-6 border-t border-border flex flex-col items-center justify-center text-center">
+  // Memoize footer component to prevent unnecessary re-renders
+  const FooterSection = useMemo(
+    () => (
+      <div className="mt-auto pt-6 pb-5 border-t border-border flex flex-col items-center justify-center text-center">
         <img
           src="/favicon.svg"
           alt="Narratrix Logo"
@@ -175,6 +477,367 @@ export default function Settings() {
           <h3 className="text-sm font-medium">Narratrix</h3>
           <p className="text-xs text-muted-foreground">Version {appVersion}</p>
         </div>
+      </div>
+    ),
+    [appVersion, currentProfile],
+  );
+
+  return (
+    <div className="flex flex-col h-full text-foreground relative ">
+      <div className="container py-6 mx-auto page-container">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="title">Settings</h1>
+          {isSaving && (
+            <div className="text-sm text-muted-foreground animate-pulse flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              Saving...
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-8">
+          <ProfileSection currentProfile={currentProfile} refreshProfiles={refreshProfiles} />
+
+          <div className="space-y-3">
+            <h2 className="text-lg font-medium">General</h2>
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Languages className="w-4 h-4" />
+                    <Label>Language</Label>
+                  </div>
+                  <Select value={settings.general.language} onValueChange={(value) => handleSettingChange("general", "language", value)}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="de">Deutsch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <Collapsible className="w-full">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
+                    <div className="flex items-center space-x-2">
+                      <Bell className="w-4 h-4" />
+                      <Label>Notifications</Label>
+                    </div>
+                    <ChevronDown className="w-4 h-4" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pt-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notifications-enabled"
+                        checked={settings.notifications.enabled}
+                        onCheckedChange={(checked) => handleSettingChange("notifications", "enabled", !!checked)}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="notifications-enabled">Enable notifications</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notifications-sound"
+                        checked={settings.notifications.sound}
+                        onCheckedChange={(checked) => handleSettingChange("notifications", "sound", !!checked)}
+                        disabled={!settings.notifications.enabled}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="notifications-sound">Play sounds</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notifications-desktop"
+                        checked={settings.notifications.desktop}
+                        onCheckedChange={(checked) => handleSettingChange("notifications", "desktop", !!checked)}
+                        disabled={!settings.notifications.enabled}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="notifications-desktop">Show desktop notifications</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notifications-chat"
+                        checked={settings.notifications.chatNotifications}
+                        onCheckedChange={(checked) => handleSettingChange("notifications", "chatNotifications", !!checked)}
+                        disabled={!settings.notifications.enabled}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="notifications-chat">Chat notifications</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notifications-update"
+                        checked={settings.notifications.updateNotifications}
+                        onCheckedChange={(checked) => handleSettingChange("notifications", "updateNotifications", !!checked)}
+                        disabled={!settings.notifications.enabled}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="notifications-update">Update notifications</Label>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Separator />
+
+                <Collapsible className="w-full">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
+                    <div className="flex items-center space-x-2">
+                      <MessageSquare className="w-4 h-4" />
+                      <Label>Chat / Messages</Label>
+                    </div>
+                    <ChevronDown className="w-4 h-4" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="timestamp-format">Timestamp Format</Label>
+                      <Select value={settings.chat.timestampFormat} onValueChange={(value) => handleSettingChange("chat", "timestampFormat", value)}>
+                        <SelectTrigger className="w-36" id="timestamp-format">
+                          <SelectValue placeholder="Format" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="12h">12h</SelectItem>
+                          <SelectItem value="24h">24h</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="chat-avatars"
+                        checked={settings.chat.showAvatars}
+                        onCheckedChange={(checked) => handleSettingChange("chat", "showAvatars", !!checked)}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="chat-avatars">Show avatars</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="send-shortcut">Send Shortcut</Label>
+                      <Select value={settings.chat.sendShortcut} onValueChange={(value) => handleSettingChange("chat", "sendShortcut", value)}>
+                        <SelectTrigger className="w-36" id="send-shortcut">
+                          <SelectValue placeholder="Shortcut" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Enter">Enter</SelectItem>
+                          <SelectItem value="Ctrl+Enter">Ctrl+Enter</SelectItem>
+                          <SelectItem value="Shift+Enter">Shift+Enter</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Separator />
+
+                <Collapsible className="w-full">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
+                    <div className="flex items-center space-x-2">
+                      <EyeOff className="w-4 h-4" />
+                      <Label>Censorship Settings</Label>
+                    </div>
+                    <ChevronDown className="w-4 h-4" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pt-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="censorship-enabled"
+                        checked={settings.censorship.enabled}
+                        onCheckedChange={(checked) => handleSettingChange("censorship", "enabled", !!checked)}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="censorship-enabled">Enable censorship</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="censorship-system"
+                        checked={settings.censorship.applyToSystemPrompts}
+                        onCheckedChange={(checked) => handleSettingChange("censorship", "applyToSystemPrompts", !!checked)}
+                        disabled={!settings.censorship.enabled}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="censorship-system">Apply to system prompts</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="censorship-user"
+                        checked={settings.censorship.applyToUserMessages}
+                        onCheckedChange={(checked) => handleSettingChange("censorship", "applyToUserMessages", !!checked)}
+                        disabled={!settings.censorship.enabled}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="censorship-user">Apply to user messages</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="censorship-assistant"
+                        checked={settings.censorship.applyToAssistantMessages}
+                        onCheckedChange={(checked) => handleSettingChange("censorship", "applyToAssistantMessages", !!checked)}
+                        disabled={!settings.censorship.enabled}
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="censorship-assistant">Apply to assistant messages</Label>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-lg font-medium">Integrations</h2>
+            <Card>
+              <CardContent className="p-4">
+                <Collapsible className="w-full">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
+                    <div className="flex items-center space-x-2">
+                      <UserCircle className="w-4 h-4" />
+                      <Label>Accounts</Label>
+                    </div>
+                    <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded">Move to page Settings {">>"} Accounts</div>
+                  </CollapsibleTrigger>
+                </Collapsible>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-lg font-medium">Appearance</h2>
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Palette className="w-4 h-4" />
+                    <Label>Theme</Label>
+                  </div>
+                  <Select value={settings.appearance.theme} onValueChange={(value) => handleSettingChange("appearance", "theme", value)}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <Label className="pl-6">Font Size</Label>
+                  <Select value={settings.appearance.fontSize} onValueChange={(value) => handleSettingChange("appearance", "fontSize", value)}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue placeholder="Font size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Small</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="large">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <Label className="pl-6">Font Family</Label>
+                  <Select value={settings.appearance.fontFamily} onValueChange={(value) => handleSettingChange("appearance", "fontFamily", value)}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue placeholder="Font family" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Inter">Inter</SelectItem>
+                      <SelectItem value="Roboto">Roboto</SelectItem>
+                      <SelectItem value="Arial">Arial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-lg font-medium">System</h2>
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                <Collapsible className="w-full">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
+                    <div className="flex items-center space-x-2">
+                      <Download className="w-4 h-4" />
+                      <Label>Updates</Label>
+                    </div>
+                    <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded">Move to page Settings {">>"} Updates</div>
+                  </CollapsibleTrigger>
+                </Collapsible>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Folder className="w-4 h-4" />
+                    <Label>Expression Pack Directory</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm text-muted-foreground flex-1">Current Directory: {settings.system.expressionPackDirectory || "Not set"}</p>
+                    <Button variant="outline" size="sm" onClick={selectDirectory}>
+                      Select Directory
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Doesn't move current data.</p>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="system-debug"
+                    checked={settings.system.debugMode}
+                    onCheckedChange={(checked) => handleSettingChange("system", "debugMode", !!checked)}
+                  />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="system-debug">Debug Mode</Label>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="system-autoupdate"
+                    checked={settings.system.autoUpdate}
+                    onCheckedChange={(checked) => handleSettingChange("system", "autoUpdate", !!checked)}
+                  />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="system-autoupdate">Automatic Updates</Label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {FooterSection}
       </div>
     </div>
   );

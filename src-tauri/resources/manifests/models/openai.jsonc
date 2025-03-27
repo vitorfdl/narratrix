@@ -1,5 +1,5 @@
 {
-  "$schema": "../../../model-schema.json",
+  "$schema": "../../../../json_schema/model-schema.json",
   "id": "openai",
   "name": "OpenAI",
   "description": "Integration with OpenAI models like GPT-4",

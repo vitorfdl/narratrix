@@ -1,5 +1,5 @@
 {
-  "$schema": "../../../model-schema.json",
+  "$schema": "../../../../json_schema/model-schema.json",
   "id": "bedrock_anthropic",
   "name": "AWS Bedrock Anthropic",
   "description": "Integration with AWS Bedrock Anthropic models",

@@ -1,13 +1,9 @@
 import { encryptApiKey } from "@/commands/security.ts";
-import { Manifest } from "@/schema/manifest-schema.ts";
+import { Manifest } from "@/schema/model-manifest-schema.ts";
+import { formatDateTime } from "@/utils/date-time.ts";
 import { Model, ModelSchema, ModelType } from "../schema/models-schema.ts";
 import { uuidUtils } from "../schema/utils-schema.ts";
-import { executeDBQuery, selectDBQuery } from "../utils/database.ts";
-
-// Helper to format dates
-function formatDateTime(): string {
-  return new Date().toISOString();
-}
+import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database.ts";
 
 // Interface for creating a new model
 export interface NewModelParams {
@@ -74,7 +70,7 @@ export async function createModel(modelData: NewModelParams, modelManifest?: Man
 
   await executeDBQuery(
     `INSERT INTO models (id, profile_id, name, type, config, manifest_id, max_concurrency, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [
       validatedModel.id,
       validatedModel.profile_id,
@@ -105,7 +101,7 @@ export async function getModelById(id: string): Promise<Model | null> {
       type, 
       config,
       manifest_id,
-      template_id,
+      format_template_id,
       max_concurrency,
       created_at as createdAt, 
       updated_at as updatedAt
@@ -137,7 +133,7 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
       type, 
       config,
       manifest_id,
-      template_id,
+      format_template_id,
       max_concurrency,
       created_at as createdAt, 
       updated_at as updatedAt
@@ -182,82 +178,41 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
 }
 
 // Update a model
-export async function updateModel(id: string, updateData: Partial<Omit<Model, "id" | "profile_id" | "createdAt" | "updatedAt">>): Promise<Model | null> {
-  const validId = uuidUtils.uuid().parse(id);
+export async function updateModel(
+  id: string,
+  updateData: Partial<Omit<Model, "id" | "profile_id" | "createdAt" | "updatedAt">>,
+): Promise<Model | null> {
+  const modelId = uuidUtils.uuid().parse(id);
 
   // Get the current model to ensure it exists
-  const currentModel = await getModelById(validId);
+  const currentModel = await getModelById(modelId);
   if (!currentModel) {
     return null;
   }
 
-  // Build query parts
-  const updates: string[] = [];
-  const values: any[] = [];
-  let paramIndex = 1;
+  // Define field transformations
+  const fieldMapping = {
+    config: (value: any) => (typeof value === "string" ? value : JSON.stringify(value)),
+  };
 
-  if (updateData.name !== undefined) {
-    updates.push(`name = $${paramIndex}`);
-    values.push(updateData.name);
-    paramIndex++;
-  }
-
-  if (updateData.type !== undefined) {
-    updates.push(`type = $${paramIndex}`);
-    values.push(updateData.type);
-    paramIndex++;
-  }
-
-  if (updateData.config !== undefined) {
-    const configStr = typeof updateData.config === "string" ? updateData.config : JSON.stringify(updateData.config);
-
-    updates.push(`config = $${paramIndex}`);
-    values.push(configStr);
-    paramIndex++;
-  }
-
-  if (updateData.template_id !== undefined) {
-    updates.push(`template_id = $${paramIndex}`);
-    values.push(updateData.template_id);
-    paramIndex++;
-  }
-
-  if (updateData.manifest_id !== undefined) {
-    updates.push(`manifest_id = $${paramIndex}`);
-    values.push(updateData.manifest_id);
-    paramIndex++;
-  }
-
-  if (updateData.max_concurrency !== undefined) {
-    updates.push(`max_concurrency = $${paramIndex}`);
-    values.push(updateData.max_concurrency);
-    paramIndex++;
-  }
-
-  // Always update the updated_at timestamp
-  const now = formatDateTime();
-  updates.push(`updated_at = $${paramIndex}`);
-  values.push(now);
-  paramIndex++;
-
-  // Add the ID for the WHERE clause
-  values.push(validId);
+  // Build update parameters
+  const { updates, values, whereClause } = buildUpdateParams(modelId, updateData, fieldMapping);
 
   // Execute update if there are fields to update
   if (updates.length > 0) {
-    await executeDBQuery(`UPDATE models SET ${updates.join(", ")} WHERE id = $${paramIndex}`, values);
+    await executeDBQuery(`UPDATE models SET ${updates.join(", ")}${whereClause}`, values);
   }
 
   // Return the updated model
-  return getModelById(validId);
+  return getModelById(modelId);
 }
 
 // Delete a model
 export async function deleteModel(id: string): Promise<boolean> {
   // Validate ID input
-  const validId = uuidUtils.uuid().parse(id);
+  const modelId = uuidUtils.uuid().parse(id);
 
-  const result = await executeDBQuery("DELETE FROM models WHERE id = $1", [validId]);
+  const result = await executeDBQuery("DELETE FROM models WHERE id = $1", [modelId]);
 
   // Return true if a row was affected (model was deleted)
   return result.rowsAffected > 0;

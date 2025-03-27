@@ -1,6 +1,7 @@
 import Characters from "@/pages/characters/Characters";
 import ChatPage from "@/pages/chat/ChatPage";
 import InferenceTemplatePage from "@/pages/formatTemplates/FormatTemplatePage";
+import LexicalTestPage from "@/pages/lorebooks/LorebooksPage";
 import Models from "@/pages/models/ModelsPage";
 import Settings from "@/pages/settings/SettingsPage";
 
@@ -16,13 +17,10 @@ const Content: React.FC<ContentProps> = ({ activeSection }) => {
       {activeSection === "inference" && <InferenceTemplatePage />}
       {activeSection === "chat" && <ChatPage />}
       {activeSection === "characters" && <Characters />}
-      {activeSection === "lorebooks" && <Lorebooks />}
+      {activeSection === "lorebooks" && <LexicalTestPage />}
       {activeSection === "settings" && <Settings />}
     </div>
   );
 };
-
-// Placeholder components
-const Lorebooks = () => <div>Lorebooks Content</div>;
 
 export default Content;

@@ -1,5 +1,5 @@
-import { ReactNode, useEffect } from "react";
 import { setupInferenceListener } from "@/hooks/useInference";
+import { ReactNode, useEffect } from "react";
 
 interface InferenceProviderProps {
   children: ReactNode;
