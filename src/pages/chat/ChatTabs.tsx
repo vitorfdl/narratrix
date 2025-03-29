@@ -7,7 +7,7 @@ import { PlusIcon, X } from "lucide-react";
 
 interface ChatTabsProps {
   tabs: ChatTab[];
-  activeTab: string;
+  activeTab?: string;
   onTabChange: (tabId: string) => void;
   onNewChat: () => void;
   onCloseTab: (tabId: string) => void;

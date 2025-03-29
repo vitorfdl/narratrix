@@ -21,6 +21,7 @@ export default function Models() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const profile = useProfile();
   const { getModelsByProfileGroupedByType, deleteModel, updateModel } = useModelsActions();
@@ -48,7 +49,7 @@ export default function Models() {
     // Fetch manifests as they might be needed for model details
     fetchManifests();
     loadModels();
-  }, [profile.currentProfile?.id, getModelsByProfileGroupedByType, fetchManifests]);
+  }, [profile.currentProfile?.id]);
 
   const getModelTypeTitle = (type: ModelType): string => {
     const titles: Record<ModelType, string> = {

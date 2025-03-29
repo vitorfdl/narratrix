@@ -16,8 +16,6 @@ interface GridItem {
 interface ChatTab {
   id: string;
   name: string;
-  isActive: boolean;
-  gridItems: GridItem[];
 }
 
 const chatParticipantSchema = z.object({
@@ -38,9 +36,9 @@ const chatSchema = z.object({
   profile_id: z.string(),
   name: z.string(),
   chat_template_id: z.string().optional(),
-  participants: chatParticipantSchema.array().default([]),
+  participants: chatParticipantSchema.array().optional().default([]),
   user_character_id: z.string().optional(),
-  user_character_settings: chatUserSettingsSchema.array().default([]),
+  user_character_settings: chatUserSettingsSchema.array().optional().default([]),
   created_at: dateUtils.withDefaultNow(),
   updated_at: dateUtils.withDefaultNow(),
 });

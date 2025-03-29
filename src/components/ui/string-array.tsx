@@ -69,7 +69,7 @@ export function StringArray({ values = [""], placeholder = "Enter text...", onCh
               variant="outline"
               size="icon"
               onClick={() => removeString(index)}
-              className="h-7 w-7 hover:bg-destructive hover:text-destructive-foreground"
+              className="h-5 w-5 hover:bg-destructive hover:text-destructive-foreground"
             >
               <Minus className="h-4 w-4" />
             </Button>

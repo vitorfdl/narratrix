@@ -43,7 +43,7 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete }: SortablePromptItemProp
         <GripVertical className="h-5 w-5 text-muted-foreground" />
       </div>
 
-      <div className="flex items-center gap-2 flex-1">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className="text-muted-foreground">{getRoleIcon(prompt.role)}</div>
         <span className="text-xs font-medium flex-1 truncate">{prompt.name}</span>
       </div>

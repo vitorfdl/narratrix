@@ -139,7 +139,7 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 p-0 hover:bg-accent"
+            className="h-5 w-5 p-0 hover:bg-accent"
             onClick={handleIncrement}
             onMouseDown={handleButtonMouseDown}
             disabled={max !== undefined && value >= max}
@@ -149,7 +149,7 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 p-0 hover:bg-accent"
+            className="h-5 w-5 p-0 hover:bg-accent"
             onClick={handleDecrement}
             onMouseDown={handleButtonMouseDown}
             disabled={min !== undefined && value <= min}

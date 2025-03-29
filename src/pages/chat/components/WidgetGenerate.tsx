@@ -43,7 +43,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = ({ onSubmit }) => {
           "border border-input bg-muted px-2 py-1",
           "ring-offset-background focus:bg-background",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-2",
-          "bg-accent px-3 py-2",
         )}
         placeholder="Type your message here... (Ctrl/Cmd + Enter to send)"
       />

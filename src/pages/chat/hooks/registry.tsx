@@ -14,6 +14,18 @@ import type { MessageRendererProps } from "@/pages/chat/components/WidgetMessage
 
 export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "character_sheet" | "memory" | "database" | "chapters";
 
+export const widgetTitles: Record<WidgetId, string> = {
+  messages: "Messages",
+  config: "Config",
+  generate: "Generate",
+  participants: "Participants",
+  scripts: "Scripts",
+  character_sheet: "Character Sheet",
+  memory: "Memory",
+  database: "Database",
+  chapters: "Chapters",
+};
+
 interface WidgetConfiguration<T = unknown> {
   id: WidgetId;
   title: string;
@@ -25,7 +37,7 @@ interface WidgetConfiguration<T = unknown> {
 export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = {
   messages: {
     id: "messages",
-    title: "Messages",
+    title: widgetTitles.messages,
     component: WidgetMessages,
     defaultProps: {
       messages: [], // Default empty array; will be dynamically merged later
@@ -40,102 +52,52 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
   },
   config: {
     id: "config",
-    title: "Config",
+    title: widgetTitles.config,
     component: WidgetConfig,
     defaultProps: {},
   },
   generate: {
     id: "generate",
-    title: "Generate",
+    title: widgetTitles.generate,
     component: WidgetGenerate,
     defaultProps: {},
   },
   participants: {
     id: "participants",
-    title: "Participants",
+    title: widgetTitles.participants,
     component: WidgetParticipants,
     defaultProps: {},
   },
   scripts: {
     id: "scripts",
-    title: "Scripts",
+    title: widgetTitles.scripts,
     component: WidgetScript,
     defaultProps: {},
   },
   character_sheet: {
     id: "character_sheet",
-    title: "Character Sheet",
+    title: widgetTitles.character_sheet,
     component: WidgetCharacterSheet,
     defaultProps: {},
   },
   memory: {
     id: "memory",
-    title: "Memory",
+    title: widgetTitles.memory,
     component: WidgetMemory,
     defaultProps: {},
   },
   database: {
     id: "database",
-    title: "Database",
+    title: widgetTitles.database,
     component: WidgetDatabase,
     defaultProps: {},
   },
   chapters: {
     id: "chapters",
-    title: "Chapters",
+    title: widgetTitles.chapters,
     component: WidgetChapters,
     defaultProps: {},
   },
-};
-
-/**
- * This function can be extended to fetch dynamic props based on tabId and widgetId.
- * Currently, it optionally injects the mocked messages for testing.
- */
-const getDynamicExtraProps = (_tabId: string, widgetId: WidgetId): Partial<any> => {
-  // For example, if widget is "messages" we merge in dynamic messages data (from SQL later)
-  if (widgetId === "messages") {
-    // Here you'd eventually query your SQL database with tabId and fetch the messages.
-    // For now, we just return a mock.
-    const mockMessages = [
-      {
-        id: "0",
-        content: ["You are a helpful assistant that can answer questions and help with tasks."],
-        timestamp: new Date(),
-        type: "system",
-      },
-      {
-        id: "1",
-        content: ["Hello, how are you?"],
-        timestamp: new Date(),
-        avatar: "/avatars/vitor.png",
-        type: "user",
-      },
-      {
-        id: "2",
-        content: ["I'm fine, thank you!"],
-        timestamp: new Date(),
-        avatar: "/avatars/narratrixav.jpeg",
-        type: "assistant",
-      },
-      {
-        id: "3",
-        content: ['"What is the weather in Tokyo?" *I move around him*\n\nHe entered the alley and looked around.'],
-        timestamp: new Date(),
-        avatar: "/avatars/vitor.png",
-        type: "user",
-      },
-      {
-        id: "4",
-        content: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit...", "The weather in Tokyo is sunny and warm."],
-        timestamp: new Date(),
-        avatar: "/avatars/narratrixav.jpeg",
-        type: "assistant",
-      },
-    ];
-    return { messages: mockMessages };
-  }
-  return {};
 };
 
 /**
@@ -151,8 +113,7 @@ export function renderWidget(widgetId: WidgetId, tabId: string, extraProps?: Par
   const Component = config.component;
 
   // Merge default props, dynamically fetched extra props (e.g., from SQL), and any override extra props.
-  const dynamicProps = getDynamicExtraProps(tabId, widgetId);
-  const props = { ...(config.defaultProps || {}), ...dynamicProps, ...extraProps };
+  const props = { ...(config.defaultProps || {}), ...extraProps, tabId };
 
   return <Component {...props} />;
 }

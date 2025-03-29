@@ -86,7 +86,7 @@ export function RandomButton({ value, min = 0, max = 100, onValueChange, classNa
   };
 
   return (
-    <div ref={containerRef} className={cn("group relative inline-block", className)} onBlur={handleBlur} tabIndex={-1}>
+    <div ref={containerRef} className={cn("group relative inline-block w-full", className)} onBlur={handleBlur} tabIndex={-1}>
       <div className="relative">
         <Input
           {...props}
@@ -101,7 +101,7 @@ export function RandomButton({ value, min = 0, max = 100, onValueChange, classNa
           className="pr-9"
         />
         <div className="absolute right-0.5 top-1/2 -translate-y-1/2">
-          <Button variant="ghost" size="icon" className="h-7 w-7 p-0 hover:bg-accent" onClick={handleRandomize} onMouseDown={handleButtonMouseDown}>
+          <Button variant="ghost" size="icon" className="h-5 w-5 p-0 hover:bg-accent" onClick={handleRandomize} onMouseDown={handleButtonMouseDown}>
             <Dice6 className="h-3 w-3" />
           </Button>
         </div>

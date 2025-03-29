@@ -28,9 +28,43 @@ export interface MessageRendererProps {
   onTranslate: (messageId: string) => void;
   onExcludeFromPrompt: (messageId: string) => void;
 }
-
+const messages: Message[] = [
+  {
+    id: "0",
+    content: ["You are a helpful assistant that can answer questions and help with tasks."],
+    timestamp: new Date(),
+    type: "system",
+  },
+  {
+    id: "1",
+    content: ["Hello, how are you?"],
+    timestamp: new Date(),
+    avatar: "/avatars/vitor.png",
+    type: "user",
+  },
+  {
+    id: "2",
+    content: ["I'm fine, thank you!"],
+    timestamp: new Date(),
+    avatar: "/avatars/narratrixav.jpeg",
+    type: "assistant",
+  },
+  {
+    id: "3",
+    content: ['"What is the weather in Tokyo?" *I move around him*\n\nHe entered the alley and looked around.'],
+    timestamp: new Date(),
+    avatar: "/avatars/vitor.png",
+    type: "user",
+  },
+  {
+    id: "4",
+    content: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit...", "The weather in Tokyo is sunny and warm."],
+    timestamp: new Date(),
+    avatar: "/avatars/narratrixav.jpeg",
+    type: "assistant",
+  },
+];
 const WidgetMessages: React.FC<MessageRendererProps> = ({
-  messages,
   contextCutNumber,
   onEditMessage,
   onDeleteMessage,

@@ -1,0 +1,7 @@
+.react-grid-item.react-grid-placeholder {
+  @apply bg-primary/25 border-dotted border-primary backdrop-blur-sm;
+}
+/* Add to your global styles or create a new component-specific CSS file */
+.react-draggable-dragging .cursor-grab {
+  cursor: grabbing !important;
+}
