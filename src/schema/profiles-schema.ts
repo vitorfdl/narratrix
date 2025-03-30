@@ -20,7 +20,7 @@ const NotificationSettingsSchema = z.object({
 const ChatSettingsSchema = z.object({
   timestampFormat: z.enum(["12h", "24h"]).default("12h"),
   showAvatars: z.boolean().default(true),
-  sendShortcut: z.string().default("Ctrl+Enter"),
+  sendShortcut: z.enum(["Enter", "Ctrl+Enter", "Shift+Enter", "CMD+Enter"]).default("Ctrl+Enter"),
 });
 
 const CensorshipSettingsSchema = z.object({

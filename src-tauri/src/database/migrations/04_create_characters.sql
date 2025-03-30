@@ -4,9 +4,10 @@ CREATE TABLE IF NOT EXISTS characters (
     profile_id TEXT NOT NULL,
     name TEXT NOT NULL,
     version TEXT NOT NULL, -- 1.0.0 format
+    avatar_path TEXT, -- optional
     tags TEXT, -- JSON array of tags ["tag1", "tag2", "tag3"]
-    external_link TEXT, -- optional
-    auto_update BOOLEAN NOT NULL DEFAULT TRUE, -- only used if external_link is provided
+    external_update_link TEXT, -- optional
+    auto_update BOOLEAN NOT NULL DEFAULT TRUE, -- only used if external_update_link is provided
     type TEXT NOT NULL CHECK (type IN ('agent', 'character')),
     character_manifest_id TEXT, -- future use for character manifest
     expressions TEXT, -- JSON array of expressions [{id: string, name: string, image_path: string }]

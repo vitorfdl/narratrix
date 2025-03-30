@@ -39,8 +39,8 @@ export async function createFormatTemplate(templateData: NewFormatTemplateParams
     inference_template_id: templateData.inference_template_id,
     prompt_template_id: templateData.prompt_template_id,
     config: templateData.config || {},
-    createdAt: new Date(now),
-    updatedAt: new Date(now),
+    created_at: new Date(now),
+    updated_at: new Date(now),
   });
 
   const configStr = JSON.stringify(validatedTemplate.config);
@@ -77,8 +77,8 @@ export async function getFormatTemplateById(id: string): Promise<FormatTemplate 
       inference_template_id, 
       prompt_template_id, 
       config,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM format_template 
     WHERE id = $1`,
     [validId],
@@ -96,8 +96,8 @@ export async function getFormatTemplateById(id: string): Promise<FormatTemplate 
   }
 
   // Convert date strings to Date objects
-  template.createdAt = new Date(template.createdAt);
-  template.updatedAt = new Date(template.updatedAt);
+  template.created_at = new Date(template.created_at);
+  template.updated_at = new Date(template.updated_at);
 
   // Validate the template against the schema
   return formatTemplateSchema.parse(template);
@@ -113,8 +113,8 @@ export async function listFormatTemplates(filter?: FormatTemplateFilter): Promis
       inference_template_id, 
       prompt_template_id, 
       config,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM format_template
   `;
 
@@ -163,8 +163,8 @@ export async function listFormatTemplates(filter?: FormatTemplateFilter): Promis
     // Convert date strings to Date objects
     return formatTemplateSchema.parse({
       ...template,
-      createdAt: new Date(template.createdAt),
-      updatedAt: new Date(template.updatedAt),
+      created_at: new Date(template.created_at),
+      updated_at: new Date(template.updated_at),
     });
   });
 }
@@ -172,7 +172,7 @@ export async function listFormatTemplates(filter?: FormatTemplateFilter): Promis
 // Update a format template
 export async function updateFormatTemplate(
   id: string,
-  updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "createdAt" | "updatedAt">>,
+  updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
 ): Promise<FormatTemplate | null> {
   const validId = uuidUtils.uuid().parse(id);
 

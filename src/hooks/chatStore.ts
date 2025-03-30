@@ -1,5 +1,12 @@
-import { Message } from "@/pages/chat/components/WidgetMessages";
-import { Chat, CreateChatParams } from "@/schema/chat-schema";
+import { ChatMessage, CreateChatMessageParams, UpdateChatMessageParams } from "@/schema/chat-message-schema";
+import { Chat, ChatParticipant, CreateChatParams } from "@/schema/chat-schema";
+import {
+  createChatMessage as apiCreateChatMessage,
+  deleteChatMessage as apiDeleteChatMessage,
+  updateChatMessage as apiUpdateChatMessage,
+  getChatMessagesByChatId,
+  getNextMessagePosition,
+} from "@/services/chat-message-service";
 import {
   createChat as apiCreateChat,
   deleteChat as apiDeleteChat,
@@ -12,7 +19,7 @@ import { create } from "zustand";
 interface chatState {
   chatList: Pick<Chat, "id" | "name">[];
   selectedChat: Chat | null;
-  selectedChatMessages: Message[]; // TODO: get from setSelectedChatById when Messages are implemented
+  selectedChatMessages: ChatMessage[]; // TODO: get from setSelectedChatById when Messages are implemented
   selectedChatChapters: any[]; // TODO: get from setSelectedChatById when Chapters are implemented
   isLoading: boolean;
   error: string | null;
@@ -22,14 +29,20 @@ interface chatState {
     updateSelectedChat: (chat: Partial<Chat>) => Promise<Chat>;
 
     // Messages
-    addChatMessage: (message: Message) => Promise<void>;
+    addChatMessage: (message: CreateChatMessageParams) => Promise<ChatMessage>;
     deleteChatMessage: (messageId: string) => Promise<void>;
-    updateChatMessage: (messageId: string, message: Partial<Message>) => Promise<Message>;
+    updateChatMessage: (messageId: string, message: Partial<UpdateChatMessageParams>) => Promise<ChatMessage>;
 
     // Chapters
     addChatChapter: (chapter: any) => Promise<void>;
     deleteChatChapter: (chapterId: string) => Promise<void>;
     updateChatChapter: (chapterId: string, chapter: Partial<any>) => Promise<any>;
+
+    // Participants
+    addParticipant: (participant: ChatParticipant) => Promise<void>;
+    removeParticipant: (participantId: string) => Promise<void>;
+    updateParticipant: (participantId: string, data: Partial<ChatParticipant>) => Promise<void>;
+    toggleParticipantEnabled: (participantId: string) => Promise<void>;
 
     createChat: (chat: CreateChatParams) => Promise<Chat>;
     deleteChat: (id: string) => Promise<void>;
@@ -75,9 +88,12 @@ export const useChatStore = create<chatState>((set, get) => ({
           throw new Error(`Chat with ID ${id} not found`);
         }
 
+        // Fetch messages for the selected chat
+        const messages = await getChatMessagesByChatId(id);
+
         set({
           selectedChat: chat,
-          selectedChatMessages: [], // Will be implemented later
+          selectedChatMessages: messages,
           selectedChatChapters: [], // Will be implemented later
           isLoading: false,
         });
@@ -170,6 +186,132 @@ export const useChatStore = create<chatState>((set, get) => ({
       }
     },
 
+    // Participant management functions
+    addParticipant: async (participant: ChatParticipant) => {
+      try {
+        const currentChat = get().selectedChat;
+
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        const currentParticipants = currentChat.participants || [];
+
+        // Check if participant with the same ID already exists
+        if (currentParticipants.some((p) => p.id === participant.id)) {
+          throw new Error(`Participant with ID ${participant.id} already exists`);
+        }
+
+        const updatedParticipants = [...currentParticipants, participant];
+
+        const updatedChat = await get().actions.updateSelectedChat({
+          participants: updatedParticipants,
+        });
+
+        set({
+          selectedChat: updatedChat,
+        });
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : "Failed to add participant",
+        });
+        throw error;
+      }
+    },
+
+    removeParticipant: async (participantId: string) => {
+      try {
+        const currentChat = get().selectedChat;
+
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        const currentParticipants = currentChat.participants || [];
+
+        if (!currentParticipants.some((p) => p.id === participantId)) {
+          throw new Error(`Participant with ID ${participantId} not found`);
+        }
+
+        const updatedParticipants = currentParticipants.filter((p) => p.id !== participantId);
+
+        const updatedChat = await get().actions.updateSelectedChat({
+          participants: updatedParticipants,
+        });
+
+        set({
+          selectedChat: updatedChat,
+        });
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : "Failed to remove participant",
+        });
+        throw error;
+      }
+    },
+
+    updateParticipant: async (participantId: string, data: Partial<ChatParticipant>) => {
+      try {
+        const currentChat = get().selectedChat;
+
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        const currentParticipants = currentChat.participants || [];
+        const participantIndex = currentParticipants.findIndex((p) => p.id === participantId);
+
+        if (participantIndex === -1) {
+          throw new Error(`Participant with ID ${participantId} not found`);
+        }
+
+        const updatedParticipants = [...currentParticipants];
+        updatedParticipants[participantIndex] = {
+          ...updatedParticipants[participantIndex],
+          ...data,
+        };
+
+        const updatedChat = await get().actions.updateSelectedChat({
+          participants: updatedParticipants,
+        });
+
+        set({
+          selectedChat: updatedChat,
+        });
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : "Failed to update participant",
+        });
+        throw error;
+      }
+    },
+
+    toggleParticipantEnabled: async (participantId: string) => {
+      try {
+        const currentChat = get().selectedChat;
+
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        const currentParticipants = currentChat.participants || [];
+        const participant = currentParticipants.find((p) => p.id === participantId);
+
+        if (!participant) {
+          throw new Error(`Participant with ID ${participantId} not found`);
+        }
+
+        await get().actions.updateParticipant(participantId, {
+          enabled: !participant.enabled,
+        });
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : "Failed to toggle participant",
+        });
+        throw error;
+      }
+    },
+
     clearChatList: () => {
       set({
         chatList: [],
@@ -183,15 +325,87 @@ export const useChatStore = create<chatState>((set, get) => ({
       set({ error: null });
     },
 
-    // Message placeholders (to be implemented later)
-    addChatMessage: async () => {
-      /* To be implemented */
+    // Message implementations
+    addChatMessage: async (message: CreateChatMessageParams) => {
+      try {
+        set({ isLoading: true, error: null });
+        const currentChat = get().selectedChat;
+
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        // If position isn't provided, get the next position
+        if (!message.position) {
+          message.position = await getNextMessagePosition(currentChat.id);
+        }
+
+        const newMessage = await apiCreateChatMessage({
+          ...message,
+          chat_id: currentChat.id,
+        });
+
+        set((state) => ({
+          selectedChatMessages: [...state.selectedChatMessages, newMessage],
+          isLoading: false,
+        }));
+
+        return newMessage;
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : "Failed to add message",
+          isLoading: false,
+        });
+        throw error;
+      }
     },
-    deleteChatMessage: async () => {
-      /* To be implemented */
+
+    deleteChatMessage: async (messageId: string) => {
+      try {
+        set({ isLoading: true, error: null });
+
+        const success = await apiDeleteChatMessage(messageId);
+
+        if (!success) {
+          throw new Error(`Failed to delete message with ID ${messageId}`);
+        }
+
+        set((state) => ({
+          selectedChatMessages: state.selectedChatMessages.filter((msg) => msg.id !== messageId),
+          isLoading: false,
+        }));
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : "Failed to delete message",
+          isLoading: false,
+        });
+        throw error;
+      }
     },
-    updateChatMessage: async () => {
-      return {} as Message;
+
+    updateChatMessage: async (messageId: string, messageData: UpdateChatMessageParams) => {
+      try {
+        set({ isLoading: true, error: null });
+
+        const updatedMessage = await apiUpdateChatMessage(messageId, messageData);
+
+        if (!updatedMessage) {
+          throw new Error(`Failed to update message with ID ${messageId}`);
+        }
+
+        set((state) => ({
+          selectedChatMessages: state.selectedChatMessages.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg)),
+          isLoading: false,
+        }));
+
+        return updatedMessage;
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : "Failed to update message",
+          isLoading: false,
+        });
+        throw error;
+      }
     },
 
     // Chapter placeholders (to be implemented later)
@@ -216,8 +430,8 @@ export const useCurrentChatUserCharacter = () =>
 export const useCurrentChatId = () => useChatStore((state) => state.selectedChat?.id);
 export const useCurrentChatName = () => useChatStore((state) => state.selectedChat?.name);
 export const useCurrentChatUserCharacterID = () => useChatStore((state) => state.selectedChat?.user_character_id);
-export const useCurrentChatTemplate = () => useChatStore((state) => state.selectedChat?.chat_template_id);
-export const useCurrentChatParticipants = () => useChatStore((state) => state.selectedChat?.participants);
+export const useCurrentChatTemplateID = () => useChatStore((state) => state.selectedChat?.chat_template_id);
+export const useCurrentChatParticipants = () => useChatStore((state) => state.selectedChat?.participants || []);
 export const useCurrentChatMessages = () => useChatStore((state) => state.selectedChatMessages);
 export const useCurrentChatChapters = () => useChatStore((state) => state.selectedChatChapters);
 export const useChatList = () => useChatStore((state) => state.chatList);

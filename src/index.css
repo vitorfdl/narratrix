@@ -36,7 +36,7 @@ body,
     --chart-3: 197 37% 24%; /* #264653 */
     --chart-4: 43 74% 66%; /* #ECD662 */
     --chart-5: 27 87% 67%; /* #F4A261 */
-    --radius: 0.4rem;
+    --radius: 0.8rem;
   }
   .dark {
     --background: 0 0% 16%; /* #282828 */
@@ -97,6 +97,10 @@ body,
 
   .textarea-special-text {
     @apply text-primary;
+  }
+  
+  .textarea-quoted-text {
+    @apply text-chart-2 font-medium italic;
   }
 
   /* Tippy styling for suggestions */

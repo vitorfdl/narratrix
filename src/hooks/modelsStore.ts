@@ -21,7 +21,7 @@ interface ModelsState {
     // CRUD Operations
     createModel: (modelData: NewModelParams) => Promise<Model>;
     getModelById: (id: string) => Promise<Model | null>;
-    updateModel: (id: string, updateData: Partial<Omit<Model, "id" | "profile_id" | "createdAt" | "updatedAt">>) => Promise<Model | null>;
+    updateModel: (id: string, updateData: Partial<Omit<Model, "id" | "profile_id" | "created_at" | "updated_at">>) => Promise<Model | null>;
     deleteModel: (id: string) => Promise<boolean>;
 
     // List Operations

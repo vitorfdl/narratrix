@@ -15,30 +15,32 @@ interface ChatTabsProps {
 
 export function ChatTabs({ tabs, activeTab, onTabChange, onNewChat, onCloseTab }: ChatTabsProps) {
   return (
-    <div className="flex items-center border-b border-border mt-1">
+    <div className="flex items-center border-b border-border bg-background/80 mt-1">
       <ScrollArea className="flex-1">
         <div className="flex items-center gap-1 px-2">
-          {tabs.map((tab) => (
-            <div
-              key={tab.id}
-              className={cn(
-                "group flex items-center px-2 py-1 rounded-t-lg text-sm transition-colors",
-                activeTab === tab.id ? "bg-primary text-accent" : "bg-background text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <button onClick={() => onTabChange(tab.id)} className="mr-2 max-h-6 text-sm">
-                {tab.name}
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCloseTab(tab.id);
-                }}
-                className="opacity-30 group-hover:opacity-100 hover:text-destructive transition-opacity"
+          {tabs.map((tab, index) => (
+            <div key={tab.id} className="flex items-center">
+              {index !== 0 && <div className="h-4 w-px bg-border mx-0.5" />}
+              <div
+                className={cn(
+                  "group flex items-center px-2 py-1 rounded-t-lg transition-colors font-medium",
+                  activeTab === tab.id ? "bg-content text-foreground" : "bg-background text-muted-foreground hover:text-foreground",
+                )}
               >
-                <X className="h-4 w-4" />
-              </button>
+                <button onClick={() => onTabChange(tab.id)} className="mr-2 max-h-6 text-xs">
+                  {tab.name}
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCloseTab(tab.id);
+                  }}
+                  className="opacity-30 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
 

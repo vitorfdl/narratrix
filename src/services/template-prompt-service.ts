@@ -27,8 +27,8 @@ export async function createSystemPromptTemplate(templateData: NewSystemPromptTe
     profile_id: profileId,
     name: templateData.name,
     config: templateData.config,
-    createdAt: new Date(now),
-    updatedAt: new Date(now),
+    created_at: new Date(now),
+    updated_at: new Date(now),
   });
 
   const configStr = JSON.stringify(validatedTemplate.config);
@@ -52,8 +52,8 @@ export async function getSystemPromptTemplateById(id: string): Promise<SystemPro
       profile_id, 
       name, 
       config,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM context_template 
     WHERE id = $1`,
     [validId],
@@ -69,8 +69,8 @@ export async function getSystemPromptTemplateById(id: string): Promise<SystemPro
   template.config = JSON.parse(template.config);
 
   // Convert date strings to Date objects
-  template.createdAt = new Date(template.createdAt);
-  template.updatedAt = new Date(template.updatedAt);
+  template.created_at = new Date(template.created_at);
+  template.updated_at = new Date(template.updated_at);
 
   return systemPromptTemplateSchema.parse(template);
 }
@@ -83,8 +83,8 @@ export async function listSystemPromptTemplates(filter?: TemplateFilter): Promis
       profile_id, 
       name, 
       config,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM context_template
   `;
 
@@ -117,8 +117,8 @@ export async function listSystemPromptTemplates(filter?: TemplateFilter): Promis
     // Convert date strings to Date objects
     return systemPromptTemplateSchema.parse({
       ...template,
-      createdAt: new Date(template.createdAt),
-      updatedAt: new Date(template.updatedAt),
+      created_at: new Date(template.created_at),
+      updated_at: new Date(template.updated_at),
     });
   });
 }
@@ -126,7 +126,7 @@ export async function listSystemPromptTemplates(filter?: TemplateFilter): Promis
 // Update a system prompt template
 export async function updateSystemPromptTemplate(
   id: string,
-  updateData: Partial<Omit<SystemPromptTemplate, "id" | "profile_id" | "createdAt" | "updatedAt">>,
+  updateData: Partial<Omit<SystemPromptTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
 ): Promise<SystemPromptTemplate | null> {
   const validId = uuidUtils.uuid().parse(id);
 

@@ -637,6 +637,7 @@ export default function Settings() {
                           <SelectItem value="Enter">Enter</SelectItem>
                           <SelectItem value="Ctrl+Enter">Ctrl+Enter</SelectItem>
                           <SelectItem value="Shift+Enter">Shift+Enter</SelectItem>
+                          <SelectItem value="CMD+Enter">CMD+Enter</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

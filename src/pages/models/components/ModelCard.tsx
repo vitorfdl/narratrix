@@ -155,7 +155,7 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
             <InfoIcon className="h-3 w-3" />
             Max Concurrency: {model.max_concurrency}
           </div>
-          <div className="italic">Updated: {formatDate(new Date(model.updatedAt))}</div>
+          <div className="italic">Updated: {formatDate(new Date(model.updated_at))}</div>
         </CardFooter>
       </Card>
     </>

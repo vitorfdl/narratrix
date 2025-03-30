@@ -11,6 +11,7 @@ const switchVariants = cva(
       size: {
         default: "h-5 w-9",
         sm: "h-4 w-7",
+        xs: "h-3 w-5",
       },
     },
     defaultVariants: {
@@ -24,6 +25,7 @@ const thumbVariants = cva("pointer-events-none block rounded-full bg-background 
     size: {
       default: "h-4 w-4 data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0",
       sm: "h-3 w-3 data-[state=checked]:translate-x-3 data-[state=unchecked]:translate-x-0",
+      xs: "h-2 w-2 data-[state=checked]:translate-x-2 data-[state=unchecked]:translate-x-0",
     },
   },
   defaultVariants: {

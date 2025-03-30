@@ -20,9 +20,10 @@ interface ConfigItemProps {
   onChange: (value: any) => void;
   onRemove?: () => void;
   isNested?: boolean;
+  isStrikethrough?: boolean;
 }
 
-export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false }: ConfigItemProps) => {
+export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false, isStrikethrough = false }: ConfigItemProps) => {
   const renderField = () => {
     switch (field.type) {
       case "stepbutton":
@@ -71,6 +72,7 @@ export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false 
                   });
                 }}
                 isNested={true}
+                isStrikethrough={isStrikethrough}
               />
             ))}
           </div>
@@ -82,12 +84,13 @@ export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false 
   };
 
   const cardClasses = isNested ? "p-1 space-y-1 bg-foreground/5 rounded-sm" : "p-2 space-y-1 border-none bg-foreground/5";
+  const titleClasses = `font-medium text-xs ${isStrikethrough ? "line-through text-muted-foreground" : ""}`;
 
   return (
     <Card className={cardClasses}>
       <div className="flex justify-between items-center">
         <div>
-          <h4 className="font-medium text-xs">{field.title}</h4>
+          <h4 className={titleClasses}>{field.title}</h4>
           {/* <p className="text-xs text-muted-foreground">{field.description}</p> */}
         </div>
         {!isNested && onRemove && (

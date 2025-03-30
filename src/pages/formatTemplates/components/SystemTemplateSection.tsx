@@ -293,7 +293,7 @@ export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange
   );
 
   return (
-    <Card className="rounded-sm">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="inference-section-header">System Prompts</CardTitle>
         <div className="flex items-center space-x-2">

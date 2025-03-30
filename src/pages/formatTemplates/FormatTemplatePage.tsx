@@ -85,7 +85,7 @@ export default function FormatTemplatePage() {
 
   // Handle updates to the template
   const handleTemplateUpdate = useCallback(
-    async (updatedData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "createdAt" | "updatedAt">>) => {
+    async (updatedData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>) => {
       if (selectedTemplateId) {
         await updateFormatTemplate(selectedTemplateId, updatedData);
       }

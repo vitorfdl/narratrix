@@ -62,8 +62,8 @@ export async function createModel(modelData: NewModelParams, modelManifest?: Man
     type: modelData.type,
     manifest_id: modelData.manifest_id,
     config: modelData.config,
-    createdAt: new Date(now),
-    updatedAt: new Date(now),
+    created_at: new Date(now),
+    updated_at: new Date(now),
   });
 
   const configStr = JSON.stringify(validatedModel.config);
@@ -103,8 +103,8 @@ export async function getModelById(id: string): Promise<Model | null> {
       manifest_id,
       format_template_id,
       max_concurrency,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM models 
     WHERE id = $1`,
     [validId],
@@ -117,8 +117,8 @@ export async function getModelById(id: string): Promise<Model | null> {
   const model = result[0];
 
   // Convert date strings to Date objects
-  model.createdAt = new Date(model.createdAt);
-  model.updatedAt = new Date(model.updatedAt);
+  model.created_at = new Date(model.created_at);
+  model.updated_at = new Date(model.updated_at);
 
   return model as Model;
 }
@@ -135,8 +135,8 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
       manifest_id,
       format_template_id,
       max_concurrency,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM models
   `;
 
@@ -172,15 +172,16 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
   // Process results
   return result.map((model) => ({
     ...model,
-    createdAt: new Date(model.createdAt),
-    updatedAt: new Date(model.updatedAt),
+    config: JSON.parse(model.config || "{}"),
+    created_at: new Date(model.created_at),
+    updated_at: new Date(model.updated_at),
   })) as Model[];
 }
 
 // Update a model
 export async function updateModel(
   id: string,
-  updateData: Partial<Omit<Model, "id" | "profile_id" | "createdAt" | "updatedAt">>,
+  updateData: Partial<Omit<Model, "id" | "profile_id" | "created_at" | "updated_at">>,
 ): Promise<Model | null> {
   const modelId = uuidUtils.uuid().parse(id);
 

@@ -1,4 +1,4 @@
-import { ChatTemplate, chatTemplateSchema } from "@/schema/template-chat-schema";
+import { ChatTemplate, ChatTemplateCustomPrompt, chatTemplateSchema } from "@/schema/template-chat-schema";
 import { uuidUtils } from "@/schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "@/utils/database";
 import { formatDateTime } from "@/utils/date-time";
@@ -7,18 +7,15 @@ import { formatDateTime } from "@/utils/date-time";
 export interface NewChatTemplateParams {
   profile_id: string;
   name: string;
-  chat_id: string;
-  agent_model_id?: string | null;
-  character_model_id?: string | null;
+  model_id?: string | null;
+  custom_prompts?: ChatTemplateCustomPrompt[];
   config?: Record<string, any>;
 }
 
 // Interface for filtering chat templates
 export interface ChatTemplateFilter {
   profile_id?: string;
-  chat_id?: string;
-  agent_model_id?: string;
-  character_model_id?: string;
+  model_id?: string;
 }
 
 // Create a new chat template
@@ -34,9 +31,8 @@ export async function createChatTemplate(templateData: NewChatTemplateParams): P
     id,
     profile_id: profileId,
     name: templateData.name,
-    chat_id: templateData.chat_id,
-    agent_model_id: templateData.agent_model_id,
-    character_model_id: templateData.character_model_id,
+    model_id: templateData.model_id,
+    custom_prompts: templateData.custom_prompts || [],
     config: templateData.config || {},
     created_at: new Date(now),
     updated_at: new Date(now),
@@ -45,15 +41,14 @@ export async function createChatTemplate(templateData: NewChatTemplateParams): P
   const configStr = JSON.stringify(validatedTemplate.config);
 
   await executeDBQuery(
-    `INSERT INTO chat_template (id, profile_id, name, chat_id, agent_model_id, character_model_id, config, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    `INSERT INTO chat_template (id, profile_id, name, model_id, custom_prompts, config, created_at, updated_at) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       validatedTemplate.id,
       validatedTemplate.profile_id,
       validatedTemplate.name,
-      validatedTemplate.chat_id,
-      validatedTemplate.agent_model_id,
-      validatedTemplate.character_model_id,
+      validatedTemplate.model_id,
+      validatedTemplate.custom_prompts,
       configStr,
       now,
       now,
@@ -74,9 +69,8 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
       id, 
       profile_id, 
       name, 
-      chat_id, 
-      agent_model_id, 
-      character_model_id, 
+      model_id, 
+      custom_prompts, 
       config,
       created_at as created_at, 
       updated_at as updated_at
@@ -96,6 +90,10 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
     template.config = JSON.parse(template.config);
   }
 
+  if (typeof template.custom_prompts === "string") {
+    template.custom_prompts = JSON.parse(template.custom_prompts);
+  }
+
   // Convert date strings to Date objects
   template.created_at = new Date(template.created_at);
   template.updated_at = new Date(template.updated_at);
@@ -111,9 +109,8 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
       id, 
       profile_id, 
       name, 
-      chat_id, 
-      agent_model_id, 
-      character_model_id, 
+      model_id, 
+      custom_prompts, 
       config,
       created_at, 
       updated_at
@@ -132,21 +129,9 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
       paramIndex++;
     }
 
-    if (filter.chat_id) {
-      conditions.push(`chat_id = $${paramIndex}`);
-      params.push(filter.chat_id);
-      paramIndex++;
-    }
-
-    if (filter.agent_model_id) {
-      conditions.push(`agent_model_id = $${paramIndex}`);
-      params.push(filter.agent_model_id);
-      paramIndex++;
-    }
-
-    if (filter.character_model_id) {
-      conditions.push(`character_model_id = $${paramIndex}`);
-      params.push(filter.character_model_id);
+    if (filter.model_id) {
+      conditions.push(`model_id = $${paramIndex}`);
+      params.push(filter.model_id);
       paramIndex++;
     }
   }
@@ -166,6 +151,10 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
     // Parse config from string to object if needed
     if (typeof template.config === "string") {
       template.config = JSON.parse(template.config);
+    }
+
+    if (typeof template.custom_prompts === "string") {
+      template.custom_prompts = JSON.parse(template.custom_prompts);
     }
 
     // Convert date strings to Date objects
@@ -193,6 +182,7 @@ export async function updateChatTemplate(
   // Define field mappings for special transformations
   const fieldMapping = {
     config: (value: any) => JSON.stringify(value),
+    custom_prompts: (value: ChatTemplateCustomPrompt[]) => JSON.stringify(value),
   };
 
   // Build query parts using the utility function
@@ -223,9 +213,4 @@ export async function deleteChatTemplate(id: string): Promise<boolean> {
 export async function getChatTemplatesByProfile(profileId: string): Promise<ChatTemplate[]> {
   const validProfileId = uuidUtils.uuid().parse(profileId);
   return listChatTemplates({ profile_id: validProfileId });
-}
-
-// Get templates by chat ID
-export async function getChatTemplatesByChat(chatId: string): Promise<ChatTemplate[]> {
-  return listChatTemplates({ chat_id: chatId });
 }

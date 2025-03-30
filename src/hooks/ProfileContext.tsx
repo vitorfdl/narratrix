@@ -5,6 +5,7 @@ import { ProfileListItem, ProfileResponse } from "../schema/profiles-schema";
 import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile } from "../services/profile-service";
 import { useCharacterActions } from "./characterStore";
 import { useChatActions } from "./chatStore";
+import { useChatTemplateActions } from "./chatTemplateStore";
 import { useModelManifestsActions } from "./manifestStore";
 import { useTemplateActions } from "./templateStore";
 
@@ -95,6 +96,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const { fetchFormatTemplates, fetchInferenceTemplates, fetchPromptTemplates } = useTemplateActions();
   const { fetchCharacters } = useCharacterActions();
   const { fetchChatList } = useChatActions();
+  const { fetchChatTemplates } = useChatTemplateActions();
   // Load profiles from the database
   const refreshProfiles = async (): Promise<void> => {
     try {
@@ -123,6 +125,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       fetchFormatTemplates({ profile_id: state.currentProfile.id });
       fetchInferenceTemplates({ profile_id: state.currentProfile.id });
       fetchPromptTemplates({ profile_id: state.currentProfile.id });
+      fetchChatTemplates({ profile_id: state.currentProfile.id });
       fetchCharacters(state.currentProfile.id);
       fetchChatList(state.currentProfile.id);
     } else {

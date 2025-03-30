@@ -1,16 +1,12 @@
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import * as React from "react";
 
 export interface ComboboxItem {
   label: string;
   value: string;
+  disabled?: boolean;
+  hint?: string;
 }
 
 interface ComboboxProps {
@@ -26,7 +22,7 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search..." }
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0 justify-between">
+      <PopoverContent className="w-[200px] p-0 justify-between" align="end">
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandEmpty>No item found.</CommandEmpty>
@@ -36,11 +32,18 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search..." }
                 key={item.value}
                 value={item.value}
                 onSelect={(currentValue) => {
-                  onChange(currentValue);
-                  setOpen(false);
+                  if (!item.disabled) {
+                    onChange(currentValue);
+                    setOpen(false);
+                  }
                 }}
+                disabled={item.disabled}
+                className={`${item.disabled ? "cursor-not-allowed opacity-50" : ""}`}
               >
-                {item.label}
+                <div className="flex flex-col">
+                  <span className={item.disabled ? "line-through" : ""}>{item.label}</span>
+                  {item.hint && <span className="text-xs text-muted-foreground">{item.hint}</span>}
+                </div>
               </CommandItem>
             ))}
           </CommandGroup>

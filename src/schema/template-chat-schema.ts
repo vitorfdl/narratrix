@@ -1,12 +1,11 @@
 import { z } from "zod";
 import { baseTemplateSchema } from "./template-base-schema";
-import { dateUtils } from "./utils-schema";
 
 const chatTemplateCustomPromptSchema = z.object({
   id: z.string(),
   name: z.string(),
   role: z.enum(["user", "character", "system"]),
-  filter: z.record(z.string()).default({}),
+  filter: z.record(z.string()).optional().default({}),
   position: z.enum(["top", "bottom", "depth"]),
   depth: z.number().optional().default(1), // Depth only applies to depth position
   prompt: z.string().default(""),
@@ -16,13 +15,15 @@ const chatTemplateCustomPromptSchema = z.object({
  * Chat Template Schema
  */
 export const chatTemplateSchema = baseTemplateSchema.extend({
-  chat_id: z.string(),
-  agent_model_id: z.string().nullable().optional(),
-  character_model_id: z.string().nullable().optional(),
-  config: z.record(z.any()).default({}),
+  model_id: z.string().nullable().optional(),
+  config: z
+    .object({
+      max_tokens: z.number(),
+      max_response: z.number(),
+    })
+    .passthrough()
+    .default(() => ({ max_tokens: 1024, max_response: 4096 })),
   custom_prompts: chatTemplateCustomPromptSchema.array().default([]),
-  created_at: dateUtils.withDefaultNow(),
-  updated_at: dateUtils.withDefaultNow(),
 });
 
 export type ChatTemplate = z.infer<typeof chatTemplateSchema>;

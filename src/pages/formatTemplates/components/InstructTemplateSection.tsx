@@ -226,7 +226,7 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-sm">
+      <Card>
         <CardHeader>
           <CardTitle className="inference-section-header flex items-center gap-1 pb-2 border-b">
             <Settings className="h-5 w-5" /> Inference Template
@@ -244,7 +244,7 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
             onExport={handleExportTemplate}
           />
 
-          <Card className="rounded-sm">
+          <Card>
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
                 <Settings className="h-4 w-4" /> System Prompt Formatting
@@ -270,7 +270,7 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
             </CardContent>
           </Card>
 
-          <Card className="rounded-sm">
+          <Card>
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
                 <MessageSquare className="h-4 w-4" /> User Message Formatting
@@ -296,7 +296,7 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
             </CardContent>
           </Card>
 
-          <Card className="rounded-sm">
+          <Card>
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
                 <Bot className="h-4 w-4" /> Assistant Message Formatting
@@ -340,7 +340,7 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
             </CardContent>
           </Card>
 
-          <Card className="rounded-sm">
+          <Card>
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
                 <Wrench className="h-4 w-4" /> Agent Message Formatting
@@ -388,7 +388,7 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
             </CardContent>
           </Card>
 
-          <Card className="rounded-sm">
+          <Card>
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
                 <StopCircle className="h-4 w-4" /> Custom Stop Strings

@@ -26,8 +26,8 @@ export async function createChat(chatData: CreateChatParams): Promise<Chat> {
     participants: chatData.participants || [],
     user_character_id: chatData.user_character_id,
     user_character_settings: chatData.user_character_settings || [],
-    createdAt: new Date(now),
-    updatedAt: new Date(now),
+    created_at: new Date(now),
+    updated_at: new Date(now),
   });
 
   // Convert arrays to JSON strings for storage
@@ -76,8 +76,8 @@ export async function getChatById(id: string): Promise<Chat | null> {
       participants,
       user_character_id,
       user_character_settings,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM chats 
     WHERE id = $1`,
     [validId],
@@ -94,8 +94,8 @@ export async function getChatById(id: string): Promise<Chat | null> {
   chat.user_character_settings = JSON.parse(chat.user_character_settings || "[]");
 
   // Convert date strings to Date objects
-  chat.createdAt = new Date(chat.createdAt);
-  chat.updatedAt = new Date(chat.updatedAt);
+  chat.created_at = new Date(chat.created_at);
+  chat.updated_at = new Date(chat.updated_at);
 
   return chat as Chat;
 }
@@ -111,8 +111,8 @@ export async function listChats(filter?: ChatFilter): Promise<Chat[]> {
       participants,
       user_character_id,
       user_character_settings,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM chats
   `;
 
@@ -150,13 +150,16 @@ export async function listChats(filter?: ChatFilter): Promise<Chat[]> {
     ...chat,
     participants: JSON.parse(chat.participants || "[]"),
     user_character_settings: JSON.parse(chat.user_character_settings || "[]"),
-    createdAt: new Date(chat.createdAt),
-    updatedAt: new Date(chat.updatedAt),
+    created_at: new Date(chat.created_at),
+    updated_at: new Date(chat.updated_at),
   })) as Chat[];
 }
 
 // Update a chat
-export async function updateChat(id: string, updateData: Partial<Omit<Chat, "id" | "profile_id" | "createdAt" | "updatedAt">>): Promise<Chat | null> {
+export async function updateChat(
+  id: string,
+  updateData: Partial<Omit<Chat, "id" | "profile_id" | "created_at" | "updated_at">>,
+): Promise<Chat | null> {
   const chatId = uuidUtils.uuid().parse(id);
 
   // Get the current chat to ensure it exists

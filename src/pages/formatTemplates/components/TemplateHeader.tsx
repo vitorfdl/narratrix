@@ -178,7 +178,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   );
 
   return (
-    <div className="space-y-4 bg-card p-4 rounded-sm border">
+    <div className="space-y-4 bg-card p-4 rounded-md border">
       {templatePickerMemo}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 ">

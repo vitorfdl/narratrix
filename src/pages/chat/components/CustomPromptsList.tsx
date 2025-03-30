@@ -14,17 +14,20 @@ interface CustomPromptsListProps {
   onEdit: (promptId: string) => void;
   onDelete: (promptId: string) => void;
   onReorder?: (newPrompts: ChatTemplateCustomPrompt[]) => void;
+  disabled?: boolean;
 }
 
 interface SortablePromptItemProps {
   prompt: ChatTemplateCustomPrompt;
   onEdit: (promptId: string) => void;
   onDelete: (promptId: string) => void;
+  disabled?: boolean;
 }
 
-const SortablePromptItem = ({ prompt, onEdit, onDelete }: SortablePromptItemProps) => {
+const SortablePromptItem = ({ prompt, onEdit, onDelete, disabled }: SortablePromptItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: prompt.id,
+    disabled,
   });
 
   const style = {
@@ -39,7 +42,7 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete }: SortablePromptItemProp
       style={style}
       className={`bg-foreground/5 flex items-center gap-2 p-0.5 mb-1 border-none ${isDragging ? "shadow-lg opacity-80 border-primary" : ""}`}
     >
-      <div {...attributes} {...listeners} className="cursor-grab touch-none">
+      <div {...attributes} {...listeners} className={`${disabled ? "cursor-not-allowed" : "cursor-grab"} touch-none`}>
         <GripVertical className="h-5 w-5 text-muted-foreground" />
       </div>
 
@@ -49,10 +52,10 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete }: SortablePromptItemProp
       </div>
 
       <div className="flex gap-1">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(prompt.id)}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(prompt.id)} disabled={disabled}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(prompt.id)}>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(prompt.id)} disabled={disabled}>
           <Trash className="h-3.5 w-3.5" />
         </Button>
       </div>
@@ -60,7 +63,7 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete }: SortablePromptItemProp
   );
 };
 
-export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder }: CustomPromptsListProps) {
+export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder, disabled }: CustomPromptsListProps) {
   const [items, setItems] = useState<ChatTemplateCustomPrompt[]>(prompts);
 
   // Update local state when props change
@@ -81,6 +84,10 @@ export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder }: Cust
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (disabled) {
+      return;
+    }
+
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -99,12 +106,12 @@ export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder }: Cust
   };
 
   return (
-    <div className="w-full">
+    <div className={`w-full ${disabled ? "opacity-70" : ""}`}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
         <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-1">
             {items.map((prompt) => (
-              <SortablePromptItem key={prompt.id} prompt={prompt} onEdit={onEdit} onDelete={onDelete} />
+              <SortablePromptItem key={prompt.id} prompt={prompt} onEdit={onEdit} onDelete={onDelete} disabled={disabled} />
             ))}
           </div>
         </SortableContext>

@@ -1,5 +1,4 @@
-import { setupInferenceListener } from "@/hooks/useInference";
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 
 interface InferenceProviderProps {
   children: ReactNode;
@@ -10,11 +9,6 @@ interface InferenceProviderProps {
  * Place this near the root of your application.
  */
 export function InferenceProvider({ children }: InferenceProviderProps) {
-  // Set up the global inference listener when the app starts
-  useEffect(() => {
-    console.log("InferenceProvider: Initializing inference system");
-    setupInferenceListener();
-  }, []);
-
+  // Our new implementation handles listener setup automatically in the hook
   return <>{children}</>;
 }

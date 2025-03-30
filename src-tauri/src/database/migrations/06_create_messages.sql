@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     type TEXT NOT NULL CHECK (type IN ('user', 'character', 'system')),
     position INTEGER NOT NULL,  -- Use 100, 200, 300 instead of 1,2,3
     messages TEXT NOT NULL, -- JSON Array of messages ["message", "message", "message"]
-    message_index INTEGER NOT NULL, -- Use 0, 1, 2, 3...
+    message_index INTEGER NOT NULL, -- Use 0, 1, 2, 3... Refer to which message in the messages array this is
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dateUtils, uuidUtils } from "./utils-schema";
+import { uuidUtils } from "./utils-schema";
 
 /**
  * Tab Types, stored in localstorage
@@ -20,6 +20,7 @@ interface ChatTab {
 
 const chatParticipantSchema = z.object({
   id: z.string(),
+  enabled: z.boolean().default(true),
   settings: z.record(z.any()).default({}),
 });
 
@@ -39,8 +40,8 @@ const chatSchema = z.object({
   participants: chatParticipantSchema.array().optional().default([]),
   user_character_id: z.string().optional(),
   user_character_settings: chatUserSettingsSchema.array().optional().default([]),
-  created_at: dateUtils.withDefaultNow(),
-  updated_at: dateUtils.withDefaultNow(),
+  created_at: z.date(),
+  updated_at: z.date(),
 });
 
 /**

@@ -169,9 +169,7 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
   const [type, setType] = useState<"character" | "agent">(initialData?.type || "character");
   const [name, setName] = useState(initialData?.name || "");
   const [version, setVersion] = useState(initialData?.version || "1.0.0");
-  const [avatarImage, setAvatarImage] = useState<string | null>(
-    (initialData?.settings?.avatar_url as string) || (initialData?.custom?.avatar_url as string) || null,
-  );
+  const [avatarImage, setAvatarImage] = useState<string | null>(initialData?.avatar_path || null);
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [personality, setPersonality] = useState(initialData?.type === "character" ? (initialData?.settings?.personality as string) || "" : "");
   const [systemPrompt, setSystemPrompt] = useState(initialData?.system_override || (initialData?.settings?.system_prompt as string) || "");
@@ -189,7 +187,6 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
 
     try {
       const settings: Record<string, unknown> = {
-        avatar_url: avatarImage,
         author,
       };
 
@@ -205,11 +202,12 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         name,
         type,
         version,
+        avatar_path: avatarImage,
         profile_id: profileId,
         tags,
         settings,
         system_override: systemPrompt || null,
-        external_link: null,
+        external_update_link: null,
         auto_update: true,
         custom: {},
         ...(type === "character"

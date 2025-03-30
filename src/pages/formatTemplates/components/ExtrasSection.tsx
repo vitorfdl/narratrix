@@ -72,12 +72,12 @@ export function ExtraSections({ formatTemplateID }: ExtraSectionsProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-sm">
+      <Card>
         <CardHeader>
           <CardTitle className="inference-section-header">Miscellaneous</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Card className="rounded-sm">
+          <Card>
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
                 <BrainCircuitIcon className="h-4 w-4" /> Reasoning

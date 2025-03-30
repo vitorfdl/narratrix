@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Extension } from "@tiptap/core";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -21,6 +22,8 @@ interface TipTapTextAreaProps {
   editable?: boolean;
   disableRichText?: boolean;
   suggestions?: SuggestionItem[];
+  sendShortcut?: "Enter" | "Ctrl+Enter" | "Shift+Enter" | "CMD+Enter";
+  onSubmit?: (text: string) => void;
 }
 
 export function TipTapRender({
@@ -31,8 +34,70 @@ export function TipTapRender({
   editable = false,
   disableRichText = false,
   suggestions = [],
+  sendShortcut = "Ctrl+Enter",
+  onSubmit,
 }: TipTapTextAreaProps) {
   const isUpdatingRef = useRef(false);
+
+  // Create a keyboard shortcuts extension based on sendShortcut
+  const KeyboardShortcutHandler = Extension.create({
+    name: "keyboardShortcutHandler",
+    addKeyboardShortcuts() {
+      const shortcuts: Record<string, any> = {};
+
+      // Default shortcuts for different send commands
+      if (sendShortcut === "Enter") {
+        shortcuts.Enter = () => {
+          if (onSubmit) {
+            const text = this.editor.getText({
+              blockSeparator: "<br>",
+            });
+            if (text.trim()) {
+              onSubmit(text);
+              this.editor.commands.clearContent();
+            }
+          }
+          return true;
+        };
+
+        // Use Shift+Enter for newline when Enter is the send shortcut
+        shortcuts["Shift-Enter"] = () => {
+          return this.editor.commands.first(({ commands }) => [
+            () => commands.newlineInCode(),
+            () => commands.splitListItem("listItem"),
+            () => commands.createParagraphNear(),
+            () => commands.liftEmptyBlock(),
+            () => commands.splitBlock(),
+          ]);
+        };
+      } else {
+        // For other shortcuts, handle them specifically
+        const shortcutKey =
+          sendShortcut === "Ctrl+Enter"
+            ? "Mod-Enter"
+            : sendShortcut === "CMD+Enter"
+              ? "Mod-Enter"
+              : sendShortcut === "Shift+Enter"
+                ? "Shift-Enter"
+                : null;
+
+        if (shortcutKey && onSubmit) {
+          shortcuts[shortcutKey] = () => {
+            const text = this.editor.getText({
+              blockSeparator: "<br>",
+            });
+            if (text.trim()) {
+              onSubmit(text);
+              this.editor.commands.clearContent();
+            }
+            return true;
+          };
+        }
+      }
+
+      return shortcuts;
+    },
+  });
 
   const editor = useEditor({
     extensions: [
@@ -73,13 +138,15 @@ export function TipTapRender({
             }),
           ]
         : []),
+      // Add keyboard shortcut handler if onSubmit is provided
+      ...(onSubmit ? [KeyboardShortcutHandler] : []),
     ],
     content: initialValue?.replace(/\n/g, "<br>"),
     editable,
     onUpdate: ({ editor }) => {
       if (onChange && !isUpdatingRef.current) {
         const text = editor.getText({
-          blockSeparator: "\n",
+          blockSeparator: "<br>",
         });
         // onChange(editor.storage.markdown?.getMarkdown() || text);
         onChange(text);
@@ -90,8 +157,9 @@ export function TipTapRender({
         class: cn(
           "prose dark:prose-invert prose-li:p-0 prose-p:m-0",
           "prose-h1:text-lg prose-h1:m-0 prose-h2:text-base prose-h2:m-0 prose-h3:text-sm prose-headings:m-0",
-          "text-xs font-mono",
+          "font-mono",
           "outline-none",
+          "h-full w-full overflow-auto",
           className,
         ),
       },
@@ -115,5 +183,9 @@ export function TipTapRender({
     }
   }, [editor, editable]);
 
-  return <EditorContent editor={editor} spellCheck={false} />;
+  return (
+    <div className="h-full w-full overflow-hidden">
+      <EditorContent editor={editor} spellCheck={false} className="h-full" />
+    </div>
+  );
 }

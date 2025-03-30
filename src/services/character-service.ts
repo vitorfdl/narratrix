@@ -50,17 +50,17 @@ export async function createCharacter(
 
   await executeDBQuery(
     `INSERT INTO characters (
-      id, profile_id, name, type, version, external_link, auto_update,
-      system_override, settings, custom, expressions, character_manifest_id,
+      id, profile_id, name, type, version, avatar_path, external_update_link, auto_update, system_override, settings, custom, expressions, character_manifest_id,
       created_at, updated_at, tags
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
     [
       id,
       profileId,
       validatedCharacter.name,
       validatedCharacter.type,
       validatedCharacter.version,
-      validatedCharacter.external_link,
+      validatedCharacter.avatar_path,
+      validatedCharacter.external_update_link,
       validatedCharacter.auto_update,
       validatedCharacter.system_override,
       settings,

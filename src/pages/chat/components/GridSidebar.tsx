@@ -2,6 +2,7 @@ import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { GridPosition } from "@/schema/grid";
+import { PopoverArrow } from "@radix-ui/react-popover";
 import { Pin } from "lucide-react";
 import { WidgetId, renderWidget, widgetTitles } from "../hooks/registry";
 
@@ -32,9 +33,10 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
                 {widgetTitles[widget.id as WidgetId]}
               </Button>
             </PopoverTrigger>
-            <PopoverContent side="right" className="max-w-[80vw] w-auto shadow-md">
+            <PopoverContent side="right" className="max-w-[80vw] w-auto shadow-md bg-background">
+              <PopoverArrow width={10} height={8} className="fill-muted-foreground" />
               <div className="flex items-top justify-between">
-                <span className="text-xs font-semibold">{widgetTitles[widget.id as WidgetId]}</span>
+                <span className="text-xs ml-2 font-semibold">{widgetTitles[widget.id as WidgetId]}</span>
                 <button onClick={() => toggleCard(widget.id)} className="p-1 hover:bg-accent rounded">
                   <Pin className="w-3 h-3" />
                 </button>

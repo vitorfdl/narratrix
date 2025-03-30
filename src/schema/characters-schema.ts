@@ -16,11 +16,12 @@ const BaseEntitySchema = z.object({
   profile_id: z.string(),
   name: z.string(),
   tags: z.array(z.string()).nullable().default([]),
+  avatar_path: z.string().url().nullable(),
   version: z
     .string()
     .regex(/^\d+\.\d+\.\d+$/)
     .default("1.0.0"),
-  external_link: z.string().url().nullable(),
+  external_update_link: z.string().url().nullable(),
   auto_update: z.boolean().default(true),
   system_override: z.string().nullable(),
   settings: JsonObjectSchema.nullable().default({}),
@@ -59,7 +60,7 @@ const BaseCreateSchema = BaseEntitySchema.omit({
   created_at: true,
   updated_at: true,
 }).partial({
-  external_link: true,
+  external_update_link: true,
   system_override: true,
   settings: true,
   custom: true,

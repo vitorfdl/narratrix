@@ -125,7 +125,7 @@ where
     handle_inference_response(
         &request.id,
         "completed",
-        Some(serde_json::json!({ "text": result.clone() })),
+        Some(serde_json::json!({ "full_response": result.clone() })),
         None,
         app_handle,
     )?;
@@ -165,8 +165,6 @@ pub async fn process_inference(
                     &app_handle,
                     |response_text, request_id, app_handle_clone| async move {
                         aws_bedrock::converse_stream(request, specs, move |token| {
-                            println!("Received token: {}", token);
-
                             handle_streaming_chunk(&request_id, &token, &app_handle_clone)?;
 
                             if let Ok(mut response) = response_text.lock() {
@@ -194,8 +192,6 @@ pub async fn process_inference(
                     &app_handle,
                     |response_text, request_id, app_handle_clone| async move {
                         openai::converse_stream(request, specs, move |token| {
-                            println!("Received token: {}", token);
-
                             handle_streaming_chunk(&request_id, &token, &app_handle_clone)?;
 
                             if let Ok(mut response) = response_text.lock() {

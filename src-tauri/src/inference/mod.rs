@@ -208,21 +208,7 @@ impl InferenceQueueManager {
 
                     // Handle the result
                     match result {
-                        Ok(_) => {
-                            let response = InferenceResponse {
-                                request_id: request_clone.id.clone(),
-                                status: "completed".to_string(),
-                                result: Some(serde_json::Value::Null),
-                                error: None,
-                            };
-
-                            println!("Emitting inference response: {:?}", response);
-
-                            // Use the result to check if emission succeeded
-                            if let Err(e) = app_handle_clone.emit("inference-response", response) {
-                                eprintln!("Failed to emit inference completion event: {}", e);
-                            }
-                        }
+                        Ok(_) => {}
                         Err(e) => {
                             // Error processing
                             let response = InferenceResponse {
@@ -231,7 +217,10 @@ impl InferenceQueueManager {
                                 result: None,
                                 error: Some(e.to_string()),
                             };
-                            println!("Emitting inference error response: {:?}", response);
+                            println!(
+                                "!!! Emitting inference error response: {}",
+                                serde_json::to_string_pretty(&response).unwrap_or_default()
+                            );
 
                             // Use the result to check if emission succeeded
                             if let Err(e) = app_handle_clone.emit("inference-response", response) {

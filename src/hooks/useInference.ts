@@ -1,7 +1,18 @@
-import { listenForInferenceResponses } from "@/commands/inference";
-import { useInferenceStore } from "@/hooks/inferenceStore";
+import { cancelInferenceRequest, listenForInferenceResponses, queueInferenceRequest } from "@/commands/inference";
 import type { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+// Define types needed for inference
+type InferenceStatus = "idle" | "queued" | "streaming" | "completed" | "error" | "cancelled";
+
+interface InferenceRequestState {
+  id: string;
+  modelId: string;
+  status: InferenceStatus;
+  response: InferenceResponse | null;
+  error: string | null;
+  timestamp: number;
+}
 
 interface UseInferenceOptions {
   onComplete?: (response: InferenceResponse, requestId: string) => void;
@@ -9,166 +20,243 @@ interface UseInferenceOptions {
   onStream?: (partialResponse: InferenceResponse, requestId: string) => void;
 }
 
-// Global listener state to ensure it's only set up once for the entire app
-let listenerInitialized = false;
-let cleanup: (() => Promise<void>) | undefined;
-
-// Set up the global listener for all inference responses
-// This is called once for the entire application
-export function setupInferenceListener() {
-  if (listenerInitialized) {
-    return;
-  }
-
-  // Get the store actions without triggering renders
-  const { updateRequestStatus } = useInferenceStore.getState();
-
-  // Use an async IIFE to properly handle the Promise
-  (async () => {
-    try {
-      // Set up the listener and await the promise
-      const unlisten = await listenForInferenceResponses((response) => {
-        const requestId = response.request_id;
-
-        // Get the current state of the store
-        const { requests } = useInferenceStore.getState();
-
-        // Skip if the request isn't in our store
-        if (!requests[requestId]) {
-          return;
-        }
-
-        // Update the store with the response
-        if (response.status === "streaming") {
-          updateRequestStatus(requestId, "streaming", response);
-        } else if (response.status === "completed") {
-          updateRequestStatus(requestId, "completed", response);
-        } else if (response.status === "error" || response.status === "cancelled") {
-          const errorMessage = response.error || "Unknown error occurred";
-          updateRequestStatus(requestId, response.status, response, errorMessage);
-        }
-      });
-
-      // Store the cleanup function
-      cleanup = unlisten;
-      listenerInitialized = true;
-      console.log("Global inference response listener initialized");
-    } catch (error: unknown) {
-      console.error("Failed to set up inference response listener:", error);
-    }
-  })();
-
-  // Set up cleanup for app shutdown
-  window.addEventListener("beforeunload", () => {
-    if (cleanup) {
-      cleanup().catch(console.error);
-    }
-  });
+interface InferenceParams {
+  messages: InferenceMessage[];
+  modelSpecs: ModelSpecs;
+  systemPrompt?: string;
+  parameters?: Record<string, any>;
+  stream?: boolean;
 }
 
-// Initialize the listener immediately
-setupInferenceListener();
+// Global listener to ensure it's only initialized once
+let listenerInitialized = false;
+const globalListeners = new Set<(response: InferenceResponse) => void>();
+let unlisten: (() => Promise<void>) | null = null;
 
 /**
- * Hook for working with inference requests.
- * Uses a global zustand store to manage all requests and a listener for inference events.
+ * Hook for managing inference requests
  */
 export function useInference(options: UseInferenceOptions = {}) {
-  // Access store state and actions
-  const { requests, latestRequestId, queueRequest, cancelRequest } = useInferenceStore();
+  // Track all active requests in local state
+  const [requests, setRequests] = useState<Record<string, InferenceRequestState>>({});
 
-  // Derive loading state and other status information
-  const isLoading = latestRequestId ? requests[latestRequestId]?.status === "queued" || requests[latestRequestId]?.status === "streaming" : false;
+  // Use refs for callback options to avoid unnecessary effect triggers
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
-  const error = latestRequestId ? requests[latestRequestId]?.error || null : null;
+  // Track processed responses to avoid duplicate callbacks
+  const processedResponses = useRef(new Set<string>());
 
-  const response = latestRequestId ? requests[latestRequestId]?.response || null : null;
-
-  // Set up effects to call the provided callbacks when request statuses change
+  // Initialize global listener once
   useEffect(() => {
-    const handleRequestUpdates = () => {
-      // Use for...of instead of forEach
-      for (const [requestId, request] of Object.entries(requests)) {
-        // Call the appropriate callback based on the request status
-        if (request.status === "streaming" && request.response) {
-          options.onStream?.(request.response, requestId);
-        } else if (request.status === "completed" && request.response) {
-          options.onComplete?.(request.response, requestId);
-        } else if (request.status === "error" && request.error) {
-          options.onError?.(request.error, requestId);
+    const setupListener = async () => {
+      if (!listenerInitialized) {
+        try {
+          // Function to distribute events to all hooks
+          const handleInferenceResponse = (response: InferenceResponse) => {
+            globalListeners.forEach((listener) => {
+              listener(response);
+            });
+          };
+
+          unlisten = await listenForInferenceResponses(handleInferenceResponse);
+          listenerInitialized = true;
+          console.log("Global inference listener initialized");
+
+          // Cleanup on window unload
+          window.addEventListener("beforeunload", () => {
+            if (unlisten) {
+              unlisten().catch(console.error);
+            }
+          });
+        } catch (error) {
+          console.error("Failed to initialize inference listener:", error);
         }
       }
     };
 
-    // Run once on mount to handle any existing requests
-    handleRequestUpdates();
+    setupListener();
+  }, []);
 
-    // Set up a subscription to the store
-    const unsubscribe = useInferenceStore.subscribe(handleRequestUpdates);
+  // Register this hook's response handler
+  useEffect(() => {
+    const handleResponse = (response: InferenceResponse) => {
+      const requestId = response.request_id;
 
-    return () => {
-      unsubscribe();
-    };
-  }, [options, requests]);
+      // Create a unique key to track processed responses
+      const responseKey = `${requestId}:${response.status}:${Date.now()}`;
 
-  // Run inference by queuing a request through the store
-  const runInference = useCallback(
-    async (messages: InferenceMessage[], modelSpecs: ModelSpecs, systemPrompt?: string, parameters: Record<string, any> = {}, stream = false) => {
-      try {
-        const requestId = await queueRequest(messages, modelSpecs, systemPrompt, parameters, stream);
-        console.log(`Queued inference request ${requestId}`);
-        return requestId;
-      } catch (err) {
-        console.error("Failed to run inference:", err);
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        options.onError?.(errorMessage, "queue-error");
-        return null;
+      // Skip if we've already processed this exact response
+      if (processedResponses.current.has(responseKey)) {
+        return;
       }
-    },
-    [queueRequest, options],
-  );
+
+      setRequests((currentRequests) => {
+        // Skip if this request isn't being tracked by this hook instance
+        if (!currentRequests[requestId]) {
+          return currentRequests;
+        }
+
+        // Create new state for this request
+        const updatedRequest = {
+          ...currentRequests[requestId],
+          status: response.status as InferenceStatus,
+          response: response,
+          error: response.error || null,
+        };
+
+        // Call appropriate callback based on status
+        if (response.status === "streaming") {
+          optionsRef.current.onStream?.(response, requestId);
+        } else if (response.status === "completed") {
+          optionsRef.current.onComplete?.(response, requestId);
+        } else if (response.status === "error" || response.status === "cancelled") {
+          optionsRef.current.onError?.(response.error || "Unknown error", requestId);
+        }
+
+        // Track this response as processed
+        processedResponses.current.add(responseKey);
+
+        // Clean up old processed responses (keep last 100)
+        if (processedResponses.current.size > 100) {
+          const oldKeys = Array.from(processedResponses.current).slice(0, 50);
+          oldKeys.forEach((key) => processedResponses.current.delete(key));
+        }
+
+        // Return updated requests state
+        return {
+          ...currentRequests,
+          [requestId]: updatedRequest,
+        };
+      });
+    };
+
+    // Register this handler
+    globalListeners.add(handleResponse);
+
+    // Clean up when component unmounts
+    return () => {
+      globalListeners.delete(handleResponse);
+    };
+  }, []);
+
+  // Run inference and track the request
+  const runInference = useCallback(async (params: InferenceParams) => {
+    const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false } = params;
+
+    try {
+      // Queue request with backend
+      const requestId = await queueInferenceRequest(
+        {
+          id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          message_list: messages,
+          system_prompt: systemPrompt,
+          parameters,
+          stream,
+        },
+        modelSpecs,
+      );
+
+      // Add to local tracking state
+      setRequests((current) => ({
+        ...current,
+        [requestId]: {
+          id: requestId,
+          modelId: modelSpecs.id,
+          status: "queued",
+          response: null,
+          error: null,
+          timestamp: Date.now(),
+        },
+      }));
+
+      return requestId;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      optionsRef.current.onError?.(errorMessage, "queue-error");
+      return null;
+    }
+  }, []);
 
   // Cancel a specific request
-  const cancelInferenceRequest = useCallback(
+  const cancelRequest = useCallback(
     async (requestId: string) => {
-      return await cancelRequest(requestId);
+      const request = requests[requestId];
+      if (!request) {
+        return false;
+      }
+
+      try {
+        const success = await cancelInferenceRequest(request.modelId, requestId);
+
+        if (success) {
+          setRequests((current) => ({
+            ...current,
+            [requestId]: {
+              ...current[requestId],
+              status: "cancelled",
+            },
+          }));
+        }
+
+        return success;
+      } catch (error) {
+        console.error("Failed to cancel request:", error);
+        return false;
+      }
     },
-    [cancelRequest],
+    [requests],
   );
 
-  // Cancel the most recent request (for backwards compatibility)
-  const cancelInference = useCallback(async () => {
-    if (latestRequestId) {
-      return await cancelInferenceRequest(latestRequestId);
-    }
-    return false;
-  }, [latestRequestId, cancelInferenceRequest]);
+  // Cleanup old completed/cancelled/error requests
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setRequests((current) => {
+        const updated = { ...current };
+        let changed = false;
 
-  // Cancel all active requests
-  const cancelAllRequests = useCallback(async () => {
-    const activeRequestIds = Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming");
+        // Clean up requests older than 10 minutes that are no longer active
+        Object.entries(updated).forEach(([id, request]) => {
+          if (
+            (request.status === "completed" || request.status === "error" || request.status === "cancelled") &&
+            now - request.timestamp > 10 * 60 * 1000
+          ) {
+            delete updated[id];
+            changed = true;
+          }
+        });
 
-    const results = await Promise.all(activeRequestIds.map((id) => cancelInferenceRequest(id)));
+        return changed ? updated : current;
+      });
+    }, 60000); // Check every minute
 
-    return results.every(Boolean);
-  }, [requests, cancelInferenceRequest]);
+    return () => clearInterval(interval);
+  }, []);
 
   return {
     // Core functions
     runInference,
-    cancelInference,
-    cancelRequest: cancelInferenceRequest,
-    cancelAllRequests,
+    cancelRequest,
 
-    // State
-    isLoading,
-    error,
-    response,
-
-    // Request info
-    latestRequestId,
-    activeRequestIds: Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming"),
-    activeRequestCount: Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming").length,
+    // Request data
     requests,
+
+    // Helper methods
+    getActiveRequestIds: () => {
+      return Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming");
+    },
+
+    getRequestById: (id: string) => {
+      return requests[id] || null;
+    },
+
+    cancelAllRequests: async () => {
+      const activeIds = Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming");
+
+      const results = await Promise.all(activeIds.map((id) => cancelRequest(id)));
+
+      return results.every(Boolean);
+    },
   };
 }

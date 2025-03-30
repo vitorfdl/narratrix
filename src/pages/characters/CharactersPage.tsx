@@ -67,10 +67,6 @@ export default function Characters() {
   };
 
   const filteredCharacters = useMemo(() => {
-    console.log("Characters from store:", characters);
-    console.log("Current search:", search);
-    console.log("Selected tags:", settings.selectedTags);
-
     return characters
       .filter((char) => {
         const matchesSearch = search === "" || char.name.toLowerCase().includes(search.toLowerCase());

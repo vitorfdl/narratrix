@@ -63,12 +63,7 @@ const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
   };
 
   return (
-    <div
-      ref={containerRef}
-      style={{ width: `${width}px` }}
-      className={`relative ${className}`}
-      {...props}
-    >
+    <div ref={containerRef} style={{ width: `${width}px` }} className={`relative ${className}`} {...props}>
       {/* The "custom-scrollbar" class applies your CSS rules for the scrollbar */}
       <div className="overflow-auto custom-scrollbar" style={contentContainerStyle}>
         {children}
@@ -76,7 +71,7 @@ const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
       {/* Resize handle on the right */}
       <div
         onMouseDown={handleMouseDown}
-        className="absolute right-[-1rem] top-0 h-full w-2 cursor-ew-resize bg-gray-300 opacity-50 hover:opacity-100"
+        className="absolute right-[-1rem] top-0 h-full w-2 cursor-ew-resize rounded-full bg-transparent/40 opacity-50 hover:opacity-100"
       />
     </div>
   );

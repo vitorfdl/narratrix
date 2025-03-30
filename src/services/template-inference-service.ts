@@ -30,8 +30,8 @@ export async function createInferenceTemplate(templateData: NewInferenceTemplate
     profile_id: profileId,
     name: templateData.name,
     config: templateData.config,
-    createdAt: new Date(now),
-    updatedAt: new Date(now),
+    created_at: new Date(now),
+    updated_at: new Date(now),
   });
 
   const configStr = JSON.stringify(validatedTemplate.config);
@@ -57,8 +57,8 @@ export async function getInferenceTemplateById(id: string): Promise<InferenceTem
       profile_id, 
       name, 
       config,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM inference_template 
     WHERE id = $1`,
     [validId],
@@ -74,8 +74,8 @@ export async function getInferenceTemplateById(id: string): Promise<InferenceTem
   template.config = JSON.parse(template.config);
 
   // Convert date strings to Date objects
-  template.createdAt = new Date(template.createdAt);
-  template.updatedAt = new Date(template.updatedAt);
+  template.created_at = new Date(template.created_at);
+  template.updated_at = new Date(template.updated_at);
 
   return template as InferenceTemplate;
 }
@@ -88,8 +88,8 @@ export async function listInferenceTemplates(filter?: InferenceTemplateFilter): 
       profile_id, 
       name, 
       config,
-      created_at as createdAt, 
-      updated_at as updatedAt
+      created_at, 
+      updated_at
     FROM inference_template
   `;
 
@@ -118,15 +118,15 @@ export async function listInferenceTemplates(filter?: InferenceTemplateFilter): 
   return result.map((template) => ({
     ...template,
     config: JSON.parse(template.config),
-    createdAt: new Date(template.createdAt),
-    updatedAt: new Date(template.updatedAt),
+    created_at: new Date(template.created_at),
+    updated_at: new Date(template.updated_at),
   })) as InferenceTemplate[];
 }
 
 // Update an inference template
 export async function updateInferenceTemplate(
   id: string,
-  updateData: Partial<Omit<InferenceTemplate, "id" | "profile_id" | "createdAt" | "updatedAt">>,
+  updateData: Partial<Omit<InferenceTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
 ): Promise<InferenceTemplate | null> {
   const validId = uuidUtils.uuid().parse(id);
 

@@ -21,19 +21,6 @@ import {
   updateInferenceTemplate as updateInferenceTemplateAPI,
 } from "@/services/template-inference-service";
 
-import {
-  ChatTemplateFilter,
-  NewChatTemplateParams,
-  createChatTemplate as createChatTemplateAPI,
-  deleteChatTemplate as deleteChatTemplateAPI,
-  getChatTemplateById as getChatTemplateByIdAPI,
-  getChatTemplatesByChat as getChatTemplatesByChatAPI,
-  getChatTemplatesByProfile as getChatTemplatesByProfileAPI,
-  listChatTemplates as listChatTemplatesAPI,
-  updateChatTemplate as updateChatTemplateAPI,
-} from "@/services/template-chat-service";
-
-import { ChatTemplate } from "@/schema/template-chat-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { SystemPromptTemplate } from "@/schema/template-prompt-schema";
@@ -56,14 +43,13 @@ interface TemplateState {
   formatTemplates: FormatTemplate[];
   inferenceTemplates: InferenceTemplate[];
   promptTemplates: SystemPromptTemplate[];
-  chatTemplates: ChatTemplate[];
 
   actions: {
     createFormatTemplate: (templateData: NewFormatTemplateParams) => Promise<FormatTemplate>;
     getFormatTemplateById: (id: string) => Promise<FormatTemplate | null>;
     updateFormatTemplate: (
       id: string,
-      updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "createdAt" | "updatedAt">>,
+      updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
     ) => Promise<FormatTemplate | null>;
     deleteFormatTemplate: (id: string) => Promise<boolean>;
     fetchFormatTemplates: (filter?: FormatTemplateFilter) => Promise<void>;
@@ -74,7 +60,7 @@ interface TemplateState {
     getInferenceTemplateById: (id: string) => Promise<InferenceTemplate | null>;
     updateInferenceTemplate: (
       id: string,
-      updateData: Partial<Omit<InferenceTemplate, "id" | "profile_id" | "createdAt" | "updatedAt">>,
+      updateData: Partial<Omit<InferenceTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
     ) => Promise<InferenceTemplate | null>;
     deleteInferenceTemplate: (id: string) => Promise<boolean>;
     fetchInferenceTemplates: (filter?: InferenceTemplateFilter) => Promise<void>;
@@ -85,22 +71,10 @@ interface TemplateState {
     getPromptTemplateById: (id: string) => Promise<SystemPromptTemplate | null>;
     updatePromptTemplate: (
       id: string,
-      updateData: Partial<Omit<SystemPromptTemplate, "id" | "profile_id" | "createdAt" | "updatedAt">>,
+      updateData: Partial<Omit<SystemPromptTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
     ) => Promise<SystemPromptTemplate | null>;
     deletePromptTemplate: (id: string) => Promise<boolean>;
     fetchPromptTemplates: (filter?: PromptTemplateFilter) => Promise<void>;
-
-    // Chat Template Operations
-    createChatTemplate: (templateData: NewChatTemplateParams) => Promise<ChatTemplate>;
-    getChatTemplateById: (id: string) => Promise<ChatTemplate | null>;
-    updateChatTemplate: (
-      id: string,
-      updateData: Partial<Omit<ChatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
-    ) => Promise<ChatTemplate | null>;
-    deleteChatTemplate: (id: string) => Promise<boolean>;
-    fetchChatTemplates: (filter?: ChatTemplateFilter) => Promise<void>;
-    getChatTemplatesByProfile: (profileId: string) => Promise<ChatTemplate[]>;
-    getChatTemplatesByChat: (chatId: string) => Promise<ChatTemplate[]>;
 
     // Utility Functions
     clearTemplates: () => void;
@@ -514,177 +488,12 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       }
     },
 
-    // Chat Template Operations
-    createChatTemplate: async (templateData: NewChatTemplateParams) => {
-      try {
-        set({ isLoading: true, error: null });
-        const newTemplate = await createChatTemplateAPI(templateData);
-
-        set((state) => ({
-          chatTemplates: [...state.chatTemplates, newTemplate],
-          isLoading: false,
-        }));
-
-        return newTemplate;
-      } catch (error) {
-        set({
-          error: `Failed to create chat template: ${error instanceof Error ? error.message : String(error)}`,
-          isLoading: false,
-        });
-        throw error;
-      }
-    },
-
-    getChatTemplateById: async (id: string) => {
-      try {
-        set({ isLoading: true, error: null });
-
-        // First check if the template is already in the store
-        const cachedTemplate = get().chatTemplates.find((template) => template.id === id);
-        if (cachedTemplate) {
-          set({ isLoading: false });
-          return cachedTemplate;
-        }
-
-        // If not in the store, fetch it from the API
-        const template = await getChatTemplateByIdAPI(id);
-
-        // If found, add it to our store
-        if (template) {
-          set((state) => ({
-            chatTemplates: [...state.chatTemplates.filter((t) => t.id !== id), template],
-            isLoading: false,
-          }));
-        } else {
-          set({ isLoading: false });
-        }
-
-        return template;
-      } catch (error) {
-        set({
-          error: `Failed to get chat template with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
-          isLoading: false,
-        });
-        return null;
-      }
-    },
-
-    updateChatTemplate: async (id: string, updateData) => {
-      try {
-        set({ isLoading: true, error: null });
-        const updatedTemplate = await updateChatTemplateAPI(id, updateData);
-
-        if (updatedTemplate) {
-          set((state) => ({
-            chatTemplates: state.chatTemplates.map((template) => (template.id === id ? updatedTemplate : template)),
-            isLoading: false,
-          }));
-        } else {
-          set({ isLoading: false });
-        }
-
-        return updatedTemplate;
-      } catch (error) {
-        set({
-          error: `Failed to update chat template with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
-          isLoading: false,
-        });
-        return null;
-      }
-    },
-
-    deleteChatTemplate: async (id: string) => {
-      try {
-        set({ isLoading: true, error: null });
-        const success = await deleteChatTemplateAPI(id);
-
-        if (success) {
-          set((state) => ({
-            chatTemplates: state.chatTemplates.filter((template) => template.id !== id),
-            isLoading: false,
-          }));
-        } else {
-          set({ isLoading: false });
-        }
-
-        return success;
-      } catch (error) {
-        set({
-          error: `Failed to delete chat template with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
-          isLoading: false,
-        });
-        return false;
-      }
-    },
-
-    fetchChatTemplates: async (filter?: ChatTemplateFilter) => {
-      try {
-        set({ isLoading: true, error: null });
-        const templates = await listChatTemplatesAPI(filter);
-        set({ chatTemplates: templates, isLoading: false });
-      } catch (error) {
-        set({
-          error: `Failed to fetch chat templates: ${error instanceof Error ? error.message : String(error)}`,
-          isLoading: false,
-        });
-      }
-    },
-
-    getChatTemplatesByProfile: async (profileId: string) => {
-      try {
-        set({ isLoading: true, error: null });
-
-        // Check if we already have templates for this profile
-        const existingTemplates = get().chatTemplates.filter((template) => template.profile_id === profileId);
-
-        // If we don't have any templates yet, fetch them first
-        if (existingTemplates.length === 0) {
-          await get().actions.fetchChatTemplates({ profile_id: profileId });
-        }
-
-        const templates = await getChatTemplatesByProfileAPI(profileId);
-        set({ isLoading: false });
-        return templates;
-      } catch (error) {
-        set({
-          error: `Failed to get chat templates for profile ${profileId}: ${error instanceof Error ? error.message : String(error)}`,
-          isLoading: false,
-        });
-        return [];
-      }
-    },
-
-    getChatTemplatesByChat: async (chatId: string) => {
-      try {
-        set({ isLoading: true, error: null });
-
-        // Check if we already have templates for this chat
-        const existingTemplates = get().chatTemplates.filter((template) => template.chat_id === chatId);
-
-        // If we don't have any templates yet, fetch them first
-        if (existingTemplates.length === 0) {
-          await get().actions.fetchChatTemplates({ chat_id: chatId });
-        }
-
-        const templates = await getChatTemplatesByChatAPI(chatId);
-        set({ isLoading: false });
-        return templates;
-      } catch (error) {
-        set({
-          error: `Failed to get chat templates for chat ${chatId}: ${error instanceof Error ? error.message : String(error)}`,
-          isLoading: false,
-        });
-        return [];
-      }
-    },
-
     // Utility Functions
     clearTemplates: () =>
       set({
         formatTemplates: [],
         inferenceTemplates: [],
         promptTemplates: [],
-        chatTemplates: [],
       }),
 
     clearError: () => set({ error: null }),
@@ -694,12 +503,10 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 export const useFormatTemplateList = () => useTemplateStore((state) => state.formatTemplates);
 export const useInferenceTemplateList = () => useTemplateStore((state) => state.inferenceTemplates);
 export const usePromptTemplateList = () => useTemplateStore((state) => state.promptTemplates);
-export const useChatTemplateList = () => useTemplateStore((state) => state.chatTemplates);
 
 export const useFormatTemplate = (id: string) => useTemplateStore((state) => state.formatTemplates.find((template) => template.id === id));
 export const useInferenceTemplate = (id: string) => useTemplateStore((state) => state.inferenceTemplates.find((template) => template.id === id));
 export const usePromptTemplate = (id: string) => useTemplateStore((state) => state.promptTemplates.find((template) => template.id === id));
-export const useChatTemplate = (id: string) => useTemplateStore((state) => state.chatTemplates.find((template) => template.id === id));
 export const useTemplateActions = () => useTemplateStore((state) => state.actions);
 
 export const useTemplateError = () => useTemplateStore((state) => state.error);

@@ -13,7 +13,7 @@ interface CharacterCardProps {
 
 export function CharacterCard({ model, cardSize, onEdit, onDelete }: CharacterCardProps) {
   // Get the avatar URL from settings or custom fields if available
-  const avatarUrl = (model.settings?.avatar_url as string) || (model.custom?.avatar_url as string) || "/default-avatar.png";
+  const avatarUrl = (model?.avatar_path as string) || "/default-avatar.png";
 
   // Get the author from settings or custom fields
   const author = (model.settings?.author as string) || (model.custom?.author as string) || "Unknown";

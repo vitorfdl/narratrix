@@ -13,8 +13,8 @@ export const ModelSchema = z.object({
   config: z.record(z.string(), z.any()),
   max_concurrency: z.number().min(1).max(10).default(1),
   format_template_id: z.string().optional(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  created_at: z.date(),
+  updated_at: z.date(),
 });
 
 export type Model = z.infer<typeof ModelSchema>;

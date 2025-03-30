@@ -4,7 +4,7 @@ import { EyeOffIcon, Grip, PinOffIcon } from "lucide-react";
 
 export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, buttons = [], dragHandleClassName }) => {
   return (
-    <div className="flex flex-col bg-background border overflow-hidden h-full w-full" id={id}>
+    <div className="flex flex-col bg-background border overflow-hidden rounded-lg h-full w-full" id={id}>
       {/* Title bar */}
       <div className="flex items-center justify-between px-3 py-0.5 bg-card border-b">
         <div className={`flex items-center gap-2 cursor-grab active:cursor-grabbing w-full ${dragHandleClassName || ""}`}>

@@ -44,18 +44,28 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     onComplete: (response, requestId) => {
       // Only process if it's our test request
       if (requestId === testRequestId) {
-        console.log("Test completed successfully:", requestId);
-        setTestResult({
-          success: true,
-          message: "Connection successful",
-        });
+        console.log(`Test complete - Request ${requestId}:`, response);
+
+        // Only process once and immediately clear the request ID
+        if (response.result?.text) {
+          setTestResult({
+            success: true,
+            message: "Connection successful",
+          });
+        } else {
+          setTestResult({
+            success: false,
+            message: "Connection test returned empty response",
+          });
+        }
         setTestRequestId(null);
       }
     },
     onError: (error, requestId) => {
       // Only process if it's our test request
       if (requestId === testRequestId) {
-        console.log("Test failed:", requestId, error);
+        console.log(`Test failed - Request ${requestId}:`, error);
+
         setTestResult({
           success: false,
           message: `Connection failed: ${error}`,
@@ -65,8 +75,8 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     },
   });
 
-  // Show active test request state
-  const testRequestStatus = testRequestId ? requests[testRequestId]?.status : null;
+  // Get status for the current test request
+  const testRequestStatus = testRequestId && requests[testRequestId] ? requests[testRequestId].status : null;
 
   // Fetch manifests on component mount
   useEffect(() => {
@@ -293,18 +303,38 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     }
 
     // Cancel any existing test request
-    if (testRequestId) {
+    if (testRequestId && requests[testRequestId]) {
       console.log("Cancelling previous test request:", testRequestId);
       await cancelRequest(testRequestId);
       setTestRequestId(null);
     }
 
-    setTestResult(null);
+    // Reset test result and show connecting state
+    setTestResult({
+      success: false,
+      message: "Connecting...",
+    });
 
     try {
       // Extract config fields from form values
       const configFields: Record<string, any> = {};
       const formValues = form.getValues();
+
+      // Validate required fields are filled before testing
+      const missingRequiredFields = selectedManifest.fields
+        .filter((field) => field.required)
+        .some((field) => {
+          const value = formValues[field.key];
+          return value === undefined || value === null || value === "";
+        });
+
+      if (missingRequiredFields) {
+        setTestResult({
+          success: false,
+          message: "Please fill all required fields before testing",
+        });
+        return;
+      }
 
       for (const field of selectedManifest.fields) {
         if (formValues[field.key] !== undefined) {
@@ -319,25 +349,26 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
       // Create temporary model specs for testing
       const modelSpecs = ModelSpecsSchema.parse({
-        id: model?.id || "temp-test-model",
+        id: model?.id || `temp-test-model-${Date.now()}`,
         model_type: selectedType,
         config: configFields,
         max_concurrent_requests: 1,
         engine: selectedManifest.engine,
       });
 
-      // Simple test message to verify connection
-      const requestId = await runInference(
-        [{ role: "user", text: "This is a connection test" }],
+      // Simple test message with unique timestamp to verify connection
+      const requestId = await runInference({
+        messages: [{ role: "user", text: `Test connection - ${Date.now()}` }],
         modelSpecs,
-        "You are a helpful assistant. Reply with 'Connection successful' to confirm the connection works.",
-        {},
-        false,
-      );
+        systemPrompt: "You are a helpful assistant. Reply with 'Connection successful' to confirm the connection works.",
+        parameters: {},
+        stream: false,
+      });
 
       // Store the request ID for tracking
       if (requestId) {
         setTestRequestId(requestId);
+        console.log(`Test connection initiated with request ID: ${requestId}`);
       } else {
         console.error("Failed to get request ID for test");
         setTestResult({

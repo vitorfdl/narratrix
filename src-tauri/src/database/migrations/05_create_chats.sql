@@ -29,14 +29,13 @@ CREATE TABLE IF NOT EXISTS chat_template (
     id TEXT PRIMARY KEY,
     profile_id TEXT NOT NULL,
     name TEXT NOT NULL,
-    agent_model_id TEXT, -- foreign key to models table
-    character_model_id TEXT, -- foreign key to models table
+    model_id TEXT, -- foreign key to models table
+    custom_prompts TEXT, -- JSON string for custom prompts [{ [key: string]: any }]
     config TEXT NOT NULL, -- JSON string for configuration { [key: string]: any }
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE,
-    FOREIGN KEY (agent_model_id) REFERENCES models(id) ON DELETE SET NULL,
-    FOREIGN KEY (character_model_id) REFERENCES models(id) ON DELETE SET NULL
+    FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE SET NULL
 ); 
 
 -- Index on profile_id for efficient lookups of templates by profile
