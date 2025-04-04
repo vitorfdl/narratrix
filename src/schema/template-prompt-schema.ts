@@ -11,6 +11,16 @@ const SYSTEM_PROMPT_TYPES = [
   "custom-field",
 ] as const;
 
+export const SYSTEM_PROMPT_DEFAULT_CONTENT: Record<SystemPromptType, string> = {
+  context: "You are a helpful assistant that can answer questions and help with tasks.",
+  "chapter-context": "# Scenario<br>{{chapter.title}}: {{chapter.scenario}}<br><br># Instructions<br>{{chapter.instructions}}",
+  "character-context": "# Character<br>{{character.name}}: {{character.personality}}",
+  "user-context": "# User<br>{{user.name}}: {{user.description}}",
+  "character-memory": "# Character Memory<br>{{character.name}}: {{character.memory}}",
+  "user-memory": "# User Memory<br>{{user.name}}: {{user.memory}}",
+  "custom-field": "",
+};
+
 const systemPromptTypeEnum = z.enum(SYSTEM_PROMPT_TYPES);
 
 const systemPromptSectionSchema = z.object({

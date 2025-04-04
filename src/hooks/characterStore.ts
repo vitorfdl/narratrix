@@ -158,7 +158,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
           console.error("Error fetching characters:", e);
           throw new Error(`Failed to fetch characters: ${e.message}`);
         });
-        console.log("Characters from API:", characters);
         set({ characters, isLoading: false });
       } catch (error) {
         set({

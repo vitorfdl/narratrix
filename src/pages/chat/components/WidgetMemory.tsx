@@ -1,18 +1,11 @@
 import { motion } from "framer-motion";
 import { Brain, Clock, Construction } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../../../components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card";
 
 const WidgetMemory = () => {
   return (
-    <Card className="w-full border border-border bg-card/50 backdrop-blur-sm">
+    <Card className="w-full border border-border bg-transparent border-none backdrop-blur-sm">
       <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
           <Construction className="h-5 w-5 text-primary" />
@@ -49,8 +42,7 @@ const WidgetMemory = () => {
           <div className="text-center space-y-2 max-w-md">
             <h3 className="text-lg font-medium">Memory Management Coming Soon</h3>
             <p className="text-muted-foreground text-sm">
-              We're working on an intelligent memory system that will help your AI assistant
-              remember important details from your conversations.
+              We're working on an intelligent memory system that will help your AI assistant remember important details from your conversations.
             </p>
           </div>
         </div>

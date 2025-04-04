@@ -1,18 +1,11 @@
 import { motion } from "framer-motion";
 import { Clock, Construction, ScrollText } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../../../components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card";
 
 const WidgetScript = () => {
   return (
-    <Card className="w-full border border-border bg-card/50 backdrop-blur-sm">
+    <Card className="w-full border border-border bg-transparent border-none backdrop-blur-sm">
       <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
           <Construction className="h-5 w-5 text-primary" />
@@ -50,8 +43,7 @@ const WidgetScript = () => {
           <div className="text-center space-y-2 max-w-md">
             <h3 className="text-lg font-medium">Script Management Coming Soon</h3>
             <p className="text-muted-foreground text-sm">
-              We're crafting powerful script tools to help you write, organize, and structure your
-              narrative content with ease.
+              We're crafting powerful script tools to help you write, organize, and structure your narrative content with ease.
             </p>
           </div>
         </div>

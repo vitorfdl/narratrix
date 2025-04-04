@@ -77,6 +77,11 @@ const SuggestionList = forwardRef<
     },
   }));
 
+  // If there are no items, don't render anything
+  if (items.length === 0) {
+    return null;
+  }
+
   return (
     <div
       ref={containerRef}
@@ -86,7 +91,6 @@ const SuggestionList = forwardRef<
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
       }}
     >
-      {items.length === 0 && <div className="px-2 py-1 text-xs text-muted-foreground text-center">No suggestions available</div>}
       {items.map((item, index) => (
         <div
           ref={(el) => setItemRef(el, index)}
@@ -112,6 +116,20 @@ export const BracketSuggestions = (props: {
   Extension.create({
     name: "bracketSuggestions",
 
+    // Add a state variable
+    addGlobalAttributes() {
+      return [
+        {
+          types: ["doc"],
+          attributes: {
+            isSuggestionActive: {
+              default: false,
+            },
+          },
+        },
+      ];
+    },
+
     addProseMirrorPlugins() {
       const editor = this.editor;
 
@@ -130,6 +148,11 @@ export const BracketSuggestions = (props: {
               })
               .insertContent(`{{${props.title}}}`)
               .run();
+
+            // Set suggestion to inactive after selection
+            editor.extensionStorage.bracketSuggestions = {
+              isActive: false,
+            };
           },
           items: ({ query }) => {
             // Filter suggestions based on query
@@ -142,6 +165,11 @@ export const BracketSuggestions = (props: {
 
             return {
               onStart: (props) => {
+                // Set suggestion to active
+                editor.extensionStorage.bracketSuggestions = {
+                  isActive: true,
+                };
+
                 element = document.createElement("div");
                 element.style.display = "contents";
                 document.body.appendChild(element);
@@ -156,7 +184,7 @@ export const BracketSuggestions = (props: {
                     getReferenceClientRect: () => props.clientRect?.() as DOMRect,
                     appendTo: () => document.body,
                     content: component.element,
-                    showOnCreate: true,
+                    showOnCreate: props.items.length > 0,
                     interactive: true,
                     trigger: "manual",
                     placement: "bottom-start",
@@ -178,6 +206,13 @@ export const BracketSuggestions = (props: {
                   popup.setProps({
                     getReferenceClientRect: () => props.clientRect?.() as DOMRect,
                   });
+
+                  // Hide popup when there are no items
+                  if (props.items.length === 0) {
+                    popup.hide();
+                  } else if (!popup.state.isVisible) {
+                    popup.show();
+                  }
                 }
               },
               onKeyDown(props) {
@@ -191,6 +226,11 @@ export const BracketSuggestions = (props: {
                 return ref?.onKeyDown?.(props) || false;
               },
               onExit() {
+                // Set suggestion to inactive when exiting
+                editor.extensionStorage.bracketSuggestions = {
+                  isActive: false,
+                };
+
                 if (popup) {
                   popup.destroy();
                   popup = undefined;

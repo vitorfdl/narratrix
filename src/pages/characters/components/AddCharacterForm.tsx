@@ -1,5 +1,4 @@
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
-import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,6 +10,7 @@ import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacterActions } from "@/hooks/characterStore";
 import { CharacterUnion } from "@/schema/characters-schema";
+import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -48,20 +48,7 @@ function CharacterFormContent({
           label="Personality"
           initialValue={personality}
           onChange={onPersonalityChange}
-          suggestions={[
-            {
-              title: "name",
-              description: "The name of the character",
-            },
-            {
-              title: "character.name",
-              description: "The name of the character",
-            },
-            {
-              title: "user.name",
-              description: "The name of the user",
-            },
-          ]}
+          suggestions={promptReplacementSuggestionList.slice(0, 4)}
           placeholder="Describe the character {{character.name}} personality... Can be captured in the Formatting Template for System Prompts."
         />
       </div>
@@ -83,20 +70,7 @@ function CharacterFormContent({
                 editable={true}
                 initialValue={systemPrompt}
                 onChange={onSystemPromptChange}
-                suggestions={[
-                  {
-                    title: "name",
-                    description: "The name of the character",
-                  },
-                  {
-                    title: "character.name",
-                    description: "The name of the character",
-                  },
-                  {
-                    title: "user.name",
-                    description: "The name of the user",
-                  },
-                ]}
+                suggestions={promptReplacementSuggestionList}
                 disableRichText={true}
                 placeholder="[Keep it blank to not override the default system prompt]"
               />
@@ -140,20 +114,25 @@ function AgentFormContent({
 }) {
   return (
     <>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 mb-2">
         <Checkbox id="preserveLastResponse" checked={preserveLastResponse} onCheckedChange={onPreserveLastResponseChange} />
         <Label htmlFor="preserveLastResponse" className="text-yellow-400">
           Preserve Last Response
         </Label>
       </div>
 
-      <ResizableTextarea
-        label="System Prompt"
-        placeholder="Enter the system prompt..."
-        required
-        value={systemPrompt}
-        onChange={(e) => onSystemPromptChange(e.target.value)}
-      />
+      <div className="space-y-2">
+        <TipTapTextArea
+          label="System Prompt"
+          placeholder="Enter the system prompt..."
+          initialValue={systemPrompt}
+          editable={true}
+          disableRichText={true}
+          className="max-h-48 min-h-24 overflow-y-auto"
+          onChange={(e) => onSystemPromptChange(e)}
+          suggestions={promptReplacementSuggestionList}
+        />
+      </div>
     </>
   );
 }
@@ -171,15 +150,15 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
   const [version, setVersion] = useState(initialData?.version || "1.0.0");
   const [avatarImage, setAvatarImage] = useState<string | null>(initialData?.avatar_path || null);
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
-  const [personality, setPersonality] = useState(initialData?.type === "character" ? (initialData?.settings?.personality as string) || "" : "");
-  const [systemPrompt, setSystemPrompt] = useState(initialData?.system_override || (initialData?.settings?.system_prompt as string) || "");
+  const [personality, setPersonality] = useState(initialData?.type === "character" ? (initialData?.custom?.personality as string) || "" : "");
+  const [systemPrompt, setSystemPrompt] = useState(initialData?.system_override || "");
   const [preserveLastResponse, setPreserveLastResponse] = useState(
-    initialData?.type === "agent" ? (initialData?.settings?.preserve_last_response as boolean) || false : false,
+    initialData?.type === "agent" ? (initialData?.custom?.preserve_last_response as boolean) || false : false,
   );
   const [expressions, setExpressions] = useState(initialData?.type === "character" ? initialData.expressions || [] : []);
 
   // Set author from profile settings or use a default
-  const [author, setAuthor] = useState((initialData?.settings?.author as string) || (initialData?.custom?.author as string) || currentProfile?.name);
+  const [author, setAuthor] = useState((initialData?.settings?.author as string) || currentProfile?.name);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,12 +169,12 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         author,
       };
 
+      const custom: Record<string, unknown> = {};
       // Add type-specific settings
       if (type === "character") {
-        settings.personality = personality;
-        settings.system_prompt = systemPrompt;
+        custom.personality = personality;
       } else {
-        settings.preserve_last_response = preserveLastResponse;
+        custom.preserve_last_response = preserveLastResponse;
       }
 
       const formData = {
@@ -209,7 +188,7 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         system_override: systemPrompt || null,
         external_update_link: null,
         auto_update: true,
-        custom: {},
+        custom,
         ...(type === "character"
           ? {
               expressions: expressions.length > 0 ? expressions : null,

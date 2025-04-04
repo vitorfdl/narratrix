@@ -114,9 +114,9 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   };
 
   // Handler for creating a new template
-  const handleNewTemplate = async () => {
+  const handleNewTemplate = async (name: string) => {
     const newTemplate = await createFormatTemplate({
-      name: "New Format Template",
+      name: name,
       profile_id: profile?.currentProfile?.id || "",
       inference_template_id: null,
       prompt_template_id: null,
@@ -143,11 +143,11 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   };
 
   // Handlers for editing name, importing, and exporting
-  const handleEditName = async (templateId: string, newName: string) => {
+  const handleEditName = async (templateId: string, name: string) => {
     if (!currentTemplate) {
       return;
     }
-    await updateFormatTemplate(templateId, { name: newName });
+    await updateFormatTemplate(templateId, { name: name });
   };
 
   const handleImport = () => {
@@ -169,9 +169,9 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         onTemplateSelect={handleTemplateSelect}
         onDelete={() => formatTemplateID && handleDeleteTemplate(formatTemplateID)}
         onNewTemplate={handleNewTemplate}
-        onEditName={() => formatTemplateID && handleEditName(formatTemplateID, "Renamed Template")}
+        onEditName={handleEditName}
         onImport={handleImport}
-        onExport={() => formatTemplateID && handleExport(formatTemplateID)}
+        onExport={handleExport}
       />
     ),
     [formatTemplateID, formatTemplates],

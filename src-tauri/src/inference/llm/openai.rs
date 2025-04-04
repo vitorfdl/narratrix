@@ -194,6 +194,17 @@ pub async fn converse_stream(
             if let Some(content) = &choice.delta.content {
                 if !content.is_empty() {
                     callback(content.clone())?;
+
+                    // Add a small delay between tokens
+                    let delay_ms = request
+                        .parameters
+                        .get("stream_delay_ms")
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(0); // Default 5ms delay if not specified
+
+                    if delay_ms > 0 {
+                        tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                    }
                 }
             }
         }

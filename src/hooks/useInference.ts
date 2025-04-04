@@ -44,8 +44,8 @@ export function useInference(options: UseInferenceOptions = {}) {
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
-  // Track processed responses to avoid duplicate callbacks
-  const processedResponses = useRef(new Set<string>());
+  // Track the last seen stream chunk for each request to avoid duplicates
+  const lastStreamChunks = useRef<Record<string, string>>({});
 
   // Initialize global listener once
   useEffect(() => {
@@ -83,50 +83,49 @@ export function useInference(options: UseInferenceOptions = {}) {
     const handleResponse = (response: InferenceResponse) => {
       const requestId = response.request_id;
 
-      // Create a unique key to track processed responses
-      const responseKey = `${requestId}:${response.status}:${Date.now()}`;
-
-      // Skip if we've already processed this exact response
-      if (processedResponses.current.has(responseKey)) {
+      // Skip if this request isn't being tracked by this hook instance
+      if (!requests[requestId]) {
         return;
       }
 
+      // For streaming responses, detect duplicates using the text content
+      if (response.status === "streaming" && response.result?.text) {
+        // Create a unique signature for this stream chunk
+        const chunkText = response.result.text;
+        const chunkSignature = `${requestId}:${chunkText}`;
+
+        // If we've seen this exact chunk before, skip it
+        if (lastStreamChunks.current[requestId] === chunkSignature) {
+          return;
+        }
+
+        // Update the last seen chunk for this request
+        lastStreamChunks.current[requestId] = chunkSignature;
+
+        // Call the stream callback
+        optionsRef.current.onStream?.(response, requestId);
+      }
+      // For completion, error, or cancellation - always process
+      else if (response.status === "completed") {
+        // Clean up the last chunks record for this request
+        delete lastStreamChunks.current[requestId];
+        optionsRef.current.onComplete?.(response, requestId);
+      } else if (response.status === "error" || response.status === "cancelled") {
+        // Clean up the last chunks record for this request
+        delete lastStreamChunks.current[requestId];
+        optionsRef.current.onError?.(response.error || "Unknown error", requestId);
+      }
+
+      // Update the request state regardless of the event type
       setRequests((currentRequests) => {
-        // Skip if this request isn't being tracked by this hook instance
-        if (!currentRequests[requestId]) {
-          return currentRequests;
-        }
-
-        // Create new state for this request
-        const updatedRequest = {
-          ...currentRequests[requestId],
-          status: response.status as InferenceStatus,
-          response: response,
-          error: response.error || null,
-        };
-
-        // Call appropriate callback based on status
-        if (response.status === "streaming") {
-          optionsRef.current.onStream?.(response, requestId);
-        } else if (response.status === "completed") {
-          optionsRef.current.onComplete?.(response, requestId);
-        } else if (response.status === "error" || response.status === "cancelled") {
-          optionsRef.current.onError?.(response.error || "Unknown error", requestId);
-        }
-
-        // Track this response as processed
-        processedResponses.current.add(responseKey);
-
-        // Clean up old processed responses (keep last 100)
-        if (processedResponses.current.size > 100) {
-          const oldKeys = Array.from(processedResponses.current).slice(0, 50);
-          oldKeys.forEach((key) => processedResponses.current.delete(key));
-        }
-
-        // Return updated requests state
         return {
           ...currentRequests,
-          [requestId]: updatedRequest,
+          [requestId]: {
+            ...currentRequests[requestId],
+            status: response.status as InferenceStatus,
+            response: response,
+            error: response.error || null,
+          },
         };
       });
     };
@@ -138,7 +137,7 @@ export function useInference(options: UseInferenceOptions = {}) {
     return () => {
       globalListeners.delete(handleResponse);
     };
-  }, []);
+  }, [requests]);
 
   // Run inference and track the request
   const runInference = useCallback(async (params: InferenceParams) => {
@@ -156,6 +155,9 @@ export function useInference(options: UseInferenceOptions = {}) {
         },
         modelSpecs,
       );
+
+      // Clear any existing tracking for this request ID
+      delete lastStreamChunks.current[requestId];
 
       // Add to local tracking state
       setRequests((current) => ({
@@ -190,6 +192,9 @@ export function useInference(options: UseInferenceOptions = {}) {
         const success = await cancelInferenceRequest(request.modelId, requestId);
 
         if (success) {
+          // Clean up tracking for this request
+          delete lastStreamChunks.current[requestId];
+
           setRequests((current) => ({
             ...current,
             [requestId]: {
@@ -223,6 +228,8 @@ export function useInference(options: UseInferenceOptions = {}) {
             now - request.timestamp > 10 * 60 * 1000
           ) {
             delete updated[id];
+            // Also clean up any stream tracking for this request
+            delete lastStreamChunks.current[id];
             changed = true;
           }
         });

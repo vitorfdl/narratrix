@@ -125,7 +125,7 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
               <DropdownMenuTrigger className="focus:outline-none">
                 <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="start">
                 <DropdownMenuItem onClick={() => onEdit?.(model)} className="cursor-pointer">
                   <EditIcon className="mr-2 h-4 w-4" />
                   Edit
@@ -138,7 +138,7 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
             </DropdownMenu>
           </div>
         </CardHeader>
-        <CardContent className="pt-2 flex-grow">
+        <CardContent className="px-4 py-2 flex-grow">
           <div className="text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <InfoIcon className="h-3 w-3" />

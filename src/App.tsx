@@ -31,7 +31,7 @@ const App: React.FC = () => {
       <ProfileProvider>
         <InferenceProvider>
           <AppContent />
-          <Toaster position="top-right" />
+          <Toaster richColors closeButton position="bottom-right" />
         </InferenceProvider>
       </ProfileProvider>
     </ThemeProvider>

@@ -1,14 +1,15 @@
 import { cn } from "@/lib/utils";
 import { Extension } from "@tiptap/core";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { BubbleMenu, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { Bold, Italic, Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
 import { BracketHighlight } from "./bracket-highlight";
 import { BracketSuggestions } from "./bracket-suggestions";
 
-interface SuggestionItem {
+export interface SuggestionItem {
   title: string;
   description?: string;
 }
@@ -45,9 +46,16 @@ export function TipTapRender({
     addKeyboardShortcuts() {
       const shortcuts: Record<string, any> = {};
 
-      // Default shortcuts for different send commands
       if (sendShortcut === "Enter") {
         shortcuts.Enter = () => {
+          // Check if suggestions are active
+          const isSuggestionsActive = this.editor.extensionStorage.bracketSuggestions?.isActive;
+
+          if (isSuggestionsActive) {
+            // If suggestions are active, don't handle Enter here
+            return false;
+          }
+
           if (onSubmit) {
             const text = this.editor.getText({
               blockSeparator: "<br>",
@@ -70,7 +78,7 @@ export function TipTapRender({
             () => commands.splitBlock(),
           ]);
         };
-      } else {
+      } else if (sendShortcut) {
         // For other shortcuts, handle them specifically
         const shortcutKey =
           sendShortcut === "Ctrl+Enter"
@@ -93,6 +101,20 @@ export function TipTapRender({
             return true;
           };
         }
+      }
+
+      if (!sendShortcut || sendShortcut !== "Enter") {
+        shortcuts.Enter = () => {
+          // Check if suggestions are active
+          const isSuggestionsActive = this.editor.extensionStorage.bracketSuggestions?.isActive;
+
+          if (isSuggestionsActive) {
+            // If suggestions are active, don't handle Enter here
+            return false;
+          }
+
+          return this.editor.commands.first(({ commands }) => [() => commands.setHardBreak()]);
+        };
       }
 
       return shortcuts;
@@ -135,21 +157,26 @@ export function TipTapRender({
               transformCopiedText: true,
               bulletListMarker: "-",
               tightLists: true,
+              breaks: true,
+              linkify: true,
             }),
           ]
         : []),
       // Add keyboard shortcut handler if onSubmit is provided
-      ...(onSubmit ? [KeyboardShortcutHandler] : []),
+      KeyboardShortcutHandler,
     ],
     content: initialValue?.replace(/\n/g, "<br>"),
     editable,
     onUpdate: ({ editor }) => {
       if (onChange && !isUpdatingRef.current) {
-        const text = editor.getText({
-          blockSeparator: "<br>",
-        });
-        // onChange(editor.storage.markdown?.getMarkdown() || text);
-        onChange(text);
+        if (disableRichText) {
+          const text = editor.getText({
+            blockSeparator: "<br>",
+          });
+          onChange(text);
+        } else {
+          onChange(editor.storage.markdown!.getMarkdown());
+        }
       }
     },
     editorProps: {
@@ -157,7 +184,7 @@ export function TipTapRender({
         class: cn(
           "prose dark:prose-invert prose-li:p-0 prose-p:m-0",
           "prose-h1:text-lg prose-h1:m-0 prose-h2:text-base prose-h2:m-0 prose-h3:text-sm prose-headings:m-0",
-          "font-mono",
+          "font-base prose:text-sm",
           "outline-none",
           "h-full w-full overflow-auto",
           className,
@@ -167,7 +194,7 @@ export function TipTapRender({
   });
 
   useEffect(() => {
-    if (!editable && editor && editor.getText() !== initialValue) {
+    if (editor && editor.getText() !== initialValue) {
       isUpdatingRef.current = true;
       editor.commands.setContent(initialValue);
       // Reset the flag after the update
@@ -181,10 +208,82 @@ export function TipTapRender({
     if (editor && editor.isEditable !== editable) {
       editor.setEditable(editable);
     }
-  }, [editor, editable]);
+  }, [editor, editable, disableRichText]);
 
   return (
     <div className="h-full w-full overflow-hidden">
+      {editor && (
+        <BubbleMenu className="bubble-menu" tippyOptions={{ duration: 100 }} editor={editor}>
+          <button
+            onClick={() => {
+              if (disableRichText) {
+                const selection = editor.state.selection;
+                const content = selection.empty ? "" : editor.state.doc.textBetween(selection.from, selection.to, " ");
+
+                if (selection.empty) {
+                  editor.chain().focus().insertContent("****").run();
+                  editor.commands.setTextSelection({
+                    from: selection.from + 2,
+                    to: selection.from + 2,
+                  });
+                } else {
+                  editor.chain().focus().insertContent(`**${content}**`).run();
+                }
+              } else {
+                editor.chain().focus().toggleBold().run();
+              }
+            }}
+            className={editor.isActive("bold") ? "is-active" : ""}
+            title="Bold"
+          >
+            <Bold size={14} />
+          </button>
+          <button
+            onClick={() => {
+              if (disableRichText) {
+                const selection = editor.state.selection;
+                const content = selection.empty ? "" : editor.state.doc.textBetween(selection.from, selection.to, " ");
+
+                if (selection.empty) {
+                  editor.chain().focus().insertContent("**").run();
+                  editor.commands.setTextSelection({
+                    from: selection.from + 1,
+                    to: selection.from + 1,
+                  });
+                } else {
+                  editor.chain().focus().insertContent(`*${content}*`).run();
+                }
+              } else {
+                editor.chain().focus().toggleItalic().run();
+              }
+            }}
+            className={editor.isActive("italic") ? "is-active" : ""}
+            title="Italic"
+          >
+            <Italic size={14} />
+          </button>
+          <button
+            onClick={() => {
+              if (disableRichText) {
+                const selection = editor.state.selection;
+
+                if (!selection.empty) {
+                  // Delete the selected text
+                  editor.chain().focus().deleteSelection().run();
+                }
+              } else {
+                // In rich text mode, we'll also just delete the selection instead of toggle strike
+                editor.chain().focus().deleteSelection().run();
+              }
+            }}
+            className={editor.isActive("strike") ? "is-active" : ""}
+            title="Remove selected text"
+          >
+            <Trash2 size={14} />
+          </button>
+        </BubbleMenu>
+      )}
+
       <EditorContent editor={editor} spellCheck={false} className="h-full" />
     </div>
   );

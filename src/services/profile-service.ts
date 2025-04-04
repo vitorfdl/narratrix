@@ -8,6 +8,7 @@ import {
   type Profile,
   type ProfileResponse,
   ProfileSchema,
+  updateProfileSchema,
 } from "../schema/profiles-schema.ts";
 import { uuidUtils } from "../schema/utils-schema.ts";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database.ts";
@@ -94,7 +95,7 @@ export async function getProfileById(id: string): Promise<ProfileResponse | null
 
 export async function updateProfile(id: string, updateData: Partial<Profile>): Promise<ProfileResponse> {
   const validId = uuidUtils.uuid().parse(id);
-  const update = ProfileSchema.parse(updateData);
+  const update = updateProfileSchema.parse(updateData);
 
   // First get the current profile to merge settings
   const currentProfile = await getProfileById(validId);
@@ -183,6 +184,8 @@ export async function loginProfile(loginData: LoginPasswordParams): Promise<Prof
 
 export async function updateProfileSettings(id: string, settings: AppSettings): Promise<ProfileResponse> {
   const validId = uuidUtils.uuid().parse(id);
+
+  console.log("Updating profile settings for", validId, settings);
 
   // First get the current profile to ensure it exists
   const currentProfile = await getProfileById(validId);

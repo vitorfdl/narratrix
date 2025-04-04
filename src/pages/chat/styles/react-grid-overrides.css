@@ -5,3 +5,13 @@
 .react-draggable-dragging .cursor-grab {
   cursor: grabbing !important;
 }
+
+/* Resize handle styling - hide the default handle */
+.react-resizable-handle {
+  @apply opacity-0;
+}
+
+.react-resizable-handle.react-resizable-handle-se {
+  cursor: se-resize;
+}
+

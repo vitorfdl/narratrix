@@ -116,13 +116,10 @@ const ProfilePicker: React.FC = () => {
               >
                 <CardContent className="flex flex-col items-center p-3 pt-3">
                   <Avatar className="w-24 h-24 mb-3 rounded-full">
-                    {profile.avatar_path ? (
-                      <AvatarImage src={profile.avatar_path} alt={profile.name} />
-                    ) : (
-                      <AvatarFallback>
-                        <UserCircleIcon className="w-full h-full text-muted-foreground" />
-                      </AvatarFallback>
-                    )}
+                    <AvatarImage src={profile.avatar_path} alt={profile.name} />
+                    <AvatarFallback>
+                      <UserCircleIcon className="w-full h-full text-muted-foreground" />
+                    </AvatarFallback>
                   </Avatar>
 
                   <span className="text-foreground text-center break-words w-full">{profile.name}</span>

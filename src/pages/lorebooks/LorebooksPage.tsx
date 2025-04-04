@@ -11,7 +11,6 @@ export default function LexicalTestPage() {
 
   const handleChange = (newContent: string) => {
     setContent(newContent);
-    // console.log("Content updated:", newContent);
   };
 
   const handleReset = () => {

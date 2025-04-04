@@ -29,6 +29,13 @@ export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, bu
 
       {/* Content */}
       <div className="p-1 overflow-auto h-full custom-scrollbar">{children}</div>
+
+      {/* Custom resize indicator */}
+      <div className="absolute bottom-0 right-0 w-4 h-4 pointer-events-none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 14L18 14L18 18L14 18L14 22L22 22L22 14Z" className="fill-muted-foreground" />
+        </svg>
+      </div>
     </div>
   );
 };

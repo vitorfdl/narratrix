@@ -4,11 +4,12 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useChatActions, useCurrentChatMessages, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatMessages, useCurrentChatTemplateID, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import {
   BookmarkMinus,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Flag,
@@ -17,20 +18,218 @@ import {
   Loader2,
   MoreHorizontal,
   Pencil,
+  RefreshCw,
   Scissors,
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useCharacterStore } from "@/hooks/characterStore";
+import { useChatTemplate } from "@/hooks/chatTemplateStore";
+import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
+import { AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 
-// Define context cut number
-const contextCutNumber = 500; // Example value - adjust as needed
+// Extracted MessageAvatar component
+const MessageAvatar = ({ avatarPath, messageType, isStreaming }: { avatarPath?: string; messageType: string; isStreaming: boolean }) => (
+  <div className="flex-shrink-0 select-none">
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="transition-transform rounded-lg" title="View Full Size Avatar">
+          <Avatar className={cn("w-24 h-24 ring-2 ring-border overflow-hidden rounded-full hover:ring-primary", isStreaming && "ring-primary")}>
+            <AvatarImage src={avatarPath} alt={`${messageType} avatar`} className="hover:cursor-pointer" />
+            <AvatarFallback className="bg-secondary text-secondary-foreground">
+              <AvatarImage src="/avatars/default.jpg" alt={`Default ${messageType} avatar`} />
+            </AvatarFallback>
+          </Avatar>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl w-fit p-2">
+        {avatarPath && <img src={avatarPath} alt={`${messageType} avatar full size`} className="w-auto max-h-[80vh] object-contain rounded-lg" />}
+      </DialogContent>
+    </Dialog>
+  </div>
+);
+
+// Extracted MessageActions component
+const MessageActions = ({
+  messageId,
+  messageType,
+  isStreaming,
+  isLastMessage,
+  onEdit,
+  onRegenerateMessage,
+  onDeleteMessage,
+  onTranslate,
+  onCreateCheckpoint,
+  onGenerateImage,
+  onExcludeFromPrompt,
+}: {
+  messageId: string;
+  messageType: string;
+  isStreaming: boolean;
+  isLastMessage: boolean;
+  onEdit: (id: string) => void;
+  onRegenerateMessage: (id: string) => void;
+  onDeleteMessage: (id: string) => void;
+  onTranslate: (id: string) => void;
+  onCreateCheckpoint: (id: string) => void;
+  onGenerateImage: (id: string) => void;
+  onExcludeFromPrompt: (id: string) => void;
+}) => (
+  <div
+    className={cn(
+      "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1",
+      messageType === "user" ? "order-1" : "order-2",
+    )}
+  >
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-6 w-6 hover:bg-accent"
+      onClick={() => onEdit(messageId)}
+      title="Edit Message"
+      disabled={isStreaming}
+    >
+      <Pencil className="w-4 h-4" />
+    </Button>
+    {messageType === "character" && (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 hover:bg-accent"
+        onClick={() => onRegenerateMessage(messageId)}
+        title="Regenerate Message"
+        disabled={isStreaming || !isLastMessage}
+      >
+        <RefreshCw className={cn("w-4 h-4", isStreaming && "animate-spin")} />
+      </Button>
+    )}
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
+      onClick={() => onDeleteMessage(messageId)}
+      disabled={isStreaming}
+      title="Delete Message"
+    >
+      <Trash2 className="w-4 h-4" />
+    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" title="More Options">
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onClick={() => onTranslate(messageId)}>
+          <Languages className="w-4 h-4 mr-2" />
+          Translate
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onCreateCheckpoint(messageId)}>
+          <Flag className="w-4 h-4 mr-2" />
+          Create Checkpoint
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onGenerateImage(messageId)}>
+          <Image className="w-4 h-4 mr-2" />
+          Generate Image
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onExcludeFromPrompt(messageId)}>
+          <BookmarkMinus className="w-4 h-4 mr-2" />
+          Exclude from Prompt
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
+);
+
+// Extracted VersionControls component
+const VersionControls = ({
+  messageId,
+  messageType,
+  currentIndex,
+  totalVersions,
+  onSwipe,
+  isLastMessage,
+}: {
+  messageId: string;
+  messageType: string;
+  currentIndex: number;
+  totalVersions: number;
+  isLastMessage: boolean;
+  onSwipe: (id: string, direction: "left" | "right") => void;
+}) => (
+  <div className={cn("flex items-center gap-1", messageType === "character" ? "order-1" : "order-2")}>
+    <span className="text-xs text-muted-foreground ml-1">
+      {currentIndex + 1}/{totalVersions}
+    </span>
+    <Button
+      variant="ghost"
+      size="icon"
+      disabled={currentIndex === 0}
+      className={cn(
+        "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
+        currentIndex === 0 && "group-hover:opacity-40 disabled:opacity-0",
+      )}
+      onClick={() => onSwipe(messageId, "left")}
+      title="Previous Version"
+    >
+      <ChevronLeft className="w-4 h-4" />
+    </Button>
+    <Button
+      variant="ghost"
+      size="icon"
+      disabled={currentIndex === totalVersions - 1 && !isLastMessage}
+      className={cn(
+        "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
+        currentIndex === totalVersions - 1 && !isLastMessage && "group-hover:opacity-40 disabled:opacity-0",
+      )}
+      onClick={() => onSwipe(messageId, "right")}
+      title="Next Version"
+    >
+      <ChevronRight className="w-4 h-4" />
+    </Button>
+  </div>
+);
+
+// Extracted EditControls component
+const EditControls = ({ onCancel, onSave }: { onCancel: () => void; onSave: () => void }) => (
+  <div className="flex gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 ml-auto shadow-sm">
+    <Button variant="outline" size="sm" onClick={onCancel}>
+      <X className="!w-4 !h-4" />
+      Cancel
+    </Button>
+    <Button variant="default" size="sm" onClick={onSave}>
+      <Check className="!w-4 !h-4" />
+      Save
+    </Button>
+  </div>
+);
+
+// Extracted ContextCutDivider component
+const ContextCutDivider = () => (
+  <div className="flex items-center justify-center w-full my-4">
+    <div className="flex-grow border-t-2 border-dashed border-border" />
+    <div className="mx-4 text-muted-foreground flex items-center gap-2">
+      <Scissors className="w-4 h-4" />
+      Context Cut
+    </div>
+    <div className="flex-grow border-t-2 border-dashed border-border" />
+  </div>
+);
+
+// Extracted StreamingIndicator component
+const StreamingIndicator = () => (
+  <div className="absolute right-0 top-5 flex items-center gap-2 p-1 bg-background/80 backdrop-blur-sm rounded-md animate-pulse">
+    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+    <span className="text-xs text-primary font-medium">Thinking...</span>
+  </div>
+);
 
 const WidgetMessages: React.FC = () => {
+  const inferenceService = useInferenceServiceFromContext();
   const profile = useProfile();
   const avatar = profile.currentProfile?.avatar_path;
 
@@ -39,10 +238,19 @@ const WidgetMessages: React.FC = () => {
   const messages = useCurrentChatMessages();
   const { updateChatMessage, deleteChatMessage } = useChatActions();
 
-  const [contentIndices, setContentIndices] = useState<Record<string, number>>({});
   const [isEditingID, setIsEditingID] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
-  const [streamingMsgIds, setStreamingMsgIds] = useState<string[]>([]);
+  const [streamingMessages, setStreamingMessages] = useState<Record<string, boolean>>({});
+  const streamingCheckRef = useRef<number | null>(null);
+
+  // Refs for scroll management
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [userScrolled, setUserScrolled] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  const chatTemplateId = useCurrentChatTemplateID();
+  const chatTemplate = useChatTemplate(chatTemplateId || "");
 
   // Calculate total characters up to each message
   const messagesWithCharCount = messages.map((msg, index) => {
@@ -55,27 +263,39 @@ const WidgetMessages: React.FC = () => {
 
   // Find where to show the context cut line
   const contextCutIndex = messagesWithCharCount.findIndex((msg) => {
-    return msg.totalChars > contextCutNumber;
+    return chatTemplate?.config.max_tokens ? msg.totalChars / 3 > chatTemplate.config.max_tokens : false;
   });
 
   const handleSwipe = (messageId: string, direction: "left" | "right") => {
-    setContentIndices((prev) => {
-      const currentIndex = prev[messageId] || 0;
-      const message = messages.find((m) => m.id === messageId);
-      if (!message) {
-        return prev;
-      }
+    const message = messages.find((m) => m.id === messageId);
+    if (!message) {
+      return;
+    }
 
-      let newIndex = direction === "left" ? currentIndex - 1 : currentIndex + 1;
-      newIndex = Math.max(0, Math.min(newIndex, message.messages.length - 1));
+    const currentIndex = message.message_index;
+    const newIndex = direction === "left" ? currentIndex - 1 : currentIndex + 1;
 
-      return { ...prev, [messageId]: newIndex };
-    });
+    // If we're trying to access an index that doesn't exist yet (only possible when swiping right)
+    if (newIndex >= message.messages.length && direction === "right") {
+      // Schedule regeneration for the next render cycle
+      setTimeout(() => {
+        onRegenerateMessage(messageId, newIndex);
+      }, 0);
+      return;
+    }
+
+    const clampedIndex = Math.max(0, Math.min(newIndex, message.messages.length - 1));
+
+    // Only update if the index changed
+    if (clampedIndex !== currentIndex) {
+      updateChatMessage(messageId, {
+        message_index: clampedIndex,
+      });
+    }
   };
 
   const getCurrentContent = (message: ChatMessage) => {
-    const currentIndex = contentIndices[message.id] || 0;
-    return message.messages[currentIndex] || message.messages[0];
+    return message.messages[message.message_index] || "...";
   };
 
   const getAvatarForMessage = (message: ChatMessage): string | undefined => {
@@ -117,13 +337,11 @@ const WidgetMessages: React.FC = () => {
         return;
       }
 
-      const currentIndex = contentIndices[messageId] || 0;
       const updatedMessages = [...message.messages];
-      updatedMessages[currentIndex] = editedContent;
+      updatedMessages[message.message_index] = editedContent;
 
       await updateChatMessage(messageId, {
         messages: updatedMessages,
-        message_index: currentIndex,
       });
     } catch (error) {
       console.error("Failed to edit message:", error);
@@ -135,6 +353,51 @@ const WidgetMessages: React.FC = () => {
       await deleteChatMessage(messageId);
     } catch (error) {
       console.error("Failed to delete message:", error);
+    }
+  };
+
+  const onRegenerateMessage = async (messageId: string, targetIndex?: number) => {
+    try {
+      // Find the message to regenerate
+      const message = messages.find((m) => m.id === messageId);
+      if (!message || message.type !== "character" || !message.character_id) {
+        return;
+      }
+
+      // Get the character settings
+      const character = characters.find((c) => c.id === message.character_id);
+
+      if (!character) {
+        console.error("Character not found");
+        return;
+      }
+
+      // Mark this message as streaming
+      setStreamingMessages((prev) => ({ ...prev, [messageId]: true }));
+      console.log("Regenerating message", messageId, targetIndex);
+      // Use the inference service to regenerate the message
+      await inferenceService.regenerateMessage(messageId, {
+        characterId: message.character_id,
+        messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
+        onStreamingStateChange: (state) => {
+          // When streaming stops or errors out, remove from streaming messages
+          if (!state) {
+            setStreamingMessages((prev) => {
+              const newState = { ...prev };
+              delete newState[messageId];
+              return newState;
+            });
+          }
+        },
+      });
+    } catch (error) {
+      console.error("Failed to regenerate message:", error);
+      // Remove from streaming messages if there was an error
+      setStreamingMessages((prev) => {
+        const newState = { ...prev };
+        delete newState[messageId];
+        return newState;
+      });
     }
   };
 
@@ -157,217 +420,224 @@ const WidgetMessages: React.FC = () => {
     console.log("Translate", messageId);
   };
 
-  const isMessageStreaming = (messageId: string) => {
-    return streamingMsgIds.includes(messageId);
-  };
+  const isMessageStreaming = useCallback(
+    (messageId: string) => {
+      return !!streamingMessages[messageId];
+    },
+    [streamingMessages],
+  );
 
-  // Update the streaming status of messages when they change
+  // Sync streaming state with the inference service
+  const syncStreamingState = useCallback(() => {
+    const streamingState = inferenceService.getStreamingState();
+
+    if (streamingState.messageId) {
+      setStreamingMessages((prev) => {
+        // If already tracked, no need to update
+        if (prev[streamingState.messageId as string]) {
+          return prev;
+        }
+
+        // Add the new streaming message
+        return {
+          ...prev,
+          [streamingState.messageId as string]: true,
+        };
+      });
+    } else {
+      // If no message is currently streaming according to the service,
+      // but we have tracked streaming messages, we need to check if they're really done
+      if (Object.keys(streamingMessages).length > 0) {
+        // Create a new empty state - we'll repopulate with only active streaming messages
+        const newStreamingState: Record<string, boolean> = {};
+
+        // Keep only messages that are actually still being streamed
+        for (const msgId of Object.keys(streamingMessages)) {
+          // If the message no longer exists or its content isn't a placeholder,
+          // it's probably done streaming
+          const message = messages.find((m) => m.id === msgId);
+          if (message && message.messages[0] === "...") {
+            newStreamingState[msgId] = true;
+          }
+        }
+
+        // Only update state if something changed
+        if (Object.keys(newStreamingState).length !== Object.keys(streamingMessages).length) {
+          setStreamingMessages(newStreamingState);
+        }
+      }
+    }
+  }, [inferenceService, messages, streamingMessages]);
+
+  // Update streaming state when messages change
   useEffect(() => {
-    // Find messages with "..." content that are likely placeholder for streaming
-    const streamingIds = messages.filter((msg) => msg.type === "character" && msg.messages[0] === "...").map((msg) => msg.id);
+    // Initial sync when messages change
+    syncStreamingState();
 
-    setStreamingMsgIds(streamingIds);
-  }, [messages]);
+    // Set up interval to periodically check streaming state
+    if (streamingCheckRef.current) {
+      window.clearInterval(streamingCheckRef.current);
+    }
 
-  return (
-    <div className="flex flex-col gap-2 p-1">
-      {messagesWithCharCount.map((message, index) => {
-        const isContextCut = index === contextCutIndex;
-        const currentIndex = contentIndices[message.id] || 0;
-        const avatarPath = getAvatarForMessage(message);
-        const isStreaming = isMessageStreaming(message.id);
+    streamingCheckRef.current = window.setInterval(() => {
+      syncStreamingState();
+    }, 500);
 
-        return (
-          <div key={message.id}>
-            {isContextCut && (
-              <div className="flex items-center justify-center w-full my-4">
-                <div className="flex-grow border-t-2 border-dashed border-border" />
-                <div className="mx-4 text-muted-foreground flex items-center gap-2">
-                  <Scissors className="w-4 h-4" />
-                  Context Cut
-                </div>
-                <div className="flex-grow border-t-2 border-dashed border-border" />
-              </div>
+    return () => {
+      if (streamingCheckRef.current) {
+        window.clearInterval(streamingCheckRef.current);
+        streamingCheckRef.current = null;
+      }
+    };
+  }, [messages, syncStreamingState]);
+
+  // Handle scroll events to detect when user manually scrolls up
+  const handleScroll = useCallback(() => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      // If we're more than 100px from the bottom, consider it a manual scroll
+      const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100;
+      setUserScrolled(isScrolledUp);
+      setShowScrollButton(isScrolledUp);
+    }
+  }, []);
+
+  // Scroll to the bottom of the messages
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
+    if (behavior === "auto") {
+      // Reset user scroll state when we force scroll
+      setUserScrolled(false);
+      setShowScrollButton(false);
+    }
+  }, []);
+
+  // Scroll to bottom when new messages are added or streaming state changes
+  useEffect(() => {
+    // Only auto-scroll if user hasn't manually scrolled up
+    if (!userScrolled) {
+      scrollToBottom();
+    }
+  }, [messages, streamingMessages, userScrolled, scrollToBottom]);
+
+  // Initial scroll to the bottom when component mounts
+  useEffect(() => {
+    // Use 'auto' for the initial scroll to avoid animation on page load
+    scrollToBottom("auto");
+  }, [scrollToBottom]);
+
+  const renderMessage = (message: ChatMessage & { totalChars: number }, index: number, isContextCut: boolean) => {
+    const avatarPath = getAvatarForMessage(message);
+    const isStreaming = isMessageStreaming(message.id);
+    const isLastMessage = index === messagesWithCharCount.length - 1;
+
+    return (
+      <div key={message.id}>
+        {isContextCut && <ContextCutDivider />}
+
+        <div
+          className={cn(
+            "group relative flex gap-4 p-4 rounded-lg border-b-2 border-secondary hover:shadow-md transition-all",
+            (message.type === "user" || message.type === "character") && "bg-card",
+            message.type === "user" && "flex-row-reverse",
+            message.type === "system" && "bg-muted justify-center",
+            isStreaming && "border-primary border-b-2 animate-pulse",
+          )}
+        >
+          {/* Avatar section */}
+          {(message.type === "user" || message.type === "character") && (
+            <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />
+          )}
+
+          {/* Message content */}
+          <div
+            className={cn(
+              "flex-grow relative pb-4 text-justify",
+              message.type === "user" && isEditingID !== message.id && "flex justify-end",
+              message.type === "system" && "text-center max-w-2xl",
             )}
+          >
+            {isStreaming && <StreamingIndicator />}
 
-            <div
+            <TipTapTextArea
+              initialValue={getCurrentContent(message)}
+              editable={isEditingID === message.id && !isStreaming}
+              disableRichText={isEditingID === message.id}
+              placeholder="Edit message..."
               className={cn(
-                "group relative flex gap-4 p-4 rounded-lg border-b-2 border-secondary hover:shadow-md transition-all",
-                (message.type === "user" || message.type === "character") && "bg-card",
-                message.type === "user" && "flex-row-reverse",
-                message.type === "system" && "bg-muted justify-center",
-                isStreaming && "border-primary border-b-2 animate-pulse",
+                "select-text text-md",
+                isEditingID !== message.id ? "bg-transparent border:none border-b-0" : "text-left ring-1 ring-border rounded-lg",
+                isStreaming && "animate-pulse duration-500",
               )}
-            >
-              {/* Avatar section */}
-              {(message.type === "user" || message.type === "character") && (
-                <div className="flex-shrink-0 select-none">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <button className="transition-transform rounded-lg" title="View Full Size Avatar">
-                        <Avatar
-                          className={cn(
-                            "w-24 h-24 ring-2 ring-border overflow-hidden rounded-full hover:ring-primary",
-                            isStreaming && "ring-primary",
-                          )}
-                        >
-                          {avatarPath ? (
-                            <img src={avatarPath} alt={`${message.type} avatar`} className="w-full h-full object-cover hover:cursor-pointer" />
-                          ) : (
-                            <div className="w-full h-full bg-secondary flex items-center justify-center text-secondary-foreground">
-                              {message.type === "user" ? "U" : "C"}
-                            </div>
-                          )}
-                        </Avatar>
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl w-fit p-2">
-                      {avatarPath && (
-                        <img src={avatarPath} alt={`${message.type} avatar full size`} className="w-auto max-h-[80vh] object-contain rounded-lg" />
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                </div>
+              onChange={(newContent) => {
+                if (isEditingID === message.id) {
+                  setEditedContent(newContent);
+                }
+              }}
+            />
+
+            {/* Bottom controls container */}
+            <div className="absolute bottom-0 w-full flex justify-between items-center translate-y-3">
+              {isEditingID === message.id ? (
+                <EditControls onCancel={handleCancelEdit} onSave={() => handleSaveEdit(message.id)} />
+              ) : (
+                <>
+                  <MessageActions
+                    messageId={message.id}
+                    messageType={message.type}
+                    isStreaming={isStreaming}
+                    onEdit={setIsEditingID}
+                    onRegenerateMessage={onRegenerateMessage}
+                    onDeleteMessage={onDeleteMessage}
+                    onTranslate={onTranslate}
+                    onCreateCheckpoint={onCreateCheckpoint}
+                    onGenerateImage={onGenerateImage}
+                    onExcludeFromPrompt={onExcludeFromPrompt}
+                    isLastMessage={isLastMessage}
+                  />
+
+                  {message.type === "character" && (
+                    <VersionControls
+                      messageId={message.id}
+                      messageType={message.type}
+                      currentIndex={message.message_index}
+                      totalVersions={message.messages.length}
+                      onSwipe={handleSwipe}
+                      isLastMessage={isLastMessage}
+                    />
+                  )}
+                </>
               )}
-
-              {/* Message content */}
-              <div
-                className={cn(
-                  "flex-grow relative pb-4",
-                  message.type === "user" && "text-right",
-                  message.type === "system" && "text-center max-w-2xl",
-                )}
-              >
-                {isStreaming && (
-                  <div className="absolute right-0 top-0 flex items-center gap-2 p-1 bg-background/80 backdrop-blur-sm rounded-md animate-pulse">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span className="text-xs text-primary font-medium">Thinking...</span>
-                  </div>
-                )}
-
-                <TipTapTextArea
-                  initialValue={getCurrentContent(message)}
-                  editable={isEditingID === message.id}
-                  disableRichText={isEditingID === message.id}
-                  placeholder="Edit message..."
-                  suggestions={[]}
-                  className={cn(
-                    "select-text",
-                    isEditingID !== message.id ? "bg-transparent border:none border-b-0" : "text-left ring-1 ring-border rounded-lg",
-                    isStreaming && "animate-pulse duration-500",
-                  )}
-                  onChange={(newContent) => {
-                    if (isEditingID === message.id) {
-                      setEditedContent(newContent);
-                    }
-                  }}
-                />
-
-                {/* Bottom controls container */}
-                <div className="absolute bottom-0 w-full flex justify-between items-center translate-y-3">
-                  {isEditingID === message.id ? (
-                    // Edit mode controls
-                    <div className="flex gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 ml-auto shadow-sm">
-                      <Button variant="outline" size="sm" onClick={handleCancelEdit}>
-                        <X className="!w-4 !h-4" />
-                        Cancel
-                      </Button>
-                      <Button variant="default" size="sm" onClick={() => handleSaveEdit(message.id)}>
-                        <Check className="!w-4 !h-4" />
-                        Save
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Action buttons - Right side for character, Left side for user */}
-                      <div
-                        className={cn(
-                          "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1",
-                          message.type === "user" ? "order-1" : "order-2",
-                        )}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-accent"
-                          onClick={() => setIsEditingID(message.id)}
-                          title="Edit Message"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={() => onDeleteMessage(message.id)}
-                          title="Delete Message"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" title="More Options">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => onTranslate(message.id)}>
-                              <Languages className="w-4 h-4 mr-2" />
-                              Translate
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onCreateCheckpoint(message.id)}>
-                              <Flag className="w-4 h-4 mr-2" />
-                              Create Checkpoint
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onGenerateImage(message.id)}>
-                              <Image className="w-4 h-4 mr-2" />
-                              Generate Image
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onExcludeFromPrompt(message.id)}>
-                              <BookmarkMinus className="w-4 h-4 mr-2" />
-                              Exclude from Prompt
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Version controls - Left side for character, hidden for user */}
-                      {message.type === "character" && (
-                        <div className={cn("flex items-center gap-1", message.type === "character" ? "order-1" : "order-2")}>
-                          <span className="text-xs text-muted-foreground ml-1">
-                            {currentIndex + 1}/{message.messages.length}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={cn(
-                              "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-                              currentIndex === 0 && "group-hover:opacity-0 hidden",
-                            )}
-                            onClick={() => handleSwipe(message.id, "left")}
-                            title="Previous Version"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleSwipe(message.id, "right")}
-                            title="Next Version"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
-        );
-      })}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="relative flex flex-col h-full">
+      <div ref={messagesContainerRef} className="flex flex-col gap-2 p-1 overflow-y-auto" onScroll={handleScroll}>
+        {messagesWithCharCount.map((message, index) => {
+          const isContextCut = index === contextCutIndex;
+          return renderMessage(message, index, isContextCut);
+        })}
+        {/* This empty div is our scroll target */}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Scroll to bottom button */}
+      {showScrollButton && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="absolute bottom-4 right-4 rounded-full shadow-md bg-background z-10 opacity-80 hover:opacity-100"
+          onClick={() => scrollToBottom()}
+          title="Scroll to latest messages"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 };

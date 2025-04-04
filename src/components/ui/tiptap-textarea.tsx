@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { TipTapRender } from "./tiptap/tiptap-render";
+import { SuggestionItem, TipTapRender } from "./tiptap/tiptap-render";
 
 interface TipTapTextAreaProps {
   initialValue?: string;
@@ -9,7 +9,7 @@ interface TipTapTextAreaProps {
   placeholder?: string;
   editable?: boolean;
   disableRichText?: boolean;
-  suggestions?: any[];
+  suggestions?: SuggestionItem[];
   sendShortcut?: "Enter" | "Ctrl+Enter" | "Shift+Enter" | "CMD+Enter";
   onSubmit?: (text: string) => void;
   onFocus?: () => void;
@@ -36,7 +36,7 @@ export function TipTapTextArea({
           initialValue={initialValue}
           onChange={onChange}
           className={cn(
-            "custom-scrollbar h-full absolute inset-0 bg-foreground/5 px-3 py-2 overflow-auto",
+            "custom-scrollbar rounded-sm h-full absolute inset-0 bg-foreground/5 px-3 py-2 overflow-auto",
             "border-0 border-b-2 border-b-primary/20",
             "transition-[border] duration-100",
             "focus-within:border-b-primary focus-within:bg-accent",

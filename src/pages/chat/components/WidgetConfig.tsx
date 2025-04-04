@@ -11,7 +11,7 @@ import { useProfile } from "@/hooks/ProfileContext";
 import { useChatStore, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
-import { useModels } from "@/hooks/modelsStore";
+import { useModels, useModelsActions } from "@/hooks/modelsStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { configFields } from "../manifests/configFields";
@@ -32,6 +32,7 @@ const WidgetConfig = () => {
   const currentTemplate = useChatTemplate(currentChatTemplateID || "");
   const { updateChatTemplate } = useChatTemplateActions();
   const models = useModels();
+  const { fetchModels } = useModelsActions();
 
   const profile = useProfile();
   const profileId = profile!.currentProfile!.id;
@@ -43,8 +44,17 @@ const WidgetConfig = () => {
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
 
+  console.log("WidgetConfig rendered");
+
   // Add debounce timer ref
   const saveTimeoutRef = useRef<number | null>(null);
+
+  // Fetch models on component mount
+  useEffect(() => {
+    if (profileId) {
+      fetchModels({ profile_id: profileId });
+    }
+  }, [profileId]);
 
   // Initialize state from current template
   useEffect(() => {
@@ -85,7 +95,7 @@ const WidgetConfig = () => {
       setResponseLength(1024);
       setCustomPrompts([]);
     }
-  }, [currentTemplate]);
+  }, [currentTemplate?.id]);
 
   // Get model manifest
   const manifestId = useMemo(() => {
@@ -123,10 +133,9 @@ const WidgetConfig = () => {
     updateSelectedChat({ chat_template_id: templateId });
   };
 
-  const handleCreateTemplate = () => {
+  const handleCreateTemplate = (name: string) => {
     // Implementation will be done via dialog in the UI
     // The TemplatePicker just needs a callback without parameters
-    const name = prompt("Enter template name:"); // Simple implementation for now
     if (name) {
       // Create new template with default settings
       createChatTemplate({
@@ -150,25 +159,21 @@ const WidgetConfig = () => {
       return;
     }
 
-    const confirmDelete = confirm("Are you sure you want to delete this template?");
-    if (confirmDelete) {
-      // Delete the template
-      deleteChatTemplate(currentChatTemplateID).then((success) => {
-        // If the template was successfully deleted
-        if (success) {
-          // Clear the selection
-          updateSelectedChat({ chat_template_id: undefined });
-        }
-      });
-    }
+    // Delete the template
+    deleteChatTemplate(currentChatTemplateID).then((success) => {
+      // If the template was successfully deleted
+      if (success) {
+        // Clear the selection
+        updateSelectedChat({ chat_template_id: undefined });
+      }
+    });
   };
 
-  const handleEditTemplateName = () => {
+  const handleEditTemplateName = (_unused: string, newName: string) => {
     if (!currentChatTemplateID) {
       return;
     }
 
-    const newName = prompt("Enter new template name:", currentTemplate?.name);
     if (newName) {
       // Update the template name
       chatTemplateUpdate(currentChatTemplateID, { name: newName });
@@ -416,9 +421,9 @@ const WidgetConfig = () => {
             <Combobox
               items={modelOptions}
               onChange={setSelectedModelId}
-              placeholder="Select a model..."
+              placeholder="Search a model..."
               trigger={
-                <Button variant="outline" className="w-full justify-between h-7 text-xs px-2" disabled={isDisabled}>
+                <Button variant="outline" className="w-full justify-between text-xs px-2" disabled={isDisabled}>
                   {selectedModelId
                     ? modelOptions.find((model) => model.value === selectedModelId)?.label || "Select a model..."
                     : "Select a model..."}

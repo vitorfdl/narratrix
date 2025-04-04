@@ -60,11 +60,14 @@ body,
     --border: 223 6% 27%; /* #43454A */
     --input: 223 6% 27%; /* #43454A */
     --ring: 293 59% 74%; /* #db9ee5 */
-    --chart-1: 215 57% 45%; /* #2196F3 */
-    --chart-2: 187 100% 42%; /* #00BCD4 */
-    --chart-3: 122 35% 46%; /* #4BA04F */
-    --chart-4: 24 100% 50%; /* #FF4F00 */
-    --chart-5: 340 82% 52%; /* #E91E63 */
+    --chart-1: 293 45% 60%; /* #C76BD1 - derived from primary */
+    --chart-2: 293 35% 45%; /* #9A53A3 - darker primary */
+    --chart-3: 260 40% 55%; /* #7B6EDB - complementary to primary */
+    --chart-4: 320 70% 60%; /* #E55A9B - analogous to primary */
+    --chart-5: 350 65% 55%; /* #DB5A69 - triadic with primary */
+    --chart-6: 230 60% 60%; /* #5A7EE5 - cool contrast */
+    --chart-7: 180 50% 45%; /* #39A3A3 - teal complement */
+    --chart-8: 30 80% 60%;  /* #E5A33A - warm contrast */
     --radius: 0.4rem;
   }
 }
@@ -100,7 +103,7 @@ body,
   }
   
   .textarea-quoted-text {
-    @apply text-chart-2 font-medium italic;
+    @apply text-chart-4  italic;
   }
 
   /* Tippy styling for suggestions */
@@ -111,20 +114,6 @@ body,
   .tippy-content {
     @apply !p-0;
   }
-}
-
-
-/* src/styles/grid.css */
-.grid-stack {
-  padding: 0 !important; /* Remove any default padding */
-  margin: 0 !important; /* Remove any default margin */
-  width: 100% !important;
-}
-
-/* If needed, adjust the grid item margins instead */
-.grid-stack > .grid-stack-item > .grid-stack-item-content {
-  margin: 0;
-  /* ... other styles ... */
 }
 
 .custom-scrollbar {
@@ -157,4 +146,21 @@ body,
 
 .custom-scrollbar::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Bubble menu */
+.bubble-menu {
+  @apply flex items-center gap-1 p-1 bg-popover border border-border rounded-md shadow-md;
+  @apply animate-in fade-in-50 zoom-in-95 slide-in-from-bottom-2;
+}
+
+.bubble-menu button {
+  @apply inline-flex items-center justify-center rounded-md px-2.5 py-1;
+  @apply text-xs font-medium text-muted-foreground transition-colors;
+  @apply hover:bg-secondary hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1;
+}
+
+.bubble-menu button.is-active {
+  @apply bg-primary text-primary-foreground;
+  @apply hover:bg-primary/90 hover:text-primary-foreground;
 }

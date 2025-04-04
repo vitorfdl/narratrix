@@ -66,6 +66,12 @@ const ProfileSchema = z.object({
   updated_at: dateUtils.withDefaultNow(),
 });
 
+const updateProfileSchema = ProfileSchema.partial().omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
 /**
  * Define API's request schemas
  */
@@ -100,6 +106,7 @@ export {
   LoginPasswordSchema,
   ProfileSchema,
   UpdatePasswordSchema,
+  updateProfileSchema,
   type AppSettings,
   type LoginPasswordParams,
   type NewProfileParams,

@@ -1,16 +1,18 @@
 import { BorderBeam } from "@/components/magicui/border-beam";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
+import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Loader2, PlayCircleIcon, Settings, Trash2, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import AddParticipantPopover from "./AddParticipantPopover";
 
 // Types
@@ -24,7 +26,6 @@ export interface Participant {
 
 interface WidgetParticipantsProps {
   onOpenConfig?: () => void;
-  inferenceQueue?: string[];
 }
 
 interface SortableParticipantProps {
@@ -65,21 +66,10 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing flex items-center">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
-        {participant.avatar ? (
-          <img
-            src={participant.avatar}
-            alt={participant.name}
-            className={`w-8 h-8 object-cover rounded-full ${participant.type !== "user" && !participant.isEnabled ? "opacity-50" : ""}`}
-          />
-        ) : (
-          <div
-            className={`w-8 h-8 rounded-full bg-secondary flex items-center justify-center ${
-              participant.type !== "user" && !participant.isEnabled ? "opacity-50" : ""
-            }`}
-          >
-            {participant.name[0]}
-          </div>
-        )}
+        <Avatar className={cn("w-8 h-8", participant.type !== "user" && !participant.isEnabled && "opacity-50")}>
+          <AvatarImage className="object-cover rounded-full" src={participant.avatar} alt={participant.name} />
+          <AvatarFallback className="bg-secondary">{participant.name[0]}</AvatarFallback>
+        </Avatar>
       </div>
 
       {/* Column 2: Content and Actions */}
@@ -130,38 +120,35 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
   );
 };
 
-const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig, inferenceQueue = [] }) => {
+const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
   const characterList = useCharacters();
   const profile = useProfile();
   const profileAvatar = profile!.currentProfile!.avatar_path;
 
+  const messages = useCurrentChatMessages();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
-  const participants = useCurrentChatParticipants();
+  const participants = useCurrentChatParticipants() || [];
   const { addParticipant, removeParticipant, toggleParticipantEnabled, updateSelectedChat } = useChatActions();
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
-
+  const [triggeringParticipantIds, setTriggeringParticipantIds] = useState<string[]>([]);
+  const inferenceService = useInferenceServiceFromContext();
   // Get user character if it exists
   const userCharacter = currentChatUserCharacterID ? characterList.find((char) => char.id === currentChatUserCharacterID) : null;
 
   // Map chat participants to the Participant interface for this component
   const mappedParticipants: Participant[] = participants.map((p) => {
-    // Find the associated character if it's a character or agent type
-    const associatedCharacter = p.id !== "user" ? characterList.find((char) => char.id === p.id) : null;
+    // Find the associated character
+    const associatedCharacter = characterList.find((char) => char.id === p.id);
 
-    const type = p.id === "user" ? "user" : (associatedCharacter?.type as "character" | "agent") || "character";
+    const type = (associatedCharacter?.type as "character" | "agent") || "character";
 
-    // For user, use character avatar if user character is set, otherwise use profile avatar
-    const avatar =
-      p.id === "user"
-        ? userCharacter
-          ? (userCharacter.avatar_path as string | undefined)
-          : profileAvatar
-        : (associatedCharacter?.avatar_path as string | undefined);
+    // Get avatar from the associated character
+    const avatar = associatedCharacter?.avatar_path as string | undefined;
 
     return {
       id: p.id,
-      name: p.id === "user" && userCharacter ? userCharacter.name : associatedCharacter?.name || (p.id === "user" ? "User" : "Unknown"),
+      name: associatedCharacter?.name || "Unknown",
       type,
       avatar,
       isEnabled: p.enabled,
@@ -178,6 +165,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig, i
           name: "User",
           type: "user" as const,
           isEnabled: true,
+          avatar: userCharacter?.avatar_path || profileAvatar,
         },
         ...mappedParticipants,
       ];
@@ -249,6 +237,49 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig, i
     }
   };
 
+  const handleTriggerMessage = useCallback(
+    async (participantId: string) => {
+      // Don't allow triggering for user or if already in progress
+      if (participantId === "user") {
+        return;
+      }
+
+      if (triggeringParticipantIds.includes(participantId)) {
+        setTriggeringParticipantIds((prev) => prev.filter((id) => id !== participantId));
+        inferenceService.cancelGeneration();
+        return;
+      }
+
+      try {
+        // Add to the triggering list
+        setTriggeringParticipantIds((prev) => [...prev, participantId]);
+
+        // Find the associated character
+        const character = characterList.find((char) => char.id === participantId);
+        if (!character) {
+          console.error("Character not found");
+          return;
+        }
+
+        // Use the inference service to generate a message
+        await inferenceService.generateMessage({
+          characterId: participantId,
+          onStreamingStateChange: (state) => {
+            // Update triggering state based on streaming state
+            if (!state) {
+              setTriggeringParticipantIds((prev) => prev.filter((id) => id !== participantId));
+            }
+          },
+        });
+      } catch (error) {
+        console.error("Error triggering message:", error);
+        // Remove from triggering list if there was an error
+        setTriggeringParticipantIds((prev) => prev.filter((id) => id !== participantId));
+      }
+    },
+    [characterList, messages, inferenceService],
+  );
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Participants List */}
@@ -261,9 +292,9 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig, i
                   key={participant.id}
                   participant={participant}
                   onToggleParticipant={handleToggleParticipant}
-                  onTriggerMessage={(id) => console.log("Trigger message for", id)}
+                  onTriggerMessage={handleTriggerMessage}
                   onRemoveParticipant={handleRemoveParticipant}
-                  inInferenceQueue={inferenceQueue.includes(participant.id)}
+                  inInferenceQueue={inferenceService.getStreamingState().characterId === participant.id}
                 />
               ))}
             </div>

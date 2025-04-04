@@ -136,7 +136,6 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
 
   // Update handler for template fields
   const handleUpdate = useCallback((path: string[], value: any) => {
-    console.log("handleUpdate", path, value);
     // Special handling for customStopStrings to prevent empty string entries
     if (path[0] === "customStopStrings") {
       // Filter out empty strings to prevent infinite loops
@@ -176,41 +175,44 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
     }
   }, [deleteInferenceTemplate, instructTemplateID, onTemplateChange]);
 
-  const handleNewTemplate = useCallback(async () => {
-    try {
-      if (!profile?.currentProfile?.id) {
-        console.error("No profile selected");
+  const handleNewTemplate = useCallback(
+    async (name: string) => {
+      try {
+        if (!profile?.currentProfile?.id) {
+          console.error("No profile selected");
+          return;
+        }
+
+        const newTemplate = await createInferenceTemplate({
+          name: name,
+          config: defaultTemplateState,
+          profile_id: profile.currentProfile.id,
+        });
+
+        if (newTemplate) {
+          onTemplateChange(newTemplate.id);
+        }
+      } catch (error) {
+        console.error("Failed to create new template:", error);
+      }
+    },
+    [createInferenceTemplate, onTemplateChange, profile?.currentProfile?.id, defaultTemplateState],
+  );
+
+  const handleEditName = useCallback(
+    async (_unused: string, name: string) => {
+      if (!instructTemplateID) {
         return;
       }
 
-      const newTemplate = await createInferenceTemplate({
-        name: "New Template",
-        config: defaultTemplateState,
-        profile_id: profile.currentProfile.id,
-      });
-
-      if (newTemplate) {
-        onTemplateChange(newTemplate.id);
-      }
-    } catch (error) {
-      console.error("Failed to create new template:", error);
-    }
-  }, [createInferenceTemplate, onTemplateChange, profile?.currentProfile?.id, defaultTemplateState]);
-
-  const handleEditName = useCallback(async () => {
-    if (!instructTemplateID) {
-      return;
-    }
-
-    const newName = prompt("Enter new template name:", currentTemplate?.name);
-    if (newName) {
       try {
-        await updateInferenceTemplate(instructTemplateID, { name: newName });
+        await updateInferenceTemplate(instructTemplateID, { name: name });
       } catch (error) {
         console.error("Failed to update template name:", error);
       }
-    }
-  }, [currentTemplate?.name, instructTemplateID, updateInferenceTemplate]);
+    },
+    [updateInferenceTemplate, instructTemplateID],
+  );
 
   const handleImportTemplate = useCallback(() => {
     // To be implemented
@@ -281,14 +283,14 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
                 <LabeledInput
                   label="Prefix"
                   value={templateState.userMessageFormatting.prefix}
-                  placeholder="<|user|> or [USER]:"
+                  placeholder="<|user|>"
                   disabled={isDisabled}
                   onChange={(val) => handleUpdate(["userMessageFormatting", "prefix"], val)}
                 />
                 <LabeledInput
                   label="Suffix"
                   value={templateState.userMessageFormatting.suffix}
-                  placeholder="</|user|> or [/USER]"
+                  placeholder="</|user|>"
                   disabled={isDisabled}
                   onChange={(val) => handleUpdate(["userMessageFormatting", "suffix"], val)}
                 />
@@ -308,14 +310,14 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
                   <LabeledInput
                     label="Prefix"
                     value={templateState.assistantMessageFormatting.prefix}
-                    placeholder="<|assistant|> or [ASSISTANT]:"
+                    placeholder="<|assistant|>"
                     disabled={isDisabled}
                     onChange={(val) => handleUpdate(["assistantMessageFormatting", "prefix"], val)}
                   />
                   <LabeledInput
                     label="Suffix"
                     value={templateState.assistantMessageFormatting.suffix}
-                    placeholder="</|assistant|> or [/ASSISTANT]"
+                    placeholder="</|assistant|>"
                     disabled={isDisabled}
                     onChange={(val) => handleUpdate(["assistantMessageFormatting", "suffix"], val)}
                   />
@@ -368,7 +370,7 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
                   <LabeledInput
                     label="Prefix"
                     value={templateState.agentMessageFormatting.prefix}
-                    placeholder="<|function|> or [TOOL]:"
+                    placeholder="<|function|>"
                     disabled={
                       isDisabled || templateState.agentMessageFormatting.useSameAsUser || templateState.agentMessageFormatting.useSameAsSystemPrompt
                     }
@@ -377,7 +379,7 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
                   <LabeledInput
                     label="Suffix"
                     value={templateState.agentMessageFormatting.suffix}
-                    placeholder="</|function|> or [/TOOL]"
+                    placeholder="</|function|>"
                     disabled={
                       isDisabled || templateState.agentMessageFormatting.useSameAsUser || templateState.agentMessageFormatting.useSameAsSystemPrompt
                     }

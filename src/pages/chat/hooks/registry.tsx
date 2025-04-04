@@ -10,7 +10,6 @@ import WidgetScript from "@/pages/chat/components/WidgetScript";
 import React from "react";
 
 // Import types for props if available
-import type { MessageRendererProps } from "@/pages/chat/components/WidgetMessages";
 
 export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "character_sheet" | "memory" | "database" | "chapters";
 
@@ -39,16 +38,7 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
     id: "messages",
     title: widgetTitles.messages,
     component: WidgetMessages,
-    defaultProps: {
-      messages: [], // Default empty array; will be dynamically merged later
-      contextCutNumber: 700,
-      onEditMessage: (_id: string) => {},
-      onDeleteMessage: (_id: string) => {},
-      onCreateCheckpoint: (_id: string) => {},
-      onGenerateImage: (_id: string) => {},
-      onTranslate: (_id: string) => {},
-      onExcludeFromPrompt: (_id: string) => {},
-    } as MessageRendererProps,
+    defaultProps: {},
   },
   config: {
     id: "config",

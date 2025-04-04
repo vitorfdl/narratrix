@@ -172,7 +172,7 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
         <img src={displayImage || ""} alt="Avatar" className={`object-cover ${cropShape === "round" ? "h-full w-full" : "max-h-full max-w-full"}`} />
       </div>
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-        <Button variant="secondary" size="icon" onClick={startEditMode} className="h-9 w-9 rounded-full">
+        <Button variant="secondary" size="icon" onClick={startEditMode} className="h-9 w-9 rounded-full" type="button">
           <Edit className="h-4 w-4" />
         </Button>
       </div>
@@ -224,16 +224,16 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={cancelEdit} className="flex-1">
+              <Button variant="outline" size="sm" onClick={cancelEdit} className="flex-1" type="button">
                 <X className="h-4 w-4 mr-1.5" /> Cancel
               </Button>
-              <Button variant="outline" size="sm" onClick={resetCrop} className="flex-1">
+              <Button variant="outline" size="sm" onClick={resetCrop} className="flex-1" type="button">
                 <RefreshCw className="h-4 w-4 mr-1.5" /> Reset
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setRotation((prev) => (prev + 90) % 360)} className="flex-1">
+              <Button variant="outline" size="sm" onClick={() => setRotation((prev) => (prev + 90) % 360)} className="flex-1" type="button">
                 <RotateCcw className="h-4 w-4 mr-1.5" /> Rotate
               </Button>
-              <Button onClick={showCroppedImage} disabled={isLoading || !croppedAreaPixels} className="flex-1">
+              <Button onClick={showCroppedImage} disabled={isLoading || !croppedAreaPixels} className="flex-1" type="button">
                 <Check className="h-4 w-4 mr-1.5" /> Apply
               </Button>
             </div>

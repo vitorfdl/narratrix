@@ -1,18 +1,17 @@
+import { useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
 import { motion } from "framer-motion";
 import { BookOpen, Clock, Construction } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../../../components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card";
 
 const WidgetChapters = () => {
+  const selectedChatChapters = useCurrentChatChapters();
+  const selectedChatActiveChapterID = useCurrentChatActiveChapterID();
+  console.log(selectedChatChapters);
+  console.log(selectedChatActiveChapterID);
+
   return (
-    <Card className="w-full border border-border bg-card/50 backdrop-blur-sm">
+    <Card className="w-full border-none backdrop-blur-sm">
       <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
           <Construction className="h-5 w-5 text-primary" />
@@ -49,8 +48,8 @@ const WidgetChapters = () => {
           <div className="text-center space-y-2 max-w-md">
             <h3 className="text-lg font-medium">Chapter Management Coming Soon</h3>
             <p className="text-muted-foreground text-sm">
-              We're developing chapter organization tools to help you structure your narrative into
-              cohesive sections and track your story progression.
+              We're developing chapter organization tools to help you structure your narrative into cohesive sections and track your story
+              progression.
             </p>
           </div>
         </div>

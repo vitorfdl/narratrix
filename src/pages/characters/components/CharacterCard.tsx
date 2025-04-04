@@ -12,11 +12,11 @@ interface CharacterCardProps {
 }
 
 export function CharacterCard({ model, cardSize, onEdit, onDelete }: CharacterCardProps) {
-  // Get the avatar URL from settings or custom fields if available
-  const avatarUrl = (model?.avatar_path as string) || "/default-avatar.png";
+  // Get the avatar URL from settings or custom fields
+  const avatarUrl = (model?.avatar_path as string) || "/avatars/default.jpg";
 
   // Get the author from settings or custom fields
-  const author = (model.settings?.author as string) || (model.custom?.author as string) || "Unknown";
+  const author = (model.settings?.author as string) || "Unknown";
 
   // Get tags with null check
   const tags = model.tags || [];

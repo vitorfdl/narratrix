@@ -24,8 +24,12 @@ const BaseEntitySchema = z.object({
   external_update_link: z.string().url().nullable(),
   auto_update: z.boolean().default(true),
   system_override: z.string().nullable(),
-  settings: JsonObjectSchema.nullable().default({}),
-  custom: JsonObjectSchema.nullable().default({}),
+  settings: z
+    .object({
+      author: z.string().nullable().optional(),
+    })
+    .nullable()
+    .default({}),
   created_at: z.coerce.date(),
   updated_at: z.coerce.date(),
 });
@@ -33,7 +37,12 @@ const BaseEntitySchema = z.object({
 // Agent-specific schema
 export const AgentSchema = BaseEntitySchema.extend({
   type: z.literal("agent"),
-  // Explicitly set these to null for agents
+  custom: z
+    .object({
+      preserve_last_response: z.boolean().nullable().optional(),
+    })
+    .nullable()
+    .default({}),
   expressions: z.null(),
   character_manifest_id: z.null(),
 });
@@ -43,6 +52,12 @@ export const CharacterSchema = BaseEntitySchema.extend({
   type: z.literal("character"),
   expressions: z.array(ExpressionSchema).nullable(),
   character_manifest_id: z.string().nullable(),
+  custom: z
+    .object({
+      personality: z.string().nullable().optional(),
+    })
+    .nullable()
+    .default({}),
 });
 
 // Union type for both agents and characters
@@ -55,7 +70,7 @@ export type CharacterUnion = z.infer<typeof CharacterUnionSchema>;
 export type Expression = z.infer<typeof ExpressionSchema>;
 
 // Create schemas (omitting auto-generated fields)
-const BaseCreateSchema = BaseEntitySchema.omit({
+export const CreateAgentSchema = AgentSchema.omit({
   id: true,
   created_at: true,
   updated_at: true,
@@ -66,17 +81,15 @@ const BaseCreateSchema = BaseEntitySchema.omit({
   custom: true,
 });
 
-export const CreateAgentSchema = BaseCreateSchema.extend({
-  type: z.literal("agent"),
-});
-
-export const CreateCharacterSchema = BaseCreateSchema.extend({
-  type: z.literal("character"),
-  expressions: z.array(ExpressionSchema).nullable(),
-  character_manifest_id: z.string().nullable(),
+export const CreateCharacterSchema = CharacterSchema.omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
 }).partial({
-  expressions: true,
-  character_manifest_id: true,
+  external_update_link: true,
+  system_override: true,
+  settings: true,
+  custom: true,
 });
 
 // Update schemas (all fields optional)

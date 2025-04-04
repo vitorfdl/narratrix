@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS chats (
     profile_id TEXT NOT NULL,
     name TEXT NOT NULL,
     participants TEXT NOT NULL, -- JSON array of character references [{ id: string, settings: { [key: string]: any } }]
+    active_chapter_id TEXT, -- foreign key to chat_chapters table
     chat_template_id TEXT, -- foreign key to chat_template table
     user_character_id TEXT, -- foreign key to characters table
     user_character_settings TEXT, -- JSON string for settings [{ [key: string]: any }]
@@ -10,7 +11,8 @@ CREATE TABLE IF NOT EXISTS chats (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE,
     FOREIGN KEY (chat_template_id) REFERENCES chat_template(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_character_id) REFERENCES characters(id) ON DELETE SET NULL
+    FOREIGN KEY (user_character_id) REFERENCES characters(id) ON DELETE SET NULL,
+    FOREIGN KEY (active_chapter_id) REFERENCES chat_chapters(id) ON DELETE SET NULL
 ); 
 
 -- Index on profile_id for efficient lookups of chats by profile

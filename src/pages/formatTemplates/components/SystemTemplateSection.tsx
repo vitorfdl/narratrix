@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
 import { usePromptTemplate, usePromptTemplateList, useTemplateActions } from "@/hooks/templateStore";
-import { SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-prompt-schema";
+import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
+import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-prompt-schema";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -54,7 +55,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
 
   return (
     <Card ref={setNodeRef} style={{ ...style, backgroundColor: "rgba(255, 255, 255, 0.05)" }}>
-      <CardContent className="px-1 py-0.5 space-y-1 select-none">
+      <CardContent className="px-1 py-0 space-y-1 select-none">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div {...attributes} {...listeners} className={disabled ? "cursor-not-allowed" : "cursor-grab"}>
@@ -63,7 +64,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
             <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onUpdate(prompt.id, { isCollapsed: !prompt.isCollapsed })}>
               {prompt.isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
-            <div className="font-medium text-sm">{formatName(prompt.name)}</div>
+            <div className="font-medium text-xs">{formatName(prompt.name)}</div>
           </div>
           <Button variant="ghost" size="icon" disabled={disabled} onClick={() => onDelete(prompt.id)}>
             <Trash className="h-4 w-4" />
@@ -73,7 +74,14 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
         {!prompt.isCollapsed && (
           <div className="space-y-4">
             <div className="mb-2 mr-1 ml-1">
-              <TipTapTextArea initialValue={prompt.content} onChange={(e) => onUpdate(prompt.id, { content: e })} editable={!disabled} />
+              <TipTapTextArea
+                initialValue={prompt.content}
+                onChange={(e) => onUpdate(prompt.id, { content: e })}
+                disableRichText={true}
+                className="max-h-64 font-mono text-xs text-justify border-t border-x "
+                suggestions={promptReplacementSuggestionList}
+                editable={!disabled}
+              />
             </div>
           </div>
         )}
@@ -158,7 +166,7 @@ export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange
       const newPrompt: PromptItem = {
         id: crypto.randomUUID(),
         type,
-        content: "",
+        content: SYSTEM_PROMPT_DEFAULT_CONTENT[type],
         isCollapsed: false,
         name: type
           .replace(/([A-Z])/g, " $1")
@@ -246,33 +254,39 @@ export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange
     }
   }, [deletePromptTemplate, systemTemplateID, onTemplateChange]);
 
-  const handleNewTemplate = useCallback(async () => {
-    try {
-      const newTemplate = await createPromptTemplate({
-        name: "New Template",
-        config: [],
-        profile_id: profile?.currentProfile?.id ?? "",
-      });
+  const handleNewTemplate = useCallback(
+    async (name: string) => {
+      try {
+        const newTemplate = await createPromptTemplate({
+          name: name,
+          config: [],
+          profile_id: profile?.currentProfile?.id ?? "",
+        });
 
-      // Auto-select the new template
-      if (newTemplate) {
-        onTemplateChange(newTemplate.id);
+        // Auto-select the new template
+        if (newTemplate) {
+          onTemplateChange(newTemplate.id);
+        }
+      } catch (error) {
+        console.error("Failed to create new template:", error);
       }
-    } catch (error) {
-      console.error("Failed to create new template:", error);
-    }
-  }, [createPromptTemplate, onTemplateChange, profile?.currentProfile?.id]);
+    },
+    [createPromptTemplate, onTemplateChange, profile?.currentProfile?.id],
+  );
 
-  const handleEditName = useCallback(async () => {
-    try {
-      if (!systemTemplateID) {
-        return;
+  const handleEditName = useCallback(
+    async (_unused: string, name: string) => {
+      try {
+        if (!systemTemplateID) {
+          return;
+        }
+        await updatePromptTemplate(systemTemplateID, { name });
+      } catch (error) {
+        console.error("Failed to update template name:", error);
       }
-      await updatePromptTemplate(systemTemplateID, { name: "New Template" });
-    } catch (error) {
-      console.error("Failed to update template name:", error);
-    }
-  }, [updatePromptTemplate, systemTemplateID]);
+    },
+    [updatePromptTemplate, systemTemplateID],
+  );
 
   const handleImportTemplate = useCallback(() => {
     // To be implemented

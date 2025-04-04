@@ -6,6 +6,7 @@ import { GridCard } from "./GridCard";
 import { GridSidebar } from "./GridSidebar";
 
 // Import the grid layout CSS
+import { InferenceServiceProvider } from "@/providers/inferenceChatProvider";
 import "react-grid-layout/css/styles.css";
 import "../styles/react-grid-overrides.css";
 
@@ -15,7 +16,7 @@ const COLUMNS = {
   lg: 12,
   md: 10,
   sm: 6,
-  xs: 4,
+  xs: 6,
   xxs: 2,
 };
 
@@ -300,49 +301,51 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
   const dragHandleClass = "grid-drag-handle";
 
   return (
-    <div className="flex h-full overflow-hidden p-0">
-      {/* Grid Sidebar */}
-      <GridSidebar hiddenWidgets={hiddenWidgets} toggleCard={toggleCard} tabId={tabId} />
+    <InferenceServiceProvider>
+      <div className="flex h-full overflow-hidden p-0">
+        {/* Grid Sidebar */}
+        <GridSidebar hiddenWidgets={hiddenWidgets} toggleCard={toggleCard} tabId={tabId} />
 
-      {/* Grid Container */}
-      <div ref={containerRef} className="flex-1 overflow-hidden">
-        {layoutReady && (
-          <ResponsiveGridLayout
-            className="layout"
-            layouts={generateLayouts()}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={COLUMNS}
-            rowHeight={rowHeight}
-            margin={[margin, margin]}
-            containerPadding={[margin, margin]}
-            onLayoutChange={handleLayoutChange}
-            onBreakpointChange={handleBreakpointChange}
-            onDragStop={handleDragStop}
-            draggableHandle={`.${dragHandleClass}`}
-            compactType={null}
-            preventCollision={true}
-            useCSSTransforms={false}
-            isBounded={false}
-            isDraggable={true}
-            isResizable={true}
-            resizeHandles={["se"]}
-            maxRows={maxRows}
-          >
-            {visibleWidgets.map((widget) => (
-              <div key={widget.id}>
-                <GridCard
-                  id={widget.id}
-                  title={widgetTitles[widget.id as WidgetId]}
-                  onClose={() => toggleCard(widget.id)}
-                  dragHandleClassName={dragHandleClass}
-                >
-                  {renderWidget(widget.id as WidgetId, tabId)}
-                </GridCard>
-              </div>
-            ))}
-          </ResponsiveGridLayout>
-        )}
+        {/* Grid Container */}
+        <div ref={containerRef} className="flex-1 overflow-hidden">
+          {layoutReady && (
+            <ResponsiveGridLayout
+              className="layout"
+              layouts={generateLayouts()}
+              breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+              cols={COLUMNS}
+              rowHeight={rowHeight}
+              margin={[margin, margin]}
+              containerPadding={[margin, margin]}
+              onLayoutChange={handleLayoutChange}
+              onBreakpointChange={handleBreakpointChange}
+              onDragStop={handleDragStop}
+              draggableHandle={`.${dragHandleClass}`}
+              compactType={null}
+              preventCollision={true}
+              useCSSTransforms={false}
+              isBounded={false}
+              isDraggable={true}
+              isResizable={true}
+              resizeHandles={["se"]}
+              maxRows={maxRows}
+            >
+              {visibleWidgets.map((widget) => (
+                <div key={widget.id}>
+                  <GridCard
+                    id={widget.id}
+                    title={widgetTitles[widget.id as WidgetId]}
+                    onClose={() => toggleCard(widget.id)}
+                    dragHandleClassName={dragHandleClass}
+                  >
+                    {renderWidget(widget.id as WidgetId, tabId)}
+                  </GridCard>
+                </div>
+              ))}
+            </ResponsiveGridLayout>
+          )}
+        </div>
       </div>
-    </div>
+    </InferenceServiceProvider>
   );
 };

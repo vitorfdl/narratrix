@@ -44,8 +44,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     onComplete: (response, requestId) => {
       // Only process if it's our test request
       if (requestId === testRequestId) {
-        console.log(`Test complete - Request ${requestId}:`, response);
-
         // Only process once and immediately clear the request ID
         if (response.result?.text) {
           setTestResult({
@@ -64,8 +62,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     onError: (error, requestId) => {
       // Only process if it's our test request
       if (requestId === testRequestId) {
-        console.log(`Test failed - Request ${requestId}:`, error);
-
         setTestResult({
           success: false,
           message: `Connection failed: ${error}`,
@@ -304,7 +300,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
     // Cancel any existing test request
     if (testRequestId && requests[testRequestId]) {
-      console.log("Cancelling previous test request:", testRequestId);
       await cancelRequest(testRequestId);
       setTestRequestId(null);
     }
@@ -368,7 +363,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
       // Store the request ID for tracking
       if (requestId) {
         setTestRequestId(requestId);
-        console.log(`Test connection initiated with request ID: ${requestId}`);
       } else {
         console.error("Failed to get request ID for test");
         setTestResult({

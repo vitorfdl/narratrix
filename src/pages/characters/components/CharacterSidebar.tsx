@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X } from "lucide-react";
-import { CharacterOrAgent } from "../../../schema/characters-schema";
+import { CharacterUnion } from "../../../schema/characters-schema";
 
 interface CharacterSidebarProps {
-  characters: CharacterOrAgent[];
+  characters: CharacterUnion[];
   selectedTags: string[];
   onTagSelect: (tag: string) => void;
   onClearTags?: () => void;
@@ -26,7 +26,9 @@ export function CharacterSidebar({
   // Count characters for each tag
   const tagCounts = uniqueTags.reduce(
     (acc, tag) => {
-      acc[tag] = characters.filter((char) => char.tags.includes(tag)).length;
+      if (tag) {
+        acc[tag] = characters.filter((char) => char.tags?.includes(tag)).length;
+      }
       return acc;
     },
     {} as Record<string, number>,
@@ -34,7 +36,7 @@ export function CharacterSidebar({
 
   const totalCharacters = characters.length;
   const filteredCharactersCount =
-    selectedTags.length > 0 ? characters.filter((char) => selectedTags.every((tag) => char.tags.includes(tag))).length : totalCharacters;
+    selectedTags.length > 0 ? characters.filter((char) => selectedTags.every((tag) => char.tags?.includes(tag))).length : totalCharacters;
 
   return (
     <div className="w-44 border-r border-border bg-background/95">
@@ -62,23 +64,25 @@ export function CharacterSidebar({
             <p className="px-3 py-2 text-xs text-muted-foreground">No tags available</p>
           ) : (
             <>
-              {uniqueTags.map((tag) => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <div
-                    key={tag}
-                    className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:bg-accent/50 transition-colors ${
-                      isSelected ? "bg-accent/30" : ""
-                    }`}
-                    onClick={() => onTagSelect(tag)}
-                  >
-                    {isSelected && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/5 bg-primary rounded-r-sm" />}
-                    <span className="font-light text-sm truncate">
-                      {tag} <span className="text-muted-foreground text-xs">({tagCounts[tag]})</span>
-                    </span>
-                  </div>
-                );
-              })}
+              {uniqueTags
+                .filter((tag) => tag !== null)
+                .map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <div
+                      key={tag}
+                      className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:bg-accent/50 transition-colors ${
+                        isSelected ? "bg-accent/30" : ""
+                      }`}
+                      onClick={() => onTagSelect(tag)}
+                    >
+                      {isSelected && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/5 bg-primary rounded-r-sm" />}
+                      <span className="font-light text-sm truncate">
+                        {tag} <span className="text-muted-foreground text-xs">({tagCounts[tag]})</span>
+                      </span>
+                    </div>
+                  );
+                })}
             </>
           )}
         </div>

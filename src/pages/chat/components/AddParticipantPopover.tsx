@@ -119,9 +119,9 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
             {filteredCharacters.length > 0 ? (
               filteredCharacters.map(renderCharacterItem)
             ) : (
-              <div className="text-center py-4 text-muted-foreground text-sm">
+              <div className="text-center py-1 text-muted-foreground text-sm">
                 No characters found
-                <div className="text-xs mt-1 text-muted-foreground/70">Try a different search term</div>
+                <div className="text-xs text-muted-foreground/70">Try a different search term</div>
               </div>
             )}
           </div>

@@ -1,3 +1,4 @@
+import { AvatarCrop } from "@/components/shared/AvatarCrop";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,9 +52,11 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingName, setIsChangingName] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const { logout } = useProfile();
+  const [isChangingAvatar, setIsChangingAvatar] = useState(false);
+  const { logout, setCurrentProfile } = useProfile();
   const nameDialogRef = useRef<HTMLButtonElement>(null);
   const passwordDialogRef = useRef<HTMLButtonElement>(null);
+  const avatarDialogRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (currentProfile?.name) {
@@ -74,7 +77,9 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
 
     try {
       setIsChangingName(true);
-      await updateProfile(currentProfile.id, { name: newProfileName.trim() });
+      const updatedProfile = await updateProfile(currentProfile.id, { name: newProfileName.trim() });
+      // Update the current profile in context directly with the updated profile
+      setCurrentProfile(updatedProfile);
       await refreshProfiles();
       toast.success("Profile name updated successfully");
       // Close the dialog programmatically
@@ -106,16 +111,19 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
     try {
       setIsChangingPassword(true);
 
-      // Use the appropriate method for password change
+      // Use the appropriate method for password change and get the updated profile
+      let updatedProfile;
       if (currentProfile.hasPassword) {
         // For existing passwords, we would need a special method
         // that handles current password verification
-        await updateProfilePassword(currentProfile.id, currentPassword, newPassword);
+        updatedProfile = await updateProfilePassword(currentProfile.id, currentPassword, newPassword);
       } else {
         // For new passwords, just update the profile
-        await updateProfilePassword(currentProfile.id, "", newPassword);
+        updatedProfile = await updateProfilePassword(currentProfile.id, "", newPassword);
       }
-
+      
+      // Update the current profile in context directly with the updated profile
+      setCurrentProfile(updatedProfile);
       await refreshProfiles();
       toast.success("Password updated successfully");
 
@@ -131,6 +139,31 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
       toast.error("Failed to update password. Please check your current password.");
     } finally {
       setIsChangingPassword(false);
+    }
+  };
+
+  const handleAvatarChange = async (croppedImage: string) => {
+    if (!currentProfile) {
+      toast.error("No profile selected");
+      return;
+    }
+
+    try {
+      setIsChangingAvatar(true);
+      // Update profile with new avatar
+      const updatedProfile = await updateProfile(currentProfile.id, { avatar_path: croppedImage });
+      // Update the current profile in context directly with the updated profile
+      setCurrentProfile(updatedProfile);
+      await refreshProfiles();
+      toast.success("Avatar updated successfully");
+
+      // Close the dialog programmatically
+      avatarDialogRef.current?.click();
+    } catch (error) {
+      console.error("Failed to update avatar:", error);
+      toast.error("Failed to update avatar");
+    } finally {
+      setIsChangingAvatar(false);
     }
   };
 
@@ -197,6 +230,55 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                       disabled={isChangingName || !newProfileName.trim() || newProfileName === currentProfile?.name}
                     >
                       {isChangingName ? "Saving..." : "Save"}
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <UserCircle className="w-4 h-4" />
+              <Label>Avatar</Label>
+              {currentProfile?.avatar_path && (
+                <div className="w-8 h-8 rounded-full overflow-hidden ml-2 border border-border">
+                  <img src={currentProfile.avatar_path} alt={`${currentProfile.name}'s avatar`} className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Change Avatar</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Change Avatar</DialogTitle>
+                  <DialogDescription>Upload a new avatar for your profile.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-center">
+                      <div className="w-24 h-24 rounded-full overflow-hidden">
+                        <AvatarCrop
+                          onCropComplete={handleAvatarChange}
+                          existingImage={currentProfile?.avatar_path || ""}
+                          cropShape="round"
+                          className="w-full h-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="secondary">Cancel</Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button ref={avatarDialogRef} variant="default" disabled={isChangingAvatar}>
+                      {isChangingAvatar ? "Saving..." : "Save"}
                     </Button>
                   </DialogClose>
                 </DialogFooter>
@@ -351,7 +433,7 @@ export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const { theme, setTheme } = useTheme();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
-  const { currentProfile, refreshProfiles } = useProfile();
+  const { currentProfile, refreshProfiles, setCurrentProfile } = useProfile();
   const [isSaving, setIsSaving] = useState(false);
 
   // Create a debounce timer ref
@@ -366,7 +448,10 @@ export default function Settings() {
 
       try {
         setIsSaving(true);
-        await updateProfileSettings(currentProfile.id, settingsToSave);
+        const updatedProfile = await updateProfileSettings(currentProfile.id, settingsToSave);
+        console.log("Updated profile", updatedProfile);
+        // Update the current profile in context directly with the updated profile
+        setCurrentProfile(updatedProfile);
         await refreshProfiles();
         toast.success("Settings saved");
       } catch (error) {
@@ -376,7 +461,7 @@ export default function Settings() {
         setIsSaving(false);
       }
     },
-    [currentProfile, refreshProfiles],
+    [currentProfile, refreshProfiles, setCurrentProfile],
   );
 
   // Load settings from profile on mount
@@ -483,8 +568,8 @@ export default function Settings() {
   );
 
   return (
-    <div className="flex flex-col h-full text-foreground relative ">
-      <div className="container py-6 mx-auto page-container">
+    <div className="flex flex-col h-full text-foreground relative">
+      <div className="w-full page-container">
         <div className="flex items-center justify-between mb-6">
           <h1 className="title">Settings</h1>
           {isSaving && (
@@ -796,18 +881,21 @@ export default function Settings() {
 
                 <Separator />
 
-                <div className="space-y-3">
+                <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Folder className="w-4 h-4" />
                     <Label>Expression Pack Directory</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <p className="text-sm text-muted-foreground flex-1">Current Directory: {settings.system.expressionPackDirectory || "Not set"}</p>
-                    <Button variant="outline" size="sm" onClick={selectDirectory}>
+                    <p className="text-xs text-muted-foreground flex-1">
+                      Current Directory: {settings.system.expressionPackDirectory || "Not set"}
+                      <br />
+                      Doesn't move current data.
+                    </p>
+                    <Button variant="outline" onClick={selectDirectory}>
                       Select Directory
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">Doesn't move current data.</p>
                 </div>
 
                 <Separator />

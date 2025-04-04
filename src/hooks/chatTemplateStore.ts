@@ -152,7 +152,6 @@ export const useChatTemplateStore = create<ChatTemplateState>((set, get) => ({
       try {
         set({ isLoading: true, error: null });
         const templates = await listChatTemplatesAPI(filter);
-        console.log("templates", templates);
         set({ chatTemplates: templates, isLoading: false });
       } catch (error) {
         console.log("error", error);
