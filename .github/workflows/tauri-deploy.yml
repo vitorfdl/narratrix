@@ -1,9 +1,8 @@
 name: "publish"
 
 on:
-  push:
-    branches:
-      - master
+  release:
+    types: [created]
 
 jobs:
   publish-tauri:
@@ -45,8 +44,11 @@ jobs:
         # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
         # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
 
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+
       - name: install frontend dependencies
-        run: npm install # change this to npm, pnpm or bun depending on which one you use.
+        run: pnpm install # using pnpm as the package manager
 
       - uses: tauri-apps/tauri-action@v0
         env:
