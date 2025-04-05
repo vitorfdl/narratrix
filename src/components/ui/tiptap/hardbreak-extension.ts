@@ -9,13 +9,13 @@ export const CustomHardBreak = HardBreak.extend({
   },
 });
 
-export function clipboardTextParser(text, context, plain) {
+export function clipboardTextParser(text: string, context: { doc: { type: { schema: any } } }, _plain: boolean): Slice {
   // Create a single paragraph with hard breaks instead of multiple paragraphs
   const lines = text.split(/(?:\r\n?|\n)/);
-  const content = [];
+  const content: { type: string; text?: string }[] = [];
 
   // Process lines into text nodes with hard breaks between them
-  lines.forEach((line, index) => {
+  lines.forEach((line: string, index: number) => {
     if (line.length > 0) {
       content.push({ type: "text", text: line });
     }

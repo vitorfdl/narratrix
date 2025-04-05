@@ -187,7 +187,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
   };
 
   // Custom handler for drag stop to enforce maxRows
-  const handleDragStop = (layout: Layout[], oldItem: Layout, newItem: Layout) => {
+  const handleDragStop = (layout: Layout[], _oldItem: Layout, newItem: Layout) => {
     // Check if the dragged item is now extending beyond maxRows
     if (newItem.y + newItem.h > maxRows) {
       // Adjust its position to fit within maxRows

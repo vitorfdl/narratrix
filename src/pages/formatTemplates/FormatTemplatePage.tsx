@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useFormatTemplate, useFormatTemplateList, useTemplateActions, useTemplateError } from "@/hooks/templateStore";
+import { useFormatTemplateList, useTemplateActions, useTemplateError } from "@/hooks/templateStore";
 import { useSessionCurrentFormatTemplate } from "@/utils/session-storage";
 import { HelpCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -17,11 +17,11 @@ export default function FormatTemplatePage() {
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [templateCreationFailed, setTemplateCreationFailed] = useState(false);
   const error = useTemplateError();
-  const { getFormatTemplatesByProfile, updateFormatTemplate, createFormatTemplate } = useTemplateActions();
+  const { getFormatTemplatesByProfile, createFormatTemplate } = useTemplateActions();
 
   // Find the current template from store based on selected ID using useMemo
   const formatTemplates = useFormatTemplateList();
-  const currentTemplate = useFormatTemplate(selectedTemplateId ?? "");
+  // const currentTemplate = useFormatTemplate(selectedTemplateId ?? "");
 
   // Fetch templates when profile changes
   useEffect(() => {

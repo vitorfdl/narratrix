@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useInferenceTemplate } from "@/hooks/templateStore";
-import { Manifest } from "@/schema/model-manifest-schema";
 import { Clock, Cpu, EditIcon, MoreVertical, Settings2Icon, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Model } from "../../../schema/models-schema";
@@ -19,7 +18,7 @@ interface ModelCardProps {
 export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: ModelCardProps) {
   const { getManifestById } = useModelManifestsActions();
   const [manifestName, setManifestName] = useState<string>("");
-  const [manifestFields, setManifestFields] = useState<Manifest["fields"]>([]);
+  // const [manifestFields, setManifestFields] = useState<Manifest["fields"]>([]);
   const inferenceTemplate = useInferenceTemplate(model.inference_template_id || "");
   // For demonstration purposes, you can replace these with actual model properties
   const isNew = model.created_at && new Date().getTime() - new Date(model.created_at).getTime() < 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -32,7 +31,7 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
         const manifest = await getManifestById(model.manifest_id);
         if (manifest) {
           setManifestName(manifest.name);
-          setManifestFields(manifest.fields);
+          // setManifestFields(manifest.fields);
         }
       } catch (error) {
         console.error("Failed to fetch manifest:", error);
@@ -86,8 +85,8 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
 
     if (fieldKey && fieldValue) {
       // Try to find the matching label from manifest fields
-      const fieldDef = manifestFields.find((field) => field.key === fieldKey);
-      const label = fieldDef?.label || fieldKey;
+      // const fieldDef = manifestFields.find((field) => field.key === fieldKey);
+      // const label = fieldDef?.label || fieldKey;
       return fieldValue;
     }
 

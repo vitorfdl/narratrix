@@ -100,7 +100,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     updateCharacter: async (id: string, updateData) => {
       try {
         set({ isLoading: true, error: null });
-        const updatedCharacter = await updateCharacterAPI(id, updateData);
+        const updatedCharacter = await updateCharacterAPI(id, updateData as any);
 
         if (updatedCharacter) {
           // Update the character in our store

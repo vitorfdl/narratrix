@@ -11,7 +11,7 @@ interface CharacterCardProps {
   onDelete: (model: CharacterUnion) => void;
 }
 
-export function CharacterCard({ model, cardSize, onEdit, onDelete }: CharacterCardProps) {
+export function CharacterCard({ model, onEdit, onDelete }: CharacterCardProps) {
   // Get the avatar URL from settings or custom fields
   const avatarUrl = (model?.avatar_path as string) || "/avatars/default.jpg";
 

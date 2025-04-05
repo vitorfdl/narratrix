@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StringArray } from "@/components/ui/string-array";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions, useTemplateError } from "@/hooks/templateStore";
+import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
@@ -44,14 +44,12 @@ export const CheckboxWithLabel: React.FC<CheckboxWithLabelProps> = ({ id, label,
   </div>
 );
 
-interface InstructTemplateSectionProps {}
-
 export function InstructTemplateSection() {
   const [instructTemplateID, setInstructTemplateID] = useState<string | null>(null);
   const { updateInferenceTemplate, createInferenceTemplate, deleteInferenceTemplate } = useTemplateActions();
   const currentTemplate = useInferenceTemplate(instructTemplateID ?? "");
   const templateList = useInferenceTemplateList();
-  const error = useTemplateError();
+  // const error = useTemplateError();
   const profile = useProfile();
 
   // Track if we're currently updating to prevent loops

@@ -289,7 +289,7 @@ export const useChatStore = create<chatState>((set, get) => ({
 
         const updatedParticipants = currentParticipants.filter((p) => p.id !== participantId);
 
-        const updatedChat = await get().actions.updateSelectedChat({
+        await get().actions.updateSelectedChat({
           participants: updatedParticipants,
         });
 
@@ -329,7 +329,7 @@ export const useChatStore = create<chatState>((set, get) => ({
           ...data,
         };
 
-        const updatedChat = await get().actions.updateSelectedChat({
+        await get().actions.updateSelectedChat({
           participants: updatedParticipants,
         });
 
@@ -580,7 +580,7 @@ export const useChatStore = create<chatState>((set, get) => ({
         // Update the selectedChatChapters
         const updatedChapters = chapters.filter((chapter) => chapter.id !== chapterId);
 
-        set((state) => ({
+        set(() => ({
           selectedChatChapters: updatedChapters,
           isLoading: false,
         }));

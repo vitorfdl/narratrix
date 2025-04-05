@@ -9,7 +9,7 @@ interface ExpressionPackPreviewProps {
   expressions: Expression[];
 }
 
-export function ExpressionPackPreview({ character_id, expressions }: ExpressionPackPreviewProps) {
+export function ExpressionPackPreview({ expressions }: ExpressionPackPreviewProps) {
   const onRefresh = () => {
     console.log("Refresh expressions");
   };

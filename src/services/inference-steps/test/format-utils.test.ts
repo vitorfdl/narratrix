@@ -4,10 +4,10 @@ import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages 
 
 describe("collapseConsecutiveLines", () => {
   it("should collapse 3 or more consecutive line breaks into 2", () => {
-    const messages: Partial<InferenceMessage>[] = [
+    const messages: InferenceMessage[] = [
       { role: "user", text: "Line 1\n\n\nLine 2\n\n\n\nLine 3" },
       { role: "assistant", text: "Response 1\n\n\n\n\nResponse 2" },
-    ] as InferenceMessage[];
+    ];
 
     const result = collapseConsecutiveLines(messages);
 
@@ -18,10 +18,10 @@ describe("collapseConsecutiveLines", () => {
   });
 
   it("should not modify messages with less than 3 consecutive line breaks", () => {
-    const messages: Partial<InferenceMessage>[] = [
+    const messages: InferenceMessage[] = [
       { role: "user", text: "Line 1\n\nLine 2" },
       { role: "assistant", text: "Response 1\nResponse 2" },
-    ] as InferenceMessage[];
+    ];
 
     const result = collapseConsecutiveLines(messages);
 
@@ -29,10 +29,10 @@ describe("collapseConsecutiveLines", () => {
   });
 
   it("should handle messages with empty or undefined text", () => {
-    const messages: Partial<InferenceMessage>[] = [
+    const messages: InferenceMessage[] = [
       { role: "user", text: "" },
-      { role: "assistant", text: undefined },
-    ] as InferenceMessage[];
+      { role: "assistant", text: "" },
+    ];
 
     const result = collapseConsecutiveLines(messages);
 
@@ -42,11 +42,11 @@ describe("collapseConsecutiveLines", () => {
 
 describe("mergeMessagesOnUser", () => {
   it("should merge all messages into a single user message", () => {
-    const messages: Partial<InferenceMessage>[] = [
+    const messages: InferenceMessage[] = [
       { role: "user", text: "Message 1" },
       { role: "assistant", text: "Response 1" },
       { role: "user", text: "Message 2" },
-    ] as InferenceMessage[];
+    ];
 
     const result = mergeMessagesOnUser(messages);
 
@@ -62,10 +62,10 @@ describe("mergeMessagesOnUser", () => {
   });
 
   it("should use custom separator when provided", () => {
-    const messages: Partial<InferenceMessage>[] = [
+    const messages: InferenceMessage[] = [
       { role: "user", text: "Message 1" },
       { role: "assistant", text: "Response 1" },
-    ] as InferenceMessage[];
+    ];
 
     const result = mergeMessagesOnUser(messages, " --- ");
 
@@ -75,13 +75,13 @@ describe("mergeMessagesOnUser", () => {
 
 describe("mergeSubsequentMessages", () => {
   it("should merge adjacent messages from the same role", () => {
-    const messages: Partial<InferenceMessage>[] = [
+    const messages: InferenceMessage[] = [
       { role: "user", text: "User message 1" },
       { role: "user", text: "User message 2" },
       { role: "assistant", text: "Assistant response 1" },
       { role: "assistant", text: "Assistant response 2" },
       { role: "user", text: "User message 3" },
-    ] as InferenceMessage[];
+    ];
 
     const result = mergeSubsequentMessages(messages);
 
@@ -101,7 +101,7 @@ describe("mergeSubsequentMessages", () => {
   });
 
   it("should not modify array with single message", () => {
-    const messages: Partial<InferenceMessage>[] = [{ role: "user", text: "Single message" }] as InferenceMessage[];
+    const messages: InferenceMessage[] = [{ role: "user", text: "Single message" }];
 
     const result = mergeSubsequentMessages(messages);
 
@@ -109,10 +109,10 @@ describe("mergeSubsequentMessages", () => {
   });
 
   it("should use custom separator when provided", () => {
-    const messages: Partial<InferenceMessage>[] = [
+    const messages: InferenceMessage[] = [
       { role: "user", text: "Message 1" },
       { role: "user", text: "Message 2" },
-    ] as InferenceMessage[];
+    ];
 
     const result = mergeSubsequentMessages(messages, " | ");
 
@@ -120,11 +120,11 @@ describe("mergeSubsequentMessages", () => {
   });
 
   it("should handle messages with undefined text", () => {
-    const messages: Partial<InferenceMessage>[] = [
+    const messages: InferenceMessage[] = [
       { role: "user", text: "Message 1" },
-      { role: "user", text: undefined },
+      { role: "user", text: "Message 1" },
       { role: "user", text: "Message 2" },
-    ] as InferenceMessage[];
+    ];
 
     const result = mergeSubsequentMessages(messages);
 

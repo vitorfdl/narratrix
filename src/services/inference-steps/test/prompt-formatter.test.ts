@@ -22,7 +22,7 @@ describe("replaceTextPlaceholders", () => {
       { role: "assistant", text: "Hello {{user}}, I'm {{character.name}}" },
     ];
 
-    const config = {
+    const config: any = {
       character: { name: "Alice", type: "character" },
       user_character: { name: "Bob" },
     };
@@ -48,7 +48,7 @@ describe("replaceTextPlaceholders", () => {
       User Personality: {{user.personality}}
     `;
 
-    const config = {
+    const config: any = {
       character: {
         name: "Alice",
         type: "character",
@@ -85,7 +85,7 @@ describe("replaceTextPlaceholders", () => {
 
     const systemPrompt = "{{character.personality}} and {{user.personality}}";
 
-    const config = {
+    const config: any = {
       character: { name: "Alice", type: "character" },
       // Missing personality and user_character
     };
@@ -99,7 +99,7 @@ describe("replaceTextPlaceholders", () => {
   it("should handle non-character type properly", () => {
     const systemPrompt = "{{character.personality}}";
 
-    const config = {
+    const config: any = {
       character: {
         name: "Alice",
         type: "bot", // Not "character" type

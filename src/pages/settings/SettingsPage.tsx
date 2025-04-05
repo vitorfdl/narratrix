@@ -112,7 +112,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
       setIsChangingPassword(true);
 
       // Use the appropriate method for password change and get the updated profile
-      let updatedProfile;
+      let updatedProfile: any;
       if (currentProfile.hasPassword) {
         // For existing passwords, we would need a special method
         // that handles current password verification
@@ -121,7 +121,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
         // For new passwords, just update the profile
         updatedProfile = await updateProfilePassword(currentProfile.id, "", newPassword);
       }
-      
+
       // Update the current profile in context directly with the updated profile
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
@@ -431,7 +431,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
 
 export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
   const { currentProfile, refreshProfiles, setCurrentProfile } = useProfile();
   const [isSaving, setIsSaving] = useState(false);

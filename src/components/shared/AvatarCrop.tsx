@@ -38,7 +38,7 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
   const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+  // const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     setDisplayImage(existingImage);
@@ -54,19 +54,19 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
     }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
+  // const handleDragOver = (e: React.DragEvent<HTMLElement>) => {
+  //   e.preventDefault();
+  //   setIsDragging(true);
+  // };
 
-  const handleDragLeave = (e: React.DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
+  // const handleDragLeave = (e: React.DragEvent<HTMLElement>) => {
+  //   e.preventDefault();
+  //   setIsDragging(false);
+  // };
 
   const handleDrop = async (e: React.DragEvent<HTMLElement>) => {
     e.preventDefault();
-    setIsDragging(false);
+    // setIsDragging(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
@@ -147,8 +147,8 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
       className={`flex flex-col items-center justify-center p-4 border-2 border-dashed transition-all h-full w-full
         border-muted-foreground/20 hover:border-primary hover:bg-primary/5 ${cropShape === "round" ? "rounded-full" : "rounded-md"} ${uploadPlaceholderClassName}
         cursor-pointer`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      // onDragOver={handleDragOver}
+      // onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {placeholder || (
@@ -164,8 +164,8 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
   const renderImageWithEditButton = () => (
     <div
       className="relative group h-full w-full flex items-center justify-center"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      // onDragOver={handleDragOver}
+      // onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className={`h-full w-full overflow-hidden flex items-center justify-center ${cropShape === "round" ? "rounded-full" : "rounded-md"}`}>

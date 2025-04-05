@@ -139,7 +139,6 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
   const { addParticipant, removeParticipant, toggleParticipantEnabled, updateSelectedChat } = useChatActions();
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
-  const [triggeringParticipantIds, setTriggeringParticipantIds] = useState<string[]>([]);
   const inferenceService = useInferenceServiceFromContext();
   // Get user character if it exists
   const userCharacter = currentChatUserCharacterID ? characterList.find((char) => char.id === currentChatUserCharacterID) : null;
@@ -253,15 +252,11 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
       }
 
       if (inferenceService.getStreamingState().characterId === participantId) {
-        setTriggeringParticipantIds((prev) => prev.filter((id) => id !== participantId));
         inferenceService.cancelGeneration();
         return;
       }
 
       try {
-        // Add to the triggering list
-        setTriggeringParticipantIds((prev) => [...prev, participantId]);
-
         // Find the associated character
         const character = characterList.find((char) => char.id === participantId);
         if (!character) {
@@ -272,17 +267,10 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         // Use the inference service to generate a message
         await inferenceService.generateMessage({
           characterId: participantId,
-          onStreamingStateChange: (state) => {
-            // Update triggering state based on streaming state
-            if (!state) {
-              setTriggeringParticipantIds((prev) => prev.filter((id) => id !== participantId));
-            }
-          },
         });
       } catch (error) {
         console.error("Error triggering message:", error);
         // Remove from triggering list if there was an error
-        setTriggeringParticipantIds((prev) => prev.filter((id) => id !== participantId));
       }
     },
     [characterList, messages, inferenceService],

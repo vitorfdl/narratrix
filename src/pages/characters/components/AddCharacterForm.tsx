@@ -149,7 +149,7 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
   const [name, setName] = useState(initialData?.name || "");
   const [version, setVersion] = useState(initialData?.version || "1.0.0");
   const [avatarImage, setAvatarImage] = useState<string | null>(initialData?.avatar_path || null);
-  const [tags, setTags] = useState<string[]>(initialData?.tags || []);
+  const [tags, _setTags] = useState<string[]>(initialData?.tags || []);
   const [personality, setPersonality] = useState(initialData?.type === "character" ? (initialData?.custom?.personality as string) || "" : "");
   const [systemPrompt, setSystemPrompt] = useState(initialData?.system_override || "");
   const [preserveLastResponse, setPreserveLastResponse] = useState(

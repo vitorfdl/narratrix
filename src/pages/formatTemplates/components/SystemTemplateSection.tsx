@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
-import { useProfile } from "@/hooks/ProfileContext";
 import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-format-schema";
@@ -95,7 +94,7 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
   const currentTemplate = useFormatTemplate(formatTemplateID ?? "");
   const { updateFormatTemplate } = useTemplateActions();
 
-  const profile = useProfile();
+  // const profile = useProfile();
 
   // Local state for UI
   const [prompts, setPrompts] = useState<PromptItem[]>([]);

@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.narratrix.app",
   "build": {
-    "beforeDevCommand": "deno task dev",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "deno task build",
+    "beforeBuildCommand": "npm run build --ignore-warnings",
     "frontendDist": "../dist"
   },
   "app": {
