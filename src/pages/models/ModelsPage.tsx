@@ -101,7 +101,7 @@ export default function Models() {
     }
   };
 
-  const handleConfigSave = async (modelId: string, updates: { max_concurrency: number; format_template_id?: string }) => {
+  const handleConfigSave = async (modelId: string, updates: { max_concurrency: number; inference_template_id?: string | null }) => {
     setIsUpdating(true);
     try {
       await updateModel(modelId, updates);
@@ -130,7 +130,7 @@ export default function Models() {
           modelGroups.map((group) => (
             <div key={group.type} className="space-y-2">
               <h2 className="text-base font-semibold tracking-tight">{group.title}</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {group.models.map((model) => (
                   <ModelCard
                     key={model.id}

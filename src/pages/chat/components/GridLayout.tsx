@@ -27,9 +27,9 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
   const [positions, setPositions] = useLocalGridLayout();
   const [layoutReady, setLayoutReady] = useState(false);
   const [currentBreakpoint, setCurrentBreakpoint] = useState<keyof typeof COLUMNS>("lg");
-  const [maxRows, setMaxRows] = useState(20);
+  const [maxRows, setMaxRows] = useState(21);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rowHeight = 30;
+  const rowHeight = 35;
   const margin = 4;
   // Add a ref to track if we're currently changing breakpoints
   const isBreakpointChanging = useRef(false);

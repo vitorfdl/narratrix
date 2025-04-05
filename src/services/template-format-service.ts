@@ -1,30 +1,15 @@
-import { FormatTemplate, formatTemplateSchema } from "@/schema/template-format-schema.ts";
+import { FormatTemplate, NewFormatTemplate, formatTemplateSchema } from "@/schema/template-format-schema.ts";
 import { uuidUtils } from "@/schema/utils-schema.ts";
-import { executeDBQuery, selectDBQuery } from "@/utils/database.ts";
+import { buildUpdateParams, executeDBQuery, selectDBQuery } from "@/utils/database.ts";
 import { formatDateTime } from "@/utils/date-time.ts";
-
-// Interface for creating a new format template
-export interface NewFormatTemplateParams {
-  profile_id: string;
-  name: string;
-  inference_template_id?: string | null;
-  prompt_template_id?: string | null;
-  config?: {
-    settings: Record<string, any>;
-    reasoning: Record<string, any>;
-    use_global_context: boolean;
-  };
-}
 
 // Interface for filtering format templates
 export interface FormatTemplateFilter {
   profile_id?: string;
-  inference_template_id?: string;
-  prompt_template_id?: string;
 }
 
 // Create a new format template
-export async function createFormatTemplate(templateData: NewFormatTemplateParams): Promise<FormatTemplate> {
+export async function createFormatTemplate(templateData: NewFormatTemplate): Promise<FormatTemplate> {
   // Validate profile_id is a valid UUID
   const profileId = uuidUtils.uuid().parse(templateData.profile_id);
 
@@ -36,28 +21,18 @@ export async function createFormatTemplate(templateData: NewFormatTemplateParams
     id,
     profile_id: profileId,
     name: templateData.name,
-    inference_template_id: templateData.inference_template_id,
-    prompt_template_id: templateData.prompt_template_id,
     config: templateData.config || {},
     created_at: new Date(now),
     updated_at: new Date(now),
   });
 
   const configStr = JSON.stringify(validatedTemplate.config);
+  const promptsStr = JSON.stringify(validatedTemplate.prompts);
 
   await executeDBQuery(
-    `INSERT INTO format_template (id, profile_id, name, inference_template_id, prompt_template_id, config, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [
-      validatedTemplate.id,
-      validatedTemplate.profile_id,
-      validatedTemplate.name,
-      validatedTemplate.inference_template_id,
-      validatedTemplate.prompt_template_id,
-      configStr,
-      now,
-      now,
-    ],
+    `INSERT INTO format_template (id, profile_id, name, config, prompts, created_at, updated_at) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [validatedTemplate.id, validatedTemplate.profile_id, validatedTemplate.name, configStr, promptsStr, now, now],
   );
 
   // Return the validated template
@@ -74,9 +49,8 @@ export async function getFormatTemplateById(id: string): Promise<FormatTemplate 
       id, 
       profile_id, 
       name, 
-      inference_template_id, 
-      prompt_template_id, 
       config,
+      prompts,
       created_at, 
       updated_at
     FROM format_template 
@@ -95,6 +69,10 @@ export async function getFormatTemplateById(id: string): Promise<FormatTemplate 
     template.config = JSON.parse(template.config);
   }
 
+  if (typeof template.prompts === "string") {
+    template.prompts = JSON.parse(template.prompts);
+  }
+
   // Convert date strings to Date objects
   template.created_at = new Date(template.created_at);
   template.updated_at = new Date(template.updated_at);
@@ -110,9 +88,8 @@ export async function listFormatTemplates(filter?: FormatTemplateFilter): Promis
       id, 
       profile_id, 
       name, 
-      inference_template_id, 
-      prompt_template_id, 
       config,
+      prompts,
       created_at, 
       updated_at
     FROM format_template
@@ -127,18 +104,6 @@ export async function listFormatTemplates(filter?: FormatTemplateFilter): Promis
     if (filter.profile_id) {
       conditions.push(`profile_id = $${paramIndex}`);
       params.push(uuidUtils.uuid().parse(filter.profile_id));
-      paramIndex++;
-    }
-
-    if (filter.inference_template_id) {
-      conditions.push(`inference_template_id = $${paramIndex}`);
-      params.push(filter.inference_template_id);
-      paramIndex++;
-    }
-
-    if (filter.prompt_template_id) {
-      conditions.push(`prompt_template_id = $${paramIndex}`);
-      params.push(filter.prompt_template_id);
       paramIndex++;
     }
   }
@@ -158,6 +123,10 @@ export async function listFormatTemplates(filter?: FormatTemplateFilter): Promis
     // Parse config from string to object if needed
     if (typeof template.config === "string") {
       template.config = JSON.parse(template.config);
+    }
+
+    if (typeof template.prompts === "string") {
+      template.prompts = JSON.parse(template.prompts);
     }
 
     // Convert date strings to Date objects
@@ -182,28 +151,8 @@ export async function updateFormatTemplate(
     return null;
   }
 
-  // Build query parts
-  const updates: string[] = [];
-  const values: any[] = [];
-  let paramIndex = 1;
-
-  if (updateData.name !== undefined) {
-    updates.push(`name = $${paramIndex}`);
-    values.push(updateData.name);
-    paramIndex++;
-  }
-
-  if (updateData.inference_template_id !== undefined) {
-    updates.push(`inference_template_id = $${paramIndex}`);
-    values.push(updateData.inference_template_id);
-    paramIndex++;
-  }
-
-  if (updateData.prompt_template_id !== undefined) {
-    updates.push(`prompt_template_id = $${paramIndex}`);
-    values.push(updateData.prompt_template_id);
-    paramIndex++;
-  }
+  // Process config for update
+  const processedData: Partial<FormatTemplate> = { ...updateData };
 
   if (updateData.config !== undefined) {
     let newConfig = updateData.config;
@@ -223,24 +172,21 @@ export async function updateFormatTemplate(
       };
     }
 
-    const configStr = JSON.stringify(newConfig);
-    updates.push(`config = $${paramIndex}`);
-    values.push(configStr);
-    paramIndex++;
+    processedData.config = newConfig;
   }
 
-  // Always update the updated_at timestamp
-  const now = formatDateTime();
-  updates.push(`updated_at = $${paramIndex}`);
-  values.push(now);
-  paramIndex++;
+  // Define field mappings for complex types
+  const fieldMapping = {
+    config: (value: object) => JSON.stringify(value),
+    prompts: (value: object) => JSON.stringify(value),
+  };
 
-  // Add the ID for the WHERE clause
-  values.push(validId);
+  // Build update query using the utility
+  const queryBuilder = buildUpdateParams(validId, processedData, fieldMapping);
 
   // Execute update if there are fields to update
-  if (updates.length > 0) {
-    await executeDBQuery(`UPDATE format_template SET ${updates.join(", ")} WHERE id = $${paramIndex}`, values);
+  if (queryBuilder.updates.length > 0) {
+    await executeDBQuery(`UPDATE format_template SET ${queryBuilder.updates.join(", ")}${queryBuilder.whereClause}`, queryBuilder.values);
   }
 
   // Return the updated template

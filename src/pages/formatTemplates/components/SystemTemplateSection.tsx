@@ -1,22 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
-import { usePromptTemplate, usePromptTemplateList, useTemplateActions } from "@/hooks/templateStore";
+import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
-import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-prompt-schema";
+import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-format-schema";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronUp, GripVertical, Plus, Trash } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Paperclip, Plus, Trash } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import "../styles/shared.css";
-import { TemplatePicker } from "./TemplatePicker";
 
 // Extended interface for prompt items with UI state
 interface PromptItem extends SystemPromptSection {
@@ -91,24 +88,19 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
 }
 
 interface SystemPromptSectionProps {
-  useGlobal: boolean;
-  setUseGlobal: (useGlobal: boolean) => void;
-  systemTemplateID: string | null;
-  onTemplateChange: (templateId: string | null) => void;
+  formatTemplateID: string | null;
 }
 
-export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange, useGlobal, setUseGlobal }: SystemPromptSectionProps) {
-  // Memoize selectors to avoid recreating them on each render
-  const promptTemplates = usePromptTemplateList();
-  const { updatePromptTemplate, createPromptTemplate, deletePromptTemplate } = useTemplateActions();
-  const currentTemplate = usePromptTemplate(systemTemplateID ?? "");
+export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSectionProps) {
+  const currentTemplate = useFormatTemplate(formatTemplateID ?? "");
+  const { updateFormatTemplate } = useTemplateActions();
 
   const profile = useProfile();
 
   // Local state for UI
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
 
-  const isDisabled = !systemTemplateID || useGlobal;
+  const isDisabled = !formatTemplateID;
 
   // Transform template sections to UI items when template changes
   useEffect(() => {
@@ -118,7 +110,7 @@ export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange
     }
 
     // Transform sections to items with UI state while preserving collapse state
-    const items = currentTemplate.config.map((section, index) => {
+    const items = currentTemplate.prompts.map((section, index) => {
       // Try to find existing prompt to preserve collapse state
       const existingPrompt = prompts.find((p) => p.type === section.type);
 
@@ -139,7 +131,7 @@ export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange
 
   // Single debounced update that uses current prompts state
   const debouncedUpdate = useDebouncedCallback(async () => {
-    if (!systemTemplateID || !currentTemplate || isDisabled) {
+    if (!formatTemplateID || !currentTemplate || isDisabled) {
       return;
     }
 
@@ -150,11 +142,11 @@ export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange
     }));
 
     try {
-      await updatePromptTemplate(systemTemplateID, { config });
+      await updateFormatTemplate(formatTemplateID, { prompts: config });
     } catch (error) {
       console.error("Failed to update template:", error);
     }
-  }, 500);
+  }, 200);
 
   // Handle adding a new prompt section
   const handleAddPrompt = useCallback(
@@ -245,94 +237,20 @@ export function SystemPromptTemplateSection({ systemTemplateID, onTemplateChange
   // Filter available types that are not already used
   const availableTypes = useMemo(() => SYSTEM_PROMPT_TYPES.filter((type) => !prompts.some((prompt) => prompt.type === type)), [prompts.length]);
 
-  // Template management handlers - memoized to prevent recreation
-  const handleDeleteTemplate = useCallback(async () => {
-    if (systemTemplateID) {
-      // If deleting currently selected template, clear selection first
-      onTemplateChange(null);
-      await deletePromptTemplate(systemTemplateID);
-    }
-  }, [deletePromptTemplate, systemTemplateID, onTemplateChange]);
-
-  const handleNewTemplate = useCallback(
-    async (name: string) => {
-      try {
-        const newTemplate = await createPromptTemplate({
-          name: name,
-          config: [],
-          profile_id: profile?.currentProfile?.id ?? "",
-        });
-
-        // Auto-select the new template
-        if (newTemplate) {
-          onTemplateChange(newTemplate.id);
-        }
-      } catch (error) {
-        console.error("Failed to create new template:", error);
-      }
-    },
-    [createPromptTemplate, onTemplateChange, profile?.currentProfile?.id],
-  );
-
-  const handleEditName = useCallback(
-    async (_unused: string, name: string) => {
-      try {
-        if (!systemTemplateID) {
-          return;
-        }
-        await updatePromptTemplate(systemTemplateID, { name });
-      } catch (error) {
-        console.error("Failed to update template name:", error);
-      }
-    },
-    [updatePromptTemplate, systemTemplateID],
-  );
-
-  const handleImportTemplate = useCallback(() => {
-    // To be implemented
-    console.log("Import template");
-  }, []);
-
-  const handleExportTemplate = useCallback(() => {
-    // To be implemented
-    console.log("Export template", systemTemplateID);
-  }, [systemTemplateID]);
-
-  // Memoize the checkbox change handler to prevent recreation on each render
-  const handleGlobalCheckChange = useCallback(
-    (checked: boolean) => {
-      setUseGlobal(checked);
-    },
-    [setUseGlobal],
-  );
-
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="inference-section-header">System Prompts</CardTitle>
-        <div className="flex items-center space-x-2">
+      <CardHeader>
+        <CardTitle className="inference-section-header flex items-center gap-1 pb-2 border-b ">
+          <Paperclip className="h-5 w-5" /> System Prompts
+        </CardTitle>
+        {/* <div className="flex items-center space-x-2">
           <Checkbox id="useGlobal" checked={useGlobal} onCheckedChange={handleGlobalCheckChange} />
           <Label htmlFor="useGlobal" className="text-sm text-muted-foreground">
             Use Global
           </Label>
-        </div>
+        </div> */}
       </CardHeader>
       <CardContent className="space-y-2">
-        {!useGlobal && (
-          <div className="">
-            <TemplatePicker
-              templates={promptTemplates}
-              selectedTemplateId={systemTemplateID}
-              onTemplateSelect={onTemplateChange}
-              onDelete={handleDeleteTemplate}
-              onNewTemplate={handleNewTemplate}
-              onEditName={handleEditName}
-              onImport={handleImportTemplate}
-              onExport={handleExportTemplate}
-            />
-          </div>
-        )}
-
         <div className={`space-y-1 ${isDisabled ? "opacity-70" : ""}`}>
           <DndContext
             collisionDetection={closestCenter}

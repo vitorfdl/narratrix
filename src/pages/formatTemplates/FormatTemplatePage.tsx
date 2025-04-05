@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useFormatTemplate, useFormatTemplateList, useTemplateActions, useTemplateError } from "@/hooks/templateStore";
-import { FormatTemplate } from "@/schema/template-format-schema";
 import { useSessionCurrentFormatTemplate } from "@/utils/session-storage";
 import { HelpCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -61,8 +60,22 @@ export default function FormatTemplatePage() {
           const newTemplate = await createFormatTemplate({
             name: "Default Format Template",
             profile_id: profile.currentProfile.id,
-            inference_template_id: null,
-            prompt_template_id: null,
+            config: {
+              settings: {
+                trim_assistant_incomplete: false,
+                trim_double_spaces: false,
+                collapse_consecutive_lines: false,
+                prefix_messages: "never",
+                apply_censorship: false,
+                merge_messages_on_user: false,
+                merge_subsequent_messages: false,
+              },
+              reasoning: {
+                prefix: "<think>\n",
+                suffix: "</think>",
+              },
+            },
+            prompts: [],
           });
 
           setSelectedTemplateId(newTemplate.id);
@@ -82,16 +95,6 @@ export default function FormatTemplatePage() {
   const handleTemplateChange = useCallback((templateId: string | null) => {
     setSelectedTemplateId(templateId);
   }, []);
-
-  // Handle updates to the template
-  const handleTemplateUpdate = useCallback(
-    async (updatedData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>) => {
-      if (selectedTemplateId) {
-        await updateFormatTemplate(selectedTemplateId, updatedData);
-      }
-    },
-    [selectedTemplateId],
-  );
 
   return (
     <div className="space-y-2 page-container">
@@ -117,30 +120,14 @@ export default function FormatTemplatePage() {
         <div className="text-destructive">Failed to create default template. Please try refreshing the page or create a template manually.</div>
       )}
 
-      <TemplateHeader formatTemplateID={selectedTemplateId} onTemplateChange={handleTemplateChange} />
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div className="space-y-2">
-          <SystemPromptTemplateSection
-            onTemplateChange={(id) => handleTemplateUpdate({ prompt_template_id: id })}
-            systemTemplateID={currentTemplate?.prompt_template_id || null}
-            useGlobal={currentTemplate?.config.use_global_context || false}
-            setUseGlobal={(useGlobal) =>
-              handleTemplateUpdate({
-                config: {
-                  ...currentTemplate!.config,
-                  use_global_context: useGlobal,
-                },
-              })
-            }
-          />
+          <TemplateHeader formatTemplateID={selectedTemplateId} onTemplateChange={handleTemplateChange} />
+          <SystemPromptTemplateSection formatTemplateID={selectedTemplateId} />
           <ExtraSections formatTemplateID={selectedTemplateId} />
         </div>
 
-        <InstructTemplateSection
-          onTemplateChange={(id) => handleTemplateUpdate({ inference_template_id: id })}
-          instructTemplateID={currentTemplate?.inference_template_id || null}
-        />
+        <InstructTemplateSection />
       </div>
     </div>
   );

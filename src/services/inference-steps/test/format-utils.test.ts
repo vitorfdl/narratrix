@@ -1,6 +1,6 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { describe, expect, it } from "vitest";
-import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./format-template-utils";
+import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "../format-template-utils";
 
 describe("collapseConsecutiveLines", () => {
   it("should collapse 3 or more consecutive line breaks into 2", () => {

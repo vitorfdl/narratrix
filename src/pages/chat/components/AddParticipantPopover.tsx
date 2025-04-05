@@ -13,9 +13,10 @@ interface AddParticipantPopoverProps {
   onOpenChange: (open: boolean) => void;
   onSelectCharacter: (characterId: string) => void;
   existingParticipantIds: string[];
+  title?: string;
 }
 
-const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharacter, existingParticipantIds }: AddParticipantPopoverProps) => {
+const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharacter, existingParticipantIds, title }: AddParticipantPopoverProps) => {
   const characters = useCharacters();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "characters" | "agents">("all");
@@ -85,7 +86,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
       <PopoverContent className="w-64 p-2 rounded-md" align="end" side="top" sideOffset={10}>
         <div className="flex items-center gap-2 mb-2">
           <UserRound size={14} className="text-primary" />
-          <h4 className="text-sm font-medium">Add Participant</h4>
+          <h4 className="text-sm font-medium">{title || "Add Participant"}</h4>
           <div className="text-xs text-muted-foreground ml-auto">{filteredCharacters.length} available</div>
         </div>
 

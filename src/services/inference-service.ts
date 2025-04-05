@@ -1,10 +1,18 @@
 import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatTemplateID, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import {
+  useChatActions,
+  useCurrentChatActiveChapterID,
+  useCurrentChatChapters,
+  useCurrentChatId,
+  useCurrentChatMessages,
+  useCurrentChatTemplateID,
+  useCurrentChatUserCharacterID,
+} from "@/hooks/chatStore";
 import { useChatTemplate } from "@/hooks/chatTemplateStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
 import { useModelById } from "@/hooks/modelsStore";
-import { useFormatTemplate, useInferenceTemplate, usePromptTemplate } from "@/hooks/templateStore";
+import { useFormatTemplate, useInferenceTemplate } from "@/hooks/templateStore";
 import { useInference } from "@/hooks/useInference";
 import { Character } from "@/schema/characters-schema";
 import { ChatMessageType } from "@/schema/chat-message-schema";
@@ -64,9 +72,11 @@ export function useInferenceService() {
   const modelSettings = useModelById(chatTemplate?.model_id || "");
   const manifestSettings = useModelManifestById(modelSettings?.manifest_id || "");
 
-  const formatTemplate = useFormatTemplate(modelSettings?.format_template_id || "");
-  const systemPromptTemplate = usePromptTemplate(formatTemplate?.prompt_template_id || "");
-  const inferenceTemplate = useInferenceTemplate(formatTemplate?.inference_template_id || "");
+  const formatTemplate = useFormatTemplate(chatTemplate?.format_template_id || "");
+  const inferenceTemplate = useInferenceTemplate(modelSettings?.inference_template_id || "");
+
+  const chapterList = useCurrentChatChapters();
+  const currentChapterID = useCurrentChatActiveChapterID();
 
   const characterList = useCharacters();
 
@@ -106,14 +116,14 @@ export function useInferenceService() {
         resetStreamingState();
       }
     },
-    onError: (error: unknown, requestId) => {
+    onError: (error: string, requestId) => {
       // Skip if this is for a different request
       if (requestId !== streamingState.current.requestId) {
         return;
       }
 
       toast.error("Inference error:", {
-        description: error instanceof Error ? error.message : "Unknown error",
+        description: error || "Unknown error",
       });
       console.error("Inference error:", error);
 
@@ -193,7 +203,6 @@ export function useInferenceService() {
         userMessage,
         modelSettings,
         formatTemplate,
-        systemPromptTemplate,
         inferenceTemplate,
         chatTemplate: {
           custom_prompts: chatTemplate?.custom_prompts,
@@ -202,10 +211,11 @@ export function useInferenceService() {
         chatConfig: {
           character: characterList.find((character) => character.id === streamingState.current.characterId),
           user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
+          chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
         },
       });
     },
-    [chatMessages, modelSettings, formatTemplate, systemPromptTemplate, inferenceTemplate, chatTemplate],
+    [chatMessages, modelSettings, formatTemplate, inferenceTemplate, chatTemplate],
   );
 
   /**
@@ -217,7 +227,7 @@ export function useInferenceService() {
         characterId,
         userMessage,
         systemPromptOverride = "",
-        parametersOverride = {},
+        parametersOverride,
         stream = true,
         existingMessageId = null,
         messageIndex = 0,
@@ -308,6 +318,8 @@ export function useInferenceService() {
           max_concurrent_requests: modelSettings.max_concurrency || 1,
           engine: manifestSettings.engine,
         };
+
+        console.log("parametersOverride", chatTemplate?.config);
 
         // Start the inference process
         const requestId = await runInference({

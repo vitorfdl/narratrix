@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
 import { TemplatePicker } from "@/pages/formatTemplates/components/TemplatePicker";
 import type { SectionField } from "@/schema/template-chat-settings-types";
-import { Layers, Layers2, PlusIcon, ServerIcon } from "lucide-react";
+import { Layers, Layers2, PaperclipIcon, PlusIcon, ServerIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useProfile } from "@/hooks/ProfileContext";
@@ -12,6 +12,7 @@ import { useChatStore, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
 import { useModels, useModelsActions } from "@/hooks/modelsStore";
+import { useFormatTemplateList } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { configFields } from "../manifests/configFields";
@@ -33,6 +34,7 @@ const WidgetConfig = () => {
   const { updateChatTemplate } = useChatTemplateActions();
   const models = useModels();
   const { fetchModels } = useModelsActions();
+  const formatTemplates = useFormatTemplateList();
 
   const profile = useProfile();
   const profileId = profile!.currentProfile!.id;
@@ -41,6 +43,7 @@ const WidgetConfig = () => {
   const [values, setValues] = useState<Record<string, any>>({});
   const [, setSelectedField] = useState<string>("");
   const [selectedModelId, setSelectedModelId] = useState<string>("");
+  const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string>("");
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
 
@@ -62,6 +65,11 @@ const WidgetConfig = () => {
       // Set model ID if available
       if (currentTemplate.model_id) {
         setSelectedModelId(currentTemplate.model_id);
+      }
+
+      // Set inference template ID if available
+      if (currentTemplate.format_template_id) {
+        setSelectedFormatTemplateId(currentTemplate.format_template_id);
       }
 
       // Set context size and response length from config
@@ -91,6 +99,7 @@ const WidgetConfig = () => {
       setActiveFields([]);
       setValues({});
       setSelectedModelId("");
+      setSelectedFormatTemplateId("");
       setContextSize(4096);
       setResponseLength(1024);
       setCustomPrompts([]);
@@ -216,6 +225,12 @@ const WidgetConfig = () => {
       }));
   }, [models]);
 
+  const formatTemplateOptions = useMemo(() => {
+    return formatTemplates.map((template) => ({
+      label: template.name,
+      value: template.id,
+    }));
+  }, [formatTemplates]);
   /**
    * Handles adding a field to the active fields list.
    *
@@ -306,6 +321,7 @@ const WidgetConfig = () => {
       // Update template
       updateChatTemplate(currentChatTemplateID, {
         model_id: selectedModelId || null,
+        format_template_id: selectedFormatTemplateId || null,
         config: configValues,
         custom_prompts: customPrompts,
       });
@@ -326,7 +342,7 @@ const WidgetConfig = () => {
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [selectedModelId, contextSize, responseLength, values, customPrompts, currentChatTemplateID]);
+  }, [selectedModelId, selectedFormatTemplateId, contextSize, responseLength, values, customPrompts, currentChatTemplateID]);
 
   // Custom prompts handlers
   const handleAddCustomPrompt = () => {
@@ -427,6 +443,28 @@ const WidgetConfig = () => {
                   {selectedModelId
                     ? modelOptions.find((model) => model.value === selectedModelId)?.label || "Select a model..."
                     : "Select a model..."}
+                </Button>
+              }
+            />
+          </div>
+        </div>
+
+        {/* Format Template Selection */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <PaperclipIcon className="!h-3 !w-3" />
+            <h3 className="text-xs font-normal my-auto">Format:</h3>
+          </div>
+          <div className="flex-1">
+            <Combobox
+              items={formatTemplateOptions}
+              onChange={setSelectedFormatTemplateId}
+              placeholder="Search a format..."
+              trigger={
+                <Button variant="outline" className="w-full justify-between text-xs px-2" disabled={isDisabled}>
+                  {selectedFormatTemplateId
+                    ? formatTemplates.find((template) => template.id === selectedFormatTemplateId)?.name || "Select a format..."
+                    : "Select a format..."}
                 </Button>
               }
             />

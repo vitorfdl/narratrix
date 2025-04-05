@@ -115,6 +115,14 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
             <div className="text-[0.6rem] text-muted-foreground capitalize truncate">{participant.type}</div>
           </div>
         )}
+
+        {/* Row 2: User Character if it exists */}
+        {participant.type === "user" && (
+          <div className="flex items-center justify-between mt-0 text-xs">
+            <div className="text-[0.6rem] text-muted-foreground capitalize truncate">You</div>
+            <div className="text-[0.6rem] capitalize truncate text-muted-foreground justify-between">{participant.type}</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -162,7 +170,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     : [
         {
           id: "user",
-          name: "User",
+          name: userCharacter?.name || profile!.currentProfile!.name,
           type: "user" as const,
           isEnabled: true,
           avatar: userCharacter?.avatar_path || profileAvatar,
@@ -244,7 +252,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         return;
       }
 
-      if (triggeringParticipantIds.includes(participantId)) {
+      if (inferenceService.getStreamingState().characterId === participantId) {
         setTriggeringParticipantIds((prev) => prev.filter((id) => id !== participantId));
         inferenceService.cancelGeneration();
         return;

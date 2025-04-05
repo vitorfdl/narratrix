@@ -16,6 +16,7 @@ const chatTemplateCustomPromptSchema = z.object({
  */
 export const chatTemplateSchema = baseTemplateSchema.extend({
   model_id: z.string().nullable().optional(),
+  format_template_id: z.string().nullable().optional(),
   config: z
     .object({
       max_tokens: z.number(),

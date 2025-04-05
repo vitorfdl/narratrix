@@ -1,32 +1,32 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StepButton } from "@/components/ui/step-button";
-import { useFormatTemplateList } from "@/hooks/templateStore";
+import { useInferenceTemplateList } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
-import { Settings2Icon } from "lucide-react";
+import { CheckCircleIcon, MessageCircleIcon, Settings2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface ModelConfigDialogProps {
   model: Model;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (modelId: string, updates: { max_concurrency: number; format_template_id?: string }) => Promise<void>;
+  onSave: (modelId: string, updates: { max_concurrency: number; inference_template_id?: string | null }) => Promise<void>;
   isUpdating: boolean;
 }
 
 export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdating }: ModelConfigDialogProps) {
-  const formatTemplates = useFormatTemplateList();
+  const inferenceTemplates = useInferenceTemplateList();
   const [maxConcurrency, setMaxConcurrency] = useState(model.max_concurrency);
-  const [formatTemplateId, setFormatTemplateId] = useState(model.format_template_id || "none");
+  const [inferenceTemplateID, setInferenceTemplateID] = useState(model.inference_template_id || null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setMaxConcurrency(model.max_concurrency);
-      setFormatTemplateId(model.format_template_id || "none");
+      setInferenceTemplateID(model.inference_template_id || null);
     }
   }, [open, model]);
 
@@ -35,7 +35,7 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
     try {
       await onSave(model.id, {
         max_concurrency: maxConcurrency,
-        format_template_id: formatTemplateId === "none" ? undefined : formatTemplateId,
+        inference_template_id: inferenceTemplateID === "none" ? null : inferenceTemplateID,
       });
       onOpenChange(false);
     } finally {
@@ -63,27 +63,49 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
             <Label htmlFor="format" className="text-right">
               Format Template
             </Label>
-            <Select value={formatTemplateId} onValueChange={setFormatTemplateId}>
+            <Select value={inferenceTemplateID || "none"} onValueChange={setInferenceTemplateID}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select format template" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {formatTemplates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name}
+              <SelectContent className="max-h-[300px] overflow-y-auto">
+                <SelectGroup>
+                  <SelectLabel className="flex items-center gap-2 text-primary">
+                    <MessageCircleIcon className="h-4 w-4" />
+                    Default Mode
+                  </SelectLabel>
+                  <SelectItem value="none" className="pl-8 flex items-center gap-2 font-medium">
+                    <div className="flex items-center gap-2">
+                      <CheckCircleIcon className="h-4 w-4 text-primary" />
+                      Use Chat Completion
+                    </div>
                   </SelectItem>
-                ))}
+                </SelectGroup>
+
+                <SelectSeparator className="my-2" />
+
+                {inferenceTemplates.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel className="flex items-center gap-2 text-primary">
+                      <Settings2Icon className="h-4 w-4" />
+                      Text Completion Templates
+                    </SelectLabel>
+                    {inferenceTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id} className="pl-8">
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
               </SelectContent>
             </Select>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving || isUpdating}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save changes"}
+          <Button onClick={handleSave} disabled={isSaving || isUpdating}>
+            {isSaving || isUpdating ? "Saving..." : "Save changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

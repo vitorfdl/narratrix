@@ -1,10 +1,11 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
-import { useFormatTemplate } from "@/hooks/templateStore";
+import { useInferenceTemplate } from "@/hooks/templateStore";
 import { Manifest } from "@/schema/model-manifest-schema";
-import { EditIcon, InfoIcon, LinkIcon, MoreVertical, ServerIcon, Settings2Icon, Trash2 } from "lucide-react";
+import { Clock, Cpu, EditIcon, MoreVertical, Settings2Icon, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Model } from "../../../schema/models-schema";
 
@@ -19,7 +20,10 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
   const { getManifestById } = useModelManifestsActions();
   const [manifestName, setManifestName] = useState<string>("");
   const [manifestFields, setManifestFields] = useState<Manifest["fields"]>([]);
-  const formatTemplate = useFormatTemplate(model.format_template_id || "");
+  const inferenceTemplate = useInferenceTemplate(model.inference_template_id || "");
+  // For demonstration purposes, you can replace these with actual model properties
+  const isNew = model.created_at && new Date().getTime() - new Date(model.created_at).getTime() < 7 * 24 * 60 * 60 * 1000; // 7 days
+  const isPopular = false; // Replace with actual logic if you have popularity metrics
 
   useEffect(() => {
     // Fetch manifest information to display the manifest name
@@ -84,14 +88,7 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
       // Try to find the matching label from manifest fields
       const fieldDef = manifestFields.find((field) => field.key === fieldKey);
       const label = fieldDef?.label || fieldKey;
-      const isUrl = fieldKey.toLowerCase().includes("url") || (fieldDef && fieldDef.field_type === "url");
-
-      return (
-        <div className="flex items-center gap-1">
-          {isUrl && <LinkIcon className="h-3 w-3" />}
-          <span className="font-medium">{label}:</span> {fieldValue}
-        </div>
-      );
+      return fieldValue;
     }
 
     return `${model.type.toUpperCase()} model`;
@@ -106,30 +103,55 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
     }).format(date);
   };
 
+  // Generate capabilities based on model type and inference template
+  const getCapabilities = () => {
+    const capabilities = [];
+    capabilities.push(model.type.toUpperCase());
+
+    if (inferenceTemplate) {
+      capabilities.push("Text Completion");
+    } else {
+      capabilities.push("Chat");
+    }
+
+    return capabilities;
+  };
+
   return (
     <>
-      <Card className="w-full bg-card hover:bg-accent/30 transition-colors border border-border/60 shadow-sm flex flex-col h-full">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="space-y-1">
-            <CardTitle className="text-base font-medium flex items-center">{model.name}</CardTitle>
-            <CardDescription className="text-xs flex items-center gap-1 text-muted-foreground">
-              <ServerIcon className="h-3 w-3" />
-              {manifestName || model.manifest_id}
+      <Card className="bg-background border-border hover:border-primary/50 transition-all overflow-hidden group h-full flex flex-col">
+        <CardHeader className="pb-2 flex flex-row justify-between items-start">
+          <div>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-foreground">{model.name}</CardTitle>
+              {isNew && <Badge className="bg-primary hover:bg-primary/80">New</Badge>}
+              {isPopular && (
+                <Badge variant="outline" className="border-accent-foreground text-accent-foreground">
+                  Popular
+                </Badge>
+              )}
+            </div>
+            <CardDescription className="flex items-center mt-1">
+              <span className="text-muted-foreground">{manifestName || model.manifest_id}</span>
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setConfigDialogOpen(model)}>
+
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => setConfigDialogOpen(model)}>
               <Settings2Icon className="h-4 w-4" />
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger className="focus:outline-none">
-                <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
+              <DropdownMenuContent align="end" className="bg-popover border-border">
                 <DropdownMenuItem onClick={() => onEdit?.(model)} className="cursor-pointer">
                   <EditIcon className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => onDelete?.(model)}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
@@ -138,25 +160,42 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
             </DropdownMenu>
           </div>
         </CardHeader>
-        <CardContent className="px-4 py-2 flex-grow">
-          <div className="text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <InfoIcon className="h-3 w-3" />
-              <span className="font-medium">{getDescription()}</span>
+
+        <CardContent className="pb-2 flex-grow">
+          <div className="space-y-3">
+            <div className="flex items-center text-sm">
+              <Cpu className="h-4 w-4 mr-2 text-muted-foreground/70" />
+              <span className="text-muted-foreground">Model:</span>
+              <span className="ml-2 text-card-foreground font-mono">{getDescription()}</span>
             </div>
-            <div className="mt-2 flex items-center gap-1">
-              <Settings2Icon className="h-3 w-3" />
-              <span className="font-medium">Format:</span> {formatTemplate?.name || "None"}
+
+            <div className="flex flex-wrap gap-1">
+              {getCapabilities().map((capability, index) => (
+                <Badge key={index} variant="secondary" className="bg-secondary hover:bg-secondary/80 text-secondary-foreground">
+                  {capability}
+                </Badge>
+              ))}
+              {inferenceTemplate && (
+                <Badge variant="secondary" className="bg-secondary hover:bg-secondary/80 text-primary">
+                  {inferenceTemplate.name}
+                </Badge>
+              )}
             </div>
           </div>
         </CardContent>
-        <CardFooter className="pt-2 pb-3 text-xs text-muted-foreground flex justify-between items-center mt-auto">
-          <div className="flex items-center gap-1">
-            <InfoIcon className="h-3 w-3" />
-            Max Concurrency: {model.max_concurrency}
+
+        <CardFooter className="pt-2 flex justify-between text-sm text-muted-foreground mt-auto">
+          <div className="flex items-center">
+            <Zap className="h-3 w-3 mr-1" />
+            <span>Max: {model.max_concurrency}</span>
           </div>
-          <div className="italic">Updated: {formatDate(new Date(model.updated_at))}</div>
+          <div className="flex items-center">
+            <Clock className="h-3 w-3 mr-1" />
+            <span>Updated: {formatDate(new Date(model.updated_at))}</span>
+          </div>
         </CardFooter>
+
+        <div className="h-1 w-full bg-gradient-to-r from-primary to-accent-foreground transform translate-y-1 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-100" />
       </Card>
     </>
   );

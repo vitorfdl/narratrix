@@ -118,14 +118,11 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
     const newTemplate = await createFormatTemplate({
       name: name,
       profile_id: profile?.currentProfile?.id || "",
-      inference_template_id: null,
-      prompt_template_id: null,
       config: {
         settings: {
           trim_assistant_incomplete: false,
           trim_double_spaces: true,
           collapse_consecutive_lines: true,
-          completion_type: "chat",
           prefix_messages: "never",
           apply_censorship: false,
           merge_messages_on_user: false,
@@ -135,8 +132,8 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
           prefix: "",
           suffix: "",
         },
-        use_global_context: false,
       },
+      prompts: [],
     });
 
     onTemplateChange(newTemplate.id);
@@ -178,10 +175,9 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   );
 
   return (
-    <div className="space-y-4 bg-card p-4 rounded-md border">
-      {templatePickerMemo}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 ">
+    <div className="space-y-4 bg-card p-4 rounded-md border w-full max-w-[1200px] justify-self-center">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 xl:justify-items-center">
+        <div className="xl:col-span-3 w-full">{templatePickerMemo}</div>
         {/* Left Column - Checkboxes */}
         <div className="space-y-2 md:justify-self-start">
           <h3 className="text-sm font-medium text-muted-foreground">Text Cleanup</h3>
@@ -224,33 +220,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         </div>
 
         {/* Middle Column - Template Type and Prefix Messages */}
-        <div className="space-y-4 md:justify-self-center">
-          <div className="space-y-2">
-            <Label className="font-medium text-muted-foreground">Template Type</Label>
-            <RadioGroup
-              value={memoizedSettings.completion_type}
-              onValueChange={useCallback(
-                (value: string) => handleSettingChange("completion_type", value as "chat" | "text" | "both"),
-                [handleSettingChange],
-              )}
-              className="flex space-x-4"
-              disabled={!currentTemplate}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="chat" id="chat" />
-                <Label htmlFor="chat">Chat Completion</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="text" id="text" />
-                <Label htmlFor="text">Text Completion</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="both" id="both" />
-                <Label htmlFor="both">Both</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
+        <div className="space-y-2">
           <div className="space-y-2">
             <Label className="font-medium text-muted-foreground">Prefix Messages with Character Names</Label>
             <RadioGroup
@@ -279,7 +249,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         </div>
 
         {/* Right Column - Additional Checkboxes */}
-        <div className="space-y-2 md:justify-self-end">
+        <div className="space-y-3 xl:justify-self-end ">
           <h3 className="text-sm font-medium text-muted-foreground">Message Formatting</h3>
           <div className="flex items-center space-x-2">
             <Checkbox

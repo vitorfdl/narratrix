@@ -39,7 +39,7 @@ const chatSchema = z.object({
   chat_template_id: z.string().optional(),
   active_chapter_id: z.string().default("").optional(),
   participants: chatParticipantSchema.array().default([]).optional(),
-  user_character_id: z.string().optional(),
+  user_character_id: z.string().nullable().optional(),
   user_character_settings: chatUserSettingsSchema.array().default([]).optional(),
   created_at: z.date(),
   updated_at: z.date(),

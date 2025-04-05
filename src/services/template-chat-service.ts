@@ -41,13 +41,14 @@ export async function createChatTemplate(templateData: NewChatTemplateParams): P
   const configStr = JSON.stringify(validatedTemplate.config);
 
   await executeDBQuery(
-    `INSERT INTO chat_template (id, profile_id, name, model_id, custom_prompts, config, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    `INSERT INTO chat_template (id, profile_id, name, model_id, format_template_id, custom_prompts, config, created_at, updated_at) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [
       validatedTemplate.id,
       validatedTemplate.profile_id,
       validatedTemplate.name,
       validatedTemplate.model_id,
+      validatedTemplate.format_template_id,
       validatedTemplate.custom_prompts,
       configStr,
       now,
@@ -70,6 +71,7 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
       profile_id, 
       name, 
       model_id, 
+      format_template_id,
       custom_prompts, 
       config,
       created_at as created_at, 
@@ -110,6 +112,7 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
       profile_id, 
       name, 
       model_id, 
+      format_template_id,
       custom_prompts, 
       config,
       created_at, 

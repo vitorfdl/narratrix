@@ -32,12 +32,14 @@ CREATE TABLE IF NOT EXISTS chat_template (
     profile_id TEXT NOT NULL,
     name TEXT NOT NULL,
     model_id TEXT, -- foreign key to models table
+    format_template_id TEXT, -- foreign key to format_template table
     custom_prompts TEXT, -- JSON string for custom prompts [{ [key: string]: any }]
     config TEXT NOT NULL, -- JSON string for configuration { [key: string]: any }
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE,
-    FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE SET NULL
+    FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE SET NULL,
+    FOREIGN KEY (format_template_id) REFERENCES format_template(id) ON DELETE SET NULL
 ); 
 
 -- Index on profile_id for efficient lookups of templates by profile

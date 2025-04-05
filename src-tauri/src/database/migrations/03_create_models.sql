@@ -6,11 +6,11 @@ CREATE TABLE IF NOT EXISTS models (
     manifest_id TEXT NOT NULL,
     config TEXT NOT NULL, -- JSON string for configuration
     max_concurrency INTEGER NOT NULL DEFAULT 1,
-    format_template_id TEXT,
+    inference_template_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE,
-    FOREIGN KEY (format_template_id) REFERENCES format_template(id) ON DELETE SET NULL
+    FOREIGN KEY (inference_template_id) REFERENCES inference_template(id) ON DELETE SET NULL
 ); 
 
 -- Index on profile_id for efficient lookups of models by profile

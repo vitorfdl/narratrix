@@ -1,11 +1,11 @@
 import { Character, CharacterUnion } from "@/schema/characters-schema";
+import { ChatChapter } from "@/schema/chat-chapter-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
-import { SystemPromptTemplate } from "@/schema/template-prompt-schema";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./format-template-utils";
 
 /**
@@ -23,7 +23,6 @@ export interface PromptFormatterConfig {
   userMessage?: string;
   modelSettings?: Model | null;
   formatTemplate?: FormatTemplate | null;
-  systemPromptTemplate?: SystemPromptTemplate | null;
   inferenceTemplate?: InferenceTemplate | null;
   chatTemplate?: {
     custom_prompts?: ChatTemplateCustomPrompt[];
@@ -32,6 +31,7 @@ export interface PromptFormatterConfig {
   chatConfig?: {
     user_character?: Pick<Character, "name" | "custom">;
     character?: Pick<CharacterUnion, "name" | "settings" | "custom" | "type">;
+    chapter?: Pick<ChatChapter, "title" | "scenario" | "instructions">;
   };
 }
 
@@ -80,12 +80,12 @@ export function getChatHistory(messages: MessageWithCharacter[], userMessage?: s
 /**
  * Create system prompt from template
  */
-export function createSystemPrompt(systemPromptTemplate?: SystemPromptTemplate | null): string | undefined {
-  if (!systemPromptTemplate || !systemPromptTemplate.config || systemPromptTemplate.config.length === 0) {
+export function createSystemPrompt(systemPromptTemplate?: FormatTemplate | null): string | undefined {
+  if (!systemPromptTemplate || !systemPromptTemplate.config || systemPromptTemplate.prompts.length === 0) {
     return undefined;
   }
 
-  return systemPromptTemplate.config.map((section) => section.content).join("\n");
+  return systemPromptTemplate.prompts.map((section) => section.content).join("\n\n");
 }
 
 /**
@@ -148,10 +148,10 @@ export function replaceTextPlaceholders(
   systemPrompt: string | undefined,
   config: PromptFormatterConfig["chatConfig"],
 ): FormattedPromptResult {
-  const { character, user_character } = config || {};
+  const { character, user_character, chapter } = config || {};
 
   // Skip if no replacements needed
-  if (!character && !user_character) {
+  if (!character && !user_character && !chapter) {
     return { inferenceMessages: messages, systemPrompt };
   }
 
@@ -179,28 +179,30 @@ export function replaceTextPlaceholders(
   if (processedSystemPrompt) {
     if (character?.name) {
       processedSystemPrompt = processedSystemPrompt.replace(/\{\{char\}\}/g, character.name);
+      processedSystemPrompt = processedSystemPrompt.replace(/\{\{character\.name\}\}/g, character.name);
     }
 
     if (user_character?.name) {
       processedSystemPrompt = processedSystemPrompt.replace(/\{\{user\}\}/g, user_character.name);
+      processedSystemPrompt = processedSystemPrompt.replace(/\{\{user.name\}\}/g, user_character.name);
     }
 
-    // if (chapter?.title) {
-    //   processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter.title\}\}/g, chapter.title);
-    // }
+    if (chapter?.title) {
+      processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter\.title\}\}/g, chapter.title);
+    }
 
-    // if (chapter?.scenario) {
-    //   processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter.scenario\}\}/g, chapter.scenario);
-    // }
+    if (chapter?.scenario) {
+      processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter\.scenario\}\}/g, chapter.scenario);
+    }
 
-    // if (chapter?.instructions) {
-    //   processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter.instructions\}\}/g, chapter.instructions);
-    // }
+    if (chapter?.instructions) {
+      processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter\.instructions\}\}/g, chapter.instructions);
+    }
 
     if (character?.type === "character") {
       const personality = (character?.custom as any)?.personality;
       if (personality) {
-        processedSystemPrompt = processedSystemPrompt.replace(/\{\{character.personality\}\}/g, personality);
+        processedSystemPrompt = processedSystemPrompt.replace(/\{\{character\.personality\}\}/g, personality);
       }
     }
 
@@ -240,7 +242,7 @@ export function formatPrompt(config: PromptFormatterConfig): FormattedPromptResu
   // }
 
   // Step 3: Create system prompt
-  const systemPrompt = createSystemPrompt(config.systemPromptTemplate);
+  const systemPrompt = createSystemPrompt(config.formatTemplate);
 
   // Step 4: Replace placeholders
   return replaceTextPlaceholders(processedMessages, systemPrompt, config.chatConfig);

@@ -12,6 +12,7 @@ export interface NewModelParams {
   type: ModelType;
   config: Record<string, any>;
   manifest_id: string;
+  inference_template_id?: string;
 }
 
 // Interface for filtering models
@@ -62,6 +63,7 @@ export async function createModel(modelData: NewModelParams, modelManifest?: Man
     type: modelData.type,
     manifest_id: modelData.manifest_id,
     config: modelData.config,
+    inference_template_id: modelData.inference_template_id,
     created_at: new Date(now),
     updated_at: new Date(now),
   });
@@ -69,8 +71,8 @@ export async function createModel(modelData: NewModelParams, modelManifest?: Man
   const configStr = JSON.stringify(validatedModel.config);
 
   await executeDBQuery(
-    `INSERT INTO models (id, profile_id, name, type, config, manifest_id, max_concurrency, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    `INSERT INTO models (id, profile_id, name, type, config, manifest_id, max_concurrency, inference_template_id, created_at, updated_at) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
       validatedModel.id,
       validatedModel.profile_id,
@@ -79,6 +81,7 @@ export async function createModel(modelData: NewModelParams, modelManifest?: Man
       configStr,
       validatedModel.manifest_id,
       validatedModel.max_concurrency,
+      validatedModel.inference_template_id,
       now,
       now,
     ],
@@ -101,7 +104,7 @@ export async function getModelById(id: string): Promise<Model | null> {
       type, 
       config,
       manifest_id,
-      format_template_id,
+      inference_template_id,
       max_concurrency,
       created_at, 
       updated_at
@@ -133,7 +136,7 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
       type, 
       config,
       manifest_id,
-      format_template_id,
+      inference_template_id,
       max_concurrency,
       created_at, 
       updated_at

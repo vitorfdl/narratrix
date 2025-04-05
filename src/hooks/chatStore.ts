@@ -58,6 +58,7 @@ interface chatState {
     deleteChatChapter: (chapterId: string) => Promise<boolean>;
     updateChatChapter: (chapterId: string, chapter: Partial<ChatChapter>) => Promise<ChatChapter | null>;
     fetchChatChapters: (chatId: string) => Promise<ChatChapter[]>;
+    switchChatChapter: (chapterId: string) => Promise<void>;
 
     // Participants
     addParticipant: (participant: ChatParticipant) => Promise<void>;
@@ -632,6 +633,45 @@ export const useChatStore = create<chatState>((set, get) => ({
         toast.error(error instanceof Error ? error.message : "Failed to update chat chapter");
         set({
           error: error instanceof Error ? error.message : "Failed to update chat chapter",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    switchChatChapter: async (chapterId: string) => {
+      try {
+        set({ isLoading: true, error: null });
+        const currentChat = get().selectedChat;
+
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        // Check if the chapter exists in the current chat
+        const chapterExists = get().selectedChatChapters.some((chapter) => chapter.id === chapterId);
+
+        if (!chapterExists) {
+          throw new Error(`Chapter with ID ${chapterId} not found in the current chat`);
+        }
+
+        // Update the chat with the new active chapter
+        await get().actions.updateSelectedChat({
+          active_chapter_id: chapterId,
+        });
+
+        // Fetch messages for the new chapter
+        const messages = await getChatMessagesByChatId(currentChat.id, chapterId);
+
+        // Update the messages in the store
+        set({
+          selectedChatMessages: messages,
+          isLoading: false,
+        });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to switch chat chapter");
+        set({
+          error: error instanceof Error ? error.message : "Failed to switch chat chapter",
           isLoading: false,
         });
         throw error;

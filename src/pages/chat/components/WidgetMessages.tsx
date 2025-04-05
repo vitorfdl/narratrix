@@ -562,7 +562,7 @@ const WidgetMessages: React.FC = () => {
             <TipTapTextArea
               initialValue={getCurrentContent(message)}
               editable={isEditingID === message.id && !isStreaming}
-              disableRichText={isEditingID === message.id}
+              disableRichText={false}
               placeholder="Edit message..."
               className={cn(
                 "select-text text-md",

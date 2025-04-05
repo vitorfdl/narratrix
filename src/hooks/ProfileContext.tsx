@@ -93,7 +93,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const [state, dispatch] = useReducer(profileReducer, initialState);
   const [savedCurrentProfile, setSessionProfileID] = useSessionProfile();
   const { fetchManifests } = useModelManifestsActions();
-  const { fetchFormatTemplates, fetchInferenceTemplates, fetchPromptTemplates } = useTemplateActions();
+  const { fetchFormatTemplates, fetchInferenceTemplates } = useTemplateActions();
   const { fetchCharacters } = useCharacterActions();
   const { fetchChatList } = useChatActions();
   const { fetchChatTemplates } = useChatTemplateActions();
@@ -124,7 +124,6 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       fetchManifests();
       fetchFormatTemplates({ profile_id: state.currentProfile.id });
       fetchInferenceTemplates({ profile_id: state.currentProfile.id });
-      fetchPromptTemplates({ profile_id: state.currentProfile.id });
       fetchChatTemplates({ profile_id: state.currentProfile.id });
       fetchCharacters(state.currentProfile.id);
       fetchChatList(state.currentProfile.id);

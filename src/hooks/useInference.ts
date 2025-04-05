@@ -113,7 +113,11 @@ export function useInference(options: UseInferenceOptions = {}) {
       } else if (response.status === "error" || response.status === "cancelled") {
         // Clean up the last chunks record for this request
         delete lastStreamChunks.current[requestId];
-        optionsRef.current.onError?.(response.error || "Unknown error", requestId);
+        if (response.status === "error") {
+          optionsRef.current.onError?.(response.error || "Unknown error", requestId);
+        } else {
+          optionsRef.current.onComplete?.(response, requestId);
+        }
       }
 
       // Update the request state regardless of the event type

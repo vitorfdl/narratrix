@@ -44,12 +44,10 @@ export const CheckboxWithLabel: React.FC<CheckboxWithLabelProps> = ({ id, label,
   </div>
 );
 
-interface InstructTemplateSectionProps {
-  instructTemplateID: string | null;
-  onTemplateChange: (templateId: string | null) => void;
-}
+interface InstructTemplateSectionProps {}
 
-export function InstructTemplateSection({ instructTemplateID, onTemplateChange }: InstructTemplateSectionProps) {
+export function InstructTemplateSection() {
+  const [instructTemplateID, setInstructTemplateID] = useState<string | null>(null);
   const { updateInferenceTemplate, createInferenceTemplate, deleteInferenceTemplate } = useTemplateActions();
   const currentTemplate = useInferenceTemplate(instructTemplateID ?? "");
   const templateList = useInferenceTemplateList();
@@ -170,10 +168,10 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
   // Template management handlers
   const handleDeleteTemplate = useCallback(async () => {
     if (instructTemplateID) {
-      onTemplateChange(null);
+      setInstructTemplateID(null);
       await deleteInferenceTemplate(instructTemplateID);
     }
-  }, [deleteInferenceTemplate, instructTemplateID, onTemplateChange]);
+  }, [deleteInferenceTemplate, instructTemplateID]);
 
   const handleNewTemplate = useCallback(
     async (name: string) => {
@@ -190,13 +188,13 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
         });
 
         if (newTemplate) {
-          onTemplateChange(newTemplate.id);
+          setInstructTemplateID(newTemplate.id);
         }
       } catch (error) {
         console.error("Failed to create new template:", error);
       }
     },
-    [createInferenceTemplate, onTemplateChange, profile?.currentProfile?.id, defaultTemplateState],
+    [createInferenceTemplate, profile?.currentProfile?.id, defaultTemplateState],
   );
 
   const handleEditName = useCallback(
@@ -238,13 +236,25 @@ export function InstructTemplateSection({ instructTemplateID, onTemplateChange }
           <TemplatePicker
             templates={templateList}
             selectedTemplateId={instructTemplateID}
-            onTemplateSelect={onTemplateChange}
+            onTemplateSelect={setInstructTemplateID}
             onDelete={handleDeleteTemplate}
             onNewTemplate={handleNewTemplate}
             onEditName={handleEditName}
             onImport={handleImportTemplate}
             onExport={handleExportTemplate}
           />
+
+          <div className="bg-accent p-3 rounded-md text-sm mb-4">
+            <h3 className="font-medium mb-1">About Inference Templates</h3>
+            <p className="text-muted-foreground mb-2">
+              Inference templates control how messages are formatted when sent to text completion models. Each section below allows you to customize
+              prefixes, suffixes, and other formatting options that will be applied to different message types in the conversation.
+            </p>
+            <p className="text-muted-foreground">
+              These settings are required for models using the Text Completion method, as they need specific formatting patterns to distinguish
+              between different roles in the conversation.
+            </p>
+          </div>
 
           <Card>
             <CardHeader className="template-card-header">

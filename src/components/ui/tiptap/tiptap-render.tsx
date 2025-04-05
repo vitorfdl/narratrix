@@ -8,6 +8,21 @@ import { useEffect, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
 import { BracketHighlight } from "./bracket-highlight";
 import { BracketSuggestions } from "./bracket-suggestions";
+import { clipboardTextParser } from "./hardbreak-extension";
+
+// Sanitize markdown content to prevent invalid list items
+const sanitizeMarkdown = (content: string): string => {
+  if (!content) {
+    return "";
+  }
+
+  // Replace list items with empty content (- ) with a valid placeholder (- ␣)
+  return content
+    .replace(/^(\s*[-*+]\s*)$/gm, "$1␣") // Replace empty list items at start of line
+    .replace(/\n(\s*[-*+]\s*)(?=\n|$)/g, "\n$1␣") // Replace empty list items in the middle/end
+    .replace(/^(\s*\d+\.\s*)$/gm, "$1␣") // Same for numbered lists
+    .replace(/\n(\s*\d+\.\s*)(?=\n|$)/g, "\n$1␣");
+};
 
 export interface SuggestionItem {
   title: string;
@@ -39,6 +54,9 @@ export function TipTapRender({
   onSubmit,
 }: TipTapTextAreaProps) {
   const isUpdatingRef = useRef(false);
+
+  // Sanitize initialValue to prevent invalid list items
+  const sanitizedInitialValue = useRef(sanitizeMarkdown(initialValue));
 
   // Create a keyboard shortcuts extension based on sendShortcut
   const KeyboardShortcutHandler = Extension.create({
@@ -153,26 +171,27 @@ export function TipTapRender({
         ? [
             Markdown.configure({
               html: true,
-              transformPastedText: true,
+              transformPastedText: false,
               transformCopiedText: true,
               bulletListMarker: "-",
-              tightLists: true,
+              tightLists: false,
               breaks: true,
-              linkify: true,
+              linkify: false,
             }),
           ]
         : []),
       // Add keyboard shortcut handler if onSubmit is provided
       KeyboardShortcutHandler,
     ],
-    content: initialValue?.replace(/\n/g, "<br>"),
+    parseOptions: {
+      preserveWhitespace: "full",
+    },
+    content: sanitizedInitialValue.current,
     editable,
     onUpdate: ({ editor }) => {
       if (onChange && !isUpdatingRef.current) {
         if (disableRichText) {
-          const text = editor.getText({
-            blockSeparator: "<br>",
-          });
+          const text = editor.getText({});
           onChange(text);
         } else {
           onChange(editor.storage.markdown!.getMarkdown());
@@ -180,6 +199,7 @@ export function TipTapRender({
       }
     },
     editorProps: {
+      clipboardTextParser: clipboardTextParser,
       attributes: {
         class: cn(
           "prose dark:prose-invert prose-li:p-0 prose-p:m-0",
@@ -196,7 +216,15 @@ export function TipTapRender({
   useEffect(() => {
     if (editor && editor.getText() !== initialValue) {
       isUpdatingRef.current = true;
-      editor.commands.setContent(initialValue);
+      const sanitized = sanitizeMarkdown(initialValue);
+      sanitizedInitialValue.current = sanitized;
+      try {
+        editor.commands.setContent(sanitized, false, { preserveWhitespace: "full" });
+      } catch (error) {
+        console.warn("Error setting content:", error);
+        // Fallback to plain text if markdown parsing fails
+        editor.commands.setContent(initialValue.replace(/[-*+]/g, "\\$&"), false);
+      }
       // Reset the flag after the update
       setTimeout(() => {
         isUpdatingRef.current = false;
