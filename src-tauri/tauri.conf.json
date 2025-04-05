@@ -33,7 +33,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/favicon-96x96", "icons/Square192x192Logo.png", "icons/Square512x512Logo.png", "icons/favicon.svg", "icons/icon.ico"],
+    "icon": ["icons/favicon-96x96.png", "icons/Square192x192Logo.png", "icons/Square512x512Logo.png", "icons/favicon.svg", "icons/icon.ico"],
     "resources": ["resources/**/*"]
   }
 }
