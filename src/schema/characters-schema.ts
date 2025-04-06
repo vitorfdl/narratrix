@@ -1,5 +1,36 @@
 import { z } from "zod";
 
+export const EXPRESSION_LIST = [
+  "admiration",
+  "amusement",
+  "anger",
+  "annoyance",
+  "approval",
+  "caring",
+  "confusion",
+  "curiosity",
+  "desire",
+  "disappointment",
+  "disapproval",
+  "disgust",
+  "embarrassment",
+  "excitement",
+  "fear",
+  "gratitude",
+  "grief",
+  "joy",
+  "love",
+  "nervousness",
+  "optimism",
+  "pride",
+  "realization",
+  "relief",
+  "remorse",
+  "sadness",
+  "surprise",
+  "neutral",
+];
+
 // Common JSON object schema
 export const JsonObjectSchema = z.record(z.unknown());
 
@@ -7,16 +38,16 @@ export const JsonObjectSchema = z.record(z.unknown());
 export const ExpressionSchema = z.object({
   id: z.string(),
   name: z.string(),
-  image_path: z.string(),
+  image_path: z.string().nullable(),
 });
 
 // Base fields that both agents and characters share
-const BaseEntitySchema = z.object({
+const BaseCharacterTypeSchema = z.object({
   id: z.string(),
   profile_id: z.string(),
   name: z.string(),
   tags: z.array(z.string()).nullable().default([]),
-  avatar_path: z.string().url().nullable(),
+  avatar_path: z.string().nullable(),
   version: z
     .string()
     .regex(/^\d+\.\d+\.\d+$/)
@@ -35,7 +66,7 @@ const BaseEntitySchema = z.object({
 });
 
 // Agent-specific schema
-export const AgentSchema = BaseEntitySchema.extend({
+export const AgentSchema = BaseCharacterTypeSchema.extend({
   type: z.literal("agent"),
   custom: z
     .object({
@@ -48,7 +79,7 @@ export const AgentSchema = BaseEntitySchema.extend({
 });
 
 // Character-specific schema
-export const CharacterSchema = BaseEntitySchema.extend({
+export const CharacterSchema = BaseCharacterTypeSchema.extend({
   type: z.literal("character"),
   expressions: z.array(ExpressionSchema).nullable(),
   character_manifest_id: z.string().nullable(),

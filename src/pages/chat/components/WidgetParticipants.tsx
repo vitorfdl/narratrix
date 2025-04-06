@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useCharacters } from "@/hooks/characterStore";
+import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
@@ -130,8 +130,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
 
 const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
   const characterList = useCharacters();
-  const profile = useProfile();
-  const profileAvatar = profile!.currentProfile!.avatar_path;
+  const { currentProfileAvatarUrl, currentProfile } = useProfile();
 
   const messages = useCurrentChatMessages();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
@@ -143,6 +142,8 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
   // Get user character if it exists
   const userCharacter = currentChatUserCharacterID ? characterList.find((char) => char.id === currentChatUserCharacterID) : null;
 
+  const { urlMap: avatarUrlMap } = useCharacterAvatars();
+
   // Map chat participants to the Participant interface for this component
   const mappedParticipants: Participant[] = participants.map((p) => {
     // Find the associated character
@@ -151,7 +152,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     const type = (associatedCharacter?.type as "character" | "agent") || "character";
 
     // Get avatar from the associated character
-    const avatar = associatedCharacter?.avatar_path as string | undefined;
+    const avatar = avatarUrlMap[associatedCharacter?.id || ""];
 
     return {
       id: p.id,
@@ -169,10 +170,10 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     : [
         {
           id: "user",
-          name: userCharacter?.name || profile!.currentProfile!.name,
+          name: userCharacter?.name || currentProfile!.name,
           type: "user" as const,
           isEnabled: true,
-          avatar: userCharacter?.avatar_path || profileAvatar,
+          avatar: avatarUrlMap[userCharacter?.id || ""] || currentProfileAvatarUrl!,
         },
         ...mappedParticipants,
       ];

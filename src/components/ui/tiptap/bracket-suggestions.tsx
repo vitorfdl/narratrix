@@ -85,23 +85,22 @@ const SuggestionList = forwardRef<
   return (
     <div
       ref={containerRef}
-      className="bg-popover rounded-b-md shadow-md border border-border max-h-[200px] overflow-y-auto custom-scrollbar"
+      className="bg-muted border rounded-b-md rounded-t-sm shadow-lg max-h-[220px] overflow-y-auto custom-scrollbar"
       style={{
         minWidth: "200px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
       }}
     >
       {items.map((item, index) => (
         <div
           ref={(el) => setItemRef(el, index)}
           key={index}
-          className={`px-2 py-0.5 text-xs cursor-pointer transition-colors flex flex-col ${
-            index === selectedIndex ? "bg-background bg-opacity-20 text-primary border-l-2 border-primary" : "hover:bg-accent"
+          className={`px-3 py-1.5 text-xs cursor-pointer transition-colors border-b border-border/50 last:border-b-0 ${
+            index === selectedIndex ? "bg-accent" : "hover:bg-muted/50"
           }`}
           onClick={() => command(item)}
         >
           <span className={`font-medium ${index === selectedIndex ? "text-primary" : "text-foreground"}`}>{item.title}</span>
-          {item.description && <span className="text-[0.5rem] text-muted-foreground mt-0">{item.description}</span>}
+          {item.description && <span className="block text-[0.625rem] text-muted-foreground mt-0.5">{item.description}</span>}
         </div>
       ))}
     </div>

@@ -60,6 +60,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MASTER_KEY: ${{ secrets.MASTER_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           releaseName: "Narratrix v__VERSION__" # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseId: ${{ github.event.release.id }} # The id of the release to upload artifacts as release assets

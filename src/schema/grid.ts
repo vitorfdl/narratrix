@@ -58,4 +58,5 @@ export const defaultPositions: GridPosition[] = [
   { id: "memory", hidden: true },
   { id: "database", hidden: true },
   { id: "chapters", hidden: true },
+  { id: "expressions", hidden: true },
 ];

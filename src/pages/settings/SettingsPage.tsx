@@ -21,25 +21,10 @@ import { useProfile } from "@/hooks/ProfileContext";
 import { useTheme } from "@/hooks/ThemeContext";
 import { defaultSettings } from "@/schema/default-settings";
 import { AppSettings } from "@/schema/profiles-schema";
-import { updateProfile, updateProfilePassword, updateProfileSettings } from "@/services/profile-service";
+import { saveImage } from "@/services/file-system-service";
+import { deleteProfile as deleteProfileService, updateProfile, updateProfilePassword, updateProfileSettings } from "@/services/profile-service";
 import { getVersion } from "@tauri-apps/api/app";
-import { open } from "@tauri-apps/plugin-dialog";
-import {
-  Bell,
-  ChevronDown,
-  Download,
-  EyeOff,
-  Folder,
-  KeyIcon,
-  Languages,
-  LogOut,
-  MessageSquare,
-  Palette,
-  Save,
-  Trash,
-  User,
-  UserCircle,
-} from "lucide-react";
+import { ChevronDown, Download, KeyIcon, Languages, LogOut, MessageSquare, Palette, Save, Trash, User, UserCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import "./styles/settings.css";
@@ -53,7 +38,8 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
   const [isChangingName, setIsChangingName] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
-  const { logout, setCurrentProfile } = useProfile();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { logout, setCurrentProfile, currentProfileAvatarUrl, refreshAvatar } = useProfile();
   const nameDialogRef = useRef<HTMLButtonElement>(null);
   const passwordDialogRef = useRef<HTMLButtonElement>(null);
   const avatarDialogRef = useRef<HTMLButtonElement>(null);
@@ -150,11 +136,14 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
 
     try {
       setIsChangingAvatar(true);
+      const avatarPath = await saveImage(croppedImage, currentProfile.id);
       // Update profile with new avatar
-      const updatedProfile = await updateProfile(currentProfile.id, { avatar_path: croppedImage });
+      const updatedProfile = await updateProfile(currentProfile.id, { avatar_path: avatarPath });
       // Update the current profile in context directly with the updated profile
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
+      // Force refresh the avatar
+      refreshAvatar();
       toast.success("Avatar updated successfully");
 
       // Close the dialog programmatically
@@ -185,6 +174,18 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
     if (!currentProfile) {
       toast.error("No profile selected");
       return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await deleteProfileService(currentProfile.id);
+      toast.success("Profile deleted successfully");
+      logout();
+    } catch (error) {
+      console.error("Failed to delete profile:", error);
+      toast.error("Failed to delete profile.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -243,9 +244,9 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
             <div className="flex items-center space-x-2">
               <UserCircle className="w-4 h-4" />
               <Label>Avatar</Label>
-              {currentProfile?.avatar_path && (
+              {currentProfile?.avatar_path && currentProfileAvatarUrl && (
                 <div className="w-8 h-8 rounded-full overflow-hidden ml-2 border border-border">
-                  <img src={currentProfile.avatar_path} alt={`${currentProfile.name}'s avatar`} className="w-full h-full object-cover" />
+                  <img src={currentProfileAvatarUrl} alt={`${currentProfile.name}'s avatar`} className="w-full h-full object-cover" />
                 </div>
               )}
             </div>
@@ -264,7 +265,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                       <div className="w-24 h-24 rounded-full overflow-hidden">
                         <AvatarCrop
                           onCropComplete={handleAvatarChange}
-                          existingImage={currentProfile?.avatar_path || ""}
+                          existingImage={currentProfileAvatarUrl || ""}
                           cropShape="round"
                           className="w-full h-full"
                         />
@@ -415,9 +416,16 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                   <DialogClose asChild>
                     <Button variant="secondary">Cancel</Button>
                   </DialogClose>
-                  <Button variant="destructive" onClick={deleteProfile} className="flex items-center gap-2">
-                    <Trash className="w-4 h-4" />
-                    Delete Profile
+                  <Button variant="destructive" onClick={deleteProfile} className="flex items-center gap-2" disabled={isDeleting}>
+                    {isDeleting ? (
+                      <>
+                        <Trash className="w-4 h-4 animate-spin" /> Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash className="w-4 h-4" /> Delete Profile
+                      </>
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -529,21 +537,21 @@ export default function Settings() {
     [settings, setTheme, debouncedSave],
   );
 
-  const selectDirectory = useCallback(async () => {
-    try {
-      const selected = await open({
-        directory: true,
-        multiple: false,
-        title: "Select Expression Pack Directory",
-      });
-      if (selected && typeof selected === "string") {
-        handleSettingChange("system", "expressionPackDirectory", selected);
-      }
-    } catch (error) {
-      console.error("Failed to select directory:", error);
-      toast.error("Failed to select directory");
-    }
-  }, [handleSettingChange]);
+  // const selectDirectory = useCallback(async () => {
+  //   try {
+  //     const selected = await open({
+  //       directory: true,
+  //       multiple: false,
+  //       title: "Select Expression Pack Directory",
+  //     });
+  //     if (selected && typeof selected === "string") {
+  //       handleSettingChange("system", "expressionPackDirectory", selected);
+  //     }
+  //   } catch (error) {
+  //     console.error("Failed to select directory:", error);
+  //     toast.error("Failed to select directory");
+  //   }
+  // }, [handleSettingChange]);
 
   // Memoize footer component to prevent unnecessary re-renders
   const FooterSection = useMemo(
@@ -598,14 +606,14 @@ export default function Settings() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Español</SelectItem>
+                      {/* <SelectItem value="es">Español</SelectItem>
                       <SelectItem value="fr">Français</SelectItem>
-                      <SelectItem value="de">Deutsch</SelectItem>
+                      <SelectItem value="de">Deutsch</SelectItem> */}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <Separator />
+                {/* <Separator />
 
                 <Collapsible className="w-full">
                   <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
@@ -675,7 +683,7 @@ export default function Settings() {
                       </div>
                     </div>
                   </CollapsibleContent>
-                </Collapsible>
+                </Collapsible> */}
 
                 <Separator />
 
@@ -688,7 +696,7 @@ export default function Settings() {
                     <ChevronDown className="w-4 h-4" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between">
+                    {/* <div className="flex items-center justify-between">
                       <Label htmlFor="timestamp-format">Timestamp Format</Label>
                       <Select value={settings.chat.timestampFormat} onValueChange={(value) => handleSettingChange("chat", "timestampFormat", value)}>
                         <SelectTrigger className="w-36" id="timestamp-format">
@@ -699,9 +707,9 @@ export default function Settings() {
                           <SelectItem value="24h">24h</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
+                    </div> */}
 
-                    <div className="flex items-center space-x-2">
+                    {/* <div className="flex items-center space-x-2">
                       <Checkbox
                         id="chat-avatars"
                         checked={settings.chat.showAvatars}
@@ -710,7 +718,7 @@ export default function Settings() {
                       <div className="space-y-1 leading-none">
                         <Label htmlFor="chat-avatars">Show avatars</Label>
                       </div>
-                    </div>
+                    </div> */}
 
                     <div className="flex items-center justify-between">
                       <Label htmlFor="send-shortcut">Send Shortcut</Label>
@@ -729,7 +737,7 @@ export default function Settings() {
                   </CollapsibleContent>
                 </Collapsible>
 
-                <Separator />
+                {/* <Separator />
 
                 <Collapsible className="w-full">
                   <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
@@ -787,12 +795,12 @@ export default function Settings() {
                       </div>
                     </div>
                   </CollapsibleContent>
-                </Collapsible>
+                </Collapsible> */}
               </CardContent>
             </Card>
           </div>
 
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <h2 className="text-lg font-medium">Integrations</h2>
             <Card>
               <CardContent className="p-4">
@@ -807,7 +815,7 @@ export default function Settings() {
                 </Collapsible>
               </CardContent>
             </Card>
-          </div>
+          </div> */}
 
           <div className="space-y-3">
             <h2 className="text-lg font-medium">Appearance</h2>
@@ -830,7 +838,7 @@ export default function Settings() {
                   </Select>
                 </div>
 
-                <Separator />
+                {/* <Separator />
 
                 <div className="flex items-center justify-between">
                   <Label className="pl-6">Font Size</Label>
@@ -860,7 +868,7 @@ export default function Settings() {
                       <SelectItem value="Arial">Arial</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           </div>
@@ -879,7 +887,7 @@ export default function Settings() {
                   </CollapsibleTrigger>
                 </Collapsible>
 
-                <Separator />
+                {/* <Separator />
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
@@ -896,7 +904,7 @@ export default function Settings() {
                       Select Directory
                     </Button>
                   </div>
-                </div>
+                </div> */}
 
                 <Separator />
 

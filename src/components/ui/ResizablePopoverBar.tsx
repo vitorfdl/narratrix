@@ -4,21 +4,34 @@ import React, { useEffect, useRef, useState } from "react";
 export interface ResizablePopoverContentProps extends React.HTMLAttributes<HTMLDivElement> {
   minWidth?: number; // Minimum width in pixels (default: 300px)
   maxHeight?: number; // Maximum height in pixels (default: 80% of viewport)
+  minHeight?: number; // Minimum height in pixels
 }
 
 const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
   children,
   className = "",
-  minWidth = 300,
-  maxHeight = Math.floor(window.innerHeight * 0.8),
+  minWidth = 450,
+  maxHeight = Math.floor(window.innerHeight * 0.9), // Increase to 90% of viewport
+  minHeight = 200,
   ...props
 }) => {
   // Start with the minimum width as the default
   const [width, setWidth] = useState<number>(minWidth);
+  const [viewportHeight, setViewportHeight] = useState<number>(window.innerHeight);
   const containerRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef<boolean>(false);
   const startX = useRef<number>(0);
   const startWidth = useRef<number>(width);
+
+  // Update viewport dimensions on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportHeight(window.innerHeight);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
@@ -57,13 +70,28 @@ const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
     e.preventDefault();
   };
 
+  // Calculate dynamic max height based on viewport
+  const calculatedMaxHeight = Math.min(maxHeight, viewportHeight * 0.9);
+
   // Prepare inline style for the scrollable content container
   const contentContainerStyle: React.CSSProperties = {
-    maxHeight: `${maxHeight}px`,
+    maxHeight: `${calculatedMaxHeight}px`,
+    minHeight: `${minHeight}px`,
+    height: "auto", // Allow content to determine height up to maxHeight
+    overflow: "auto", // Add scrolling only when needed
   };
 
   return (
-    <div ref={containerRef} style={{ width: `${width}px` }} className={`relative ${className}`} {...props}>
+    <div
+      ref={containerRef}
+      style={{
+        width: `${width}px`,
+        maxHeight: `${calculatedMaxHeight}px`,
+        height: "auto", // Allow content to determine height
+      }}
+      className={`relative ${className}`}
+      {...props}
+    >
       {/* The "custom-scrollbar" class applies your CSS rules for the scrollbar */}
       <div className="overflow-auto custom-scrollbar" style={contentContainerStyle}>
         {children}

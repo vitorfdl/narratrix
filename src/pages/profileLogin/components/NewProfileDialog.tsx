@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "../../../components/ui/input.tsx";
 import { Label } from "../../../components/ui/label.tsx";
 import { useProfile } from "../../../hooks/ProfileContext.tsx";
+import { saveAvatarImage } from "../../../services/file-system-service.ts";
 
 interface NewProfileDialogProps {
   open: boolean;
@@ -20,42 +21,61 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
   const [hasPassword, setHasPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsProcessing(true);
 
-    if (!name.trim()) {
-      setError("Name is required");
-      return;
+    try {
+      if (!name.trim()) {
+        setError("Name is required");
+        setIsProcessing(false);
+        return;
+      }
+
+      if (hasPassword && !password.trim()) {
+        setError("Password is required when password protection is enabled");
+        setIsProcessing(false);
+        return;
+      }
+
+      // The actual password value or undefined if password protection is disabled
+      const actualPassword = hasPassword ? password : undefined;
+
+      // If avatar exists, save it to the filesystem
+      let avatarPath = undefined;
+      if (avatar) {
+        try {
+          // Generate a normalized ID from the profile name for better identification
+          const nameID = name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+          avatarPath = await saveAvatarImage(avatar, nameID);
+        } catch (err) {
+          console.error("Error saving avatar:", err);
+          // Continue without avatar if there's an error
+        }
+      }
+
+      // Create profile with the avatar path
+      await addProfile(name, avatarPath, actualPassword);
+      handleClose(true);
+    } catch (err) {
+      console.error("Error creating profile:", err);
+      setError("Failed to create profile. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
-
-    if (hasPassword && !password.trim()) {
-      setError("Password is required when password protection is enabled");
-      return;
-    }
-
-    // Add profile and close dialog
-    const actualPassword = hasPassword ? password : undefined;
-
-    // Use async/await to handle the addProfile Promise
-    addProfile(name, avatar, actualPassword)
-      .then(() => {
-        handleClose(true);
-      })
-      .catch((err) => {
-        console.error("Error creating profile:", err);
-        setError("Failed to create profile. Please try again.");
-      });
   };
 
   const handleClose = (force = false) => {
-    // Only close if allowed
-    if (canClose || force) {
+    // Only close if allowed and not processing
+    if ((canClose || force) && !isProcessing) {
       // Reset form state
       setName("");
       setAvatar("");
       setPassword("");
       setError("");
+      setIsProcessing(false);
       onClose();
     }
   };
@@ -69,7 +89,9 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
       <DialogContent
         className="sm:max-w-md"
         onInteractOutside={(e) => {
-          e.preventDefault();
+          if (isProcessing) {
+            e.preventDefault();
+          }
         }}
       >
         <DialogHeader>
@@ -103,12 +125,18 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
               placeholder="Enter profile name"
               maxLength={30}
               required
+              disabled={isProcessing}
             />
           </div>
 
           {/* Password Protection */}
           <div className="flex items-center space-x-2">
-            <Checkbox id="hasPassword" checked={hasPassword} onCheckedChange={(checked) => setHasPassword(checked as boolean)} />
+            <Checkbox
+              id="hasPassword"
+              checked={hasPassword}
+              onCheckedChange={(checked) => setHasPassword(checked as boolean)}
+              disabled={isProcessing}
+            />
             <Label htmlFor="hasPassword" className="text-sm font-medium">
               Password protect this profile
             </Label>
@@ -127,6 +155,7 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
                 required
+                disabled={isProcessing}
               />
             </div>
           )}
@@ -136,12 +165,14 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
 
           <DialogFooter className="mt-6">
             {canClose && (
-              <Button type="button" onClick={() => handleClose()} variant="outline">
+              <Button type="button" onClick={() => handleClose()} variant="outline" disabled={isProcessing}>
                 Cancel
               </Button>
             )}
 
-            <Button type="submit">Create Profile</Button>
+            <Button type="submit" disabled={isProcessing}>
+              {isProcessing ? "Creating..." : "Create Profile"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

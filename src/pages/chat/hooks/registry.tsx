@@ -8,10 +8,21 @@ import WidgetMessages from "@/pages/chat/components/WidgetMessages";
 import WidgetParticipants from "@/pages/chat/components/WidgetParticipants";
 import WidgetScript from "@/pages/chat/components/WidgetScript";
 import React from "react";
+import WidgetExpressions from "../components/WidgetExpressions";
 
 // Import types for props if available
 
-export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "character_sheet" | "memory" | "database" | "chapters";
+export type WidgetId =
+  | "messages"
+  | "config"
+  | "generate"
+  | "participants"
+  | "scripts"
+  | "character_sheet"
+  | "memory"
+  | "database"
+  | "chapters"
+  | "expressions";
 
 export const widgetTitles: Record<WidgetId, string> = {
   messages: "Messages",
@@ -23,6 +34,7 @@ export const widgetTitles: Record<WidgetId, string> = {
   memory: "Memory",
   database: "Database",
   chapters: "Chapters",
+  expressions: "Expressions",
 };
 
 interface WidgetConfiguration<T = unknown> {
@@ -86,6 +98,12 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
     id: "chapters",
     title: widgetTitles.chapters,
     component: WidgetChapters,
+    defaultProps: {},
+  },
+  expressions: {
+    id: "expressions",
+    title: widgetTitles.expressions,
+    component: WidgetExpressions,
     defaultProps: {},
   },
 };

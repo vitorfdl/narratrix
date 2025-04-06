@@ -1,13 +1,16 @@
-import { Agent, Character, CharacterUnion } from "@/schema/characters-schema";
+import { Agent, Character, CharacterUnion, EXPRESSION_LIST } from "@/schema/characters-schema";
 import {
   CharacterFilter,
-  createCharacter,
+  createCharacter as createCharacterAPI,
   deleteCharacter as deleteCharacterAPI,
   getCharacterById as getCharacterByIdAPI,
   listCharacters as listCharactersAPI,
   updateCharacter as updateCharacterAPI,
 } from "@/services/character-service";
+import { nanoid } from "nanoid";
+import { useCallback } from "react";
 import { create } from "zustand";
+import { useMultipleImageUrls } from "./useImageUrl";
 
 interface CharacterState {
   // State
@@ -45,7 +48,19 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     createCharacter: async (characterData) => {
       try {
         set({ isLoading: true, error: null });
-        const newCharacter = await createCharacter(characterData);
+
+        // If it's a character, generate default expressions
+        if (characterData.type === "character") {
+          const defaultExpressions = EXPRESSION_LIST.map((name) => ({
+            id: nanoid(), // Generate unique ID for each expression
+            name: name,
+            image_path: null, // Default expressions start with no image
+          }));
+          // Ensure expressions array exists and assign defaults
+          characterData.expressions = defaultExpressions;
+        }
+
+        const newCharacter = await createCharacterAPI(characterData);
 
         // Update the store with the new character
         set((state) => ({
@@ -179,3 +194,21 @@ export const useCharacterById = (id: string) => useCharacterStore((state) => sta
 export const useCharactersLoading = () => useCharacterStore((state) => state.isLoading);
 export const useCharactersError = () => useCharacterStore((state) => state.error);
 export const useCharacterActions = () => useCharacterStore((state) => state.actions);
+
+/**
+ * Custom hook to efficiently load and cache avatar URLs for all characters
+ * Optimizes performance by using useMultipleImageUrls hook
+ */
+export const useCharacterAvatars = () => {
+  const characters = useCharacters();
+
+  // Memoize the getter functions to prevent unnecessary re-renders
+  const getAvatarPath = useCallback((character: CharacterUnion) => character.avatar_path, []);
+  const getCharacterId = useCallback((character: CharacterUnion) => character.id, []);
+
+  return useMultipleImageUrls(
+    characters,
+    getAvatarPath, // Use memoized function
+    getCharacterId, // Use memoized function
+  );
+};

@@ -6,14 +6,16 @@ import { Edit, Trash2 } from "lucide-react";
 
 interface CharacterCardProps {
   model: CharacterUnion;
+  avatarUrl: string | undefined;
+  isLoadingAvatar: boolean;
   cardSize: "small" | "medium" | "large";
   onEdit: (model: CharacterUnion) => void;
   onDelete: (model: CharacterUnion) => void;
 }
 
-export function CharacterCard({ model, onEdit, onDelete }: CharacterCardProps) {
-  // Get the avatar URL from settings or custom fields
-  const avatarUrl = (model?.avatar_path as string) || "/avatars/default.jpg";
+export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDelete }: CharacterCardProps) {
+  // Default avatar fallback
+  const defaultAvatar = "/avatars/default.jpg";
 
   // Get the author from settings or custom fields
   const author = (model.settings?.author as string) || "Unknown";
@@ -24,7 +26,11 @@ export function CharacterCard({ model, onEdit, onDelete }: CharacterCardProps) {
   return (
     <Card className="group relative overflow-hidden flex flex-col h-full">
       <CardHeader className="relative h-48 p-0">
-        <img src={avatarUrl} alt={model.name} className="h-full w-full object-cover" />
+        <img
+          src={avatarUrl || defaultAvatar}
+          alt={model.name}
+          className={`h-full w-full object-cover ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
+        />
         <Badge className="absolute left-2 top-2" variant={model.type === "character" ? "default" : "secondary"}>
           {model.type}
         </Badge>

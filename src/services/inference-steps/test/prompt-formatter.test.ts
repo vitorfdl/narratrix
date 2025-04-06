@@ -1,6 +1,6 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { describe, expect, it } from "vitest";
-import { replaceTextPlaceholders } from "../prompt-formatter";
+import { replaceTextPlaceholders } from "../replace-text";
 
 describe("replaceTextPlaceholders", () => {
   it("should return original messages and prompt when no replacements needed", () => {

@@ -9,8 +9,10 @@ import { Separator } from "@/components/ui/separator";
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacterActions } from "@/hooks/characterStore";
+import { useImageUrl } from "@/hooks/useImageUrl";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
+import { saveImage } from "@/services/file-system-service";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -155,7 +157,9 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
   const [preserveLastResponse, setPreserveLastResponse] = useState(
     initialData?.type === "agent" ? (initialData?.custom?.preserve_last_response as boolean) || false : false,
   );
-  const [expressions, setExpressions] = useState(initialData?.type === "character" ? initialData.expressions || [] : []);
+
+  // Load avatar image with the hook for consistent loading behavior
+  const { url: avatarUrl, isLoading: isLoadingAvatar } = useImageUrl(avatarImage);
 
   // Set author from profile settings or use a default
   const [author, setAuthor] = useState((initialData?.settings?.author as string) || currentProfile?.name);
@@ -177,11 +181,12 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         custom.preserve_last_response = preserveLastResponse;
       }
 
+      const avatar_path = avatarImage ? await saveImage(avatarImage, name, "characters") : initialData?.avatar_path;
       const formData = {
         name,
         type,
         version,
-        avatar_path: avatarImage,
+        avatar_path: avatar_path || null,
         profile_id: profileId,
         tags,
         settings,
@@ -191,7 +196,6 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         custom,
         ...(type === "character"
           ? {
-              expressions: expressions.length > 0 ? expressions : null,
               character_manifest_id: null,
             }
           : {}),
@@ -221,13 +225,12 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         setPreserveLastResponse(false);
       } else {
         setPersonality("");
-        setExpressions([]);
       }
     }
   }, [type, isEditMode]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {!isEditMode && (
         <div className="flex justify-center gap-2">
           <Button type="button" variant={type === "character" ? "default" : "outline"} onClick={() => setType("character")} className="w-32">
@@ -239,24 +242,35 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         </div>
       )}
 
-      <div className="flex gap-3">
-        <div className="flex-1 space-y-2">
-          <div className="space-y-1">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="Character Name" required value={name} onChange={(e) => setName(e.target.value)} />
+      <div className="flex flex-row gap-8">
+        <div className="flex-1 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Character name"
+              className="w-full"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label htmlFor="author">Author</Label>
             <Input id="author" placeholder="Your Name" required value={author} onChange={(e) => setAuthor(e.target.value)} />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label htmlFor="version">Version</Label>
             <Input
               id="version"
+              type="text"
               placeholder="1.0.0"
-              pattern="^\d+\.\d+\.\d+$"
+              pattern="\d+\.\d+\.\d+"
               title="Version must be in format: major.minor.patch"
               required
               value={version}
@@ -273,8 +287,8 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
             <AvatarCrop
               onCropComplete={(image) => setAvatarImage(image)}
               cropShape="round"
-              existingImage={avatarImage}
-              className="overflow-hidden h-full w-full rounded-full"
+              existingImage={avatarUrl || avatarImage}
+              className={`overflow-hidden h-full w-full rounded-full ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
             />
           </Card>
         </div>
@@ -285,7 +299,6 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         <CharacterFormContent
           personality={personality}
           systemPrompt={systemPrompt}
-          expressions={expressions}
           characterId={initialData?.id}
           onPersonalityChange={setPersonality}
           onSystemPromptChange={setSystemPrompt}

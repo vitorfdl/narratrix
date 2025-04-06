@@ -1,19 +1,37 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useChatActions, useChatList, useCurrentChatId } from "@/hooks/chatStore";
+import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
+import type { Chat } from "@/schema/chat-schema";
 import { ChatTab, CreateChatParams } from "@/schema/chat-schema";
+import { getChatById, listChats } from "@/services/chat-service";
 import { useLocalChatTabs } from "@/utils/local-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { ChatTabs } from "./ChatTabs";
 import { GridLayout } from "./components/GridLayout";
 
-export default function Chat() {
+export default function ChatPage() {
   // Get the current profile ID - replace this with your actual method of getting the profile ID
   const { currentProfile } = useProfile();
   const profileId = currentProfile!.id;
 
   // Add loading state
   const [isLoading, setIsLoading] = useState(true);
+  // State for storing all available chats
+  const [allChats, setAllChats] = useState<Chat[]>([]);
 
   // Use memoized version of openTabIds state
   const [openTabIds, setOpenTabIds] = useLocalChatTabs(profileId);
@@ -23,7 +41,30 @@ export default function Chat() {
   const selectedChatID = useCurrentChatId();
 
   // Get chat actions from the store
-  const { setSelectedChatById, createChat } = useChatActions();
+  const { setSelectedChatById, createChat, updateSelectedChat, deleteChat } = useChatActions();
+
+  // State for rename dialog
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [chatToRenameId, setChatToRenameId] = useState<string | null>(null);
+  const [newChatName, setNewChatName] = useState("");
+
+  // State for delete confirmation dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [chatToDeleteId, setChatToDeleteId] = useState<string | null>(null);
+
+  // Fetch all chats when component mounts
+  useEffect(() => {
+    const loadAllChats = async () => {
+      try {
+        const chats = await listChats({ profile_id: profileId });
+        setAllChats(chats);
+      } catch (error) {
+        console.error("Failed to load all chats:", error);
+      }
+    };
+
+    loadAllChats();
+  }, [profileId]);
 
   useEffect(() => {
     // Early return if we already have a selected chat or no tabs
@@ -73,17 +114,28 @@ export default function Chat() {
       const updatedTabs = [...openTabIds, newChat.id];
       setOpenTabIds(updatedTabs);
       setSelectedChatById(newChat.id);
+
+      // Refresh the list of all chats
+      const refreshedChats = await listChats({ profile_id: profileId });
+      setAllChats(refreshedChats);
     } catch (error) {
       console.error("Failed to create new chat:", error);
+      toast.error("Failed to create new chat.");
     }
   }, [profileId, chatList.length, createChat, setOpenTabIds, setSelectedChatById, openTabIds]);
 
   // Handle changing the active tab with useCallback
   const handleTabChange = useCallback(
     (tabId: string) => {
+      // Check if the tab is already in the list of open tabs
+      if (!openTabIds.includes(tabId)) {
+        // If not, add it to the list of open tabs
+        setOpenTabIds([...openTabIds, tabId]);
+      }
+      // Set the selected chat to the requested tab
       setSelectedChatById(tabId);
     },
-    [setSelectedChatById],
+    [setSelectedChatById, openTabIds, setOpenTabIds],
   );
 
   // Handle closing a tab with useCallback
@@ -100,6 +152,131 @@ export default function Chat() {
     },
     [selectedChatID, setOpenTabIds, setSelectedChatById, openTabIds],
   );
+
+  // Handle rename request from context menu
+  const handleRenameRequest = useCallback(
+    (tabId: string) => {
+      const chatToRename = allChats.find((chat) => chat.id === tabId);
+      if (chatToRename) {
+        setChatToRenameId(tabId);
+        setNewChatName(chatToRename.name);
+        setIsRenameDialogOpen(true);
+      }
+    },
+    [allChats],
+  );
+
+  // Handle duplicate request from context menu
+  const handleDuplicateRequest = useCallback(
+    async (tabId: string) => {
+      try {
+        const originalChat = await getChatById(tabId);
+        if (!originalChat) {
+          throw new Error("Original chat not found");
+        }
+
+        const duplicateChatData: CreateChatParams = {
+          profile_id: originalChat.profile_id,
+          name: `${originalChat.name} (Copy)`,
+          chat_template_id: originalChat.chat_template_id,
+          participants: originalChat.participants || [],
+          user_character_id: originalChat.user_character_id,
+          user_character_settings: originalChat.user_character_settings || [],
+        };
+
+        const newChat = await createChat(duplicateChatData);
+
+        const updatedTabs = [...openTabIds, newChat.id];
+        setOpenTabIds(updatedTabs);
+        setSelectedChatById(newChat.id);
+
+        // Refresh the list of all chats
+        const refreshedChats = await listChats({ profile_id: profileId });
+        setAllChats(refreshedChats);
+        toast.success(`Chat "${originalChat.name}" duplicated successfully.`);
+      } catch (error) {
+        console.error("Failed to duplicate chat:", error);
+        toast.error("Failed to duplicate chat.");
+      }
+    },
+    [profileId, createChat, openTabIds, setOpenTabIds, setSelectedChatById],
+  );
+
+  // Handle delete request from context menu
+  const handleDeleteRequest = useCallback((tabId: string) => {
+    setChatToDeleteId(tabId);
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  // Handle the actual deletion process after confirmation
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!chatToDeleteId) {
+      return;
+    }
+
+    const chatName = allChats.find((c) => c.id === chatToDeleteId)?.name || "Chat";
+
+    try {
+      await deleteChat(chatToDeleteId);
+      // The deleteChat action in the store handles updating the list and selected chat
+      // We just need to update the local `allChats` state and `openTabIds`
+      setAllChats((prev) => prev.filter((chat) => chat.id !== chatToDeleteId));
+      setOpenTabIds((prev) => prev.filter((id) => id !== chatToDeleteId));
+
+      toast.success(`"${chatName}" deleted successfully.`);
+    } catch (error) {
+      console.error("Failed to delete chat:", error);
+      toast.error(`Failed to delete "${chatName}".`);
+    } finally {
+      setChatToDeleteId(null);
+      setIsDeleteDialogOpen(false);
+    }
+  }, [chatToDeleteId, deleteChat, allChats, setOpenTabIds]);
+
+  // Handle the actual renaming process
+  const handleRenameSubmit = async () => {
+    if (!chatToRenameId || !newChatName.trim()) {
+      return;
+    }
+
+    try {
+      // Check if the name hasn't changed
+      const originalChat = allChats.find((chat) => chat.id === chatToRenameId);
+      if (originalChat && originalChat.name === newChatName.trim()) {
+        setIsRenameDialogOpen(false);
+        return; // No change needed
+      }
+
+      setAllChats((prev) => prev.map((chat) => (chat.id === chatToRenameId ? { ...chat, name: newChatName.trim() } : chat)));
+      // Update the name in the zustand store as well if it's the selected chat
+      if (selectedChatID === chatToRenameId) {
+        useChatStore.setState((state) => ({ selectedChat: { ...state.selectedChat, name: newChatName.trim() } }));
+      }
+
+      setIsRenameDialogOpen(false);
+
+      // Persist the change
+      await updateSelectedChat({ name: newChatName.trim() });
+
+      // Optionally refetch the specific chat or all chats if needed after update
+      // For now, the optimistic update + store update should suffice
+      toast.success(`Chat renamed to "${newChatName.trim()}".`);
+    } catch (error) {
+      console.error("Failed to rename chat:", error);
+      toast.error("Failed to rename chat.");
+      // Revert optimistic update if the API call fails
+      const originalChat = allChats.find((chat) => chat.id === chatToRenameId);
+      if (originalChat) {
+        setAllChats((prev) => prev.map((chat) => (chat.id === chatToRenameId ? originalChat : chat)));
+        if (selectedChatID === chatToRenameId) {
+          useChatStore.setState((state) => ({ selectedChat: { ...state.selectedChat, name: originalChat.name } }));
+        }
+      }
+    } finally {
+      setChatToRenameId(null);
+      setNewChatName("");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -118,10 +295,15 @@ export default function Chat() {
         <>
           <ChatTabs
             tabs={tabs}
+            allChats={allChats}
+            profileId={profileId}
             activeTab={selectedChatID || ""}
             onTabChange={handleTabChange}
             onNewChat={handleNewChat}
             onCloseTab={handleCloseTab}
+            onRenameRequest={handleRenameRequest}
+            onDuplicateRequest={handleDuplicateRequest}
+            onDeleteRequest={handleDeleteRequest}
           />
           <div className="flex-1">{selectedChatID && <GridLayout tabId={selectedChatID} />}</div>
         </>
@@ -133,6 +315,66 @@ export default function Chat() {
           </div>
         </div>
       )}
+
+      {/* Rename Dialog */}
+      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Chat</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={newChatName}
+                onChange={(e) => setNewChatName(e.target.value)}
+                className="col-span-3"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleRenameSubmit();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameSubmit} disabled={!newChatName.trim()}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the chat "
+              {allChats.find((c) => c.id === chatToDeleteId)?.name || "this chat"}" and all associated messages and chapters.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setChatToDeleteId(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

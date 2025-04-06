@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCharacters } from "@/hooks/characterStore";
+import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { Search, UserRound } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
@@ -18,6 +18,8 @@ interface AddParticipantPopoverProps {
 
 const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharacter, existingParticipantIds, title }: AddParticipantPopoverProps) => {
   const characters = useCharacters();
+  const { urlMap: avatarUrlMap } = useCharacterAvatars();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "characters" | "agents">("all");
   const [filteredCharacters, setFilteredCharacters] = useState<CharacterUnion[]>([]);
@@ -59,7 +61,8 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
   };
 
   const renderCharacterItem = (character: CharacterUnion) => {
-    const avatar = character.avatar_path as string;
+    // Get the avatar URL from the cached map or fallback to default path
+    const avatarUrl = avatarUrlMap[character.id] || (character.avatar_path as string);
 
     return (
       <div
@@ -67,8 +70,8 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
         className="flex items-center gap-1.5 hover:bg-accent/30 rounded-md cursor-pointer py-1 px-2"
         onClick={() => handleSelect(character)}
       >
-        {avatar ? (
-          <img src={avatar} alt={character.name} className="w-6 h-6 rounded-full object-cover" />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={character.name} className="w-6 h-6 rounded-full object-cover" />
         ) : (
           <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xs">{character.name[0]}</div>
         )}

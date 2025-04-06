@@ -1,5 +1,6 @@
+import { ProfileListItem } from "@/schema/profiles-schema";
 import { LockIcon, PlusCircleIcon, TrashIcon, UserCircleIcon } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -15,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar.
 import { Button } from "../../components/ui/button.tsx";
 import { Card, CardContent } from "../../components/ui/card.tsx";
 import { MAX_PROFILES, useProfile } from "../../hooks/ProfileContext.tsx";
+import { useMultipleImageUrls } from "../../hooks/useImageUrl";
 import NewProfileDialog from "./components/NewProfileDialog.tsx";
 import PasswordDialog from "./components/PasswordDialog.tsx";
 
@@ -27,6 +29,16 @@ const ProfilePicker: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
   const [isProfilesLoaded, setIsProfilesLoaded] = useState(false);
+
+  // Memoize the getter functions with correct types
+  const getProfileAvatarPath = useCallback((profile: ProfileListItem) => profile.avatar_path, []);
+  const getProfileId = useCallback((profile: ProfileListItem) => profile.id, []);
+
+  const { urlMap } = useMultipleImageUrls(
+    profiles,
+    getProfileAvatarPath, // Use memoized function
+    getProfileId, // Use memoized function
+  );
 
   useEffect(() => {
     if (profiles.length === 0 && isProfilesLoaded) {
@@ -116,7 +128,7 @@ const ProfilePicker: React.FC = () => {
               >
                 <CardContent className="flex flex-col items-center p-3 pt-3">
                   <Avatar className="w-24 h-24 mb-3 rounded-full">
-                    <AvatarImage src={profile.avatar_path} alt={profile.name} />
+                    <AvatarImage src={urlMap[profile.id] || ""} alt={profile.name} />
                     <AvatarFallback>
                       <UserCircleIcon className="w-full h-full text-muted-foreground" />
                     </AvatarFallback>

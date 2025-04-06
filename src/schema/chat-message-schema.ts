@@ -2,12 +2,16 @@ import { SuggestionItem } from "@/components/ui/tiptap/tiptap-render";
 import { z } from "zod";
 import { uuidUtils } from "./utils-schema";
 
-export const promptReplacementSuggestionList: SuggestionItem[] = [
+export const basicPromptSuggestionList: SuggestionItem[] = [
   { title: "user", description: "User Character Name or Profile Name" },
-  { title: "user.personality" },
   { title: "char", description: "Character Name." },
   { title: "character.name" },
+  { title: "user.personality" },
   { title: "character.personality" },
+];
+
+export const promptReplacementSuggestionList: SuggestionItem[] = [
+  ...basicPromptSuggestionList,
   { title: "character.expression", description: "Character Latest Expression" },
   { title: "chapter.scenario" },
   { title: "chapter.title" },

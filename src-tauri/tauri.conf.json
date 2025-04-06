@@ -18,20 +18,29 @@
         "height": 600,
         "resizable": true,
         "fullscreen": false,
-        "dragDropEnabled": false
+        "dragDropEnabled": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost data:",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
     }
   },
   "plugins": {
     "sql": {
       "preload": ["sqlite:narratrix_main.db"]
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg2ODZDMjgyMTZCOTgwQ0EKUldUS2dMa1dnc0tHaG12UE1OM2NranNwci93RlpuYnMzaWNobUllelFkZGdoaGFUcXVGdTJiOWQK",
+      "endpoints": ["https://github.com/vitorfdl/narratrix/releases/latest/download/latest.json"]
     }
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": ["icons/favicon-96x96.png", "icons/Square192x192Logo.png", "icons/Square512x512Logo.png", "icons/favicon.svg", "icons/icon.ico"],
     "resources": ["resources/**/*"]

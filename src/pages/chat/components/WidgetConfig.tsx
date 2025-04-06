@@ -47,8 +47,6 @@ const WidgetConfig = () => {
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
 
-  console.log("WidgetConfig rendered");
-
   // Add debounce timer ref
   const saveTimeoutRef = useRef<number | null>(null);
 

@@ -1,5 +1,5 @@
 import { useSessionProfile } from "@/utils/session-storage";
-import React, { createContext, ReactNode, useContext, useEffect, useReducer } from "react";
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useReducer } from "react";
 import { toast } from "sonner";
 import { ProfileListItem, ProfileResponse } from "../schema/profiles-schema";
 import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile } from "../services/profile-service";
@@ -8,12 +8,14 @@ import { useChatActions } from "./chatStore";
 import { useChatTemplateActions } from "./chatTemplateStore";
 import { useModelManifestsActions } from "./manifestStore";
 import { useTemplateActions } from "./templateStore";
+import { useImageUrl } from "./useImageUrl";
 
 export const MAX_PROFILES = 5;
 export interface ProfileState {
   profiles: ProfileListItem[];
   currentProfile: ProfileResponse | null;
   isAuthenticated: boolean;
+  currentProfileAvatarUrl: string | null;
 }
 
 export type ProfileAction =
@@ -21,6 +23,7 @@ export type ProfileAction =
   | { type: "ADD_PROFILE"; payload: ProfileListItem }
   | { type: "REMOVE_PROFILE"; payload: string }
   | { type: "SET_CURRENT_PROFILE"; payload: ProfileResponse }
+  | { type: "SET_CURRENT_PROFILE_AVATAR_URL"; payload: string | null }
   | { type: "LOGOUT" }
   | { type: "SET_AUTHENTICATED"; payload: boolean };
 
@@ -29,6 +32,7 @@ const initialState: ProfileState = {
   profiles: [],
   currentProfile: null,
   isAuthenticated: false,
+  currentProfileAvatarUrl: null,
 };
 
 const profileReducer = (state: ProfileState, action: ProfileAction): ProfileState => {
@@ -52,17 +56,24 @@ const profileReducer = (state: ProfileState, action: ProfileAction): ProfileStat
         profiles: state.profiles.filter((profile) => profile.id !== action.payload),
         currentProfile: state.currentProfile?.id === action.payload ? null : state.currentProfile,
         isAuthenticated: state.currentProfile?.id === action.payload ? false : state.isAuthenticated,
+        currentProfileAvatarUrl: state.currentProfile?.id === action.payload ? null : state.currentProfileAvatarUrl,
       };
     case "SET_CURRENT_PROFILE":
       return {
         ...state,
         currentProfile: action.payload,
       };
+    case "SET_CURRENT_PROFILE_AVATAR_URL":
+      return {
+        ...state,
+        currentProfileAvatarUrl: action.payload,
+      };
     case "LOGOUT":
       return {
         ...state,
         currentProfile: null,
         isAuthenticated: false,
+        currentProfileAvatarUrl: null,
       };
     case "SET_AUTHENTICATED":
       return {
@@ -81,6 +92,7 @@ interface ProfileContextType extends ProfileState {
   login: (id: string, password?: string) => Promise<boolean>;
   logout: () => void;
   refreshProfiles: () => Promise<void>;
+  refreshAvatar: () => void;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -97,6 +109,20 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const { fetchCharacters } = useCharacterActions();
   const { fetchChatList } = useChatActions();
   const { fetchChatTemplates } = useChatTemplateActions();
+
+  // Use the useImageUrl hook to manage the current profile's avatar URL
+  const { url: avatarUrl, reload: reloadAvatar } = useImageUrl(state.currentProfile?.avatar_path);
+
+  // Update the avatar URL in state when it changes
+  useEffect(() => {
+    dispatch({ type: "SET_CURRENT_PROFILE_AVATAR_URL", payload: avatarUrl || null });
+  }, [avatarUrl]);
+
+  // Function to refresh the avatar
+  const refreshAvatar = useCallback(() => {
+    reloadAvatar();
+  }, [reloadAvatar]);
+
   // Load profiles from the database
   const refreshProfiles = async (): Promise<void> => {
     try {
@@ -213,6 +239,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     login,
     logout,
     refreshProfiles,
+    refreshAvatar,
   };
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

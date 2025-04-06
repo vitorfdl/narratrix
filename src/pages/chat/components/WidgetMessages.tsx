@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useCharacterStore } from "@/hooks/characterStore";
+import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatTemplate } from "@/hooks/chatTemplateStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { CharacterUnion } from "@/schema/characters-schema";
@@ -222,7 +222,7 @@ const ContextCutDivider = () => (
 
 // Extracted StreamingIndicator component
 const StreamingIndicator = () => (
-  <div className="absolute right-0 top-5 flex items-center gap-2 p-1 bg-background/80 backdrop-blur-sm rounded-md animate-pulse">
+  <div className="absolute right-0 top-[-1rem] flex items-center gap-2 p-1 bg-background/80 backdrop-blur-sm rounded-md animate-pulse">
     <Loader2 className="w-4 h-4 animate-spin text-primary" />
     <span className="text-xs text-primary font-medium">Thinking...</span>
   </div>
@@ -230,11 +230,11 @@ const StreamingIndicator = () => (
 
 const WidgetMessages: React.FC = () => {
   const inferenceService = useInferenceServiceFromContext();
-  const profile = useProfile();
-  const avatar = profile.currentProfile?.avatar_path;
+  const { currentProfileAvatarUrl } = useProfile();
 
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
-  const characters = useCharacterStore((state) => state.characters);
+  const characters = useCharacters();
+  const { urlMap: avatarUrlMap } = useCharacterAvatars();
   const messages = useCurrentChatMessages();
   const { updateChatMessage, deleteChatMessage } = useChatActions();
 
@@ -298,23 +298,23 @@ const WidgetMessages: React.FC = () => {
     return message.messages[message.message_index] || "...";
   };
 
-  const getAvatarForMessage = (message: ChatMessage): string | undefined => {
+  const getAvatarForMessage = (message: ChatMessage): string | null => {
     if (message.type === "user") {
       // Use the user's avatar unless they've selected a character
       if (currentChatUserCharacterID) {
         const userCharacter = characters.find((c: CharacterUnion) => c.id === currentChatUserCharacterID);
-        return userCharacter?.avatar_path ? userCharacter.avatar_path : avatar;
+        return avatarUrlMap[userCharacter?.id || ""] || currentProfileAvatarUrl;
       }
-      return avatar;
+      return avatarUrlMap[currentChatUserCharacterID || ""] || currentProfileAvatarUrl;
     }
 
     if (message.type === "character" && message.character_id) {
       // Get the character's avatar from character list
       const character = characters.find((c: CharacterUnion) => c.id === message.character_id);
-      return character?.avatar_path ? character.avatar_path : undefined;
+      return avatarUrlMap[character?.id || ""] || null;
     }
 
-    return undefined;
+    return null;
   };
 
   const handleCancelEdit = () => {

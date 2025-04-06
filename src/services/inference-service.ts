@@ -188,7 +188,7 @@ export function useInferenceService() {
    * Format prompts for the inference engine
    */
   const formatPrompt = useCallback(
-    (userMessage?: string): { inferenceMessages: InferenceMessage[]; systemPrompt?: string } => {
+    (userMessage?: string, systemPromptOverride?: string): { inferenceMessages: InferenceMessage[]; systemPrompt?: string } => {
       const chatWithNames = chatMessages
         ?.map((msg) => {
           return {
@@ -199,8 +199,9 @@ export function useInferenceService() {
         ?.filter((msg) => streamingState.current.messageId !== msg.id);
 
       return formatPromptUtil({
-        messages: chatWithNames || [],
-        userMessage,
+        messageHistory: chatWithNames || [],
+        userPrompt: userMessage,
+        systemOverridePrompt: systemPromptOverride,
         modelSettings,
         formatTemplate,
         inferenceTemplate,
@@ -306,7 +307,7 @@ export function useInferenceService() {
         streamingState.current.messageIndex = messageIndex;
 
         // Prepare messages for inference
-        const { inferenceMessages, systemPrompt } = formatPrompt(userMessage);
+        const { inferenceMessages, systemPrompt } = formatPrompt(userMessage, systemPromptOverride);
         console.log("inferenceMessages", inferenceMessages);
         console.log("systemPrompt", systemPrompt);
 
@@ -319,13 +320,11 @@ export function useInferenceService() {
           engine: manifestSettings.engine,
         };
 
-        console.log("parametersOverride", chatTemplate?.config);
-
         // Start the inference process
         const requestId = await runInference({
           messages: inferenceMessages,
           modelSpecs,
-          systemPrompt: systemPromptOverride || systemPrompt,
+          systemPrompt: systemPrompt,
           parameters: parametersOverride || chatTemplate?.config,
           stream,
         });
@@ -401,7 +400,6 @@ export function useInferenceService() {
     },
     [generateMessage, cancelRequest, currentChatId],
   );
-
   /**
    * Cancel ongoing generation
    */

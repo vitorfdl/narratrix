@@ -12,7 +12,7 @@ export const ModelSchema = z.object({
   manifest_id: z.string(),
   config: z.record(z.string(), z.any()),
   max_concurrency: z.number().min(1).max(10).default(1),
-  inference_template_id: z.string().nullable(),
+  inference_template_id: z.string().optional().nullable(),
   created_at: z.date(),
   updated_at: z.date(),
 });

@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useImageUrl } from "@/hooks/useImageUrl";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { motion } from "framer-motion";
 import { UserCircle, UserPlus, UserRound, X } from "lucide-react";
@@ -16,6 +17,9 @@ const WidgetCharacterSheet = () => {
   const { updateSelectedChat } = useChatActions();
   const [isSelectingCharacter, setIsSelectingCharacter] = useState(false);
   const [currentCharacter, setCurrentCharacter] = useState<CharacterUnion | null>(null);
+
+  // Use the hook to get the image URL for the current character
+  const { url: avatarUrl, isLoading: isLoadingAvatar } = useImageUrl(currentCharacter?.avatar_path || null);
 
   // Get the current character data based on ID
   useEffect(() => {
@@ -68,9 +72,9 @@ const WidgetCharacterSheet = () => {
             <div className="relative">
               {currentCharacter.avatar_path ? (
                 <img
-                  src={currentCharacter.avatar_path}
+                  src={avatarUrl || "/avatars/default.jpg"}
                   alt={currentCharacter.name}
-                  className="h-24 w-24 rounded-full object-cover border-2 border-primary/30"
+                  className={`h-24 w-24 rounded-full object-cover border-2 border-primary/30 ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
                 />
               ) : (
                 <div className="h-24 w-24 rounded-full bg-accent flex items-center justify-center">
@@ -156,10 +160,11 @@ const WidgetCharacterSheet = () => {
             onOpenChange={setIsSelectingCharacter}
             onSelectCharacter={handleSelectCharacter}
             existingParticipantIds={[]}
+            title="Choose Character"
           >
             <Button variant="outline" size="sm" className="ml-auto">
               <UserPlus className="mr-2 h-4 w-4" />
-              Select Character
+              Change Character
             </Button>
           </AddParticipantPopover>
         )}

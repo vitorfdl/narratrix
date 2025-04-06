@@ -7,6 +7,7 @@ import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-s
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./format-template-utils";
+import { replaceTextPlaceholders } from "./replace-text";
 
 /**
  * Interface for message with character information
@@ -19,8 +20,12 @@ interface MessageWithCharacter extends ChatMessage {
  * Interface for prompt formatter configuration
  */
 export interface PromptFormatterConfig {
-  messages: MessageWithCharacter[];
-  userMessage?: string;
+  // Prompt Defaults
+  messageHistory: MessageWithCharacter[] | ChatMessage[];
+  userPrompt?: string;
+  systemOverridePrompt?: string;
+
+  // Settings
   modelSettings?: Model | null;
   formatTemplate?: FormatTemplate | null;
   inferenceTemplate?: InferenceTemplate | null;
@@ -32,6 +37,7 @@ export interface PromptFormatterConfig {
     user_character?: Pick<Character, "name" | "custom">;
     character?: Pick<CharacterUnion, "name" | "settings" | "custom" | "type">;
     chapter?: Pick<ChatChapter, "title" | "scenario" | "instructions">;
+    extra?: Record<string, string>;
   };
 }
 
@@ -122,107 +128,12 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
   return result;
 }
 
-// interface ReplaceTextPlaceholdersConfig {
-//   character?: {
-//     name?: string;
-//     personality?: string;
-//     memory?: string;
-//   };
-//   user?: {
-//     name?: string;
-//     personality?: string;
-//     memory?: string;
-//   };
-//   chapter?: {
-//     title?: string;
-//     scenario?: string;
-//     instructions?: string;
-//   };
-// }
-
-/**
- * Replace placeholder text in messages and system prompt
- */
-export function replaceTextPlaceholders(
-  messages: InferenceMessage[],
-  systemPrompt: string | undefined,
-  config: PromptFormatterConfig["chatConfig"],
-): FormattedPromptResult {
-  const { character, user_character, chapter } = config || {};
-
-  // Skip if no replacements needed
-  if (!character && !user_character && !chapter) {
-    return { inferenceMessages: messages, systemPrompt };
-  }
-
-  // Process text replacements in messages
-  const processedMessages = messages.map((message) => {
-    let processedText = message.text;
-
-    if (character?.name) {
-      processedText = processedText.replace(/\{\{char\}\}/g, character.name);
-      processedText = processedText.replace(/\{\{character.name\}\}/g, character.name);
-    }
-    if (user_character?.name) {
-      processedText = processedText.replace(/\{\{user\}\}/g, user_character.name);
-      processedText = processedText.replace(/\{\{user.name\}\}/g, user_character.name);
-    }
-
-    return {
-      ...message,
-      text: processedText,
-    };
-  });
-
-  // Process text replacements in system prompt
-  let processedSystemPrompt = systemPrompt;
-  if (processedSystemPrompt) {
-    if (character?.name) {
-      processedSystemPrompt = processedSystemPrompt.replace(/\{\{char\}\}/g, character.name);
-      processedSystemPrompt = processedSystemPrompt.replace(/\{\{character\.name\}\}/g, character.name);
-    }
-
-    if (user_character?.name) {
-      processedSystemPrompt = processedSystemPrompt.replace(/\{\{user\}\}/g, user_character.name);
-      processedSystemPrompt = processedSystemPrompt.replace(/\{\{user.name\}\}/g, user_character.name);
-    }
-
-    if (chapter?.title) {
-      processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter\.title\}\}/g, chapter.title);
-    }
-
-    if (chapter?.scenario) {
-      processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter\.scenario\}\}/g, chapter.scenario);
-    }
-
-    if (chapter?.instructions) {
-      processedSystemPrompt = processedSystemPrompt.replace(/\{\{chapter\.instructions\}\}/g, chapter.instructions);
-    }
-
-    if (character?.type === "character") {
-      const personality = (character?.custom as any)?.personality;
-      if (personality) {
-        processedSystemPrompt = processedSystemPrompt.replace(/\{\{character\.personality\}\}/g, personality);
-      }
-    }
-
-    if (user_character?.custom?.personality) {
-      processedSystemPrompt = processedSystemPrompt.replace(/\{\{user.personality\}\}/g, user_character.custom.personality);
-    }
-  }
-
-  return {
-    inferenceMessages: processedMessages,
-    systemPrompt: processedSystemPrompt,
-  };
-}
-
 /**
  * Main format prompt function that orchestrates the prompt formatting process
  */
 export function formatPrompt(config: PromptFormatterConfig): FormattedPromptResult {
   // Step 1: Get chat history with user message
-  const chatHistory = getChatHistory(structuredClone(config.messages), config.userMessage);
+  const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt);
 
   // Step 2: Process custom prompts from the chat template
   let processedMessages = processCustomPrompts(chatHistory, config.chatTemplate?.custom_prompts);
@@ -242,7 +153,7 @@ export function formatPrompt(config: PromptFormatterConfig): FormattedPromptResu
   // }
 
   // Step 3: Create system prompt
-  const systemPrompt = createSystemPrompt(config.formatTemplate);
+  const systemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate);
 
   // Step 4: Replace placeholders
   return replaceTextPlaceholders(processedMessages, systemPrompt, config.chatConfig);

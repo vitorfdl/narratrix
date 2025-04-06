@@ -41,57 +41,29 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
     fetchManifestInfo();
   }, [model.manifest_id, getManifestById]);
 
-  // Get description with label from config, giving preference to URL or Model fields
-  const getDescription = () => {
-    // Parse config if needed
-    const config = typeof model.config === "string" ? JSON.parse(model.config) : model.config;
-    if (!config) {
-      return `${model.type.toUpperCase()} model`;
-    }
+  // Parse config to extract relevant display info
+  const config = typeof model.config === "string" ? JSON.parse(model.config) : model.config;
+  let urlValue: string | undefined;
+  let modelValue: string | undefined;
+  let fallbackValue: string | undefined;
 
-    // Try to find fields in this preference order: url, model, other non-secret fields
+  if (config) {
     const configEntries = Object.entries(config);
-    let fieldKey: string | undefined;
-    let fieldValue: string | undefined;
-
-    // First pass - look for URL or model fields
     for (const [key, value] of configEntries) {
       const lowerKey = key.toLowerCase();
-      if (
-        (lowerKey.includes("url") || lowerKey.includes("model")) &&
-        typeof value === "string" &&
-        !lowerKey.includes("key") &&
-        !lowerKey.includes("secret") &&
-        !lowerKey.includes("token")
-      ) {
-        fieldKey = key;
-        fieldValue = value as string;
-        break;
+      const isSensitive = lowerKey.includes("key") || lowerKey.includes("secret") || lowerKey.includes("token");
+
+      if (typeof value === "string" && !isSensitive) {
+        if (lowerKey.includes("url")) {
+          urlValue = value;
+        } else if (lowerKey.includes("model")) {
+          modelValue = value;
+        } else if (!fallbackValue) {
+          fallbackValue = value; // Store the first non-sensitive string as fallback
+        }
       }
     }
-
-    // Second pass - if no URL/model found, take first non-secret string value
-    if (!fieldKey) {
-      const firstValue = configEntries.find(([key, value]) => {
-        const lowerKey = key.toLowerCase();
-        return !lowerKey.includes("key") && !lowerKey.includes("secret") && !lowerKey.includes("token") && typeof value === "string";
-      });
-
-      if (firstValue) {
-        fieldKey = firstValue[0];
-        fieldValue = firstValue[1] as string;
-      }
-    }
-
-    if (fieldKey && fieldValue) {
-      // Try to find the matching label from manifest fields
-      // const fieldDef = manifestFields.find((field) => field.key === fieldKey);
-      // const label = fieldDef?.label || fieldKey;
-      return fieldValue;
-    }
-
-    return `${model.type.toUpperCase()} model`;
-  };
+  }
 
   // Format the date to a more readable format
   const formatDate = (date: Date) => {
@@ -161,14 +133,34 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
         </CardHeader>
 
         <CardContent className="pb-2 flex-grow">
-          <div className="space-y-3">
-            <div className="flex items-center text-sm">
-              <Cpu className="h-4 w-4 mr-2 text-muted-foreground/70" />
-              <span className="text-muted-foreground">Model:</span>
-              <span className="ml-2 text-card-foreground font-mono">{getDescription()}</span>
-            </div>
+          <div className="space-y-1.5">
+            {urlValue && (
+              <div className="flex items-center text-sm">
+                <Cpu className="h-4 w-4 mr-2 text-muted-foreground/70 flex-shrink-0" />
+                <span className="text-foreground mr-1  font-mono font-bold">URL:</span>
+                <span className="text-muted-foreground  truncate" title={urlValue}>
+                  {urlValue}
+                </span>
+              </div>
+            )}
+            {modelValue && (
+              <div className="flex items-center text-sm">
+                <Cpu className="h-4 w-4 mr-2 text-muted-foreground/70 flex-shrink-0" />
+                <span className="text-foreground mr-1 font-mono font-bold">Model:</span>
+                <span className="text-muted-foreground truncate" title={modelValue}>
+                  {modelValue}
+                </span>
+              </div>
+            )}
+            {!urlValue && !modelValue && (
+              <div className="flex items-center text-sm">
+                <Cpu className="h-4 w-4 mr-2 text-muted-foreground/70 flex-shrink-0" />
+                <span className="text-muted-foreground mr-1">Type:</span>
+                <span className="text-card-foreground font-mono">{fallbackValue || model.type.toUpperCase()}</span>
+              </div>
+            )}
 
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 pt-2">
               {getCapabilities().map((capability, index) => (
                 <Badge key={index} variant="secondary" className="bg-secondary hover:bg-secondary/80 text-secondary-foreground">
                   {capability}
@@ -183,7 +175,7 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
           </div>
         </CardContent>
 
-        <CardFooter className="pt-2 flex justify-between text-sm text-muted-foreground mt-auto">
+        <CardFooter className="py-2 px-6 flex justify-between text-sm text-muted-foreground mt-auto">
           <div className="flex items-center">
             <Zap className="h-3 w-3 mr-1" />
             <span>Max: {model.max_concurrency}</span>

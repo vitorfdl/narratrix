@@ -4,7 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useCharacterActions, useCharacters, useCharactersLoading } from "@/hooks/characterStore";
+import { useCharacterActions, useCharacterAvatars, useCharacters, useCharactersLoading } from "@/hooks/characterStore";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { useLocalCharactersPagesSettings } from "@/utils/local-storage";
 import { Plus, RefreshCw, SortAsc, View } from "lucide-react";
@@ -28,9 +28,12 @@ export type CharacterPageSettings = {
 export default function Characters() {
   // Store and Local Storage
   const characters = useCharacters();
-  const isLoading = useCharactersLoading();
+  const isLoadingCharacters = useCharactersLoading();
   const { fetchCharacters, deleteCharacter } = useCharacterActions();
   const [settings, setSettings] = useLocalCharactersPagesSettings();
+
+  // Use the avatar loading hook for optimized image loading
+  const { urlMap: avatarUrlMap, isLoading: isLoadingAvatars, reloadAll: reloadAvatars } = useCharacterAvatars();
 
   // Local State
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -64,6 +67,9 @@ export default function Characters() {
 
   const handleRefresh = () => {
     fetchCharacters(profile.currentProfile!.id);
+    // Also refresh all avatar images when refreshing characters
+    console.log("refreshing avatars");
+    reloadAvatars();
   };
 
   const filteredCharacters = useMemo(() => {
@@ -98,7 +104,7 @@ export default function Characters() {
         <div className="flex items-center gap-1 border-b p-4">
           <Input autoFocus placeholder="Search characters..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full" />
           <Button variant="outline" size="icon" onClick={handleRefresh}>
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${isLoadingCharacters || isLoadingAvatars ? "animate-spin" : ""}`} />
           </Button>
 
           <DropdownMenu>
@@ -163,7 +169,15 @@ export default function Characters() {
             }}
           >
             {filteredCharacters.map((char) => (
-              <CharacterCard key={char.id} model={char} cardSize={settings.view.cardSize} onEdit={handleEdit} onDelete={handleDelete} />
+              <CharacterCard
+                key={char.id}
+                model={char}
+                cardSize={settings.view.cardSize}
+                avatarUrl={avatarUrlMap[char.id]}
+                isLoadingAvatar={isLoadingAvatars}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         </div>
@@ -180,7 +194,13 @@ export default function Characters() {
             <DialogHeader>
               <DialogTitle>Add New Character / Agent</DialogTitle>
             </DialogHeader>
-            <CharacterForm mode="create" onSuccess={() => setCreateDialogOpen(false)} />
+            <CharacterForm
+              mode="create"
+              onSuccess={() => {
+                setCreateDialogOpen(false);
+                reloadAvatars();
+              }}
+            />
           </DialogContent>
         </Dialog>
 
@@ -197,6 +217,8 @@ export default function Characters() {
                 onSuccess={() => {
                   setEditDialogOpen(false);
                   setSelectedCharacter(null);
+                  // Reload avatar images after editing
+                  reloadAvatars();
                 }}
               />
             )}

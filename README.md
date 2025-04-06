@@ -73,12 +73,13 @@ NarratrixAI is built with Tauri, providing native performance across platforms:
 - [x] Chat Management
 - [x] Characters Management
 - [x] Templates Management
+- [x] Chapter Creation
 
 ### 🛠️ Features In Development
 
+- [ ] Agents Customization
 - [ ] Database Management
 - [ ] Scripting System
-- [ ] Chapter Creation
 - [ ] Lorebooks
 - [ ] Import/Export (Chats, Templates, Characters)
 - [ ] Memory Management

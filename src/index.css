@@ -118,7 +118,7 @@ body,
 
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--primary)) transparent;
+  scrollbar-color: hsl(var(--primary)) hsl(var(--accent));
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -127,7 +127,7 @@ body,
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: hsl(var(--accent));
   margin: 4px;
 }
 
@@ -148,19 +148,16 @@ body,
   background: transparent;
 }
 
-/* Bubble menu */
-.bubble-menu {
-  @apply flex items-center gap-1 p-1 bg-popover border border-border rounded-md shadow-md;
-  @apply animate-in fade-in-50 zoom-in-95 slide-in-from-bottom-2;
-}
 
-.bubble-menu button {
-  @apply inline-flex items-center justify-center rounded-md px-2.5 py-1;
-  @apply text-xs font-medium text-muted-foreground transition-colors;
-  @apply hover:bg-secondary hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1;
-}
-
-.bubble-menu button.is-active {
-  @apply bg-primary text-primary-foreground;
-  @apply hover:bg-primary/90 hover:text-primary-foreground;
+@layer utilities {
+  /* Custom animation for the speaker border */
+  @keyframes border-pulse {
+    0%, 100% { border-color: theme('colors.primary.DEFAULT / 70%'); } /* Start/End with primary/70 */
+    50% { border-color: theme('colors.primary.DEFAULT / 100%'); } /* Pulse to full opacity primary */
+  }
+  .animate-border-pulse {
+    animation: border-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    /* Ensure border width is consistent */
+    border-width: 2px; 
+  }
 }
