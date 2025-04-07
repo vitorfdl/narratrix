@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatMessages, useCurrentChatTemplateID, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useExpressionStore } from "@/hooks/expressionStore";
 import { cn } from "@/lib/utils";
 import {
   BookmarkMinus,
@@ -278,6 +279,7 @@ const WidgetMessages: React.FC = () => {
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
   const messages = useCurrentChatMessages();
   const { updateChatMessage, deleteChatMessage } = useChatActions();
+  const setSelectedText = useExpressionStore((state) => state.setSelectedText);
 
   const [isEditingID, setIsEditingID] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
@@ -295,6 +297,9 @@ const WidgetMessages: React.FC = () => {
 
   const chatTemplateId = useCurrentChatTemplateID();
   const chatTemplate = useChatTemplate(chatTemplateId || "");
+
+  // Ref for selection debounce timer
+  const selectionTimeoutRef = useRef<number | null>(null);
 
   // Calculate total characters up to each message
   const messagesWithCharCount = messages.map((msg, index) => {
@@ -625,6 +630,27 @@ const WidgetMessages: React.FC = () => {
     scrollToBottom("auto");
   }, [scrollToBottom]);
 
+  // Add selection handler
+  const handleMessageSelection = useCallback(
+    (characterId: string | undefined) => {
+      // Clear any existing timer
+      if (selectionTimeoutRef.current) {
+        window.clearTimeout(selectionTimeoutRef.current);
+      }
+
+      // Start a new timer
+      selectionTimeoutRef.current = window.setTimeout(() => {
+        const selection = window.getSelection();
+        if (selection?.toString().trim()) {
+          setSelectedText(selection.toString().trim(), characterId || null);
+        }
+        // No need for the 'else' part that clears selection,
+        // as a simple click without dragging won't trigger this after the delay.
+      }, 300); // 300ms delay
+    },
+    [setSelectedText],
+  );
+
   const renderMessage = (message: ChatMessage & { totalChars: number }, index: number, isContextCut: boolean) => {
     const avatarPath = getAvatarForMessage(message);
     const isStreaming = isMessageStreaming(message.id);
@@ -652,6 +678,7 @@ const WidgetMessages: React.FC = () => {
 
           {/* Message content */}
           <div
+            onMouseUp={() => handleMessageSelection(message.character_id || undefined)}
             className={cn(
               "flex-grow relative pb-6 text-justify",
               message.type === "user" && isEditingID !== message.id && "flex justify-end",

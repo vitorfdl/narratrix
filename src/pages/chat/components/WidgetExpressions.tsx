@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
+import { useExpressionStore } from "@/hooks/expressionStore";
 import { useModels } from "@/hooks/modelsStore";
 import { useMultipleImageUrls } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,9 @@ const WidgetExpressions = () => {
   // Use the hook for settings
   const [expressionSettings, setExpressionSettings] = useLocalExpressionGenerationSettings();
   const { modelId: selectedModelId, autoRefresh: autoRefreshEnabled } = expressionSettings;
+
+  // Get state and actions from the expression store
+  const { selectedText, selectedMessageCharacterId, clearSelection } = useExpressionStore();
 
   // Helper functions to update specific settings
   const setSelectedModelId = (modelId: string) => {
@@ -140,81 +144,109 @@ const WidgetExpressions = () => {
   const { urlMap: expressionUrlMap } = useMultipleImageUrls(expressionObjectsToLoad, getPathForItem, getIdForItem);
   // ------------------------------
 
-  // Manual expression generation function (now reads from refs)
-  const generateExpression = useCallback(async () => {
-    const currentSpeakerId = lastSpeakerIdRef.current;
-    const currentLastMessage = lastMessageRef.current;
+  // Manual expression generation function (now reads from refs AND selected text)
+  const generateExpression = useCallback(
+    async (userPickedText?: string) => {
+      console.log("Generating expression with userPickedText:", userPickedText);
+      // Determine the character ID: Use selected character if text is selected, otherwise use the last speaker
+      const currentSpeakerId = userPickedText ? selectedMessageCharacterId : lastSpeakerIdRef.current;
+      const currentLastMessage = lastMessageRef.current; // Still needed for chapter ID
 
-    if (!currentSpeakerId || !currentLastMessage?.messages?.[0] || !selectedModelId || selectedModelId === "none") {
-      console.log("Expression generation skipped: missing speaker, message, or model.");
-      return;
-    }
+      if (!currentSpeakerId || !selectedModelId || selectedModelId === "none") {
+        if (selectedText) {
+          clearSelection(); // Clear selection if we skipped because of it
+        }
+        return;
+      }
 
-    const currentSpeakerCharacter = activeCharacters?.find((char) => char.id === currentSpeakerId);
-    if (!currentSpeakerCharacter) {
-      console.warn(`Speaker character with ID ${currentSpeakerId} not found in active list.`);
-      return;
-    }
+      // Use selected text if available, otherwise fallback to last message content
+      const messageContentToUse = userPickedText || currentLastMessage?.messages?.[0] || "";
 
-    console.log(`Attempting to generate expression for ${currentSpeakerCharacter.name}`);
+      if (!messageContentToUse) {
+        // If there's no selected text AND no last message content, we can't proceed
+        if (selectedText) {
+          clearSelection();
+        }
+        return;
+      }
 
-    setAnimateLastSpeaker(true);
-    setTimeout(() => setAnimateLastSpeaker(false), 1000); // Animation for feedback
+      const targetCharacter = activeCharacters?.find((char) => char.id === currentSpeakerId);
+      if (!targetCharacter) {
+        console.warn(`Target character with ID ${currentSpeakerId} not found in active list.`);
+        if (selectedText) {
+          clearSelection();
+        }
+        return;
+      }
 
-    const messageContent = currentLastMessage.messages[0]; // Use message from ref
-    const availableExpressions = currentSpeakerCharacter.expressions?.length
-      ? currentSpeakerCharacter.expressions.map((exp) => exp.name)
-      : EXPRESSION_LIST;
+      console.log(`Attempting to generate expression for ${targetCharacter.name} using ${userPickedText ? "!!!!selected text" : "last message"}`);
 
-    const availableExpressionNames = currentSpeakerCharacter.expressions?.length
-      ? currentSpeakerCharacter.expressions.map((exp) => exp.name)
-      : EXPRESSION_LIST;
+      setAnimateLastSpeaker(true);
+      setTimeout(() => setAnimateLastSpeaker(false), 1000);
 
-    try {
-      const expressionResult = await generateQuietly({
-        context: {
-          characterID: currentSpeakerId,
-          chapterID: lastMessage?.chapter_id,
-          extra: {
-            "expression.list": availableExpressions.join(", "),
-            "expression.last": characterExpressions[currentSpeakerId] || "neutral",
-            "chat.message": messageContent,
+      const availableExpressions = targetCharacter.expressions?.length ? targetCharacter.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
+      const availableExpressionNames = targetCharacter.expressions?.length ? targetCharacter.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
+
+      try {
+        const expressionResult = await generateQuietly({
+          context: {
+            characterID: currentSpeakerId,
+            chapterID: currentLastMessage?.chapter_id, // Use chapter ID from last message context if available
+            extra: {
+              "expression.list": availableExpressions.join(", "),
+              "expression.last": characterExpressions[currentSpeakerId] || "neutral",
+              // Use the determined message content (selected or last)
+              "chat.message": messageContentToUse,
+            },
           },
-        },
-        modelId: selectedModelId,
-        prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
-        parameters: {
-          max_tokens: 8000,
-          max_response: 20,
-          min_p: 0.9,
-          temperature: 0.6,
-          stop: ["\n"],
-        },
-        // Use systemPrompt from settings if available
-        systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
-      });
+          modelId: selectedModelId,
+          prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
+          parameters: {
+            max_tokens: 8000,
+            max_response: 40,
+            min_p: 0.5,
+            temperature: 0.8,
+            stop: ["\n"],
+          },
+          systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
+        });
 
-      const rawExpression = expressionResult?.trim().split("\n")[0].split(" ")[0].toLowerCase() || "";
+        const rawExpression = expressionResult?.trim().split("\n")[0].split(" ")[0].toLowerCase() || "";
+        const finalExpression = findClosestExpressionMatch(rawExpression, availableExpressionNames, "neutral");
 
-      // Use fuzzy search to find the closest valid expression
-      const finalExpression = findClosestExpressionMatch(
-        rawExpression,
-        availableExpressionNames, // Pass the list of valid names
-        "neutral", // Default value
-      );
-
-      setCharacterExpressions((prev) => ({
-        ...prev,
-        [currentSpeakerId]: finalExpression, // Use currentSpeakerId from ref
-      }));
-    } catch (error) {
-      console.error(`Error generating expression for ${currentSpeakerCharacter.name}:`, error);
-      setCharacterExpressions((prev) => ({
-        ...prev,
-        [currentSpeakerId]: "neutral", // Fallback on error
-      }));
-    }
-  }, [activeCharacters, generateQuietly, selectedModelId, expressionSettings.requestPrompt, expressionSettings.systemPrompt, characterExpressions]); // Added characterExpressions to dependency array
+        setCharacterExpressions((prev) => ({
+          ...prev,
+          [currentSpeakerId]: finalExpression,
+        }));
+        // Clear selection after successful generation
+        if (selectedText) {
+          clearSelection();
+        }
+      } catch (error) {
+        console.error(`Error generating expression for ${targetCharacter.name}:`, error);
+        setCharacterExpressions((prev) => ({
+          ...prev,
+          [currentSpeakerId]: "neutral",
+        }));
+        // Clear selection on error
+        if (selectedText) {
+          clearSelection();
+        }
+      }
+    },
+    [
+      activeCharacters,
+      generateQuietly,
+      selectedModelId,
+      expressionSettings.requestPrompt,
+      expressionSettings.systemPrompt,
+      characterExpressions,
+      // Add selected text state and actions to dependencies
+      selectedText,
+      selectedMessageCharacterId,
+      clearSelection,
+    ],
+  ); // Added characterExpressions and selected text related vars
 
   // Create a throttled version for updates during streaming - Call useThrottledCallback directly
   const throttledGenerateExpression = useThrottledCallback(
@@ -226,6 +258,9 @@ const WidgetExpressions = () => {
   // Effect to trigger THROTTLED generation DURING streaming
   useEffect(() => {
     if (autoRefreshEnabled && selectedModelId && selectedModelId !== "none") {
+      if (selectedText && selectedMessageCharacterId) {
+        throttledGenerateExpression(selectedText); // Call the throttled function directly
+      }
       if (lastSpeakerId && lastMessageContent) {
         // console.log("Change detected (speaker/message), triggering throttled generation (max 1 per 3s)...");
         throttledGenerateExpression(); // Call the throttled function directly
@@ -234,7 +269,7 @@ const WidgetExpressions = () => {
     }
     // Dependencies: Run when the definitive message content, speaker, or settings change
     // Add throttledGenerateExpression to dependencies
-  }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, selectedModelId, throttledGenerateExpression]);
+  }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, selectedModelId, selectedText, throttledGenerateExpression]);
 
   // Simplified Toggle auto-refresh: just update the state
   const toggleAutoRefresh = useCallback(() => {
@@ -270,6 +305,12 @@ const WidgetExpressions = () => {
   // Fill entire available space - using flex-1 to ensure the component properly fills available space in any container
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" style={{ minHeight: "200px" }}>
+      {/* Add visual indicator for selected text */}
+      {selectedText && (
+        <div className="bg-primary/10 border-l-4 border-primary px-2 py-1 text-sm z-10 shadow-sm">
+          <p className="text-xs text-primary mb-0.5">Generating expression from selected text!</p>
+        </div>
+      )}
       {/* Controls at the top */}
       <div className="bg-card border-b px-2 py-1">
         <div className="flex items-center justify-between gap-2">
@@ -300,9 +341,10 @@ const WidgetExpressions = () => {
                 variant="outline"
                 size="sm"
                 className="h-7 w-7 p-0"
-                onClick={generateExpression}
-                disabled={!selectedModelId || selectedModelId === "none" || !lastSpeakerId}
-                title="Generate expression for current speaker"
+                onClick={() => generateExpression()}
+                // Disable if no model OR (no selected text AND no last speaker)
+                disabled={!selectedModelId || selectedModelId === "none" || (!selectedText && !lastSpeakerId)}
+                title={selectedText ? "Generate expression from selection" : "Generate expression for current speaker"}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
               </Button>
@@ -355,7 +397,8 @@ const WidgetExpressions = () => {
                     className="min-h-[100px] max-h-[20vh]"
                   />
                   <p className="text-xs italic text-muted-foreground">
-                    Available placeholders: {"{{"}expression.list{"}}"}, {"{{"}expression.last{"}}"}, {"{{"}chat.message{"}}"}
+                    Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}
+                    expression.last{"}}"}, {"{{"}chat.message{"}}"}
                   </p>
                 </div>
               </div>
@@ -380,7 +423,9 @@ const WidgetExpressions = () => {
                   <div
                     className={cn(
                       "w-full h-full relative transition-transform duration-150 ease-in-out",
-                      animateLastSpeaker && displayCharacter.id === lastSpeakerId ? "scale-105" : "scale-100",
+                      animateLastSpeaker && displayCharacter.id === (selectedText ? selectedMessageCharacterId : lastSpeakerId)
+                        ? "scale-105"
+                        : "scale-100",
                     )}
                     style={{ minHeight: "200px", height: "100%" }}
                   >
@@ -397,7 +442,8 @@ const WidgetExpressions = () => {
                     <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-center">
                       <p className="text-lg font-medium text-primary-foreground drop-shadow-md">
                         {displayCharacter.name}
-                        {displayCharacter.id === lastSpeakerId && (
+                        {/* Show expression if it's the last speaker OR if text was selected for this character */}
+                        {(displayCharacter.id === lastSpeakerId || (selectedText && displayCharacter.id === selectedMessageCharacterId)) && (
                           <span className="block text-sm font-normal text-primary-foreground/90 mt-0.5">
                             {getCharacterExpression(displayCharacter.id)}
                           </span>

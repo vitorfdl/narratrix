@@ -43,12 +43,14 @@ export function applyContextLimit(
 
   // Add messages until we reach the token limit
   for (const message of reversedMessages) {
-    if (currentTokenCount + message.tokens <= maxMessageTokens || includedMessages.length <= maxDepth) {
-      includedMessages.push(message);
-      currentTokenCount += message.tokens;
-    } else {
+    if (currentTokenCount + message.tokens > maxMessageTokens) {
       break;
     }
+    if (includedMessages.length >= maxDepth) {
+      break;
+    }
+    includedMessages.push(message);
+    currentTokenCount += message.tokens;
   }
 
   // Reverse back to original order (oldest to newest)

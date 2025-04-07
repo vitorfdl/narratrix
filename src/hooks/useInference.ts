@@ -106,11 +106,11 @@ export function useInference(options: UseInferenceOptions = {}) {
         optionsRef.current.onStream?.(response, requestId);
       }
       // For completion, error, or cancellation - always process
-      else if (response.status === "completed") {
+      else if (response.status === "completed" || response.status === "cancelled") {
         // Clean up the last chunks record for this request
         delete lastStreamChunks.current[requestId];
         optionsRef.current.onComplete?.(response, requestId);
-      } else if (response.status === "error" || response.status === "cancelled") {
+      } else if (response.status === "error") {
         // Clean up the last chunks record for this request
         delete lastStreamChunks.current[requestId];
         if (response.status === "error") {

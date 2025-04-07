@@ -31,11 +31,14 @@ body,
     --border: 220 13% 85%; /* #D9DEE5 softer border */
     --input: 220 13% 85%; /* #D9DEE5 softer input */
     --ring: 240 10% 3.9%; /* #18181B */
-    --chart-1: 12 76% 61%; /* #E67E67 */
-    --chart-2: 173 58% 39%; /* #2A9D8F */
-    --chart-3: 197 37% 24%; /* #264653 */
-    --chart-4: 43 74% 66%; /* #ECD662 */
-    --chart-5: 27 87% 67%; /* #F4A261 */
+    --chart-1: 293 45% 60%; /* #C76BD1 - derived from primary */
+    --chart-2: 293 35% 45%; /* #9A53A3 - darker primary */
+    --chart-3: 260 40% 55%; /* #7B6EDB - complementary to primary */
+    --chart-4: 320 70% 60%; /* #E55A9B - analogous to primary */
+    --chart-5: 350 65% 55%; /* #DB5A69 - triadic with primary */
+    --chart-6: 230 60% 60%; /* #5A7EE5 - cool contrast */
+    --chart-7: 180 50% 45%; /* #39A3A3 - teal complement */
+    --chart-8: 30 80% 60%;  /* #E5A33A - warm contrast */
     --radius: 0.8rem;
     --font-sans: "Inter", sans-serif;
     --font-serif: "Merriweather", serif;

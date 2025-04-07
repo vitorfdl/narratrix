@@ -21,6 +21,7 @@ import { formatPrompt as formatPromptUtil } from "@/services/inference-steps/for
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { removeNestedFields } from "./inference-steps/remove-nested-fields";
+import { trimToEndSentence } from "./inference-steps/trim-incomplete-sentence";
 
 /**
  * StreamingState interface for tracking the streaming state of a message
@@ -114,8 +115,8 @@ export function useInferenceService() {
 
       if (streamingState.current.characterId && streamingState.current.messageId) {
         // Determine the final text, prioritizing the most complete response
-        const finalText = response.result?.full_response || response.result?.text || streamingState.current.accumulatedText;
-
+        const finalText = trimToEndSentence(response.result?.full_response || response.result?.text || streamingState.current.accumulatedText);
+        console.log("Trimmed text", finalText);
         // Final update to the message
         updateMessageByID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0);
 

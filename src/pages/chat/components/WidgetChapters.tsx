@@ -84,7 +84,7 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
               suggestions={promptReplacementSuggestionList}
               onChange={(value) => updateField("scenario", value)}
               placeholder="Describe the scenario of this chapter"
-              className="min-h-[100px] max-h-[20vh]"
+              className="max-h-[20vh]"
             />
           </div>
 

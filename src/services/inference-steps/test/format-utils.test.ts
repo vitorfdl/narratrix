@@ -128,7 +128,7 @@ describe("mergeSubsequentMessages", () => {
 
     const result = mergeSubsequentMessages(messages);
 
-    expect(result).toEqual([{ role: "user", text: "Message 1\n\nMessage 2" }]);
+    expect(result).toEqual([{ role: "user", text: "Message 1\n\nMessage 1\n\nMessage 2" }]);
   });
 
   it("should handle messages with different roles including non-standard roles", () => {

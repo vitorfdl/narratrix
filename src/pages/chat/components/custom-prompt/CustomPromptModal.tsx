@@ -174,7 +174,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
               <TipTapTextArea
                 initialValue={prompt.prompt}
                 onChange={(value) => setPrompt({ ...prompt, prompt: value })}
-                className="min-h-[150px] max-h-[40vh] md:max-h-[50vh] overflow-y-auto"
+                className="max-h-[40vh] md:max-h-[50vh] overflow-y-auto"
                 placeholder="Enter your custom prompt text..."
               />
             </div>

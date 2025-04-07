@@ -3,6 +3,7 @@ import React, { createContext, ReactNode, useCallback, useContext, useEffect, us
 import { toast } from "sonner";
 import { ProfileListItem, ProfileResponse } from "../schema/profiles-schema";
 import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile } from "../services/profile-service";
+import { useTheme } from "./ThemeContext";
 import { useCharacterActions } from "./characterStore";
 import { useChatActions } from "./chatStore";
 import { useChatTemplateActions } from "./chatTemplateStore";
@@ -109,6 +110,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const { fetchCharacters } = useCharacterActions();
   const { fetchChatList } = useChatActions();
   const { fetchChatTemplates } = useChatTemplateActions();
+  const { setTheme } = useTheme();
 
   // Use the useImageUrl hook to manage the current profile's avatar URL
   const { url: avatarUrl, reload: reloadAvatar } = useImageUrl(state.currentProfile?.avatar_path);
@@ -153,6 +155,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       fetchChatTemplates({ profile_id: state.currentProfile.id });
       fetchCharacters(state.currentProfile.id);
       fetchChatList(state.currentProfile.id);
+      setTheme(state.currentProfile.settings.appearance.theme || "system");
     } else {
       setSessionProfileID(undefined);
     }

@@ -215,6 +215,7 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
             </div>
           )}
           <MDXEditor
+            autoFocus
             ref={editorRef}
             markdown={content}
             onChange={handleChange}

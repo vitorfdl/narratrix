@@ -96,7 +96,7 @@ export function TipTapTextArea({
   }
 
   return (
-    <ScrollArea className="flex-1 min-h-0 border border-input border-b-2 border-b-primary/20 rounded-md rich-text-area">
+    <ScrollArea className="flex-1 min-h-0 border border-input border-b-2 border-b-primary/20 rounded rich-text-area">
       <MarkdownEditor
         initialValue={initialValue}
         onChange={onChange}

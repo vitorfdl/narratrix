@@ -40,20 +40,20 @@ describe("applyContextLimit", () => {
       { role: "assistant", text: "Test response" },
     ];
 
-    const systemPrompt = "System prompt is to big".repeat(20);
+    const systemPrompt = "System prompt is to big".repeat(19);
 
     const result = applyContextLimit(
       { inferenceMessages: messages, systemPrompt },
-      { config: { max_response: 100, max_tokens: 260, max_depth: 100 }, custom_prompts: [] },
+      { config: { max_response: 100, max_tokens: 260, max_depth: 1 }, custom_prompts: [] },
     );
 
     expect(result.inferenceMessages).toHaveLength(1);
     expect(result.inferenceMessages[0].text).toBe("Test response");
 
-    expect(result.engine_max_tokens.openai).toBe(106);
-    expect(result.engine_max_tokens.anthropic).toBe(106);
+    expect(result.engine_max_tokens.openai).toBe(114);
+    expect(result.engine_max_tokens.anthropic).toBe(114);
     expect(result.max_tokens).toBe(100);
-    expect(result.frozen_tokens).toBe(154);
+    expect(result.frozen_tokens).toBe(146);
   });
 
   // it("Should handle zero or negative token calculations gracefully", () => {
