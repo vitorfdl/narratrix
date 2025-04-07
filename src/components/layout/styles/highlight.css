@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.markdown-body {
+  /* Remove redundant padding reset for pre */
+
+  /* Style for code specifically within pre blocks */
+  pre code {
+    @apply block p-4; /* Use Tailwind for padding, keep display block */
+    /* overflow-x: hidden; Let markdown.css handle overflow on the pre element itself */
+  }
+  /* Quoted text styling (Uses var from markdown.css) */
+  .markdown-quoted-text {
+    color: var(--color-prettylights-syntax-string);
+    padding: 0 2px;
+    border-radius: 3px;
+  }
+
+  /* Special text styling (Uses var from markdown.css) */
+  .markdown-special-text {
+    color: var(--color-prettylights-syntax-entity);
+    font-weight: 500;
+    padding: 0 2px;
+    border-radius: 3px;
+  }
+
+  /* Specific background/color for code blocks - overrides markdown.css pre styles */
+  .hljs,
+  pre {
+    background: #1a1b26 !important; /* Use !important to ensure override if needed */
+    color: #cbd2ea !important;
+  }
+
+  /* HLJS Theme Syntax Colors - Keep as is */
+  .hljs-comment,
+  .hljs-meta {
+    color: #565f89;
+  }
+
+  .hljs-deletion,
+  .hljs-doctag,
+  .hljs-regexp,
+  .hljs-selector-attr,
+  .hljs-selector-class,
+  .hljs-selector-id,
+  .hljs-selector-pseudo,
+  .hljs-tag,
+  .hljs-template-tag,
+  .hljs-variable.language_ {
+    color: #f7768e;
+  }
+
+  .hljs-link,
+  .hljs-literal,
+  .hljs-number,
+  .hljs-params,
+  .hljs-template-variable,
+  .hljs-type,
+  .hljs-variable {
+    color: #ff9e64;
+  }
+
+  .hljs-attribute,
+  .hljs-built_in {
+    color: #e0af68;
+  }
+
+  .hljs-keyword,
+  .hljs-property,
+  .hljs-subst,
+  .hljs-title,
+  .hljs-title.class_,
+  .hljs-title.class_.inherited__,
+  .hljs-title.function_ {
+    color: #7dcfff;
+  }
+
+  .hljs-selector-tag {
+    color: #73daca;
+  }
+
+  .hljs-addition,
+  .hljs-bullet,
+  .hljs-quote,
+  .hljs-string,
+  .hljs-symbol {
+    color: #9ece6a;
+  }
+
+  .hljs-code,
+  .hljs-formula,
+  .hljs-section {
+    color: #7aa2f7;
+  }
+
+  .hljs-attr,
+  .hljs-char.escape_,
+  .hljs-keyword,
+  .hljs-name,
+  .hljs-operator {
+    color: #bb9af7;
+  }
+
+  .hljs-punctuation {
+    color: #c0caf5;
+  }
+
+  .hljs-emphasis {
+    font-style: italic;
+  }
+
+  .hljs-strong {
+    font-weight: 700;
+  }
+}

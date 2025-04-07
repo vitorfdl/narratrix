@@ -1,10 +1,10 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
-import { FormattedPromptResult, PromptFormatterConfig } from "./prompt-formatter";
+import { FormattedPromptResult, PromptFormatterConfig } from "./formatter";
 
 /**
  * Applies placeholder replacements to a given text string based on the configuration.
  */
-function applyTextReplacements(text: string, config: PromptFormatterConfig["chatConfig"], isSystemPrompt = false): string {
+function applyTextReplacements(text: string, config: PromptFormatterConfig["chatConfig"]): string {
   const { character, user_character, chapter, extra } = config || {};
   let processedText = text;
 
@@ -28,6 +28,12 @@ function applyTextReplacements(text: string, config: PromptFormatterConfig["chat
   if (chapter?.instructions) {
     processedText = processedText.replace(/\{\{chapter\.instructions\}\}/g, chapter.instructions);
   }
+  if (chapter?.scenario) {
+    processedText = processedText.replace(/\{\{chapter\.scenario\}\}/g, chapter.scenario);
+  }
+  if (chapter?.title) {
+    processedText = processedText.replace(/\{\{chapter\.title\}\}/g, chapter.title);
+  }
 
   // Process extra replacements
   if (extra && typeof extra === "object") {
@@ -41,16 +47,6 @@ function applyTextReplacements(text: string, config: PromptFormatterConfig["chat
     });
   }
 
-  // Process system prompt specific replacements
-  if (isSystemPrompt) {
-    if (chapter?.title) {
-      processedText = processedText.replace(/\{\{chapter\.title\}\}/g, chapter.title);
-    }
-    if (chapter?.scenario) {
-      processedText = processedText.replace(/\{\{chapter\.scenario\}\}/g, chapter.scenario);
-    }
-  }
-
   return processedText;
 }
 
@@ -62,14 +58,13 @@ export function replaceTextPlaceholders(
   systemPrompt: string | undefined,
   config: PromptFormatterConfig["chatConfig"],
 ): FormattedPromptResult {
+  // console.log("⚠️ !> config", config);
   const { character, user_character, chapter, extra } = config || {};
 
   // Skip if no replacements needed
   if (!character && !user_character && !chapter && !extra) {
     return { inferenceMessages: messages, systemPrompt };
   }
-
-  console.log("⚠️ !> config", config);
 
   // Process text replacements in messages
   const processedMessages = messages.map((message) => ({
@@ -78,7 +73,7 @@ export function replaceTextPlaceholders(
   }));
 
   // Process text replacements in system prompt
-  const processedSystemPrompt = systemPrompt ? applyTextReplacements(systemPrompt, config, true) : undefined;
+  const processedSystemPrompt = systemPrompt ? applyTextReplacements(systemPrompt, config) : undefined;
 
   return {
     inferenceMessages: processedMessages,

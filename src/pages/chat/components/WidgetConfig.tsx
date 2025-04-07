@@ -46,6 +46,7 @@ const WidgetConfig = () => {
   const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string>("");
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
+  const [maxDepth, setMaxDepth] = useState<number>(100);
 
   // Add debounce timer ref
   const saveTimeoutRef = useRef<number | null>(null);
@@ -74,6 +75,8 @@ const WidgetConfig = () => {
       if (currentTemplate.config) {
         setContextSize(currentTemplate.config.max_tokens || 4096);
         setResponseLength(currentTemplate.config.max_response || 1024);
+        setMaxDepth(currentTemplate.config.max_depth || 100);
+        console.log("Loading max_depth from template:", currentTemplate.config.max_depth);
       }
 
       // Set custom prompts
@@ -81,7 +84,7 @@ const WidgetConfig = () => {
 
       // Set other config values as active fields
       const templateConfig = currentTemplate.config || {};
-      const configKeys = Object.keys(templateConfig).filter((key) => key !== "max_tokens" && key !== "max_response");
+      const configKeys = Object.keys(templateConfig).filter((key) => key !== "max_tokens" && key !== "max_response" && key !== "max_depth");
 
       if (configKeys.length > 0) {
         setActiveFields(configKeys);
@@ -100,6 +103,7 @@ const WidgetConfig = () => {
       setSelectedFormatTemplateId("");
       setContextSize(4096);
       setResponseLength(1024);
+      setMaxDepth(100);
       setCustomPrompts([]);
     }
   }, [currentTemplate?.id]);
@@ -152,6 +156,7 @@ const WidgetConfig = () => {
         config: {
           max_tokens: 4096,
           max_response: 1024,
+          max_depth: 100,
         },
         custom_prompts: [],
       }).then((newTemplate) => {
@@ -314,7 +319,11 @@ const WidgetConfig = () => {
         ...values,
         max_tokens: contextSize,
         max_response: responseLength,
+        max_depth: maxDepth,
       };
+
+      console.log("Saving config with max_depth:", maxDepth);
+      console.log("Full config being saved:", configValues);
 
       // Update template
       updateChatTemplate(currentChatTemplateID, {
@@ -322,6 +331,8 @@ const WidgetConfig = () => {
         format_template_id: selectedFormatTemplateId || null,
         config: configValues,
         custom_prompts: customPrompts,
+      }).then((result) => {
+        console.log("Template update result:", result?.config);
       });
 
       saveTimeoutRef.current = null;
@@ -340,7 +351,7 @@ const WidgetConfig = () => {
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [selectedModelId, selectedFormatTemplateId, contextSize, responseLength, values, customPrompts, currentChatTemplateID]);
+  }, [selectedModelId, selectedFormatTemplateId, contextSize, responseLength, maxDepth, values, customPrompts, currentChatTemplateID]);
 
   // Custom prompts handlers
   const handleAddCustomPrompt = () => {
@@ -496,7 +507,29 @@ const WidgetConfig = () => {
             />
           </div>
         </div>
+
+        {/* Max Depth */}
+        <div className="flex items-center gap-2">
+          <div className="w-1/3 flex items-center">
+            <h3 className="text-xs font-normal">Max Depth:</h3>
+          </div>
+          <div className="flex-1">
+            <StepButton
+              value={maxDepth}
+              onValueChange={(value) => {
+                console.log("Max Depth changed to:", value);
+                setMaxDepth(value);
+              }}
+              min={1}
+              max={100}
+              step={10}
+              className="h-7"
+              disabled={isDisabled}
+            />
+          </div>
+        </div>
       </div>
+
       <Separator className="my-2" />
 
       {/* Custom Prompts Section */}

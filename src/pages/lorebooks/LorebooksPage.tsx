@@ -56,7 +56,6 @@ export default function LexicalTestPage() {
           placeholder="Type something here..."
           label="TipTap Editor"
           className="min-h-[200px]"
-          disableRichText={true}
           editable={true}
           suggestions={[
             { title: "character.name" },

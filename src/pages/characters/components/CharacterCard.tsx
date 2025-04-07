@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { CharacterUnion } from "@/schema/characters-schema";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Palette, Trash2 } from "lucide-react";
 
 interface CharacterCardProps {
   model: CharacterUnion;
@@ -23,6 +23,9 @@ export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDel
   // Get tags with null check
   const tags = model.tags || [];
 
+  // Check if character has expressions
+  const hasExpressions = model.type === "character" && model.expressions && model.expressions.some((x) => x.image_path);
+
   return (
     <Card className="group relative overflow-hidden flex flex-col h-full">
       <CardHeader className="relative h-48 p-0">
@@ -31,9 +34,15 @@ export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDel
           alt={model.name}
           className={`h-full w-full object-cover ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
         />
-        <Badge className="absolute left-2 top-2" variant={model.type === "character" ? "default" : "secondary"}>
-          {model.type}
-        </Badge>
+        <div className="absolute left-2 top-2 flex flex-col gap-1">
+          <Badge variant={model.type === "character" ? "default" : "highlight"}>{model.type}</Badge>
+          {hasExpressions && (
+            <Badge variant="outline" className="bg-accent text-accent-foreground flex items-center gap-1">
+              <Palette className="h-3 w-3" />
+              <span>Expression Pack!</span>
+            </Badge>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className="py-1 px-4 flex-grow">

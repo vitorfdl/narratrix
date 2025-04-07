@@ -260,11 +260,11 @@ pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
 /// OpenAI-compatible client for streaming inference
 ///
 /// This function handles streaming inference requests.
-/// It invokes a callback function for each token received.
+/// It invokes a callback function for each chunk received.
 pub async fn converse_stream(
     request: &InferenceRequest,
     specs: &ModelSpecs,
-    callback: impl Fn(String) -> Result<()> + Send + 'static,
+    callback: impl Fn(serde_json::Value) -> Result<()> + Send + 'static,
 ) -> Result<()> {
     println!(
         "Starting OpenAI streaming chat completion with parameters: {}",
@@ -299,7 +299,12 @@ pub async fn converse_stream(
                 if let Some(choice) = response.choices.first() {
                     if let Some(content) = &choice.delta.content {
                         if !content.is_empty() {
-                            callback(content.clone())?;
+                            // Construct the JSON payload
+                            let payload = serde_json::json!({
+                                "type": "text",
+                                "value": content.clone()
+                            });
+                            callback(payload)?;
 
                             // Add a small delay between tokens if specified
                             let delay_ms = request

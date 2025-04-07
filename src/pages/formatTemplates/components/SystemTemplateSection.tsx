@@ -60,7 +60,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
             <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onUpdate(prompt.id, { isCollapsed: !prompt.isCollapsed })}>
               {prompt.isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
-            <div className="font-medium text-xs">{formatName(prompt.name)}</div>
+            <div className="font-medium text-sm">{formatName(prompt.name)}</div>
           </div>
           <Button variant="ghost" size="icon" disabled={disabled} onClick={() => onDelete(prompt.id)}>
             <Trash className="h-4 w-4" />
@@ -73,8 +73,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
               <TipTapTextArea
                 initialValue={prompt.content}
                 onChange={(e) => onUpdate(prompt.id, { content: e })}
-                disableRichText={true}
-                className="max-h-64 font-mono text-xs text-justify border-t border-x "
+                className="h-full overflow-y-auto max-h-[400px]"
                 suggestions={promptReplacementSuggestionList}
                 editable={!disabled}
               />
@@ -190,7 +189,8 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
 
         // Only trigger update if content changed, not for UI state changes
         if (updates.content !== undefined) {
-          setTimeout(() => debouncedUpdate(), 0);
+          // Use the debouncedUpdate directly without setTimeout to prevent race conditions
+          debouncedUpdate();
         }
 
         return updatedPrompts;

@@ -17,9 +17,10 @@ import { useInference } from "@/hooks/useInference";
 import { Character } from "@/schema/characters-schema";
 import { ChatMessageType } from "@/schema/chat-message-schema";
 import { InferenceMessage, ModelSpecs } from "@/schema/inference-engine-schema";
-import { formatPrompt as formatPromptUtil } from "@/services/inference-steps/prompt-formatter";
+import { formatPrompt as formatPromptUtil } from "@/services/inference-steps/formatter";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { removeNestedFields } from "./inference-steps/remove-nested-fields";
 
 /**
  * StreamingState interface for tracking the streaming state of a message
@@ -28,6 +29,7 @@ export interface StreamingState {
   messageId: string | null;
   requestId: string | null;
   accumulatedText: string;
+  accumulatedReasoning: string;
   characterId: string | null;
   messageIndex?: number;
 }
@@ -55,6 +57,7 @@ export function useInferenceService() {
     messageId: null,
     requestId: null,
     accumulatedText: "",
+    accumulatedReasoning: "",
     characterId: null,
     messageIndex: 0,
   });
@@ -91,9 +94,10 @@ export function useInferenceService() {
         return;
       }
 
-      if (streamingState.current.characterId && streamingState.current.messageId && response.result?.text) {
+      if (streamingState.current.characterId && streamingState.current.messageId && (response.result?.text || response.result?.reasoning)) {
         // Append the new text to our accumulated text
-        streamingState.current.accumulatedText += response.result.text;
+        streamingState.current.accumulatedText += response.result.text || "";
+        streamingState.current.accumulatedReasoning += response.result.reasoning || "";
 
         // Update the message with the accumulated text
         updateMessageByID(streamingState.current.messageId, streamingState.current.accumulatedText, streamingState.current.messageIndex || 0);
@@ -142,7 +146,6 @@ export function useInferenceService() {
 
       // Create a new messages array, preserving existing messages if any
       const updatedMessages = existingMessage?.messages ? [...existingMessage.messages] : [];
-
       // Update or create the message at the specified index
       if (updatedMessages.length <= messageIndex) {
         // Pad the array with empty strings if the index is beyond the current length
@@ -177,6 +180,7 @@ export function useInferenceService() {
       messageId: null,
       requestId: null,
       accumulatedText: "",
+      accumulatedReasoning: "",
       characterId: null,
       messageIndex: 0,
     };
@@ -325,7 +329,7 @@ export function useInferenceService() {
           messages: inferenceMessages,
           modelSpecs,
           systemPrompt: systemPrompt,
-          parameters: parametersOverride || chatTemplate?.config,
+          parameters: removeNestedFields(parametersOverride || chatTemplate?.config || {}),
           stream,
         });
 

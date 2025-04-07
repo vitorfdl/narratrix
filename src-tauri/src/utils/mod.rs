@@ -7,8 +7,9 @@ use argon2::{
     Argon2,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
-use dotenvy_macro::dotenv;
+use env_vars::get_master_key;
 use rand::{rngs::OsRng, RngCore};
+mod env_vars;
 
 // Helper function to hash a password using Argon2
 #[tauri::command(scope = "app")]
@@ -36,7 +37,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, String> {
 // Helper function to derive an encryption key from a master key
 fn derive_encryption_key() -> Result<[u8; 32], String> {
     // Get master key at compile time
-    let master_key = dotenv!("MASTER_KEY");
+    let master_key = get_master_key("MASTER_KEY");
 
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();

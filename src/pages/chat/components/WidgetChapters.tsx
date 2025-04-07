@@ -342,9 +342,11 @@ const WidgetChapters = () => {
         <div className="flex-1 gap-0.5 min-w-0 cursor-pointer" onClick={() => handleSwitchChapter(chapter.id)}>
           <div className="flex items-center gap-2">
             <span className="font-medium text-sm text-muted-foreground">#{chapter.sequence}</span>
-            <h3 className="font-mono text-sm truncate">{chapter.title}</h3>
+            <h3 className="font-semibold text-sm truncate">{chapter.title}</h3>
           </div>
-          {chapter.scenario && <p className="text-xs italic text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">{chapter.scenario}</p>}
+          {chapter.scenario && (
+            <p className="text-xs italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">{chapter.scenario}</p>
+          )}
         </div>
 
         <div className="flex items-center gap-2 ml-4">

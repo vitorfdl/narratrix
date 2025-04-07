@@ -1587,18 +1587,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
-name = "dotenvy_macro"
-version = "0.15.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb0235d912a8c749f4e0c9f18ca253b4c28cfefc1d2518096016d6e3230b6424"
-dependencies = [
- "dotenvy",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "downcast-rs"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3275,7 +3263,7 @@ dependencies = [
 
 [[package]]
 name = "narratrix"
-version = "0.3.0"
+version = "0.8.6"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -3283,9 +3271,11 @@ dependencies = [
  "async-openai",
  "aws-config",
  "aws-sdk-bedrockruntime",
+ "aws-smithy-types",
  "base64 0.22.1",
- "dotenvy_macro",
+ "dotenvy",
  "futures",
+ "once_cell",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -3734,9 +3724,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.20.2"
+version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
+checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "opaque-debug"

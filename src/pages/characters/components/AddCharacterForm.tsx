@@ -6,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { StringArray } from "@/components/ui/string-array";
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacterActions } from "@/hooks/characterStore";
@@ -43,11 +44,13 @@ function CharacterFormContent({
   return (
     <>
       <div className="space-y-2">
+        <Label htmlFor="personality" className="mb-2">
+          Personality
+        </Label>
         <TipTapTextArea
-          className="max-h-48 min-h-24 overflow-y-auto"
+          key={personality}
+          className="h-full max-h-[400px] min-h-24 overflow-y-auto"
           editable={true}
-          disableRichText={true}
-          label="Personality"
           initialValue={personality}
           onChange={onPersonalityChange}
           suggestions={promptReplacementSuggestionList.slice(0, 4)}
@@ -68,12 +71,11 @@ function CharacterFormContent({
               <Separator className="my-2" />
 
               <TipTapTextArea
-                className="max-h-48 overflow-y-auto min-h-24"
+                className="h-full max-h-[400px] overflow-y-auto min-h-24"
                 editable={true}
                 initialValue={systemPrompt}
                 onChange={onSystemPromptChange}
                 suggestions={promptReplacementSuggestionList}
-                disableRichText={true}
                 placeholder="[Keep it blank to not override the default system prompt]"
               />
             </CollapsibleContent>
@@ -129,8 +131,7 @@ function AgentFormContent({
           placeholder="Enter the system prompt..."
           initialValue={systemPrompt}
           editable={true}
-          disableRichText={true}
-          className="max-h-48 min-h-24 overflow-y-auto"
+          className="h-full max-h-[400px] min-h-24 overflow-y-auto"
           onChange={(e) => onSystemPromptChange(e)}
           suggestions={promptReplacementSuggestionList}
         />
@@ -151,7 +152,7 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
   const [name, setName] = useState(initialData?.name || "");
   const [version, setVersion] = useState(initialData?.version || "1.0.0");
   const [avatarImage, setAvatarImage] = useState<string | null>(initialData?.avatar_path || null);
-  const [tags, _setTags] = useState<string[]>(initialData?.tags || []);
+  const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [personality, setPersonality] = useState(initialData?.type === "character" ? (initialData?.custom?.personality as string) || "" : "");
   const [systemPrompt, setSystemPrompt] = useState(initialData?.system_override || "");
   const [preserveLastResponse, setPreserveLastResponse] = useState(
@@ -276,6 +277,11 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
               value={version}
               onChange={(e) => setVersion(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <StringArray values={tags} onChange={setTags} placeholder="Add a tag..." />
           </div>
         </div>
 

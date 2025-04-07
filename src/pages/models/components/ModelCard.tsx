@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useInferenceTemplate } from "@/hooks/templateStore";
-import { Clock, Cpu, EditIcon, MoreVertical, Settings2Icon, Trash2, Zap } from "lucide-react";
+import { Clock, Copy, Cpu, EditIcon, MoreVertical, Settings2Icon, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Model } from "../../../schema/models-schema";
 
@@ -12,10 +12,11 @@ interface ModelCardProps {
   model: Model;
   onEdit?: (model: Model) => void;
   onDelete?: (model: Model) => void;
+  onDuplicate?: (model: Model) => void;
   setConfigDialogOpen: (model: Model) => void;
 }
 
-export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: ModelCardProps) {
+export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialogOpen }: ModelCardProps) {
   const { getManifestById } = useModelManifestsActions();
   const [manifestName, setManifestName] = useState<string>("");
   // const [manifestFields, setManifestFields] = useState<Manifest["fields"]>([]);
@@ -121,6 +122,10 @@ export function ModelCard({ model, onEdit, onDelete, setConfigDialogOpen }: Mode
                 <DropdownMenuItem onClick={() => onEdit?.(model)} className="cursor-pointer">
                   <EditIcon className="mr-2 h-4 w-4" />
                   Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDuplicate?.(model)} className="cursor-pointer">
+                  <Copy className="mr-2 h-4 w-4" />
+                  Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => onDelete?.(model)}>

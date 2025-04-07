@@ -71,7 +71,7 @@ export function CharacterSidebar({
                   return (
                     <div
                       key={tag}
-                      className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:bg-accent/50 transition-colors ${
+                      className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:text-chart-1 transition-colors ${
                         isSelected ? "bg-accent/30" : ""
                       }`}
                       onClick={() => onTagSelect(tag)}

@@ -17,13 +17,11 @@
     "repetition_penalty",
     "smoothing_sampling",
     "xtc",
+    "dry",
     "stop_sequences",
     "sampling_order",
-    "reasoning_effort"
+    "reasoning"
   ],
-  "reasoning": {
-    "has_options": ["high", "low"]
-  },
   "fields": [
     {
       "key": "base_url",

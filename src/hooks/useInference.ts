@@ -89,9 +89,9 @@ export function useInference(options: UseInferenceOptions = {}) {
       }
 
       // For streaming responses, detect duplicates using the text content
-      if (response.status === "streaming" && response.result?.text) {
+      if (response.status === "streaming" && (response.result?.text || response.result?.reasoning)) {
         // Create a unique signature for this stream chunk
-        const chunkText = response.result.text;
+        const chunkText = response.result.text || response.result.reasoning;
         const chunkSignature = `${requestId}:${chunkText}`;
 
         // If we've seen this exact chunk before, skip it

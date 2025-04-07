@@ -78,6 +78,7 @@ export const useChatStore = create<chatState>((set, get) => ({
   chatList: [],
   selectedChat: {} as Chat,
   selectedChatMessages: [],
+  selectedChatReasonings: [],
   selectedChatChapters: [],
   isLoading: false,
   error: null,
@@ -691,9 +692,12 @@ export const useCurrentChatName = () => useChatStore((state) => state.selectedCh
 export const useCurrentChatUserCharacterID = () => useChatStore((state) => state.selectedChat.user_character_id);
 export const useCurrentChatTemplateID = () => useChatStore((state) => state.selectedChat.chat_template_id);
 export const useCurrentChatActiveChapterID = () => useChatStore((state) => state.selectedChat.active_chapter_id);
+
 export const useCurrentChatParticipants = () => useChatStore((state) => state.selectedChat.participants);
-export const useCurrentChatMessages = () => useChatStore((state) => state.selectedChatMessages);
 export const useCurrentChatChapters = () => useChatStore((state) => state.selectedChatChapters);
+
+export const useCurrentChatMessages = () => useChatStore((state) => state.selectedChatMessages);
+
 export const useChatList = () => useChatStore((state) => state.chatList);
 export const useChatActions = () => useChatStore((state) => state.actions);
 export const useChatLoading = () => useChatStore((state) => state.isLoading);

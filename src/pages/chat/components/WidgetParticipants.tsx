@@ -11,7 +11,8 @@ import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter,
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Loader2, PlayCircleIcon, Settings, Trash2, UserPlus } from "lucide-react";
+import { motion } from "framer-motion";
+import { GripVertical, PlayCircleIcon, Settings, StopCircleIcon, Trash2, UserPlus } from "lucide-react";
 import { useCallback, useState } from "react";
 import AddParticipantPopover from "./AddParticipantPopover";
 
@@ -76,7 +77,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
       <div className={cn("flex flex-col min-w-0 flex-1", participant.type !== "user" && !participant.isEnabled && "opacity-70")}>
         {/* Row 1: Name */}
         <div className="flex items-center justify-between gap-1">
-          <div className="font-medium truncate text-xs">{participant.name}</div>
+          <div className="font-medium truncate text-sm">{participant.name}</div>
           {participant.type !== "user" && (
             <Button
               variant="ghost"
@@ -86,7 +87,24 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
               onClick={() => onTriggerMessage?.(participant.id)}
               title="Trigger Message"
             >
-              {inInferenceQueue ? <Loader2 className="!h-4 !w-4 animate-spin" /> : <PlayCircleIcon className="!h-4 !w-4" />}
+              {inInferenceQueue ? (
+                <motion.div
+                  initial={{ scale: 1 }}
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 0, 0, 0, 0, -10, 10, -10, 10, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <StopCircleIcon className="!h-5 !w-5 text-destructive" />
+                </motion.div>
+              ) : (
+                <PlayCircleIcon className="!h-5 !w-5" />
+              )}
             </Button>
           )}
         </div>

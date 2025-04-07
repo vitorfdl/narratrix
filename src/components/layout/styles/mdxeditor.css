@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.mdxeditor {
+
+  /** Code mirror */
+  & .cm-editor {
+    @apply font-light;
+    @apply focus:bg-accent bg-transparent text-foreground rounded-lg border-t-primary/20 border-t-2;
+    .cm-cursor {
+      @apply border-l-foreground;
+    }
+
+    &::selection {
+      @apply  text-content;
+    }
+  }
+  & .sp-editor .cm-editor {
+    padding-bottom: 0;
+    @apply bg-background;
+  }
+
+  & .cm-scroller {
+    padding: 0 !important;
+  }
+   
+  /* & .cm-line {
+  }
+
+  & .cm-content {
+  } */
+
+  & .cm-focused {
+    outline: none;
+    @apply bg-accent;
+  }
+
+  & .cm-selectionMatch,
+  & .cm-matchingBracket {
+    @apply bg-foreground/10 text-primary;
+  }
+
+  & .sp-wrapper {
+    overflow: hidden;
+    @apply bg-background;
+  }
+
+  & .sp-layout {
+    border: none;
+  }
+
+  & .sp-cm {
+    & pre {
+      
+      white-space: break-spaces;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      flex-shrink: 1;
+    }
+  }
+
+  /** Diff viewer */
+  & .cm-mergeView .cm-scroller {
+    @apply font-thin text-sm;
+  }
+
+  /** Diff viewer */
+  & .cm-sourceView .cm-scroller {
+    @apply font-thin text-sm;
+  }
+
+  & .cm-gutters {
+    font-size: var(--text-xs);
+    @apply text-xs bg-muted text-accent-foreground focus:bg-accent;
+
+    & .cm-activeLineGutter {
+      @apply bg-foreground/15;
+    }
+  }
+
+  & .cm-activeLine {
+    @apply bg-transparent;
+  }
+
+  & .cm-tooltip-autocomplete {
+    @apply bg-popover border border-border rounded-md text-popover-foreground;
+  }
+
+
+  hr[data-lexical-decorator=true].selected {
+    @apply outline outline-2 outline-primary;
+  }
+
+  /* Hide the internal markdown parsing error message */
+  & ._markdownParseError_uazmk_1211 {
+    display: none;
+  }
+}

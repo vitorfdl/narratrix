@@ -1,5 +1,5 @@
 import { useCharacters } from "@/hooks/characterStore";
-import { useCurrentChatChapters } from "@/hooks/chatStore";
+import { useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { useModels } from "@/hooks/modelsStore";
 import { useInferenceTemplateList } from "@/hooks/templateStore";
@@ -9,7 +9,7 @@ import { InferenceMessage, ModelSpecs } from "@/schema/inference-engine-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { useCallback, useRef } from "react";
 import { ChatMessage } from "./chat-message-service";
-import { formatPrompt } from "./inference-steps/prompt-formatter";
+import { formatPrompt } from "./inference-steps/formatter";
 
 /**
  * Options for background inference
@@ -52,6 +52,7 @@ export function useBackgroundInference() {
 
   const characterList = useCharacters();
   const chapterList = useCurrentChatChapters();
+  const currentChapterID = useCurrentChatActiveChapterID();
 
   // Track ongoing requests
   const activeRequests = useRef<Record<string, boolean>>({});
@@ -192,21 +193,30 @@ export function useBackgroundInference() {
 
         // Create inference message
         const messages: ChatMessage[] = [];
+        const activeChapter = chapterList.find((chapter) => chapter.id === currentChapterID);
 
         const { inferenceMessages, systemPrompt: formattedSystemPrompt } = formatPrompt({
           messageHistory: messages,
           userPrompt: prompt,
           modelSettings: model,
+          chatTemplate: {
+            custom_prompts: [],
+            config: {
+              max_response: parameters?.max_response || 100,
+              max_tokens: parameters?.max_tokens || 3000,
+              max_depth: parameters?.max_depth || 100,
+            },
+          },
           systemOverridePrompt: systemPrompt,
           chatConfig: {
             character: characterList.find((character) => character.id === context?.characterID),
             user_character: characterList.find((character) => character.id === context?.userCharacterID) as Character,
-            chapter: chapterList.find((chapter) => chapter.id === context?.chapterID),
+            chapter: chapterList.find((chapter) => chapter.id === context?.chapterID) || activeChapter,
             extra: context?.extra,
           },
         });
 
-        console.log("inferenceMessages", inferenceMessages);
+        console.log("!!! inferenceMessages", inferenceMessages);
         console.log("formattedSystemPrompt", formattedSystemPrompt);
 
         // Execute the inference
@@ -216,7 +226,10 @@ export function useBackgroundInference() {
           templateId: template?.id || "",
           prompt: inferenceMessages,
           systemPrompt: formattedSystemPrompt,
-          parameters,
+          parameters: {
+            ...parameters,
+            max_tokens: parameters?.max_response || 100,
+          },
         });
       } catch (error) {
         console.error("Background inference error:", error);

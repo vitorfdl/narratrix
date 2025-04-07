@@ -190,11 +190,13 @@ export function TipTapRender({
     editable,
     onUpdate: ({ editor }) => {
       if (onChange && !isUpdatingRef.current) {
-        if (disableRichText) {
-          const text = editor.getText({});
-          onChange(text);
-        } else {
-          onChange(editor.storage.markdown!.getMarkdown());
+        // Get current content
+        const newContent = disableRichText ? editor.getText({}) : editor.storage.markdown?.getMarkdown() || "";
+
+        // Only call onChange if content actually changed to prevent loops
+        if (newContent !== sanitizedInitialValue.current) {
+          sanitizedInitialValue.current = newContent;
+          onChange(newContent);
         }
       }
     },
@@ -202,7 +204,7 @@ export function TipTapRender({
       clipboardTextParser: clipboardTextParser,
       attributes: {
         class: cn(
-          "prose dark:prose-invert prose-li:p-0 prose-p:m-0",
+          "prose dark:prose-invert prose-li:p-0 prose-p:m-1 prose-p:my-2 prose-p:p-0",
           "prose-h1:text-lg prose-h1:m-0 prose-h2:text-base prose-h2:m-0 prose-h3:text-sm prose-headings:m-0",
           "font-base prose:text-sm",
           "outline-none",
@@ -218,13 +220,24 @@ export function TipTapRender({
       isUpdatingRef.current = true;
       const sanitized = sanitizeMarkdown(initialValue);
       sanitizedInitialValue.current = sanitized;
+
+      // Store current selection position
+      const { from, to } = editor.state.selection;
+
       try {
+        // Update content while preserving cursor position if possible
         editor.commands.setContent(sanitized, false, { preserveWhitespace: "full" });
+
+        // If editor text length is >= to position, try to restore cursor position
+        if (from === to && editor.state.doc.textContent.length >= from) {
+          editor.commands.setTextSelection(from);
+        }
       } catch (error) {
         console.warn("Error setting content:", error);
         // Fallback to plain text if markdown parsing fails
-        editor.commands.setContent(initialValue.replace(/[-*+]/g, "\\$&"), false);
+        editor.commands.setContent(initialValue.replace(/[-*+]/g, "\\$&"), false, { preserveWhitespace: "full" });
       }
+
       // Reset the flag after the update
       setTimeout(() => {
         isUpdatingRef.current = false;
@@ -312,7 +325,7 @@ export function TipTapRender({
         </BubbleMenu>
       )}
 
-      <EditorContent editor={editor} spellCheck={false} className="h-full" />
+      <EditorContent editor={editor} spellCheck={false} className="h-full w-full" />
     </div>
   );
 }

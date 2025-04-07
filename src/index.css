@@ -37,6 +37,8 @@ body,
     --chart-4: 43 74% 66%; /* #ECD662 */
     --chart-5: 27 87% 67%; /* #F4A261 */
     --radius: 0.8rem;
+    --font-sans: "Inter", sans-serif;
+    --font-serif: "Merriweather", serif;
   }
   .dark {
     --background: 0 0% 16%; /* #282828 */
@@ -69,6 +71,20 @@ body,
     --chart-7: 180 50% 45%; /* #39A3A3 - teal complement */
     --chart-8: 30 80% 60%;  /* #E5A33A - warm contrast */
     --radius: 0.4rem;
+
+    --accentBase: 223 9% 18%;
+    --baseBase: 223 9% 18%;
+    --baseBgSubtle: 223 9% 18%;
+    --baseBg: 223 9% 18%;
+    --baseBgHover: 223 9% 18%;
+    --baseBgActive: 223 9% 18%;
+    --baseLine: 223 9% 18%;
+    --baseBorder: 223 9% 18%;
+    --baseBorderHover: 223 9% 18%;
+    --baseSolid: 223 9% 18%;
+    --baseSolidHover: 223 9% 18%;
+    --baseText: 223 9% 18%;
+    --baseTextContrast: 223 9% 18%;
   }
 }
 @layer base {
@@ -114,8 +130,12 @@ body,
   .tippy-content {
     @apply !p-0;
   }
-}
 
+  .ͼo {
+    @apply bg-primary;  
+  }
+
+}
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary)) hsl(var(--accent));
@@ -148,6 +168,22 @@ body,
   background: transparent;
 }
 
+/* Bubble menu */
+.bubble-menu {
+  @apply flex items-center gap-1 p-1 bg-popover border border-border rounded-md shadow-md;
+  @apply animate-in fade-in-50 zoom-in-95 slide-in-from-bottom-2;
+}
+
+.bubble-menu button {
+  @apply inline-flex items-center justify-center rounded-md px-2.5 py-1;
+  @apply text-xs font-medium text-muted-foreground transition-colors;
+  @apply hover:bg-secondary hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1;
+}
+
+.bubble-menu button.is-active {
+  @apply bg-primary text-primary-foreground;
+  @apply hover:bg-primary/90 hover:text-primary-foreground;
+}
 
 @layer utilities {
   /* Custom animation for the speaker border */

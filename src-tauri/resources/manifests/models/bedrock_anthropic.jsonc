@@ -1,17 +1,13 @@
 {
   "$schema": "../../../../json_schema/model-schema.json",
   "id": "bedrock_anthropic",
-  "name": "AWS Bedrock Anthropic",
+  "name": "AWS Bedrock",
   "description": "Integration with AWS Bedrock Anthropic models",
   "website": "https://aws.amazon.com/bedrock/",
   "type": "llm",
   "inference_type": ["chat"],
   "engine": "aws_bedrock",
-  "inference_fields": ["temperature", "top_p", "top_k"],
-  "reasoning": {
-    "enabled": true,
-    "has_budget": true
-  },
+  "inference_fields": ["temperature", "top_p", "top_k", "reasoning", "prompt_cache"],
   "fields": [
     {
       "key": "aws_access_key_id",
@@ -45,7 +41,8 @@
         "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         "us.anthropic.claude-3-5-haiku-20241022-v1:0",
-        "us.anthropic.claude-3-opus-20240229-v1:0"
+        "us.anthropic.claude-3-opus-20240229-v1:0",
+        "us.deepseek.r1-v1:0"
       ]
     }
   ]

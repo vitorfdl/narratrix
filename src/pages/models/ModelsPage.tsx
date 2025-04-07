@@ -21,6 +21,7 @@ export default function Models() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
 
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const profile = useProfile();
@@ -118,6 +119,21 @@ export default function Models() {
     setConfigDialogOpen(true);
   };
 
+  const handleDuplicate = async (model: Model) => {
+    // Remove the id property to ensure a new one is generated
+    const { id, ...duplicateWithoutId } = model;
+
+    // Create a duplicate model with the correct types
+    setSelectedModel({
+      ...duplicateWithoutId,
+      id: "",
+      name: `${model.name} (Copy)`,
+      // Let the backend handle timestamps
+    } as Model);
+
+    setDuplicateDialogOpen(true);
+  };
+
   return (
     <div className="flex flex-col h-full relative">
       <div className="flex-1 space-y-4 page-container overflow-y-auto pb-16">
@@ -137,6 +153,7 @@ export default function Models() {
                     model={model}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onDuplicate={handleDuplicate}
                     setConfigDialogOpen={() => handleConfigOpen(model)}
                   />
                 ))}
@@ -209,6 +226,25 @@ export default function Models() {
               Delete
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Model Dialog */}
+      <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Duplicate Model</DialogTitle>
+          </DialogHeader>
+          {selectedModel && (
+            <ModelForm
+              mode="add"
+              model={selectedModel}
+              onSuccess={() => {
+                setDuplicateDialogOpen(false);
+                refreshModels();
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

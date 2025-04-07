@@ -34,11 +34,15 @@ const ExpressionSuggestionList = [
 
 const defaultSystemPrompt = "You are an expert at determining the emotions of the character {{character.name}} from text.";
 const defaultRequestPrompt = `Character: {{character.name}}
-Personality: {{character.personality}}
-Last Message: {{chat.message}}
-Last Expression: {{expression.last}}
+{{character.personality}}
 
-Based on the character's personality and their last message and last paragraph, choose the most fitting expression from the following list:
+--- {{character.name}}'s last message ---
+{{chat.message}}
+
+---
+
+Last Expression (Avoid Repeating the same expression): {{expression.last}}
+Based on the character's personality and their last paragraph, choose the most fitting expression from the following list:
 {{expression.list}}
 
 Return only the single word for the expression.`;
@@ -180,9 +184,11 @@ const WidgetExpressions = () => {
         modelId: selectedModelId,
         prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
         parameters: {
-          max_tokens: 10,
+          max_tokens: 8000,
+          max_response: 20,
           min_p: 0.9,
-          temperature: 0.5,
+          temperature: 0.6,
+          stop: ["\n"],
         },
         // Use systemPrompt from settings if available
         systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
@@ -267,6 +273,7 @@ const WidgetExpressions = () => {
       {/* Controls at the top */}
       <div className="bg-card border-b px-2 py-1">
         <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">Model:</span>
           <div className="flex-grow z-10 flex items-center gap-2">
             <Select value={selectedModelId} onValueChange={setSelectedModelId}>
               <SelectTrigger className="h-7 text-xs">
@@ -333,7 +340,6 @@ const WidgetExpressions = () => {
                       onChange={(value) => setTempSystemPrompt(value)}
                       placeholder={defaultSystemPrompt}
                       className="min-h-[100px]"
-                      disableRichText={true}
                       suggestions={ExpressionSuggestionList}
                     />
                   </div>
@@ -346,7 +352,6 @@ const WidgetExpressions = () => {
                       onChange={(value) => setTempRequestPrompt(value)}
                       placeholder={defaultRequestPrompt}
                       className="min-h-[150px]"
-                      disableRichText={true}
                       suggestions={ExpressionSuggestionList}
                     />
                   </div>

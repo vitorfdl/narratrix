@@ -6,6 +6,7 @@ import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
+import { applyContextLimit } from "./apply-context-limit";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./format-template-utils";
 import { replaceTextPlaceholders } from "./replace-text";
 
@@ -49,24 +50,45 @@ export interface FormattedPromptResult {
   systemPrompt?: string;
 }
 
+const addPrefix = (string: string, prefix: string) => {
+  return `${prefix}\n${string}`;
+};
+
+const hasMoreThanOneCharacter = (messages: MessageWithCharacter[]) => {
+  return new Set(messages.filter((message) => message.type === "character").map((message) => message.character_id)).size > 1;
+};
+
 /**
  * Get chat history and append user message if provided
  */
-export function getChatHistory(messages: MessageWithCharacter[], userMessage?: string): InferenceMessage[] {
+export function getChatHistory(
+  messages: MessageWithCharacter[],
+  userMessage?: string,
+  prefixOption?: FormatTemplate["config"]["settings"]["prefix_messages"],
+): InferenceMessage[] {
   const inferenceMessages: InferenceMessage[] = [];
+
+  const canInsertPrefix = prefixOption === "always" || (prefixOption === "characters" && hasMoreThanOneCharacter(messages));
 
   // Process existing chat messages
   if (messages && messages.length > 0) {
     for (const message of messages) {
-      if (message.type === "user" && message.messages && message.messages.length > 0) {
+      if (message.messages.length === 0) {
+        continue;
+      }
+
+      const character = message.character_name || "";
+      const index = message.message_index || 0;
+      const messageText = message.messages[index];
+      if (message.type === "user" && messageText) {
         inferenceMessages.push({
           role: "user",
-          text: message.messages[0],
+          text: canInsertPrefix ? addPrefix(messageText, character) : messageText,
         });
-      } else if (message.type === "character" && message.messages && message.messages.length > 0) {
+      } else if (message.type === "character" && messageText) {
         inferenceMessages.push({
           role: "assistant",
-          text: message.messages[0],
+          text: canInsertPrefix ? addPrefix(messageText, character) : messageText,
         });
       }
     }
@@ -131,9 +153,10 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
 /**
  * Main format prompt function that orchestrates the prompt formatting process
  */
-export function formatPrompt(config: PromptFormatterConfig): FormattedPromptResult {
+export function formatPrompt(config: PromptFormatterConfig) {
+  const prefixOption = config.formatTemplate?.config.settings.prefix_messages;
   // Step 1: Get chat history with user message
-  const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt);
+  const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt, prefixOption);
 
   // Step 2: Process custom prompts from the chat template
   let processedMessages = processCustomPrompts(chatHistory, config.chatTemplate?.custom_prompts);
@@ -148,13 +171,17 @@ export function formatPrompt(config: PromptFormatterConfig): FormattedPromptResu
     processedMessages = mergeSubsequentMessages(structuredClone(processedMessages));
   }
 
-  // if (config.formatTemplate?.config.settings.prefix_messages) {
+  // if () {
   //   processedMessages = prefixMessages(structuredClone(processedMessages));
   // }
 
   // Step 3: Create system prompt
-  const systemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate);
+  const rawSystemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate);
 
-  // Step 4: Replace placeholders
-  return replaceTextPlaceholders(processedMessages, systemPrompt, config.chatConfig);
+  const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
+
+  return applyContextLimit(formattedPrompt, {
+    config: config.chatTemplate?.config || { max_response: 100, max_tokens: 1500, max_depth: 100 },
+    custom_prompts: config.chatTemplate?.custom_prompts || [],
+  });
 }
