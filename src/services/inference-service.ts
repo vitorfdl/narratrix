@@ -9,14 +9,14 @@ import {
   useCurrentChatTemplateID,
   useCurrentChatUserCharacterID,
 } from "@/hooks/chatStore";
-import { useChatTemplate } from "@/hooks/chatTemplateStore";
-import { useModelManifestById } from "@/hooks/manifestStore";
-import { useModelById } from "@/hooks/modelsStore";
-import { useFormatTemplate, useInferenceTemplate } from "@/hooks/templateStore";
+import { useChatTemplateList } from "@/hooks/chatTemplateStore";
+import { useModelManifests } from "@/hooks/manifestStore";
+import { useModels } from "@/hooks/modelsStore";
+import { useFormatTemplateList, useInferenceTemplateList } from "@/hooks/templateStore";
 import { useInference } from "@/hooks/useInference";
 import { Character } from "@/schema/characters-schema";
 import { ChatMessageType } from "@/schema/chat-message-schema";
-import { InferenceMessage, ModelSpecs } from "@/schema/inference-engine-schema";
+import { ModelSpecs } from "@/schema/inference-engine-schema";
 import { formatPrompt as formatPromptUtil } from "@/services/inference-steps/formatter";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
@@ -38,13 +38,17 @@ export interface StreamingState {
  * Simplified options interface that requires less parameters
  */
 export interface GenerationOptions {
+  chatTemplateID?: string; // Override current chat template
   characterId: string; // Participant ID
   userMessage?: string;
+  quietUserMessage?: boolean; // do not save this message to the chat history
+  quietResponse?: boolean; // do not save the response to the chat history
   systemPromptOverride?: string; // Override System Prompt
   parametersOverride?: Record<string, any>; // Override Parameters
   stream?: boolean; // Stream the response
   existingMessageId?: string; // Existing Message ID
   messageIndex?: number; // Message Index
+  extraSuggestions?: Record<string, any>; // Extra suggestions
   onStreamingStateChange?: (state: StreamingState | null) => void; // Callback for streaming state changes
 }
 
@@ -65,18 +69,17 @@ export function useInferenceService() {
 
   // Get chat store information directly
   const currentChatId = useCurrentChatId();
-  const chatTemplateId = useCurrentChatTemplateID();
+  const currentChatTemplateId = useCurrentChatTemplateID();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const chatMessages = useCurrentChatMessages();
   const { addChatMessage, updateChatMessage } = useChatActions();
 
   // Get model and template information directly
-  const chatTemplate = useChatTemplate(chatTemplateId || "");
-  const modelSettings = useModelById(chatTemplate?.model_id || "");
-  const manifestSettings = useModelManifestById(modelSettings?.manifest_id || "");
-
-  const formatTemplate = useFormatTemplate(chatTemplate?.format_template_id || "");
-  const inferenceTemplate = useInferenceTemplate(modelSettings?.inference_template_id || "");
+  const chatTemplateList = useChatTemplateList();
+  const modelList = useModels();
+  const modelManifestList = useModelManifests();
+  const inferenceTemplateList = useInferenceTemplateList();
+  const formatTemplateList = useFormatTemplateList();
 
   const chapterList = useCurrentChatChapters();
   const currentChapterID = useCurrentChatActiveChapterID();
@@ -141,6 +144,10 @@ export function useInferenceService() {
    */
   const updateMessageByID = async (messageId: string, messageText: string, messageIndex = 0) => {
     try {
+      if (messageId === "generate-input-area") {
+        return;
+      }
+
       // Get the existing message
       const existingMessage = chatMessages?.find((msg) => msg.id === messageId);
 
@@ -192,7 +199,22 @@ export function useInferenceService() {
    * Format prompts for the inference engine
    */
   const formatPrompt = useCallback(
-    (userMessage?: string, systemPromptOverride?: string): { inferenceMessages: InferenceMessage[]; systemPrompt?: string } => {
+    (userMessage?: string, systemPromptOverride?: string, chatTemplateID?: string, extraSuggestions?: Record<string, any>) => {
+      const chatTemplate = chatTemplateID
+        ? chatTemplateList.find((template) => template.id === chatTemplateID)!
+        : chatTemplateList.find((template) => template.id === currentChatTemplateId)!;
+
+      if (!chatTemplate) {
+        console.error("Chat template not found");
+        return null;
+      }
+
+      const modelSettings = modelList.find((model) => model.id === chatTemplate.model_id)!;
+      const manifestSettings = modelManifestList.find((manifest) => manifest.id === modelSettings.manifest_id)!;
+
+      const formatTemplate = formatTemplateList.find((template) => template.id === chatTemplate.format_template_id)!;
+      const inferenceTemplate = inferenceTemplateList.find((template) => template.id === modelSettings.inference_template_id)!;
+
       const chatWithNames = chatMessages
         ?.map((msg) => {
           return {
@@ -202,7 +224,7 @@ export function useInferenceService() {
         })
         ?.filter((msg) => streamingState.current.messageId !== msg.id);
 
-      return formatPromptUtil({
+      const prompt = formatPromptUtil({
         messageHistory: chatWithNames || [],
         userPrompt: userMessage,
         systemOverridePrompt: systemPromptOverride,
@@ -217,10 +239,12 @@ export function useInferenceService() {
           character: characterList.find((character) => character.id === streamingState.current.characterId),
           user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
           chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
+          extra: extraSuggestions,
         },
       });
+      return { ...prompt, manifestSettings, modelSettings, chatTemplate };
     },
-    [chatMessages, modelSettings, formatTemplate, inferenceTemplate, chatTemplate],
+    [chatMessages, modelList, currentChatTemplateId, currentChapterID, characterList, userCharacterOrProfileName],
   );
 
   /**
@@ -229,24 +253,22 @@ export function useInferenceService() {
   const generateMessage = useCallback(
     async (options: GenerationOptions): Promise<string | null> => {
       const {
+        chatTemplateID,
         characterId,
         userMessage,
+        quietUserMessage = false,
+        quietResponse = false,
         systemPromptOverride = "",
         parametersOverride,
         stream = true,
         existingMessageId = null,
         messageIndex = 0,
         onStreamingStateChange,
+        extraSuggestions = {},
       } = options;
 
       if (!characterId) {
         console.error("Character ID is required");
-        return null;
-      }
-
-      // Check if the model and manifest are available
-      if (!modelSettings || !manifestSettings) {
-        console.error("Model or manifest settings not available. Check chat template configuration.");
         return null;
       }
 
@@ -265,6 +287,15 @@ export function useInferenceService() {
         // Create or use existing message
         let messageId: string;
 
+        if (userMessage && !quietUserMessage) {
+          // Add user message if not quiet
+          await addChatMessage({
+            character_id: null,
+            type: "user" as ChatMessageType,
+            messages: [userMessage],
+          });
+        }
+
         if (existingMessageId) {
           // Use existing message
           messageId = existingMessageId;
@@ -279,14 +310,7 @@ export function useInferenceService() {
             messages: existingMessage?.messages || ["..."],
             message_index: messageIndex,
           });
-        } else if (userMessage && !existingMessageId) {
-          // Add user message first if provided and no existing message ID
-          await addChatMessage({
-            character_id: null,
-            type: "user" as ChatMessageType,
-            messages: [userMessage],
-          });
-
+        } else if (!quietResponse) {
           // Then create a placeholder message for the character
           const newMessage = await addChatMessage({
             character_id: characterId,
@@ -296,14 +320,7 @@ export function useInferenceService() {
 
           messageId = newMessage.id;
         } else {
-          // Create a placeholder message for the character
-          const newMessage = await addChatMessage({
-            character_id: characterId,
-            type: "character" as ChatMessageType,
-            messages: ["..."],
-          });
-
-          messageId = newMessage.id;
+          messageId = "generate-input-area";
         }
 
         // Store the message ID for streaming updates
@@ -311,9 +328,21 @@ export function useInferenceService() {
         streamingState.current.messageIndex = messageIndex;
 
         // Prepare messages for inference
-        const { inferenceMessages, systemPrompt } = formatPrompt(userMessage, systemPromptOverride);
+        const promptResult = formatPrompt(userMessage, systemPromptOverride, chatTemplateID, extraSuggestions);
+        if (!promptResult) {
+          console.error("Failed to format prompt");
+          return null;
+        }
+
+        const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
+
         console.log("inferenceMessages", inferenceMessages);
         console.log("systemPrompt", systemPrompt);
+
+        if (!modelSettings || !manifestSettings) {
+          console.error("Model or manifest settings not available. Check chat template configuration.");
+          return null;
+        }
 
         // Create ModelSpecs using the model and manifest settings
         const modelSpecs: ModelSpecs = {
@@ -361,17 +390,7 @@ export function useInferenceService() {
         return null;
       }
     },
-    [
-      currentChatId,
-      modelSettings,
-      manifestSettings,
-      addChatMessage,
-      updateChatMessage,
-      runInference,
-      resetStreamingState,
-      formatPrompt,
-      chatMessages,
-    ],
+    [currentChatId, addChatMessage, updateChatMessage, runInference, resetStreamingState, formatPrompt, chatMessages],
   );
 
   /**

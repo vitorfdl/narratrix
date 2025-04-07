@@ -1,5 +1,6 @@
 import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
 import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
+import { QuickAction } from "@/pages/chat/components/utils-generate/QuickActions";
 import { GridPosition, defaultPositions } from "@/schema/grid";
 import { produce } from "immer";
 import { useAtom } from "jotai";
@@ -90,4 +91,13 @@ const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSetti
 
 export function useLocalExpressionGenerationSettings() {
   return useAtom(expressionGenerationSettingsAtom);
+}
+
+/**
+ * Local storage for quick actions
+ */
+const quickActionsAtom = atomWithStorage<QuickAction[]>("quickActions", []);
+
+export function useLocalQuickActions() {
+  return useAtom(quickActionsAtom);
 }

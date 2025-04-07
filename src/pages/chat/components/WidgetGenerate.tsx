@@ -2,12 +2,13 @@ import { Button } from "@/components/ui/button";
 import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
-import { useBackgroundInference } from "@/services/background-inference-service";
-import { Languages, SpellCheck2, StopCircle, Wand2 } from "lucide-react";
+import { GenerationOptions, StreamingState } from "@/services/inference-service";
+import { Languages, StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import QuickActions, { QuickAction } from "./utils-generate/QuickActions";
 
 interface WidgetGenerateProps {
   onSubmit?: (text: string) => void;
@@ -15,22 +16,44 @@ interface WidgetGenerateProps {
 
 const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const inferenceService = useInferenceServiceFromContext();
-  const { generateQuietly } = useBackgroundInference();
+  // const { generateQuietly } = useBackgroundInference();
   const [text, setText] = React.useState("");
   const [autoTranslate, setAutoTranslate] = React.useState(false);
   const [streamingCharacters, setStreamingCharacters] = useState<Record<string, boolean>>({});
   const streamingCheckRef = useRef<number | null>(null);
+  const quietResponseRef = useRef<boolean>(false);
+  const [inputStreamingText, setInputStreamingText] = useState<string>("");
 
   const profile = useProfile();
   const sendCommand = profile.currentProfile?.settings.chat.sendShortcut;
   const participants = useCurrentChatParticipants();
+  const chatMessages = useCurrentChatMessages();
+
+  const { addChatMessage } = useChatActions();
 
   // Get enabled participants for message generation
   const enabledParticipants = participants?.filter((p) => p.enabled) || [];
-  const userCharacterID = useCurrentChatUserCharacterID();
 
   // Generate a unique key based on participants to force editor re-initialization
   const editorKey = participants ? `editor-${participants.length}-${enabledParticipants.length}` : "editor-default";
+
+  // Listen for streaming updates when we're in quiet response mode
+  const handleStreamingStateChange = useCallback((state: StreamingState | null) => {
+    if (state && state.messageId === "generate-input-area") {
+      quietResponseRef.current = true;
+      setInputStreamingText(state.accumulatedText);
+    } else if (quietResponseRef.current && !state) {
+      // Reset when streaming ends
+      quietResponseRef.current = false;
+    }
+  }, []);
+
+  // Effect to apply streaming text to the input when in quiet response mode
+  useEffect(() => {
+    if (quietResponseRef.current && inputStreamingText) {
+      setText(inputStreamingText);
+    }
+  }, [inputStreamingText, quietResponseRef.current]);
 
   const handleSubmit = useCallback(
     async (submittedText: string) => {
@@ -54,6 +77,9 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           userMessage: submittedText,
           stream: true,
           onStreamingStateChange: (state) => {
+            // Handle streaming state changes for both regular and quiet responses
+            handleStreamingStateChange(state);
+
             if (state?.characterId) {
               setStreamingCharacters((prev) => ({
                 ...prev,
@@ -73,8 +99,10 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           },
         });
 
-        // Clear the input text
-        setText("");
+        // Clear the input text if not in quiet mode
+        if (!quietResponseRef.current) {
+          setText("");
+        }
       } catch (error) {
         console.error("Error generating message:", error);
         setStreamingCharacters((prev) => {
@@ -86,7 +114,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         });
       }
     },
-    [enabledParticipants, inferenceService],
+    [enabledParticipants, inferenceService, handleStreamingStateChange],
   );
 
   // Function to check if any character is currently streaming
@@ -101,6 +129,9 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       if (success) {
         // Reset streaming characters state
         setStreamingCharacters({});
+        if (quietResponseRef.current) {
+          quietResponseRef.current = false;
+        }
         toast.success("Generation cancelled");
       } else {
         toast.error("Failed to cancel generation");
@@ -114,6 +145,12 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   // Sync streaming state with the inference service
   const syncStreamingState = useCallback(() => {
     const streamingState = inferenceService.getStreamingState();
+
+    // Check for quiet response mode
+    if (streamingState.messageId === "generate-input-area") {
+      quietResponseRef.current = true;
+      setInputStreamingText(streamingState.accumulatedText);
+    }
 
     if (streamingState.characterId) {
       setStreamingCharacters((prev) => {
@@ -133,6 +170,11 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       // but we have tracked streaming characters, clear them
       if (Object.keys(streamingCharacters).length > 0) {
         setStreamingCharacters({});
+      }
+
+      // Also reset quiet response mode if needed
+      if (quietResponseRef.current) {
+        quietResponseRef.current = false;
       }
     }
   }, [inferenceService, streamingCharacters]);
@@ -164,37 +206,77 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     }
   }, [text]);
 
-  const handleImpersonate = useCallback(() => {
-    if (!text.trim()) {
-      toast.error("Please enter text to impersonate");
-      return;
+  const executeQuickAction = async (action: QuickAction) => {
+    const nextCharacter = enabledParticipants[0];
+
+    // Determine if the response should be quiet
+    const quietResponse = action.streamOption === "textarea";
+
+    const generationConfig: GenerationOptions = {
+      chatTemplateID: action.chatTemplateId,
+      characterId: nextCharacter.id,
+      systemPromptOverride: action.systemPromptOverride,
+      userMessage: action.userPrompt,
+      stream: true,
+      quietResponse,
+      quietUserMessage: true,
+      extraSuggestions: {
+        input: structuredClone(text),
+      },
+      onStreamingStateChange: (state) => {
+        // Handle streaming state changes for both regular and quiet responses
+        handleStreamingStateChange(state);
+
+        if (state?.characterId) {
+          setStreamingCharacters((prev) => ({ ...prev, [state.characterId as string]: true }));
+        }
+      },
+    };
+
+    if (action.streamOption === "participantMessage") {
+      const participantMessageType = action.participantMessageType;
+
+      if (participantMessageType === "swap") {
+        // Swap the last message with the new user message
+        const lastMessage = chatMessages?.[chatMessages.length - 1];
+        if (lastMessage && lastMessage.type === "character") {
+          generationConfig.characterId = lastMessage.character_id!;
+          generationConfig.existingMessageId = lastMessage.id;
+          generationConfig.extraSuggestions!.last_message = lastMessage.messages[lastMessage.message_index];
+        }
+      }
     }
 
-    // Get the next enabled character to target for impersonation
+    if (action.streamOption === "userMessage") {
+      const lastMessage = chatMessages?.[chatMessages.length - 1];
+      if (lastMessage && lastMessage.type === "user") {
+        generationConfig.existingMessageId = lastMessage.id;
+        generationConfig.extraSuggestions!.last_message = lastMessage.messages[lastMessage.message_index];
+      } else {
+        const { id: newChatID } = await addChatMessage({
+          character_id: null,
+          messages: ["..."],
+          type: "user",
+        });
+        generationConfig.existingMessageId = newChatID;
+      }
+    }
 
-    // Request LLM to impersonate the user
-    generateQuietly({
-      context: {
-        userCharacterID: userCharacterID ?? undefined,
-      },
-      prompt: `Please impersonate the user and generate text in their style based on this context: ${text}`,
-      modelId: "gpt-4o-mini",
-    });
-  }, [text, enabledParticipants, generateQuietly]);
-
-  const handleSpellCheck = useCallback(() => {}, []);
+    try {
+      setText("");
+      await inferenceService.generateMessage(generationConfig);
+    } catch (error) {
+      console.error("Error generating message:", error);
+      toast.error("Error generating message");
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex-none flex items-center gap-2 p-0.5 justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="xs" onClick={handleImpersonate} title="Impersonate">
-            <Wand2 className="!w-3.5 !h-3.5" />
-          </Button>
-          <Button variant="ghost" size="xs" onClick={handleSpellCheck} title="Spell Check">
-            <SpellCheck2 className="!w-3.5 !h-3.5" />
-          </Button>
-          <Toggle pressed={autoTranslate} onPressedChange={setAutoTranslate} title="Auto Translate" size="xs">
+          <QuickActions handleExecuteAction={executeQuickAction} />
+          <Toggle tabIndex={-1} pressed={autoTranslate} onPressedChange={setAutoTranslate} title="Auto Translate" size="xs">
             <Languages className="!w-3.5 !h-3.5" />
           </Toggle>
         </div>
@@ -205,17 +287,15 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           </Button>
         )}
       </div>
-      <div className="flex-1 min-h-0 overflow-hidden border border-input rounded-md">
-        <TipTapTextArea
-          key={editorKey}
-          initialValue={text}
-          onChange={(e) => setText(e)}
-          editable={!isAnyCharacterStreaming()} // Disable input while inference is running
-          placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
-          sendShortcut={sendCommand}
-          onSubmit={handleSubmit}
-        />
-      </div>
+      <TipTapTextArea
+        key={editorKey}
+        initialValue={text}
+        onChange={(e) => setText(e)}
+        editable={!isAnyCharacterStreaming() || quietResponseRef.current} // Allow editing during quiet response
+        placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
+        sendShortcut={sendCommand}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };

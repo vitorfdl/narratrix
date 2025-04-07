@@ -70,7 +70,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl  overflow-hidden custom-scrollbar">
+      <DialogContent className="soverflow-hidden custom-scrollbar">
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <MessageSquarePlus className="h-5 w-5 text-primary" />
@@ -174,7 +174,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
               <TipTapTextArea
                 initialValue={prompt.prompt}
                 onChange={(value) => setPrompt({ ...prompt, prompt: value })}
-                className="min-h-[150px] max-h-[40vh]"
+                className="min-h-[150px] max-h-[40vh] md:max-h-[50vh] overflow-y-auto"
                 placeholder="Enter your custom prompt text..."
               />
             </div>

@@ -1,5 +1,6 @@
 import rehypeHighlightQuotes from "@/lib/rehype-highlight-quotes";
 import { cn } from "@/lib/utils";
+import "@mdxeditor/editor/style.css";
 import { useEffect, useState } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
@@ -8,6 +9,7 @@ import RemarkBreaks from "remark-breaks";
 import RemarkGfm from "remark-gfm";
 import "../layout/styles/highlight.css";
 import "../layout/styles/markdown.css";
+import { ScrollArea } from "./scroll-area";
 import { MarkdownEditor } from "./tiptap-text-editor";
 
 // For backward compatibility
@@ -51,24 +53,24 @@ export function TipTapTextArea({
     }
   }, [initialValue, editable]);
 
-  // Define markdown components for view-only mode
-  const markdownComponents: Components = {
-    pre: ({ children }) => <pre className="p-4 bg-accent/50 rounded">{children}</pre>,
-    code: ({ className, children, ...props }) => (
-      <code className={cn("font-mono text-sm overflow-wrap-anywhere", className)} {...props}>
-        {children}
-      </code>
-    ),
-  };
-
   // For backward compatibility with non-editable mode using ReactMarkdown
   if (!editable) {
+    // Define markdown components for view-only mode
+    const markdownComponents: Components = {
+      pre: ({ children }) => <pre className="p-4 bg-accent/50 rounded">{children}</pre>,
+      code: ({ className, children, ...props }) => (
+        <code className={cn("font-mono text-sm overflow-wrap-anywhere", className)} {...props}>
+          {children}
+        </code>
+      ),
+    };
+
     return (
       <div className="flex flex-col h-full">
         {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
         <div
           className={cn(
-            "custom-scrollbar rounded-sm markdown-body h-full w-full px-3 py-2 overflow-auto prose prose-sm dark:prose-invert max-w-none",
+            "custom-scrollbar font-sans rounded-sm markdown-body h-full w-full px-3 py-2 overflow-auto prose prose-sm dark:prose-invert max-w-none",
             className,
           )}
         >
@@ -94,7 +96,7 @@ export function TipTapTextArea({
   }
 
   return (
-    <div className={cn("focus:bg-accent bg-foreground/5 h-full", className)}>
+    <ScrollArea className="flex-1 min-h-0 border border-input border-b-2 border-b-primary/20 rounded-md rich-text-area">
       <MarkdownEditor
         initialValue={initialValue}
         onChange={onChange}
@@ -102,11 +104,11 @@ export function TipTapTextArea({
         placeholder={placeholder}
         suggestions={suggestions}
         sendShortcut={sendShortcut}
+        className={className}
         onSubmit={onSubmit}
         onFocus={onFocus}
         onBlur={onBlur}
-        minHeight="140px"
       />
-    </div>
+    </ScrollArea>
   );
 }

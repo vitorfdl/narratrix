@@ -326,7 +326,7 @@ const WidgetExpressions = () => {
                 <Settings className="h-3.5 w-3.5" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="">
               <DialogHeader>
                 <DialogTitle>Configure Expression Prompts</DialogTitle>
                 <DialogDescription>Customize the prompts used to generate character expressions.</DialogDescription>
@@ -334,27 +334,26 @@ const WidgetExpressions = () => {
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="system-prompt">System Prompt</Label>
-                  <div className="border border-input rounded-md">
-                    <TipTapTextArea
-                      initialValue={tempSystemPrompt}
-                      onChange={(value) => setTempSystemPrompt(value)}
-                      placeholder={defaultSystemPrompt}
-                      className="min-h-[100px]"
-                      suggestions={ExpressionSuggestionList}
-                    />
-                  </div>
+                  <TipTapTextArea
+                    initialValue={tempSystemPrompt}
+                    onChange={(value) => setTempSystemPrompt(value)}
+                    editable={true}
+                    placeholder={defaultSystemPrompt}
+                    className="min-h-[100px] max-h-[20vh] overflow-y-auto"
+                    suggestions={ExpressionSuggestionList}
+                  />
                 </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="request-prompt">User Prompt (Request)</Label>
-                  <div className="border border-input rounded-md">
-                    <TipTapTextArea
-                      initialValue={tempRequestPrompt}
-                      onChange={(value) => setTempRequestPrompt(value)}
-                      placeholder={defaultRequestPrompt}
-                      className="min-h-[150px]"
-                      suggestions={ExpressionSuggestionList}
-                    />
-                  </div>
+                  <TipTapTextArea
+                    initialValue={tempRequestPrompt}
+                    onChange={(value) => setTempRequestPrompt(value)}
+                    editable={true}
+                    placeholder={defaultRequestPrompt}
+                    suggestions={ExpressionSuggestionList}
+                    className="min-h-[100px] max-h-[20vh]"
+                  />
                   <p className="text-xs italic text-muted-foreground">
                     Available placeholders: {"{{"}expression.list{"}}"}, {"{{"}expression.last{"}}"}, {"{{"}chat.message{"}}"}
                   </p>

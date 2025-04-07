@@ -8,7 +8,7 @@ import { Layers, Layers2, PaperclipIcon, PlusIcon, ServerIcon } from "lucide-rea
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useProfile } from "@/hooks/ProfileContext";
-import { useChatStore, useCurrentChatTemplateID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
 import { useModels, useModelsActions } from "@/hooks/modelsStore";
@@ -17,8 +17,8 @@ import { Model } from "@/schema/models-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { configFields } from "../manifests/configFields";
 import { ConfigItem } from "./ConfigItems";
-import { CustomPromptModal } from "./CustomPromptModal";
-import { CustomPromptsList } from "./CustomPromptsList";
+import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
+import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
 
 /**
  * WidgetConfig component
@@ -27,8 +27,13 @@ import { CustomPromptsList } from "./CustomPromptsList";
  * It allows you to add custom prompts, inference settings, and other configuration options.
  *
  */
-const WidgetConfig = () => {
-  const currentChatTemplateID = useCurrentChatTemplateID();
+const WidgetConfig = ({
+  currentChatTemplateID,
+  onChatTemplateChange,
+}: { currentChatTemplateID?: string | null; onChatTemplateChange?: (chatTemplateID: string) => void }) => {
+  if (!currentChatTemplateID && !onChatTemplateChange) {
+    currentChatTemplateID = useCurrentChatTemplateID();
+  }
   const chatTemplateList = useChatTemplateList();
   const currentTemplate = useChatTemplate(currentChatTemplateID || "");
   const { updateChatTemplate } = useChatTemplateActions();
@@ -133,10 +138,15 @@ const WidgetConfig = () => {
 
   // Template picker handlers
   const { createChatTemplate, deleteChatTemplate, updateChatTemplate: chatTemplateUpdate } = useChatTemplateActions();
-  const { updateSelectedChat } = useChatStore((state) => state.actions);
+  const { updateSelectedChat } = useChatActions();
 
   const handleTemplateSelect = (templateId: string) => {
     if (currentChatTemplateID === templateId) {
+      return;
+    }
+
+    if (onChatTemplateChange) {
+      onChatTemplateChange(templateId);
       return;
     }
 
@@ -336,7 +346,7 @@ const WidgetConfig = () => {
       });
 
       saveTimeoutRef.current = null;
-    }, 500); // 500ms debounce delay
+    }, 200); // 500ms debounce delay
   };
 
   // Save changes when relevant state changes

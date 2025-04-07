@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri",
-    "create-db": "rm -rf narratrix_main.db && cargo sqlx db create && cargo sqlx migrate run && cargo sqlx prepare"
+    "tauri": "tauri"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.6",

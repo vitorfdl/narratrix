@@ -35,10 +35,7 @@ export interface MDXEditorProps {
 }
 
 export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
-  (
-    { initialValue = "", onChange, className, label, placeholder, sendShortcut, onSubmit, onFocus, onBlur, minHeight = "100px", suggestions = [] },
-    ref,
-  ) => {
+  ({ initialValue = "", onChange, className, label, placeholder, sendShortcut, onSubmit, onFocus, onBlur, suggestions = [] }, ref) => {
     const [content, setContent] = useState(initialValue);
     const [showPlaceholder, setShowPlaceholder] = useState(!initialValue);
     const editorRef = useRef<MDXEditorMethods>(null);
@@ -205,13 +202,12 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
     const completionSource = createCompletionSource(suggestions);
 
     return (
-      <div className="flex flex-col h-full" ref={containerRef}>
+      <div className={className} ref={containerRef}>
         {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
         <div
-          className={cn("flex-1 min-h-0 relative overflow-hidden", isDarkMode && "dark")}
+          className={cn("flex-1 relative focus:bg-accent bg-foreground/5", className, isDarkMode && "dark")}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          style={{ minHeight }}
         >
           {showPlaceholder && placeholder && (
             <div className="absolute inset-0 flex items-start ml-5 px-4 py-1 pointer-events-none z-10" onClick={handlePlaceholderClick}>
@@ -222,6 +218,10 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
             ref={editorRef}
             markdown={content}
             onChange={handleChange}
+            toMarkdownOptions={{
+              ruleSpaces: false,
+              tightDefinitions: true,
+            }}
             plugins={[
               headingsPlugin(),
               listsPlugin(),
@@ -236,13 +236,14 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
                 codeMirrorExtensions: [
                   autocompletion({
                     override: [completionSource],
+                    defaultKeymap: true,
+                    aboveCursor: true,
+                    maxRenderedOptions: 10,
                   }),
                 ],
                 viewMode: "source",
               }),
             ]}
-            className="prose dark:prose-invert "
-            contentEditableClassName="prose"
           />
         </div>
       </div>

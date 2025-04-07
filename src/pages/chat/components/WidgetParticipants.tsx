@@ -77,7 +77,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
       <div className={cn("flex flex-col min-w-0 flex-1", participant.type !== "user" && !participant.isEnabled && "opacity-70")}>
         {/* Row 1: Name */}
         <div className="flex items-center justify-between gap-1">
-          <div className="font-medium truncate text-sm">{participant.name}</div>
+          <div className="font-normal truncate text-sm">{participant.name}</div>
           {participant.type !== "user" && (
             <Button
               variant="ghost"
@@ -295,6 +295,11 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     [characterList, messages, inferenceService],
   );
 
+  const streamingState = inferenceService.getStreamingState();
+  const isInQueue = (participantId: string) =>
+    (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") ||
+    (participantId === "user" && streamingState.messageId === "generate-input-area");
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Participants List */}
@@ -309,7 +314,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
                   onToggleParticipant={handleToggleParticipant}
                   onTriggerMessage={handleTriggerMessage}
                   onRemoveParticipant={handleRemoveParticipant}
-                  inInferenceQueue={inferenceService.getStreamingState().characterId === participant.id}
+                  inInferenceQueue={isInQueue(participant.id)}
                 />
               ))}
             </div>

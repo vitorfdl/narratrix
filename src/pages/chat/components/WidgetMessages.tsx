@@ -284,6 +284,7 @@ const WidgetMessages: React.FC = () => {
   const [streamingMessages, setStreamingMessages] = useState<Record<string, boolean>>({});
   const [messageReasonings, setMessageReasonings] = useState<Record<string, string>>({});
   const [expandedReasoningIds, setExpandedReasoningIds] = useState<Record<string, boolean>>({});
+  const [initializedReasoningIds, setInitializedReasoningIds] = useState<Record<string, boolean>>({});
   const streamingCheckRef = useRef<number | null>(null);
 
   // Refs for scroll management
@@ -504,11 +505,30 @@ const WidgetMessages: React.FC = () => {
           [streamingState.messageId as string]: streamingState.accumulatedReasoning,
         }));
 
-        // Auto-expand reasoning for new messages
-        setExpandedReasoningIds((prev) => ({
-          ...prev,
-          [streamingState.messageId as string]: true,
-        }));
+        // Only auto-expand reasoning for new messages that haven't been initialized
+        setInitializedReasoningIds((prev) => {
+          // If we've already initialized this reasoning, don't update
+          if (prev[streamingState.messageId as string]) {
+            return prev;
+          }
+
+          // Mark this reasoning as initialized
+          return {
+            ...prev,
+            [streamingState.messageId as string]: true,
+          };
+        });
+
+        // Only set the expanded state if this reasoning was not previously initialized
+        setExpandedReasoningIds((prev) => {
+          if (!initializedReasoningIds[streamingState.messageId as string]) {
+            return {
+              ...prev,
+              [streamingState.messageId as string]: true,
+            };
+          }
+          return prev;
+        });
       }
     } else {
       // If no message is currently streaming according to the service,
@@ -533,7 +553,7 @@ const WidgetMessages: React.FC = () => {
         }
       }
     }
-  }, [inferenceService, messages, streamingMessages]);
+  }, [inferenceService, messages, streamingMessages, initializedReasoningIds]);
 
   // Handle toggling reasoning display
   const handleToggleReasoning = (messageId: string) => {
@@ -610,7 +630,7 @@ const WidgetMessages: React.FC = () => {
     const isStreaming = isMessageStreaming(message.id);
     const isLastMessage = index === messagesWithCharCount.length - 1;
     const hasReasoningData = hasReasoning(message.id);
-    const isReasoningExpanded = expandedReasoningIds[message.id] !== true; // Default to expanded if not set
+    const isReasoningExpanded = !!expandedReasoningIds[message.id]; // Default to collapsed if not set
 
     return (
       <div key={message.id}>
@@ -654,7 +674,7 @@ const WidgetMessages: React.FC = () => {
               editable={isEditingID === message.id && !isStreaming}
               placeholder="Edit message..."
               className={cn(
-                "select-text text-base",
+                "select-text text-md",
                 isEditingID !== message.id ? "bg-transparent border-none" : "text-left ring-1 ring-border rounded-lg h-auto",
                 isStreaming && "animate-pulse duration-500",
               )}

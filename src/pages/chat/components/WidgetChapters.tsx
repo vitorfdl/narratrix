@@ -9,9 +9,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
+import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -75,25 +77,27 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
 
           <div className="grid gap-2">
             <Label htmlFor={`${idPrefix}scenario`}>Scenario (optional)</Label>
-            <Textarea
-              id={`${idPrefix}scenario`}
-              value={chapterData.scenario || ""}
-              onChange={(e) => updateField("scenario", e.target.value)}
+            <TipTapTextArea
+              key={`${idPrefix}scenario`}
+              initialValue={chapterData.scenario || ""}
+              editable={true}
+              suggestions={promptReplacementSuggestionList}
+              onChange={(value) => updateField("scenario", value)}
               placeholder="Describe the scenario of this chapter"
-              className="min-h-[100px]"
-              rows={3}
+              className="min-h-[100px] max-h-[20vh]"
             />
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor={`${idPrefix}instructions`}>Instructions</Label>
-            <Textarea
-              id={`${idPrefix}instructions`}
-              value={chapterData.instructions || ""}
-              onChange={(e) => updateField("instructions", e.target.value)}
+            <TipTapTextArea
+              key={`${idPrefix}instructions`}
+              initialValue={chapterData.instructions || ""}
+              editable={true}
+              suggestions={promptReplacementSuggestionList}
+              onChange={(value) => updateField("instructions", value)}
               placeholder="Special instructions for this chapter"
-              className="min-h-[100px]"
-              rows={3}
+              className="max-h-[20vh]"
             />
           </div>
 
@@ -457,7 +461,7 @@ const WidgetChapters = () => {
                   New Chapter
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
+              <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create New Chapter</DialogTitle>
                   <DialogDescription>Add a new chapter to your narrative. You can configure additional settings after creation.</DialogDescription>
@@ -509,7 +513,7 @@ const WidgetChapters = () => {
 
       {/* Edit Chapter Dialog */}
       <Dialog open={isEditingChapter} onOpenChange={setIsEditingChapter}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Chapter</DialogTitle>
             <DialogDescription>Update your chapter settings and configuration.</DialogDescription>

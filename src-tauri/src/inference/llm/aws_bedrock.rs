@@ -153,7 +153,7 @@ fn configure_inference(request: &InferenceRequest) -> InferenceConfiguration {
         // and it should include the reasoning_budget value
         if let Some(max_tokens) = request
             .parameters
-            .get("max_tokens")
+            .get("max_response")
             .and_then(|v| v.as_i64())
         {
             let reasoning_budget = request

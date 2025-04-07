@@ -1,5 +1,6 @@
 import { useCharacters } from "@/hooks/characterStore";
 import { useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
+import { useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { useModels } from "@/hooks/modelsStore";
 import { useInferenceTemplateList } from "@/hooks/templateStore";
@@ -27,7 +28,8 @@ export interface BackgroundInferenceOptions {
  * Options for quick inference
  */
 export interface QuickInferenceOptions {
-  modelId: string;
+  modelId?: string;
+  chatTemplateId?: string;
   prompt: string;
   systemPrompt?: string;
   parameters?: Record<string, any>;
@@ -53,7 +55,7 @@ export function useBackgroundInference() {
   const characterList = useCharacters();
   const chapterList = useCurrentChatChapters();
   const currentChapterID = useCurrentChatActiveChapterID();
-
+  const chatTemplates = useChatTemplateList();
   // Track ongoing requests
   const activeRequests = useRef<Record<string, boolean>>({});
 
@@ -174,12 +176,20 @@ export function useBackgroundInference() {
   const generateQuietly = useCallback(
     async (options: QuickInferenceOptions): Promise<string | null> => {
       try {
-        const { modelId, prompt, systemPrompt, parameters, context } = options;
+        const { modelId, prompt, systemPrompt, parameters, context, chatTemplateId } = options;
 
         // Find model, manifest, and template using the arrays we already have
-        const model = models.find((m) => m.id === modelId);
+        let model = models.find((m) => m.id === modelId);
+        const chatTemplate = chatTemplates.find((t) => t.id === chatTemplateId);
+        if (!model && !chatTemplate) {
+          console.error(`Model with ID ${modelId} or template with ID ${chatTemplateId} not found`);
+          return null;
+        }
+
+        model = chatTemplate?.model_id ? models.find((m) => m.id === chatTemplate.model_id) : model;
+
         if (!model) {
-          console.error(`Model with ID ${modelId} not found`);
+          console.error(`Model with ID ${modelId} or template with ID ${chatTemplateId} not found`);
           return null;
         }
 

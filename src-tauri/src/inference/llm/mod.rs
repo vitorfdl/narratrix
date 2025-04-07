@@ -76,10 +76,10 @@ fn handle_inference_response(
         .context("Failed to emit response")?;
 
     // Log in the backend for debugging
-    println!(
-        "Emitted inference response (status: {}): {:?}",
-        status, inference_response
-    );
+    // println!(
+    //     "Emitted inference response (status: {}): {:?}",
+    //     status, inference_response
+    // );
 
     Ok(())
 }

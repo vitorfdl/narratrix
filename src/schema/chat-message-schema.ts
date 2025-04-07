@@ -1,4 +1,4 @@
-import { SuggestionItem } from "@/components/ui/tiptap/tiptap-render";
+import { SuggestionItem } from "@/components/ui/tiptap-textarea";
 import { z } from "zod";
 import { uuidUtils } from "./utils-schema";
 

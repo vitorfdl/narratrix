@@ -131,8 +131,8 @@ body,
     @apply !p-0;
   }
 
-  .ͼo {
-    @apply bg-primary;  
+  .rich-text-area {
+    @apply focus-within:border-b-2 focus-within:border-b-primary;
   }
 
 }
