@@ -1,0 +1,83 @@
+# Software License Agreement for NarratrixAI
+
+**Last updated on April 8, 2025**
+
+## Overview
+
+This Software License Agreement ("Agreement") is a legally binding agreement
+between you, the End User, an individual or entity, and the creators of
+NarratrixAI ("we", "us", "our", or the "NarratrixAI Team"), regarding your use
+of NarratrixAI, an open-source application that allows people to create and play
+RPGs using AI agents.
+
+## AGPL-3.0 License
+
+NarratrixAI is primarily licensed under the GNU Affero General Public License
+version 3.0 (AGPL-3.0). The full text of the AGPL-3.0 license can be found at:
+https://www.gnu.org/licenses/agpl-3.0.html
+
+In accordance with AGPL-3.0:
+
+1. You are free to use, modify, and distribute NarratrixAI.
+2. If you distribute copies of NarratrixAI, you must include the source code or
+   make it available to recipients.
+3. If you modify NarratrixAI, you must license your modifications under the
+   AGPL-3.0.
+4. If you offer NarratrixAI as a network service (e.g., a web application), you
+   must make the complete source code available to users of that service.
+
+## Additional Terms
+
+In addition to the AGPL-3.0 terms, the following specific terms apply to your
+use of NarratrixAI:
+
+### Definitions
+
+- "Agreement" refers to this Software License Agreement.
+- "End User" refers to the individual or entity using NarratrixAI.
+- "Software" refers to NarratrixAI, including all its components, source code,
+  and documentation.
+
+### Intellectual Property
+
+While NarratrixAI is open source, the name "NarratrixAI" and any associated
+logos or branding elements are trademarks of the NarratrixAI Team. Nothing in
+this Agreement grants you the right to use these trademarks without our prior
+written permission, except as required for reasonable and customary use in
+describing the origin of the Software.
+
+### Warranty Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS,
+COPYRIGHT HOLDERS, OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+### Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+NARRATRIX TEAM BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL
+DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS
+PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER
+PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN
+IF THE NARRATRIX TEAM HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+### Governing Law
+
+This Agreement shall be governed by the laws of the State of Florida, without
+regard to its conflict of law principles. Any legal action concerning this
+Agreement shall be brought exclusively in the courts located in Orlando,
+Florida, and you consent to the jurisdiction of such courts.
+
+## Contact Information
+
+If you have questions about these license terms, please contact us at
+support@narratrixai.com
+
+---
+
+By using NarratrixAI, you acknowledge that you have read, understood, and agreed
+to the terms of both the AGPL-3.0 license and this Software License Agreement.

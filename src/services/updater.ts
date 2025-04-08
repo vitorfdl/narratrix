@@ -12,7 +12,7 @@ export async function checkForUpdates(): Promise<void> {
 
     if (update) {
       const releaseDateString = update.date ? new Date(update.date).toLocaleDateString() : "Date unknown";
-      const releaseNotes = update.body || "No details provided.";
+      const releaseNotes = update.body ? `${update.body.substring(0, 100)}...` : "No details provided.";
 
       toast(`New version ${update.version} available!`, {
         description: `Released on: ${releaseDateString}. Notes: ${releaseNotes}`,
@@ -22,7 +22,19 @@ export async function checkForUpdates(): Promise<void> {
             const installingToastId = toast.loading("Installing update...");
             try {
               // Note: On Windows, the app will exit immediately after this call.
-              await update.downloadAndInstall();
+              await update.downloadAndInstall((progress) => {
+                switch (progress.event) {
+                  case "Started":
+                    toast.loading(`Downloading update... ${(progress.data?.contentLength ?? 0 / (1024 * 1024)).toFixed(1)} MB`);
+                    break;
+                  // case "Progress":
+                  //   toast.loading(`Downloading update: ${progress.data.percent}%`);
+                  //   break;
+                  case "Finished":
+                    toast.success("Download finished. Installing Update...");
+                    break;
+                }
+              });
               // Relaunch is necessary for macOS and Linux to apply the update.
               // On Windows, this line might not be reached if the installer exits the app.
               await relaunch();
@@ -46,7 +58,7 @@ export async function checkForUpdates(): Promise<void> {
         duration: Number.POSITIVE_INFINITY, // Keep the toast open until the user interacts
       });
     } else {
-      console.log("No updates available.");
+      console.info("No updates available.");
       // Optionally notify the user they are up-to-date, but usually not necessary
       // toast.info("Your application is up-to-date.");
     }

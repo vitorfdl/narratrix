@@ -14,7 +14,7 @@ import { useImageUrl } from "@/hooks/useImageUrl";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { saveImage } from "@/services/file-system-service";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CircleCheckBig } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExpressionPackPreview } from "./ExpressionPackPreview";
@@ -43,27 +43,33 @@ function CharacterFormContent({
 }) {
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="personality" className="mb-2">
-          Personality
-        </Label>
-        <MarkdownTextArea
-          key={`${characterId}-personality`}
-          className="h-full max-h-[400px] min-h-24 overflow-y-auto"
-          editable={true}
-          initialValue={personality}
-          onChange={onPersonalityChange}
-          suggestions={promptReplacementSuggestionList.slice(0, 4)}
-          placeholder="Describe the character {{character.name}} personality... Can be captured in the Formatting Template for System Prompts."
-        />
-      </div>
+      <Card className="rounded-lg">
+        <CardContent className="p-2 space-y-4">
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between cursor-pointer mb-1">
+                <h3 className="text-sm font-medium">Expression Pack</h3>
+                <ChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <Separator className="my-2" />
+              {characterId && <ExpressionPackPreview character_id={characterId} expressions={expressions} />}
+              {!characterId && <div className="text-sm text-muted-foreground">Save the character first to add expressions.</div>}
+            </CollapsibleContent>
+          </Collapsible>
+        </CardContent>
+      </Card>
 
       <Card className="rounded-lg">
         <CardContent className="p-2 space-y-4">
           <Collapsible>
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between cursor-pointer mb-1">
-                <h3 className="text-sm font-medium">Custom System Prompt</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium">Custom System Prompt</h3>
+                  {systemPrompt && <CircleCheckBig className="h-4 w-4 text-primary" />}
+                </div>
                 <ChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
               </div>
             </CollapsibleTrigger>
@@ -83,24 +89,20 @@ function CharacterFormContent({
           </Collapsible>
         </CardContent>
       </Card>
-
-      <Card className="rounded-lg">
-        <CardContent className="p-2 space-y-4">
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <div className="flex items-center justify-between cursor-pointer mb-1">
-                <h3 className="text-sm font-medium">Expression Pack</h3>
-                <ChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <Separator className="my-2" />
-              {characterId && <ExpressionPackPreview character_id={characterId} expressions={expressions} />}
-              {!characterId && <div className="text-sm text-muted-foreground">Save the character first to add expressions.</div>}
-            </CollapsibleContent>
-          </Collapsible>
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <Label htmlFor="personality" descriptionTag={"{{character.personality}}"} className="mb-2">
+          Personality
+        </Label>
+        <MarkdownTextArea
+          key={`${characterId}-personality`}
+          className="h-full max-h-[400px] min-h-24 overflow-y-auto"
+          editable={true}
+          initialValue={personality}
+          onChange={onPersonalityChange}
+          suggestions={promptReplacementSuggestionList.slice(0, 4)}
+          placeholder="Describe the character {{character.name}} personality... Can be captured in the Formatting Template for System Prompts."
+        />
+      </div>
     </>
   );
 }
@@ -235,21 +237,28 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
   }, [type, isEditMode]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {!isEditMode && (
         <div className="flex justify-center gap-2">
           <Button type="button" variant={type === "character" ? "default" : "outline"} onClick={() => setType("character")} className="w-32">
             Character
           </Button>
-          <Button type="button" variant={type === "agent" ? "default" : "outline"} onClick={() => setType("agent")} className="w-32">
+          {/* TODO: Add agent support */}
+          <Button
+            type="button"
+            disabled
+            variant={type === "agent" ? "default" : "outline"}
+            onClick={() => setType("agent")}
+            className="w-32 line-through"
+          >
             Agent
           </Button>
         </div>
       )}
 
       <div className="flex flex-row gap-8">
-        <div className="flex-1 space-y-4">
-          <div className="space-y-2">
+        <div className="flex-1 grid grid-cols-2 gap-1">
+          <div className="space-y-2 col-span-2">
             <Label htmlFor="name">
               Name <span className="text-destructive">*</span>
             </Label>
@@ -289,7 +298,7 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
           </div>
         </div>
 
-        <div className="w-36 flex flex-col items-center justify-center">
+        <div className="md:w-[15vw] flex flex-col items-center justify-center">
           <Label htmlFor="avatar" className="mb-2">
             Avatar
           </Label>

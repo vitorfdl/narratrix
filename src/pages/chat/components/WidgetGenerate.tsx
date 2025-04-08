@@ -1,11 +1,10 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { Toggle } from "@/components/ui/toggle";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { GenerationOptions, StreamingState } from "@/services/inference-service";
-import { Languages, StopCircle } from "lucide-react";
+import { StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QuickActions, { QuickAction } from "./utils-generate/QuickActions";
@@ -276,9 +275,9 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       <div className="flex-none flex items-center gap-2 p-0.5 justify-between">
         <div className="flex items-center gap-2">
           <QuickActions handleExecuteAction={executeQuickAction} />
-          <Toggle tabIndex={-1} pressed={autoTranslate} onPressedChange={setAutoTranslate} title="Auto Translate" size="xs">
+          {/* <Toggle tabIndex={-1} pressed={autoTranslate} onPressedChange={setAutoTranslate} title="Auto Translate" size="xs">
             <Languages className="!w-3.5 !h-3.5" />
-          </Toggle>
+          </Toggle> */}
         </div>
         {isAnyCharacterStreaming() && (
           <Button variant="destructive" size="xs" onClick={handleCancel} title="Cancel Generation" className="ml-auto">

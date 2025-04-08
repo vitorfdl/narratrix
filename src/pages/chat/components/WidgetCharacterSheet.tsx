@@ -1,8 +1,10 @@
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
+import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { motion } from "framer-motion";
 import { UserCircle, UserPlus, UserRound, X } from "lucide-react";
@@ -17,6 +19,7 @@ const WidgetCharacterSheet = () => {
   const { updateSelectedChat } = useChatActions();
   const [isSelectingCharacter, setIsSelectingCharacter] = useState(false);
   const [currentCharacter, setCurrentCharacter] = useState<CharacterUnion | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Use the hook to get the image URL for the current character
   const { url: avatarUrl, isLoading: isLoadingAvatar } = useImageUrl(currentCharacter?.avatar_path || null);
@@ -74,10 +77,18 @@ const WidgetCharacterSheet = () => {
                 <img
                   src={avatarUrl || "/avatars/default.jpg"}
                   alt={currentCharacter.name}
-                  className={`h-24 w-24 rounded-full object-cover border-2 border-primary/30 ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
+                  className={`h-24 w-24 rounded-full object-cover border-2 border-primary/30 ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200 cursor-pointer`}
+                  onClick={() => {
+                    setIsEditModalOpen(true);
+                  }}
                 />
               ) : (
-                <div className="h-24 w-24 rounded-full bg-accent flex items-center justify-center">
+                <div
+                  className="h-24 w-24 rounded-full bg-accent flex items-center justify-center cursor-pointer"
+                  onClick={() => {
+                    setIsEditModalOpen(true);
+                  }}
+                >
                   <UserRound className="h-12 w-12 text-primary/80" strokeWidth={1.5} />
                 </div>
               )}
@@ -90,9 +101,9 @@ const WidgetCharacterSheet = () => {
                   Character
                 </Badge>
               </div>
-              {currentCharacter.custom && "personality" in currentCharacter.custom && currentCharacter.custom.personality && (
-                <p className="text-muted-foreground text-xs line-clamp-3">{currentCharacter.custom.personality}</p>
-              )}
+              <p className="text-muted-foreground text-xs line-clamp-3">
+                You can access tags of the character in prompts using <span className="font-light italic text-primary">{"{{user.personality}}"}</span>
+              </p>
             </div>
           </div>
         ) : (
@@ -130,45 +141,44 @@ const WidgetCharacterSheet = () => {
       </CardContent>
       <Separator className="my-1" />
       <CardFooter className="flex justify-between pt-3">
-        {currentCharacter ? (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRemoveCharacter}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <X className="mr-1 h-4 w-4" />
-              Remove
-            </Button>
-            <AddParticipantPopover
-              isOpen={isSelectingCharacter}
-              onOpenChange={setIsSelectingCharacter}
-              onSelectCharacter={handleSelectCharacter}
-              existingParticipantIds={[]}
-              title="Choose Character"
-            >
-              <Button variant="outline" size="sm">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Change Character
-              </Button>
-            </AddParticipantPopover>
-          </>
-        ) : (
-          <AddParticipantPopover
-            isOpen={isSelectingCharacter}
-            onOpenChange={setIsSelectingCharacter}
-            onSelectCharacter={handleSelectCharacter}
-            existingParticipantIds={[]}
-            title="Choose Character"
+        {currentCharacter && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRemoveCharacter}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
-            <Button variant="outline" size="sm" className="ml-auto">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Change Character
-            </Button>
-          </AddParticipantPopover>
+            <X className="mr-1 h-4 w-4" />
+            Remove
+          </Button>
         )}
+        <AddParticipantPopover
+          isOpen={isSelectingCharacter}
+          onOpenChange={setIsSelectingCharacter}
+          onSelectCharacter={handleSelectCharacter}
+          existingParticipantIds={[]}
+          title="Change Character"
+        >
+          <Button variant="outline" size="sm" className="ml-auto">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Change Character
+          </Button>
+        </AddParticipantPopover>
       </CardFooter>
+
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogTrigger asChild>{/* The avatar click handlers will now trigger the modal */}</DialogTrigger>
+        <DialogContent className="max-w-[90vw] xl:max-w-[70vw] max-h-[90vh] overflow-y-auto">
+          <CharacterForm
+            initialData={currentCharacter as CharacterUnion}
+            mode="edit"
+            onSuccess={() => {
+              setIsEditModalOpen(false);
+              // Optionally refresh the character data
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

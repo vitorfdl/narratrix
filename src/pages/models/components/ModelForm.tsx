@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,10 +11,11 @@ import { Manifest } from "@/schema/model-manifest-schema";
 import { Model, ModelType } from "@/schema/models-schema";
 import { createModel, updateModel } from "@/services/model-service";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, CheckCircle, Eye, EyeOff, Globe, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { ModelInputFields } from "./ModelInputFields";
 
 // Define model types
 const MODEL_TYPES: ModelType[] = ["llm", "audio", "image", "database"];
@@ -387,8 +387,26 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     try {
       // Extract config fields from form values
       const configFields: Record<string, any> = {};
+
+      // If in edit mode, first get the existing config
+      let existingConfig: Record<string, any> = {};
+      if (mode === "edit" && model) {
+        existingConfig = typeof model.config === "string" ? JSON.parse(model.config) : model.config;
+      }
+
       for (const field of selectedManifest.fields) {
-        if (values[field.key] !== undefined) {
+        // Handle special case for secret fields in edit mode
+        if (mode === "edit" && field.field_type === "secret") {
+          // Only update secret if a new value is provided (non-empty)
+          if (values[field.key]) {
+            configFields[field.key] = values[field.key];
+          } else if (existingConfig[field.key]) {
+            // Keep existing value
+            configFields[field.key] = existingConfig[field.key];
+          }
+        }
+        // Handle other fields normally
+        else if (values[field.key] !== undefined) {
           // Format URL fields with proper prefix
           if (field.field_type === "url" && values[field.key]) {
             configFields[field.key] = formatUrl(values[field.key]);
@@ -521,58 +539,15 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         {selectedManifest?.fields
           .filter((field) => field.field_type !== "hidden")
           .map((field) => (
-            <FormField
+            <ModelInputFields
+              isEditMode={mode === "edit"}
               key={field.key}
-              control={form.control}
-              name={field.key}
-              render={({ field: formField }) => (
-                <FormItem>
-                  <FormLabel>
-                    {field.label}
-                    {field.required && <span className="text-destructive ml-1">*</span>}
-                  </FormLabel>
-                  <FormControl>
-                    {field.field_type === "boolean" ? (
-                      <Checkbox checked={formField.value} onCheckedChange={formField.onChange} />
-                    ) : field.field_type === "secret" ? (
-                      <div className="relative">
-                        <Input
-                          type={showSecrets[field.key] ? "text" : "password"}
-                          placeholder={field.placeholder}
-                          defaultValue={field.default as string}
-                          {...formField}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full"
-                          onClick={() => toggleSecretVisibility(field.key)}
-                        >
-                          {showSecrets[field.key] ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    ) : field.field_type === "url" ? (
-                      <div className="relative">
-                        <Input className="pl-8" placeholder="https://example.com" defaultValue={field.default as string} {...formField} />
-                        <Globe className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                      </div>
-                    ) : (
-                      <Input
-                        placeholder={field.placeholder}
-                        type={field.field_type === "number" ? "number" : "text"}
-                        hints={field.hints}
-                        defaultValue={field.default as string}
-                        {...formField}
-                      />
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              field={field}
+              form={form}
+              showSecrets={showSecrets}
+              toggleSecretVisibility={toggleSecretVisibility}
             />
           ))}
-
         <div className="flex gap-2 w-full">
           <Button
             type="button"

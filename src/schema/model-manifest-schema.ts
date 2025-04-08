@@ -57,5 +57,5 @@ export const ManifestSchema = z.object({
  * Type definition derived from the Zod schema
  */
 export type Manifest = z.infer<typeof ManifestSchema>;
-
+export type ManifestField = z.infer<typeof ManifestFieldSchema>;
 export type Engine = z.infer<typeof engineSchema>;

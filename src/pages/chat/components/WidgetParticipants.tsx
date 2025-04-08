@@ -1,11 +1,13 @@
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
+import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
@@ -35,6 +37,7 @@ interface SortableParticipantProps {
   onTriggerMessage?: (id: string) => void;
   onRemoveParticipant?: (id: string) => void;
   inInferenceQueue: boolean;
+  setIsEditCharacterModalOpen: (characterId: string) => void;
 }
 
 const SortableParticipant: React.FC<SortableParticipantProps> = ({
@@ -43,6 +46,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
   onTriggerMessage,
   onRemoveParticipant,
   inInferenceQueue,
+  setIsEditCharacterModalOpen,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: participant.id,
@@ -53,6 +57,13 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const handleAvatarClick = () => {
+    if (participant.type === "character") {
+      setIsEditCharacterModalOpen(participant.id);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -67,7 +78,10 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing flex items-center">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
-        <Avatar className={cn("w-8 h-8", participant.type !== "user" && !participant.isEnabled && "opacity-50")}>
+        <Avatar
+          onClick={handleAvatarClick}
+          className={cn("w-8 h-8", participant.type !== "user" && "cursor-pointer", !participant.isEnabled && "opacity-50")}
+        >
           <AvatarImage className="object-cover rounded-full" src={participant.avatar} alt={participant.name} />
           <AvatarFallback className="bg-secondary">{participant.name[0]}</AvatarFallback>
         </Avatar>
@@ -149,6 +163,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
 const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
   const characterList = useCharacters();
   const { currentProfileAvatarUrl, currentProfile } = useProfile();
+  const [isEditCharacterModalOpen, setIsEditCharacterModalOpen] = useState<string | null>(null);
 
   const messages = useCurrentChatMessages();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
@@ -315,6 +330,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
                   onTriggerMessage={handleTriggerMessage}
                   onRemoveParticipant={handleRemoveParticipant}
                   inInferenceQueue={isInQueue(participant.id)}
+                  setIsEditCharacterModalOpen={setIsEditCharacterModalOpen}
                 />
               ))}
             </div>
@@ -334,10 +350,25 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
             <UserPlus className="h-4 w-4" />
           </Button>
         </AddParticipantPopover>
-        <Button variant="ghost" size="icon" onClick={onOpenConfig} title="Settings">
+        {/* TODO: Add settings support */}
+        <Button disabled variant="ghost" size="icon" onClick={onOpenConfig} title="Settings">
           <Settings className="h-4 w-4" />
         </Button>
       </div>
+
+      <Dialog open={isEditCharacterModalOpen !== null} onOpenChange={(open: boolean) => setIsEditCharacterModalOpen(open ? null : null)}>
+        <DialogTrigger asChild>{/* The avatar click handlers will now trigger the modal */}</DialogTrigger>
+        <DialogContent className="max-w-[90vw] xl:max-w-[70vw] max-h-[90vh] overflow-y-auto">
+          <CharacterForm
+            initialData={characterList.find((char) => char.id === isEditCharacterModalOpen)}
+            mode="edit"
+            onSuccess={() => {
+              setIsEditCharacterModalOpen(null);
+              // Optionally refresh the character data
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

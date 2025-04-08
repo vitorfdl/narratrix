@@ -1,0 +1,41 @@
+name: Feature or enhancement
+description: Submit a proposal for a new NarratrixAI feature or enhancement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Consider first discussing your idea on our [Discord server](https://discord.gg/NAMqeYNh) to get feedback from the developers and the community.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Explain your idea for a new feature or enhancement for NarratrixAI. Include any relevant details about how this would improve the AI-Powered Tabletop Roleplaying experience.
+    validations:
+      required: true
+  - type: dropdown
+    id: feature-category
+    attributes:
+      label: Feature Category
+      description: Which aspect of NarratrixAI would this enhancement primarily affect?
+      options:
+        - AI Integration
+        - Character Management
+        - Storytelling Tools
+        - User Interface/Experience
+        - Performance Optimization
+        - Scripting/Developer Tools
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: development-status
+    attributes:
+      label: Is this related to an existing planned feature?
+      description: Check the README.md to see if your feature is already planned
+      options:
+        - Yes, it's related to a feature marked as "In Development"
+        - No, this is a completely new feature suggestion
+        - Not sure
+    validations:
+      required: true

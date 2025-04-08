@@ -53,7 +53,8 @@ export default function Characters() {
   };
 
   const handleDelete = async (character: CharacterUnion) => {
-    if (window.confirm(`Are you sure you want to delete ${character.name}?`)) {
+    const confirmed = await confirm(`Are you sure you want to delete ${character.name}?`);
+    if (confirmed) {
       await deleteCharacter(character.id);
     }
   };
@@ -68,7 +69,6 @@ export default function Characters() {
   const handleRefresh = () => {
     fetchCharacters(profile.currentProfile!.id);
     // Also refresh all avatar images when refreshing characters
-    console.log("refreshing avatars");
     reloadAvatars();
   };
 

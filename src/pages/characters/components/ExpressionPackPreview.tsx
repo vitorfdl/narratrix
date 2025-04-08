@@ -124,7 +124,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
                   // Update existing expression
                   const expressionToUpdate = currentExpressions[existingExpressionIndex];
                   console.log(`Updating existing expression: ${expressionToUpdate.name}`);
-                  const savedPath = await saveExpressionImage(dataUrl, expressionToUpdate.id, character_id);
+                  const savedPath = await saveExpressionImage(dataUrl, expressionToUpdate.name, character_id);
                   currentExpressions[existingExpressionIndex] = { ...expressionToUpdate, image_path: savedPath };
                   needsUpdate = true;
                 } else if (!newExpressionsMap.has(lowerCaseFileName)) {
@@ -149,20 +149,21 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
             if (newExpressionsToCreate.length > 0) {
               const expressionNames = newExpressionsToCreate.map((item) => item.fileName).join("\n• ");
               const confirmMessage = `Create ${newExpressionsToCreate.length} new expressions?\n\n• ${expressionNames}`;
+              const confirmed = await confirm(confirmMessage);
 
-              if (confirm(confirmMessage)) {
-                // Process all confirmed new expressions
-                for (const { fileName, dataUrl, id } of newExpressionsToCreate) {
-                  console.log(`Creating new expression: ${fileName}`);
-                  const savedPath = await saveExpressionImage(dataUrl, id, character_id);
-                  const newExpression: Expression = {
-                    id,
-                    name: fileName,
-                    image_path: savedPath,
-                  };
-                  currentExpressions.push(newExpression);
-                  needsUpdate = true;
-                }
+              if (!confirmed) {
+                return;
+              }
+              // Process all confirmed new expressions
+              for (const { fileName, dataUrl, id } of newExpressionsToCreate) {
+                const savedPath = await saveExpressionImage(dataUrl, fileName, character_id);
+                const newExpression: Expression = {
+                  id,
+                  name: fileName,
+                  image_path: savedPath,
+                };
+                currentExpressions.push(newExpression);
+                needsUpdate = true;
               }
             }
 
@@ -253,9 +254,9 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
   const onDelete = async (expressionToDelete: Expression) => {
     // Optional: Add confirmation dialog here
-    // if (!confirm(`Are you sure you want to delete the expression "${expressionToDelete.name}"?`)) {
-    //   return;
-    // }
+    if (!confirm(`Are you sure you want to delete the expression "${expressionToDelete.name}"?`)) {
+      return;
+    }
 
     try {
       // 1. Update character state by filtering out the expression
@@ -333,6 +334,42 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
     }
   };
 
+  const onDeleteAll = async () => {
+    // Confirm the action with the user
+    const confirmed = await confirm("Are you sure you want to delete all expressions? This action cannot be undone.");
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      // 1. Delete all associated image files (optional)
+      if (expressions && expressions.length > 0) {
+        const appData = await appDataDir();
+        for (const expression of expressions) {
+          if (expression.image_path) {
+            try {
+              const filePath = await join(appData, expression.image_path);
+              await remove(filePath);
+              console.log(`Deleted expression image: ${filePath}`);
+            } catch (fileError) {
+              console.error(`Failed to delete expression image file (${expression.image_path}):`, fileError);
+            }
+          }
+        }
+      }
+
+      // 2. Update character state to remove all expressions
+      await updateCharacter(character_id, { expressions: [] });
+
+      // 3. Refresh the view
+      reloadAll();
+    } catch (error) {
+      console.error("Failed to delete all expressions:", error);
+      // TODO: Show user-friendly error message
+    }
+  };
+
   return (
     <Card className="overflow-hidden bg-gradient-to-b from-card/50 to-card border-none shadow-xl">
       <div className="p-1 space-y-1">
@@ -350,34 +387,49 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
         {/* Header Section */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-card/50 rounded-full p-1 backdrop-blur-sm">
+            <div className="flex items-center gap-2 bg-card/50 rounded-full p-1 backdrop-blur-sm">
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={(e) => {
                   e.preventDefault();
                   onRefresh();
                 }}
-                className="h-8 w-8 rounded-full hover:bg-white/10 transition-colors"
+                className="h-8 rounded-full hover:bg-white/10 transition-colors flex items-center gap-1"
                 title="Refresh expressions"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                <span className="text-xs">Refresh</span>
               </Button>
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={(e) => {
                   e.preventDefault();
                   onOpenFolder();
                 }}
-                className="h-8 w-8 rounded-full hover:bg-white/10 transition-colors"
+                className="h-8 rounded hover:bg-white/10 transition-colors flex items-center gap-1"
                 title="Open expressions folder"
               >
                 <Folder className="h-4 w-4" />
+                <span className="text-xs">Open Folder</span>
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onDeleteAll();
+                }}
+                className="h-8 rounded hover:bg-destructive/80 transition-colors flex items-center gap-1"
+                title="Delete all expressions"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="text-xs">Delete All</span>
               </Button>
             </div>
           </div>
-          <div className="px-3 py-1 rounded-full bg-card/50 backdrop-blur-sm">
+          <div className="px-3 py-1 rounded bg-card/50 backdrop-blur-sm">
             <span className="text-sm font-medium text-muted-foreground">{(expressions ?? []).length} expressions</span>
           </div>
         </div>
@@ -388,7 +440,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
             {(expressions ?? []).map((expression) => (
               <Card
                 key={expression.id}
-                className="group relative aspect-square overflow-hidden border-none bg-card/50 transition-all duration-150 hover:shadow-lg hover:shadow-primary/10 hover:ring-1 hover:ring-primary/20"
+                className="group relative aspect-square overflow-hidden border-none bg-card/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:ring-1 hover:ring-primary/20"
               >
                 {expressionUrls[expression.id] ? (
                   <img

@@ -1,0 +1,78 @@
+name: Bug report
+description: Submit a bug report
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **New to NarratrixAI?**
+        For help or advice on using NarratrixAI, try one of the following options instead of opening a GitHub issue:
+        - Asking on our [Discord server](https://discord.gg/NAMqeYNh)
+        - Creating a post on [Discussions](https://github.com/vitorfdl/Narratrix/discussions)
+
+        This template is for reporting bugs experienced within the NarratrixAI app.
+        If your issue is regarding AI model integration or customization, please provide complete details about the model and configuration.
+
+        Make sure to also search the [existing issues](https://github.com/vitorfdl/Narratrix/issues) to see if your issue has already been reported.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Give a clear and concise description of what happened. Provide screenshots or videos of UI if necessary. Also tell us, what did you expect to happen?
+      placeholder: |
+        When using the character management feature, I expected to see...
+
+        Instead, I saw...
+    validations:
+      required: true
+  - type: textarea
+    id: how-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal step-by-step guide to reproduce the issue if possible.
+      placeholder: |
+        1. Open NarratrixAI
+        2. Go to the Characters page
+        3. Click on the Create button
+        4. Expected to see character creation form, but instead ...
+  - type: textarea
+    id: app-logs
+    attributes:
+      label: Relevant logs
+      description: Please copy and paste any relevant log output. (This will be automatically formatted, so no need for backticks.)
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of NarratrixAI are you running?
+      placeholder: ex. v1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os-platform
+    attributes:
+      label: What Operating System are you using?
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: feature-area
+    attributes:
+      label: Which feature area does this bug affect?
+      options:
+        - Profile Management
+        - Inference Queue
+        - Models Management
+        - Chat Management
+        - Characters Management
+        - Templates Management
+        - Chapter Creation
+        - AI Integration
+        - Other
+    validations:
+      required: true

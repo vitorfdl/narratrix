@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
@@ -27,7 +26,6 @@ type ChapterFormData = {
   title: string;
   sequence?: number;
   scenario: string;
-  instructions: string;
   start_message: string;
   custom: {
     auto_start_message: boolean;
@@ -60,13 +58,17 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
     <Tabs defaultValue="basic">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="basic">Basic Info</TabsTrigger>
-        <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
+        <TabsTrigger disabled className="line-through" value="advanced">
+          Advanced Settings
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="basic" className="space-y-4 py-4">
         <div className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor={`${idPrefix}title`}>Title</Label>
+            <Label htmlFor={`${idPrefix}title`} descriptionTag={"{{chapter.title}}"} className="flex items-center gap-1">
+              Title
+            </Label>
             <Input
               id={`${idPrefix}title`}
               value={chapterData.title}
@@ -76,7 +78,9 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor={`${idPrefix}scenario`}>Scenario (optional)</Label>
+            <Label htmlFor={`${idPrefix}scenario`} descriptionTag={"{{chapter.scenario}}"}>
+              Scenario
+            </Label>
             <MarkdownTextArea
               key={`${idPrefix}scenario`}
               initialValue={chapterData.scenario || ""}
@@ -89,14 +93,22 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor={`${idPrefix}instructions`}>Instructions</Label>
+            {chapterData.custom.auto_start_message ? (
+              <Label htmlFor={`${idPrefix}start-message`}>Instruction to AI</Label>
+            ) : (
+              <Label htmlFor={`${idPrefix}start-message`}>Chat Start Message</Label>
+            )}
             <MarkdownTextArea
-              key={`${idPrefix}instructions`}
-              initialValue={chapterData.instructions || ""}
+              key={`${idPrefix}start-message`}
+              initialValue={chapterData.start_message || ""}
               editable={true}
               suggestions={promptReplacementSuggestionList}
-              onChange={(value) => updateField("instructions", value)}
-              placeholder="Special instructions for this chapter"
+              onChange={(value) => updateField("start_message", value)}
+              placeholder={
+                chapterData.custom.auto_start_message
+                  ? "Enter User instruction to generate the start message"
+                  : "Enter the User's first message to begin the chapter."
+              }
               className="max-h-[20vh]"
             />
           </div>
@@ -107,25 +119,13 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
               checked={chapterData.custom.auto_start_message}
               onCheckedChange={(checked) => updateCustomField("auto_start_message", checked)}
             />
-            <Label htmlFor={`${idPrefix}auto-start`}>Auto Start Message</Label>
+            <Label htmlFor={`${idPrefix}auto-start`}>Use AI to generate the start message</Label>
           </div>
         </div>
       </TabsContent>
 
       <TabsContent value="advanced" className="space-y-4 py-4">
         <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor={`${idPrefix}start-message`}>Start Message (optional)</Label>
-            <Textarea
-              id={`${idPrefix}start-message`}
-              value={chapterData.start_message || ""}
-              onChange={(e) => updateField("start_message", e.target.value)}
-              placeholder="Initial message when chapter starts"
-              className="min-h-[100px]"
-              rows={3}
-            />
-          </div>
-
           <div className="grid gap-2">
             <Label>Branching Options (optional)</Label>
             <div className="space-y-2">
@@ -187,7 +187,6 @@ const WidgetChapters = () => {
   const [newChapterData, setNewChapterData] = useState<ChapterFormData>({
     title: "",
     scenario: "",
-    instructions: "",
     start_message: "",
     custom: {
       auto_start_message: false,
@@ -262,7 +261,6 @@ const WidgetChapters = () => {
       title: newChapterData.title,
       sequence: newSequence,
       scenario: newChapterData.scenario || null,
-      instructions: newChapterData.instructions || null,
       start_message: newChapterData.start_message || null,
       custom: newChapterData.custom,
     });
@@ -270,7 +268,6 @@ const WidgetChapters = () => {
     setNewChapterData({
       title: "",
       scenario: "",
-      instructions: "",
       start_message: "",
       custom: {
         auto_start_message: false,
@@ -289,7 +286,6 @@ const WidgetChapters = () => {
       title: editingChapter.title,
       sequence: editingChapter.sequence,
       scenario: editingChapter.scenario,
-      instructions: editingChapter.instructions,
       custom: editingChapter.custom,
     });
 
@@ -307,7 +303,6 @@ const WidgetChapters = () => {
       title: chapter.title,
       sequence: chapter.sequence,
       scenario: chapter.scenario || "",
-      instructions: chapter.instructions || "",
       start_message: chapter.start_message || "",
       custom: {
         auto_start_message: chapter.custom?.auto_start_message || false,
