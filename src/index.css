@@ -18,7 +18,7 @@ body,
     --card-foreground: 240 10% 3.9%; /* #0A0A0B */
     --popover: 220 20% 97%; /* #F5F7FA matches background */
     --popover-foreground: 240 10% 3.9%; /* #0A0A0B */
-    --primary: 293 59% 74%; /* #DB9EE5 */
+    --primary: 265 60% 70%; /* #a78bfa - purple-400 */
     --primary-foreground: 0 0% 98%; /* #FAFAFA */
     --secondary: 220 14% 90%; /* #E5E9F0 softer secondary */
     --secondary-foreground: 240 5.9% 10%; /* #191919 */
@@ -31,7 +31,7 @@ body,
     --border: 220 13% 85%; /* #D9DEE5 softer border */
     --input: 220 13% 85%; /* #D9DEE5 softer input */
     --ring: 240 10% 3.9%; /* #18181B */
-    --chart-1: 293 45% 60%; /* #C76BD1 - derived from primary */
+    --chart-1: 293 59% 74%; /* #DB9EE5 */
     --chart-2: 293 35% 45%; /* #9A53A3 - darker primary */
     --chart-3: 260 40% 55%; /* #7B6EDB - complementary to primary */
     --chart-4: 320 70% 60%; /* #E55A9B - analogous to primary */
@@ -52,7 +52,7 @@ body,
     --card-foreground: 0 0% 67%; /* #AAAAAA */
     --popover: 223 9% 18%; /* #2B2D30 */
     --popover-foreground: 223 9% 73%; /* #B4B8BF */
-    --primary: 259 94% 65%; /* #a78bfa - purple-400 */
+    --primary: 265 60% 70%; /* #a78bfa - purple-400 */
     --primary-foreground: 0 0% 100%; /* #FFFFFF */
     --secondary: 223 7% 24%; /* #393B40 */
     --secondary-foreground: 223 2% 54%; /* #878B8D */
@@ -65,7 +65,7 @@ body,
     --border: 223 6% 27%; /* #43454A */
     --input: 223 6% 27%; /* #43454A */
     --ring: 293 59% 74%; /* #db9ee5 */
-    --chart-1: 293 45% 60%; /* #C76BD1 - derived from primary */
+    --chart-1:293 59% 74%; /* #DB9EE5 */
     --chart-2: 293 35% 45%; /* #9A53A3 - darker primary */
     --chart-3: 260 40% 55%; /* #7B6EDB - complementary to primary */
     --chart-4: 320 70% 60%; /* #E55A9B - analogous to primary */
@@ -199,4 +199,30 @@ body,
     /* Ensure border width is consistent */
     border-width: 2px; 
   }
+}
+
+.cm-tooltip {
+  @apply text-muted-foreground bg-accent text-xs custom-scrollbar; /* Removed z-index here, apply specifically if needed */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  position: absolute;
+}
+
+.cm-tooltip-autocomplete {
+  @apply text-muted-foreground text-xs bg-popover border border-border rounded;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  position: absolute;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.cm-tooltip-autocomplete ul {
+  @apply p-1;
+}
+
+.cm-tooltip-autocomplete li {
+  @apply px-2 py-1 rounded hover:bg-secondary cursor-pointer;
+}
+
+.cm-tooltip-autocomplete li[aria-selected="true"] {
+  @apply bg-secondary text-secondary-foreground;
 }

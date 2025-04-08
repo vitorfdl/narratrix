@@ -323,7 +323,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
       </div>
 
       {/* Footer */}
-      <div className="py-0.5 px-1 border-t flex justify-start gap-2">
+      <div className="py-0 px-1 border-t flex justify-start gap-2">
         <AddParticipantPopover
           isOpen={isAddParticipantOpen}
           onOpenChange={setIsAddParticipantOpen}

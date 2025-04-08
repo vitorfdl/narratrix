@@ -1,8 +1,8 @@
 # NarratrixAI
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](https://github.com/yourusername/NarratrixAI/releases)
-[![Version](https://img.shields.io/badge/version-0.2.1-orange.svg)](https://github.com/yourusername/NarratrixAI/releases)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](https://github.com/vitorfdl/Narratrix/releases)
+[![Version](https://img.shields.io/badge/version-0.2.1-orange.svg)](https://github.com/vitorfdl/Narratrix/releases)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-7289DA?logo=discord&logoColor=white)](https://discord.gg/yourdiscordlink)
 
 <p align="center">
@@ -15,11 +15,11 @@
 
 ## ✨ Overview
 
-NarratrixAI transforms how we experience tabletop roleplaying games by
-leveraging AI to create dynamic, responsive, and immersive storytelling
-experiences. Whether you're a seasoned dungeon master looking for a
-comprehensive tool or a solo player seeking adventures, Narratrix empowers you
-to create and share your own stories.
+Narratrix transforms how we experience tabletop roleplaying games by leveraging
+AI to create dynamic, responsive, and immersive storytelling experiences.
+Whether you're a seasoned dungeon master looking for a comprehensive tool or a
+solo player seeking adventures, Narratrix empowers you to create and share your
+own stories.
 
 <p align="center">
   <img src="path/to/narratrix-screenshot.png" alt="Narratrix Interface" width="80%"/>
@@ -57,7 +57,7 @@ to create and share your own stories.
 
 ## 💻 Platform Support
 
-NarratrixAI is built with Tauri, providing native performance across platforms:
+Narratrix is built with Tauri, providing native performance across platforms:
 
 - **Windows**: Windows 10 or newer
 - **macOS**: 10.15+ (Intel & Apple Silicon)
@@ -99,10 +99,10 @@ NarratrixAI is built with Tauri, providing native performance across platforms:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/NarratrixAI.git
+git clone https://github.com/vitorfdl/Narratrix.git
 
 # Navigate to the project directory
-cd NarratrixAI
+cd Narratrix
 
 # Install dependencies
 npm install
@@ -113,7 +113,7 @@ npm run tauri dev
 
 ## 🌐 AI Models Support
 
-NarratrixAI uses a flexible manifest system to support various AI providers:
+Narratrix uses a flexible manifest system to support various AI providers:
 
 - **Cloud-based**: OpenAI GPT models, Anthropic Claude, Azure OpenAI
 - **Local**: LlamaCPP, KoboldCPP, Ollama, RunPod
@@ -139,8 +139,11 @@ improving documentation, please feel free to make a pull request.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
-for details.
+This repository maintains the latest source code release for Narratrix, and is
+licensed under the
+[GNU Affero General Public License](https://www.gnu.org/licenses/agpl-3.0.en.html).
+Binaries and executable releases are licensed under the
+[End User License Agreement](LICENSE).
 
 ## 🙏 Acknowledgments
 
@@ -151,7 +154,7 @@ for details.
 ---
 
 <p align="center">
-  <a href="https://github.com/yourusername/NarratrixAI/releases/latest">Download Latest Release</a> •
-  <a href="https://narratrix.ai/docs">Documentation</a> •
-  <a href="https://discord.gg/yourdiscordlink">Join Discord</a>
+  <a href="https://github.com/vitorfdl/Narratrix/releases/latest">Download Latest Release</a> •
+  <!-- <a href="https://narratrix.ai/docs">Documentation</a> • -->
+  <a href="https://discord.gg/NAMqeYNh">Join Discord</a>
 </p>

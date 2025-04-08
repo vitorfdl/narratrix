@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
 import { TemplatePicker } from "@/pages/formatTemplates/components/TemplatePicker";
 import type { SectionField } from "@/schema/template-chat-settings-types";
-import { Layers, Layers2, PaperclipIcon, PlusIcon, ServerIcon } from "lucide-react";
+import { ChevronDown, Layers, Layers2, PaperclipIcon, PlusIcon, ServerIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useProfile } from "@/hooks/ProfileContext";
@@ -16,9 +16,9 @@ import { useFormatTemplateList } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { configFields } from "../manifests/configFields";
-import { ConfigItem } from "./ConfigItems";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
+import { ConfigItem } from "./fields/ConfigItems";
 
 /**
  * WidgetConfig component
@@ -78,10 +78,9 @@ const WidgetConfig = ({
 
       // Set context size and response length from config
       if (currentTemplate.config) {
-        setContextSize(currentTemplate.config.max_tokens || 4096);
-        setResponseLength(currentTemplate.config.max_response || 1024);
+        setContextSize(currentTemplate.config.max_context || 4096);
+        setResponseLength(currentTemplate.config.max_tokens || 1024);
         setMaxDepth(currentTemplate.config.max_depth || 100);
-        console.log("Loading max_depth from template:", currentTemplate.config.max_depth);
       }
 
       // Set custom prompts
@@ -89,7 +88,7 @@ const WidgetConfig = ({
 
       // Set other config values as active fields
       const templateConfig = currentTemplate.config || {};
-      const configKeys = Object.keys(templateConfig).filter((key) => key !== "max_tokens" && key !== "max_response" && key !== "max_depth");
+      const configKeys = Object.keys(templateConfig).filter((key) => key !== "max_tokens" && key !== "max_context" && key !== "max_depth");
 
       if (configKeys.length > 0) {
         setActiveFields(configKeys);
@@ -165,7 +164,7 @@ const WidgetConfig = ({
         model_id: null,
         config: {
           max_tokens: 4096,
-          max_response: 1024,
+          max_context: 4096 * 2,
           max_depth: 100,
         },
         custom_prompts: [],
@@ -226,7 +225,8 @@ const WidgetConfig = ({
           value: field.name,
           disabled: !isSupported || isDisabled,
         };
-      });
+      })
+      .sort((a, b) => (a.disabled ? 1 : 0) - (b.disabled ? 1 : 0));
   }, [activeFields, selectedModelId, availableInferenceFields, isDisabled]);
 
   const modelOptions = useMemo(() => {
@@ -327,13 +327,10 @@ const WidgetConfig = ({
       // Compile all config values
       const configValues = {
         ...values,
-        max_tokens: contextSize,
-        max_response: responseLength,
+        max_tokens: responseLength,
+        max_context: contextSize,
         max_depth: maxDepth,
       };
-
-      console.log("Saving config with max_depth:", maxDepth);
-      console.log("Full config being saved:", configValues);
 
       // Update template
       updateChatTemplate(currentChatTemplateID, {
@@ -341,12 +338,10 @@ const WidgetConfig = ({
         format_template_id: selectedFormatTemplateId || null,
         config: configValues,
         custom_prompts: customPrompts,
-      }).then((result) => {
-        console.log("Template update result:", result?.config);
       });
 
       saveTimeoutRef.current = null;
-    }, 200); // 500ms debounce delay
+    }, 10); // Increase debounce delay to 500ms
   };
 
   // Save changes when relevant state changes
@@ -426,7 +421,7 @@ const WidgetConfig = ({
   return (
     <div className="space-y-1 p-1">
       {/* Template Picker Section */}
-      <div className="space-y-1 mb-3">
+      <div className="space-y-1 mb-3 mx-1">
         <TemplatePicker
           compact={true}
           templates={templateOptions}
@@ -456,12 +451,14 @@ const WidgetConfig = ({
             <Combobox
               items={modelOptions}
               onChange={setSelectedModelId}
+              selectedValue={selectedModelId}
               placeholder="Search a model..."
               trigger={
                 <Button variant="outline" className="w-full justify-between text-xs px-2" disabled={isDisabled}>
                   {selectedModelId
                     ? modelOptions.find((model) => model.value === selectedModelId)?.label || "Select a model..."
                     : "Select a model..."}
+                  <ChevronDown className="ml-auto !h-3 !w-3" />
                 </Button>
               }
             />
@@ -479,11 +476,17 @@ const WidgetConfig = ({
               items={formatTemplateOptions}
               onChange={setSelectedFormatTemplateId}
               placeholder="Search a format..."
+              selectedValue={selectedFormatTemplateId}
               trigger={
-                <Button variant="outline" className="w-full justify-between text-xs px-2" disabled={isDisabled}>
+                <Button
+                  variant={selectedFormatTemplateId ? "outline" : "destructive"}
+                  className="w-full justify-between text-xs px-2"
+                  disabled={isDisabled}
+                >
                   {selectedFormatTemplateId
                     ? formatTemplates.find((template) => template.id === selectedFormatTemplateId)?.name || "Select a format..."
                     : "Select a format..."}
+                  <ChevronDown className="ml-auto !h-3 !w-3" />
                 </Button>
               }
             />
@@ -491,12 +494,21 @@ const WidgetConfig = ({
         </div>
 
         {/* Context Size */}
-        <div className="flex items-center gap-2">
+        <div className="space-y-2 items-center gap-2 pb-4">
           <div className="w-1/3 flex items-center">
             <h3 className="text-xs font-normal">Context Size:</h3>
           </div>
           <div className="flex-1">
-            <StepButton value={contextSize} onValueChange={setContextSize} min={512} max={32768} step={512} className="h-7" disabled={isDisabled} />
+            <StepButton
+              value={contextSize}
+              showSlider
+              onValueChange={setContextSize}
+              min={512}
+              max={32768 * 3}
+              step={512}
+              className="h-7"
+              disabled={isDisabled}
+            />
           </div>
         </div>
 
@@ -509,9 +521,9 @@ const WidgetConfig = ({
             <StepButton
               value={responseLength}
               onValueChange={setResponseLength}
-              min={64}
-              max={4096}
-              step={64}
+              min={1}
+              max={99999}
+              step={50}
               className="h-7"
               disabled={isDisabled}
             />
@@ -527,7 +539,6 @@ const WidgetConfig = ({
             <StepButton
               value={maxDepth}
               onValueChange={(value) => {
-                console.log("Max Depth changed to:", value);
                 setMaxDepth(value);
               }}
               min={1}

@@ -1,5 +1,7 @@
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 import * as React from "react";
 
 export interface ComboboxItem {
@@ -14,9 +16,10 @@ interface ComboboxProps {
   onChange: (value: string) => void;
   trigger: React.ReactNode;
   placeholder?: string;
+  selectedValue?: string;
 }
 
-export function Combobox({ items, onChange, trigger, placeholder = "Search..." }: ComboboxProps) {
+export function Combobox({ items, onChange, trigger, placeholder = "Search...", selectedValue }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -38,12 +41,13 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search..." }
                   }
                 }}
                 disabled={item.disabled}
-                className={`${item.disabled ? "cursor-not-allowed opacity-50" : ""}`}
+                className={cn("flex justify-between items-center w-full", item.disabled ? "cursor-not-allowed opacity-50" : "")}
               >
                 <div className="flex flex-col">
                   <span className={item.disabled ? "line-through" : ""}>{item.label}</span>
                   {item.hint && <span className="text-xs text-muted-foreground">{item.hint}</span>}
                 </div>
+                <Check className={cn("mr-2 h-4 w-4", selectedValue === item.value ? "opacity-100" : "opacity-0")} />
               </CommandItem>
             ))}
           </CommandGroup>

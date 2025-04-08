@@ -108,12 +108,39 @@ export function getChatHistory(
 /**
  * Create system prompt from template
  */
-export function createSystemPrompt(systemPromptTemplate?: FormatTemplate | null): string | undefined {
+export function createSystemPrompt(
+  systemPromptTemplate?: FormatTemplate | null,
+  chatConfig?: PromptFormatterConfig["chatConfig"],
+): string | undefined {
   if (!systemPromptTemplate || !systemPromptTemplate.config || systemPromptTemplate.prompts.length === 0) {
     return undefined;
   }
 
-  return systemPromptTemplate.prompts.map((section) => section.content).join("\n\n");
+  let prompts = structuredClone(systemPromptTemplate.prompts);
+
+  const hasCharacter = !!chatConfig?.character && chatConfig?.character.type === "character";
+  const hasChapter = !!chatConfig?.chapter?.scenario;
+  const hasUserCharacter = !!chatConfig?.user_character?.custom?.personality;
+
+  if (!hasCharacter) {
+    prompts = prompts.filter((prompt) => prompt.type !== "character-context");
+    prompts = prompts.filter((prompt) => prompt.type !== "character-memory");
+  }
+
+  if (!hasChapter) {
+    prompts = prompts.filter((prompt) => prompt.type !== "chapter-context");
+  }
+
+  if (!hasUserCharacter) {
+    prompts = prompts.filter((prompt) => prompt.type !== "user-context");
+    prompts = prompts.filter((prompt) => prompt.type !== "user-memory");
+  }
+
+  if (prompts.length === 0) {
+    return undefined;
+  }
+
+  return prompts.map((section) => section.content).join("\n\n");
 }
 
 /**
@@ -181,7 +208,7 @@ export function formatPrompt(config: PromptFormatterConfig) {
   const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 
   return applyContextLimit(formattedPrompt, {
-    config: config.chatTemplate?.config || { max_response: 100, max_tokens: 1500, max_depth: 100 },
+    config: config.chatTemplate?.config || { max_context: 100, max_tokens: 1500, max_depth: 100 },
     custom_prompts: config.chatTemplate?.custom_prompts || [],
   });
 }

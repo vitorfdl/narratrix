@@ -13,8 +13,8 @@ import "../styles/react-grid-overrides.css";
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 const COLUMNS = {
-  lg: 12,
-  md: 10,
+  lg: 10,
+  md: 8,
   sm: 6,
   xs: 6,
   xxs: 2,
@@ -29,7 +29,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
   const [currentBreakpoint, setCurrentBreakpoint] = useState<keyof typeof COLUMNS>("lg");
   const [maxRows, setMaxRows] = useState(21);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rowHeight = 35;
+  const rowHeight = 32;
   const margin = 4;
   // Add a ref to track if we're currently changing breakpoints
   const isBreakpointChanging = useRef(false);

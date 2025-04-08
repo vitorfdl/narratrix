@@ -1,3 +1,4 @@
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { IconName, IconPicker } from "@/components/ui/icon-picker";
@@ -6,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { motion } from "framer-motion";
@@ -99,95 +99,93 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
           </TabsList>
 
           <TabsContent value="basic" className="space-y-3 mt-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="label" className="text-sm font-medium">
-                  Action Name
-                </Label>
-                <Input
-                  id="label"
-                  placeholder="Enter a descriptive name"
-                  value={currentAction.label || ""}
-                  onChange={(e) => handleFieldChange("label", e.target.value)}
-                  className="h-8"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="icon" className="text-sm font-medium">
-                  Icon
-                </Label>
-                <div className="mt-1">
-                  <IconPicker
-                    categorized={false}
-                    value={currentAction.icon}
-                    onValueChange={(icon) => handleFieldChange("icon", icon)}
-                    className="w-full"
+            <div className="grid xl:grid-cols-2 grid-cols-1 gap-3">
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <Label htmlFor="label" className="text-sm font-medium">
+                    Action Name
+                  </Label>
+                  <Input
+                    id="label"
+                    placeholder="Enter a descriptive name"
+                    value={currentAction.label || ""}
+                    onChange={(e) => handleFieldChange("label", e.target.value)}
+                    className="h-8"
                   />
                 </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="icon" className="text-sm font-medium">
+                    Icon
+                  </Label>
+                  <div className="mt-1">
+                    <IconPicker
+                      categorized={false}
+                      value={currentAction.icon}
+                      onValueChange={(icon) => handleFieldChange("icon", icon)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="space-y-1 align-center items-center w-full">
+                  <Label htmlFor="streamOption" className="text-sm font-medium">
+                    Output Type
+                  </Label>
+                  <RadioGroup
+                    value={currentAction.streamOption}
+                    onValueChange={(value) => handleFieldChange("streamOption", value as QuickAction["streamOption"])}
+                    className="flex space-x-2 mt-1 justify-center align-center items-center w-full"
+                  >
+                    <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
+                      <RadioGroupItem value="textarea" id="textarea" />
+                      <Label htmlFor="textarea" className="cursor-pointer text-sm">
+                        Stream to Generation Input Field
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
+                      <RadioGroupItem value="userMessage" id="userMessage" />
+                      <Label htmlFor="userMessage" className="cursor-pointer text-sm">
+                        Stream as User Message
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
+                      <RadioGroupItem value="participantMessage" id="participantMessage" />
+                      <Label htmlFor="participantMessage" className="cursor-pointer text-sm">
+                        Stream as Participant Message
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {currentAction.streamOption === "participantMessage" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-1 pl-4"
+                  >
+                    <Label htmlFor="participantMessageType" className="text-sm font-medium">
+                      Participant Message Type
+                    </Label>
+                    <Select
+                      value={currentAction.participantMessageType || "new"}
+                      onValueChange={(value: "new" | "swap") => handleFieldChange("participantMessageType", value)}
+                    >
+                      <SelectTrigger className="w-full h-8">
+                        <SelectValue placeholder="Select message type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">New Message</SelectItem>
+                        <SelectItem value="swap">Swap Last Message / New Message</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </motion.div>
+                )}
               </div>
             </div>
-
-            <div className="space-y-1 justify-center align-center items-center w-full">
-              <Label htmlFor="streamOption" className="text-sm font-medium">
-                Output Type
-              </Label>
-              <RadioGroup
-                value={currentAction.streamOption}
-                onValueChange={(value) => handleFieldChange("streamOption", value as QuickAction["streamOption"])}
-                className="flex space-x-2 mt-1 justify-center align-center items-center w-full"
-              >
-                <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
-                  <RadioGroupItem value="textarea" id="textarea" />
-                  <Label htmlFor="textarea" className="cursor-pointer text-sm">
-                    Stream to Generation Input Field
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
-                  <RadioGroupItem value="userMessage" id="userMessage" />
-                  <Label htmlFor="userMessage" className="cursor-pointer text-sm">
-                    Stream as User Message
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
-                  <RadioGroupItem value="participantMessage" id="participantMessage" />
-                  <Label htmlFor="participantMessage" className="cursor-pointer text-sm">
-                    Stream as Participant Message
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {currentAction.streamOption === "participantMessage" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-1 pl-4"
-              >
-                <Label htmlFor="participantMessageType" className="text-sm font-medium">
-                  Participant Message Type
-                </Label>
-                <Select
-                  value={currentAction.participantMessageType || "new"}
-                  onValueChange={(value: "new" | "swap") => handleFieldChange("participantMessageType", value)}
-                >
-                  <SelectTrigger className="w-full h-8">
-                    <SelectValue placeholder="Select message type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">New Message</SelectItem>
-                    <SelectItem value="swap">Swap Current Message</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {currentAction.participantMessageType === "swap"
-                    ? "Replace the current participant message with this content"
-                    : "Create a new participant message with this content"}
-                </p>
-              </motion.div>
-            )}
 
             <div className="space-y-1">
               <div className="flex items-center justify-between">
@@ -196,7 +194,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                 </Label>
                 <span className="text-xs text-muted-foreground">{currentAction.userPrompt?.length || 0} characters</span>
               </div>
-              <TipTapTextArea
+              <MarkdownTextArea
                 key={currentAction.id ? `userPrompt-${currentAction.id}` : "new-userPrompt"}
                 initialValue={currentAction.userPrompt || ""}
                 editable={true}
@@ -236,11 +234,11 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                   </Label>
                   <span className="text-xs text-muted-foreground">{currentAction.systemPromptOverride?.length || 0} characters</span>
                 </div>
-                <TipTapTextArea
+                <MarkdownTextArea
                   key={currentAction.id ? `systemPrompt-${currentAction.id}` : "new-systemPrompt"}
                   initialValue={currentAction.systemPromptOverride || ""}
                   editable={true}
-                  className="min-h-[100px] max-h-[20vh]"
+                  className="min-h-[100px] max-h-[50vh]"
                   suggestions={promptReplacementSuggestionList}
                   onChange={(value) => handleFieldChange("systemPromptOverride", value)}
                   placeholder="Enter your custom prompt text..."

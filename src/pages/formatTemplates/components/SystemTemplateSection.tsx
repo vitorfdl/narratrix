@@ -1,7 +1,7 @@
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-format-schema";
@@ -70,7 +70,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
         {!prompt.isCollapsed && (
           <div className="space-y-4">
             <div className="mb-2 mr-1 ml-1">
-              <TipTapTextArea
+              <MarkdownTextArea
                 initialValue={prompt.content}
                 onChange={(e) => onUpdate(prompt.id, { content: e })}
                 className="h-full overflow-y-auto max-h-[400px]"

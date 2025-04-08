@@ -1,3 +1,4 @@
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { StringArray } from "@/components/ui/string-array";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacterActions } from "@/hooks/characterStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
@@ -47,8 +47,8 @@ function CharacterFormContent({
         <Label htmlFor="personality" className="mb-2">
           Personality
         </Label>
-        <TipTapTextArea
-          key={personality}
+        <MarkdownTextArea
+          key={`${characterId}-personality`}
           className="h-full max-h-[400px] min-h-24 overflow-y-auto"
           editable={true}
           initialValue={personality}
@@ -70,7 +70,8 @@ function CharacterFormContent({
             <CollapsibleContent className="">
               <Separator className="my-2" />
 
-              <TipTapTextArea
+              <MarkdownTextArea
+                key={`${characterId}-system-prompt`}
                 className="h-full max-h-[400px] overflow-y-auto min-h-24"
                 editable={true}
                 initialValue={systemPrompt}
@@ -107,11 +108,13 @@ function CharacterFormContent({
 // Agent-specific form content
 function AgentFormContent({
   systemPrompt = "",
+  characterId,
   preserveLastResponse = false,
   onSystemPromptChange,
   onPreserveLastResponseChange,
 }: {
   systemPrompt?: string;
+  characterId?: string;
   preserveLastResponse?: boolean;
   onSystemPromptChange: (value: string) => void;
   onPreserveLastResponseChange: (checked: boolean) => void;
@@ -126,7 +129,8 @@ function AgentFormContent({
       </div>
 
       <div className="space-y-2">
-        <TipTapTextArea
+        <MarkdownTextArea
+          key={`${characterId}-system-prompt`}
           label="System Prompt"
           placeholder="Enter the system prompt..."
           initialValue={systemPrompt}
@@ -311,6 +315,7 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
         />
       ) : (
         <AgentFormContent
+          characterId={initialData?.id}
           systemPrompt={systemPrompt}
           preserveLastResponse={preserveLastResponse}
           onSystemPromptChange={setSystemPrompt}

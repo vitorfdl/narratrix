@@ -7,14 +7,20 @@
   "type": "llm",
   "inference_type": ["chat"],
   "inference_fields": ["temperature", "top_p", "top_k", "reasoning"],
-  "engine": "anthropic",
+  "engine": "openai_compatible",
   "fields": [
     {
       "key": "api_key",
       "label": "API Key",
       "placeholder": "Your Anthropic API key",
       "required": true,
-      "field_type": "secret"
+      "field_type": "secret",
+      "links": [
+        {
+          "label": "Get API Key",
+          "url": "https://console.anthropic.com/settings/keys"
+        }
+      ]
     },
     {
       "key": "model",
@@ -23,12 +29,41 @@
       "required": true,
       "field_type": "string",
       "hints": [
+        "claude-3-7-sonnet-20250219",
         "claude-3-opus-20240229",
         "claude-3-sonnet-20240229",
-        "claude-3-haiku-20240307",
-        "claude-2.1",
-        "claude-2.0"
-      ]
+        "claude-3-haiku-20240307"
+      ],
+      "request": {
+        "label": "Get Models",
+        "method": "GET",
+        "url": "https://api.anthropic.com/v1/models",
+        "headers": {
+          "Authorization": "Bearer {api_key}"
+        },
+        "response": {
+          "label": "display_name",
+          "value": "id",
+          "parse": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "id": "string",
+                "display_name": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "base_url",
+      "label": "Base URL",
+      "placeholder": "The base URL of the Anthropic API",
+      "required": true,
+      "default": "https://api.anthropic.com/v1",
+      "field_type": "url"
     }
   ]
 }

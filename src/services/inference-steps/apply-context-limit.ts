@@ -11,7 +11,7 @@ interface FormattedPromptCutResult extends FormattedPromptResult {
   frozen_tokens: number;
 }
 
-const getTokenCount = (text: string) => Math.ceil(text.length / 3);
+export const getTokenCount = (text: string) => Math.ceil(text.length / 4);
 
 /**
  * Applies a context limit to the formatted prompt
@@ -23,8 +23,8 @@ export function applyContextLimit(
   chatConfig: Pick<ChatTemplate, "config" | "custom_prompts">,
 ): FormattedPromptCutResult {
   const frozenTokens = getTokenCount(formattedPrompt.systemPrompt || "");
-  const maxResponseTokens = chatConfig.config.max_response as number;
-  const maxContextSize = (chatConfig.config.max_tokens as number) - maxResponseTokens;
+  const maxResponseTokens = chatConfig.config.max_tokens as number;
+  const maxContextSize = (chatConfig.config.max_context as number) - maxResponseTokens;
 
   const maxMessageTokens = maxContextSize - frozenTokens;
 
@@ -59,7 +59,7 @@ export function applyContextLimit(
   return {
     inferenceMessages: finalMessages,
     systemPrompt: formattedPrompt.systemPrompt,
-    max_tokens: chatConfig.config.max_response as number,
+    max_tokens: chatConfig.config.max_context as number,
     frozen_tokens: frozenTokens,
     total_tokens: currentTokenCount,
     engine_max_tokens: {

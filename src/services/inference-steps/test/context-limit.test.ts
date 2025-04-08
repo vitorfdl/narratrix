@@ -13,7 +13,7 @@ describe("applyContextLimit", () => {
 
     const result = applyContextLimit(
       { inferenceMessages: messages, systemPrompt: "System prompt" },
-      { config: { max_response: 100, max_tokens: 180, max_depth: 100 }, custom_prompts: [] },
+      { config: { max_context: 100, max_tokens: 180, max_depth: 100 }, custom_prompts: [] },
     );
 
     expect(result).toEqual({
@@ -44,7 +44,7 @@ describe("applyContextLimit", () => {
 
     const result = applyContextLimit(
       { inferenceMessages: messages, systemPrompt },
-      { config: { max_response: 100, max_tokens: 260, max_depth: 1 }, custom_prompts: [] },
+      { config: { max_context: 100, max_tokens: 260, max_depth: 1 }, custom_prompts: [] },
     );
 
     expect(result.inferenceMessages).toHaveLength(1);
@@ -64,7 +64,7 @@ describe("applyContextLimit", () => {
 
   //   const result = applyContextLimit(
   //     { inferenceMessages: messages, systemPrompt: longSystemPrompt },
-  //     { config: { max_response: 500, max_tokens: 1000 } },
+  //     { config: { max_context: 500, max_tokens: 1000 } },
   //   );
 
   //   // Should not have negative values

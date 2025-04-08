@@ -22,7 +22,28 @@
       "placeholder": "The OpenAI model to use",
       "required": true,
       "field_type": "string",
-      "hints": ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1-mini"]
+      "hints": ["gpt-4.5-preview","gpt-4o", "gpt-4o-mini", "o3-mini", "o1-mini"],
+      "request": {
+        "label": "Get Models",
+        "method": "GET",
+        "url": "https://api.openai.com/v1/models",
+        "headers": {
+          "Authorization": "Bearer {api_key}"
+        },
+        "response": {
+          "label": "id",
+          "value": "id",
+          "parse": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "id": "id"
+              }
+            }
+          }
+        }
+      }
     },
     {
       "key": "base_url",
@@ -30,7 +51,7 @@
       "placeholder": "The base URL of the OpenAI API",
       "required": true,
       "default": "https://api.openai.com/v1",
-      "field_type": "hidden"
+      "field_type": "url"
     }
   ]
 }

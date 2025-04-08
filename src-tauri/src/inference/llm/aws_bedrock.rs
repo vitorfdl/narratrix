@@ -9,7 +9,7 @@ use aws_sdk_bedrockruntime::types::PerformanceConfigLatency;
 use aws_sdk_bedrockruntime::types::PerformanceConfiguration;
 use aws_sdk_bedrockruntime::types::{
     ContentBlock, ContentBlockDelta, ConversationRole, ConverseStreamOutput,
-    InferenceConfiguration, Message, ReasoningContentBlockDelta, SystemContentBlock,
+    InferenceConfiguration, Message, SystemContentBlock,
 };
 use aws_sdk_bedrockruntime::{
     config::{BehaviorVersion, Region},
@@ -18,7 +18,6 @@ use aws_sdk_bedrockruntime::{
 use aws_smithy_types::Document;
 use serde_json;
 
-use crate::inference;
 use crate::inference::{InferenceRequest, ModelSpecs};
 
 #[derive(Debug)]
@@ -153,7 +152,7 @@ fn configure_inference(request: &InferenceRequest) -> InferenceConfiguration {
         // and it should include the reasoning_budget value
         if let Some(max_tokens) = request
             .parameters
-            .get("max_response")
+            .get("max_tokens")
             .and_then(|v| v.as_i64())
         {
             let reasoning_budget = request
@@ -315,15 +314,10 @@ pub async fn converse_stream(
     let mut stream = match response {
         Ok(output) => Ok(output.stream),
         Err(e) => {
-            println!("Error starting stream: {:?}", e);
-            match e {
-                SdkError::ConstructionFailure(err) => {
-                    Err(anyhow!("Construction failure: {:?}", err))
-                }
-                SdkError::TimeoutError(err) => Err(anyhow!("Request timeout: {:?}", err)),
-                SdkError::DispatchFailure(err) => Err(anyhow!("Dispatch failure: {:?}", err)),
-                _ => Err(anyhow!("Unknown AWS Bedrock stream error")),
-            }
+            let err_msg = format!("Error starting Bedrock stream: {}", e);
+            println!("{}", err_msg);
+            // Return a more detailed error using context or formatting the SdkError
+            Err(anyhow!(e).context(err_msg))
         }
     }?;
 
@@ -335,7 +329,13 @@ pub async fn converse_stream(
             Ok(Some(chunk)) => {
                 // Process the chunk and call the callback
                 if let Some(payload) = process_stream_chunk(chunk)? {
-                    callback(payload)?;
+                    // Propagate potential errors from the callback
+                    if let Err(e) = callback(payload) {
+                        let err_msg =
+                            format!("Error processing stream chunk payload in callback: {}", e);
+                        println!("{}", err_msg);
+                        return Err(anyhow!(e).context(err_msg));
+                    }
                 }
             }
             Ok(None) => {
@@ -343,8 +343,10 @@ pub async fn converse_stream(
                 break;
             }
             Err(e) => {
-                println!("Stream error: {:?}", e);
-                return Err(anyhow!("Stream error: {:?}", e));
+                // Return a more detailed error using context or formatting the RecvError
+                let err_msg = format!("Bedrock stream receive error: {}", e);
+                println!("{}", err_msg);
+                return Err(anyhow!(e).context(err_msg));
             }
         }
     }

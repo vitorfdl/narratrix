@@ -36,7 +36,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
   const [selectedManifest, setSelectedManifest] = useState<Manifest | null>(null);
   const [formSchema, setFormSchema] = useState<z.ZodObject<any>>();
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ state: "success" | "error" | "pending"; message: string } | null>(null);
   const [testRequestId, setTestRequestId] = useState<string | null>(null);
 
   const { runInference, cancelRequest, requests } = useInference({
@@ -47,12 +47,12 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         // Only process once and immediately clear the request ID
         if (response.result?.text) {
           setTestResult({
-            success: true,
+            state: "success",
             message: "Connection successful",
           });
         } else {
           setTestResult({
-            success: false,
+            state: "error",
             message: "Connection test returned empty response",
           });
         }
@@ -63,8 +63,8 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
       // Only process if it's our test request
       if (requestId === testRequestId) {
         setTestResult({
-          success: false,
-          message: `Connection failed: ${error}`,
+          state: "error",
+          message: `Connection failed: ${error.message}`,
         });
         setTestRequestId(null);
       }
@@ -306,7 +306,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
     // Reset test result and show connecting state
     setTestResult({
-      success: false,
+      state: "pending",
       message: "Connecting...",
     });
 
@@ -325,7 +325,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
       if (missingRequiredFields) {
         setTestResult({
-          success: false,
+          state: "error",
           message: "Please fill all required fields before testing",
         });
         return;
@@ -366,14 +366,14 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
       } else {
         console.error("Failed to get request ID for test");
         setTestResult({
-          success: false,
+          state: "error",
           message: "Failed to create test request",
         });
       }
     } catch (error) {
       console.error("Failed to test connection:", error);
       setTestResult({
-        success: false,
+        state: "error",
         message: `Error setting up test: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
@@ -554,8 +554,8 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
                       </div>
                     ) : field.field_type === "url" ? (
                       <div className="relative">
-                        <Globe className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
                         <Input className="pl-8" placeholder="https://example.com" defaultValue={field.default as string} {...formField} />
+                        <Globe className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                       </div>
                     ) : (
                       <Input
@@ -576,17 +576,8 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         <div className="flex gap-2 w-full">
           <Button
             type="button"
-            variant={testResult?.success ? "default" : testResult?.success === false ? "destructive" : "outline"}
-            disabled={
-              !selectedManifest ||
-              !selectedType ||
-              !selectedManifest?.fields
-                .filter((field) => field.required)
-                .every((field) => {
-                  const value = form.getValues(field.key);
-                  return value !== undefined && value !== null && value !== "";
-                })
-            }
+            variant={testResult?.state === "success" ? "default" : testResult?.state === "error" ? "destructive" : "outline"}
+            disabled={!selectedManifest || !selectedType}
             onClick={() => {
               if (testRequestStatus === "queued" || testRequestStatus === "streaming") {
                 // Cancel the test if it's in progress
@@ -599,19 +590,19 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
                 testConnection();
               }
             }}
-            className={testResult?.success ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+            className={testResult?.state === "success" ? "bg-green-600 hover:bg-green-700 text-white" : ""}
           >
             {testRequestStatus === "queued" || testRequestStatus === "streaming" ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 <span>Cancel Verification</span>
               </>
-            ) : testResult?.success ? (
+            ) : testResult?.state === "success" ? (
               <>
                 <CheckCircle className="mr-2 h-4 w-4" />
                 <span>Successfully Verified</span>
               </>
-            ) : testResult?.success === false ? (
+            ) : testResult?.state === "error" ? (
               <>
                 <AlertCircle className="mr-2 h-4 w-4" />
                 <span>Retry Verification</span>
@@ -628,7 +619,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         </div>
       </form>
 
-      {testResult && !testResult.success && (
+      {testResult && testResult.state === "error" && (
         <div className="mt-2">
           <Badge variant="destructive" className="flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />

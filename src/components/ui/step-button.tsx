@@ -27,17 +27,17 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
   }, [value]);
 
   const handleIncrement = () => {
-    const newValue = value + step;
+    let newValue = value + step;
     if (max !== undefined && newValue > max) {
-      return;
+      newValue = max;
     }
     onValueChange(newValue);
   };
 
   const handleDecrement = () => {
-    const newValue = value - step;
+    let newValue = value - step;
     if (min !== undefined && newValue < min) {
-      return;
+      newValue = min;
     }
     onValueChange(newValue);
   };
@@ -161,7 +161,7 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
       {showSlider && (
         <div className="mt-0 px-1">
           <div className="relative">
-            <Slider value={[value]} min={min} max={max} step={effectiveStep} onValueChange={(vals) => onValueChange(vals[0])} className="pt-4 pb-2" />
+            <Slider value={[value]} min={min} max={max} step={effectiveStep} onValueChange={(vals) => onValueChange(vals[0])} className="pt-2 pb-2" />
             {tickPositions.length > 0 && (
               <div className="absolute left-0 right-0 bottom-1 flex justify-between pointer-events-none">
                 {tickPositions.map((_, index) => (

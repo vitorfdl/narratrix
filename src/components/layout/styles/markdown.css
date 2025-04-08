@@ -238,7 +238,7 @@
 
 .markdown-body b,
 .markdown-body strong {
-   @apply font-semibold;
+   @apply font-semibold text-inherit;
 }
 
 .markdown-body dfn {

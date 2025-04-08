@@ -1,10 +1,11 @@
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
+import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { motion } from "framer-motion";
 import { MessageSquarePlus, PersonStanding, Sparkles, UserRound } from "lucide-react";
@@ -43,21 +44,26 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
 
   // Reset form when modal opens or initialData changes
   useEffect(() => {
-    if (initialData) {
-      setPrompt(initialData);
-    } else if (open) {
-      // Generate a new ID each time the modal is opened for a new prompt
-      setPrompt({
-        id: crypto.randomUUID(),
-        name: "",
-        role: "user",
-        filter: {},
-        position: "top",
-        depth: 1,
-        prompt: "",
-      });
+    // Only update state when the modal is actually open
+    if (open) {
+      if (initialData) {
+        // If initialData is provided, set the state for editing
+        setPrompt(initialData);
+      } else {
+        // If no initialData, reset the state for adding a new prompt
+        setPrompt({
+          id: crypto.randomUUID(),
+          name: "",
+          role: "user",
+          filter: {},
+          position: "top",
+          depth: 1,
+          prompt: "",
+        });
+      }
     }
-  }, [initialData, open]);
+    // This effect should run when the modal opens/closes or when the initial data changes.
+  }, [open, initialData]);
 
   const handleSave = () => {
     onSave(prompt);
@@ -171,8 +177,11 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
               <span className="text-xs text-muted-foreground">{prompt.prompt.length} characters</span>
             </div>
             <div className="border border-input rounded-md">
-              <TipTapTextArea
-                initialValue={prompt.prompt}
+              <MarkdownTextArea
+                editable={true}
+                suggestions={promptReplacementSuggestionList}
+                key={initialData?.id || "new-prompt"}
+                initialValue={prompt.prompt || ""}
                 onChange={(value) => setPrompt({ ...prompt, prompt: value })}
                 className="max-h-[40vh] md:max-h-[50vh] overflow-y-auto"
                 placeholder="Enter your custom prompt text..."

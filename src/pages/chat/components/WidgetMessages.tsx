@@ -1,30 +1,10 @@
-import { Avatar } from "@/components/ui/avatar";
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatMessages, useCurrentChatTemplateID, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { cn } from "@/lib/utils";
-import {
-  BookmarkMinus,
-  Brain,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Flag,
-  Image,
-  Languages,
-  Loader2,
-  MoreHorizontal,
-  Pencil,
-  RefreshCw,
-  Scissors,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Check, ChevronDown, Loader2, Scissors, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
@@ -32,186 +12,10 @@ import { useChatTemplate } from "@/hooks/chatTemplateStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
-import { AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-
-// Extracted MessageAvatar component
-const MessageAvatar = ({ avatarPath, messageType, isStreaming }: { avatarPath?: string; messageType: string; isStreaming: boolean }) => (
-  <div className="flex-shrink-0 select-none">
-    <Dialog>
-      <DialogTrigger asChild>
-        <button className="transition-transform rounded-lg" title="View Full Size Avatar">
-          <Avatar className={cn("w-24 h-24 ring-2 ring-border overflow-hidden rounded-full hover:ring-primary", isStreaming && "ring-primary")}>
-            <AvatarImage src={avatarPath} alt={`${messageType} avatar`} className="hover:cursor-pointer" />
-            <AvatarFallback className="bg-secondary text-secondary-foreground">
-              <AvatarImage src="/avatars/default.jpg" alt={`Default ${messageType} avatar`} />
-            </AvatarFallback>
-          </Avatar>
-        </button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl w-fit p-2">
-        {avatarPath && <img src={avatarPath} alt={`${messageType} avatar full size`} className="w-auto max-h-[80vh] object-contain rounded-lg" />}
-      </DialogContent>
-    </Dialog>
-  </div>
-);
-
-// Extracted MessageActions component with added Reasoning button
-const MessageActions = ({
-  messageId,
-  messageType,
-  isStreaming,
-  isLastMessage,
-  onEdit,
-  onRegenerateMessage,
-  onDeleteMessage,
-  onTranslate,
-  onCreateCheckpoint,
-  onGenerateImage,
-  onExcludeFromPrompt,
-  onToggleReasoning,
-  hasReasoning,
-  isShowingReasoning,
-}: {
-  messageId: string;
-  messageType: string;
-  isStreaming: boolean;
-  isLastMessage: boolean;
-  onEdit: (id: string) => void;
-  onRegenerateMessage: (id: string) => void;
-  onDeleteMessage: (id: string) => void;
-  onTranslate: (id: string) => void;
-  onCreateCheckpoint: (id: string) => void;
-  onGenerateImage: (id: string) => void;
-  onExcludeFromPrompt: (id: string) => void;
-  onToggleReasoning: (id: string) => void;
-  hasReasoning: boolean;
-  isShowingReasoning: boolean;
-}) => (
-  <div
-    className={cn(
-      "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1",
-      messageType === "user" ? "order-1" : "order-2",
-    )}
-  >
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-6 w-6 hover:bg-accent"
-      onClick={() => onEdit(messageId)}
-      title="Edit Message"
-      disabled={isStreaming}
-    >
-      <Pencil className="w-4 h-4" />
-    </Button>
-    {messageType === "character" && (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 hover:bg-accent"
-        onClick={() => onRegenerateMessage(messageId)}
-        title="Regenerate Message"
-        disabled={isStreaming || !isLastMessage}
-      >
-        <RefreshCw className={cn("w-4 h-4", isStreaming && "animate-spin")} />
-      </Button>
-    )}
-    {messageType === "character" && hasReasoning && (
-      <Button
-        variant={isShowingReasoning ? "default" : "ghost"}
-        size="icon"
-        className={cn("h-6 w-6 hover:bg-accent relative", isShowingReasoning && "bg-primary text-primary-foreground hover:bg-primary/90")}
-        onClick={() => onToggleReasoning(messageId)}
-        title="Toggle Reasoning View"
-      >
-        <Brain className="w-4 h-4" />
-      </Button>
-    )}
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
-      onClick={() => onDeleteMessage(messageId)}
-      disabled={isStreaming}
-      title="Delete Message"
-    >
-      <Trash2 className="w-4 h-4" />
-    </Button>
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" title="More Options">
-          <MoreHorizontal className="w-4 h-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => onTranslate(messageId)}>
-          <Languages className="w-4 h-4 mr-2" />
-          Translate
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onCreateCheckpoint(messageId)}>
-          <Flag className="w-4 h-4 mr-2" />
-          Create Checkpoint
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onGenerateImage(messageId)}>
-          <Image className="w-4 h-4 mr-2" />
-          Generate Image
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onExcludeFromPrompt(messageId)}>
-          <BookmarkMinus className="w-4 h-4 mr-2" />
-          Exclude from Prompt
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  </div>
-);
-
-// Extracted VersionControls component
-const VersionControls = ({
-  messageId,
-  messageType,
-  currentIndex,
-  totalVersions,
-  onSwipe,
-  isLastMessage,
-}: {
-  messageId: string;
-  messageType: string;
-  currentIndex: number;
-  totalVersions: number;
-  isLastMessage: boolean;
-  onSwipe: (id: string, direction: "left" | "right") => void;
-}) => (
-  <div className={cn("flex items-center gap-1", messageType === "character" ? "order-1" : "order-2")}>
-    <span className="text-xs text-muted-foreground ml-1">
-      {currentIndex + 1}/{totalVersions}
-    </span>
-    <Button
-      variant="ghost"
-      size="icon"
-      disabled={currentIndex === 0}
-      className={cn(
-        "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-        currentIndex === 0 && "group-hover:opacity-40 disabled:opacity-0",
-      )}
-      onClick={() => onSwipe(messageId, "left")}
-      title="Previous Version"
-    >
-      <ChevronLeft className="w-4 h-4" />
-    </Button>
-    <Button
-      variant="ghost"
-      size="icon"
-      disabled={currentIndex === totalVersions - 1 && !isLastMessage}
-      className={cn(
-        "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-        currentIndex === totalVersions - 1 && !isLastMessage && "group-hover:opacity-40 disabled:opacity-0",
-      )}
-      onClick={() => onSwipe(messageId, "right")}
-      title="Next Version"
-    >
-      <ChevronRight className="w-4 h-4" />
-    </Button>
-  </div>
-);
+import { MessageActions } from "./message-controls/AdditionalActions";
+import { MessageAvatar } from "./message-controls/MessageAvatar";
+import { ReasoningSection } from "./message-controls/ReasoningCollapsible";
+import { VersionControls } from "./message-controls/VersionButtons";
 
 // Extracted EditControls component
 const EditControls = ({ onCancel, onSave }: { onCancel: () => void; onSave: () => void }) => (
@@ -247,29 +51,6 @@ const StreamingIndicator = () => (
   </div>
 );
 
-// Add new ReasoningSection component
-const ReasoningSection = ({ content, onToggle, isExpanded }: { content: string; onToggle: () => void; isExpanded: boolean }) => {
-  return (
-    <div className="mt-4 px-3 pt-2 pb-1 bg-accent/40 rounded-lg border border-border text-sm relative animate-in fade-in duration-300">
-      <div
-        className="font-medium text-xs flex items-center gap-1.5 text-muted-foreground border-b border-border/50 pb-1.5 cursor-pointer hover:text-primary"
-        onClick={onToggle}
-      >
-        <Brain className="w-3 h-3 text-primary" />
-        <span>AI Reasoning Process</span>
-        <ChevronDown className={cn("w-4 h-4 ml-auto transition-transform", isExpanded ? "" : "rotate-180")} />
-      </div>
-      <div className={cn("overflow-hidden transition-all", isExpanded ? "max-h-[500px]" : "max-h-0")}>
-        <TipTapTextArea
-          initialValue={content}
-          editable={false}
-          className="bg-transparent border-none p-0 text-sm text-muted-foreground leading-relaxed"
-        />
-      </div>
-    </div>
-  );
-};
-
 const WidgetMessages: React.FC = () => {
   const inferenceService = useInferenceServiceFromContext();
   const { currentProfileAvatarUrl } = useProfile();
@@ -285,8 +66,6 @@ const WidgetMessages: React.FC = () => {
   const [editedContent, setEditedContent] = useState<string>("");
   const [streamingMessages, setStreamingMessages] = useState<Record<string, boolean>>({});
   const [messageReasonings, setMessageReasonings] = useState<Record<string, string>>({});
-  const [expandedReasoningIds, setExpandedReasoningIds] = useState<Record<string, boolean>>({});
-  const [initializedReasoningIds, setInitializedReasoningIds] = useState<Record<string, boolean>>({});
   const streamingCheckRef = useRef<number | null>(null);
 
   // Refs for scroll management
@@ -312,7 +91,7 @@ const WidgetMessages: React.FC = () => {
 
   // Find where to show the context cut line
   const contextCutIndex = messagesWithCharCount.findIndex((msg) => {
-    return chatTemplate?.config.max_tokens ? msg.totalChars / 3 > chatTemplate.config.max_tokens - chatTemplate.config.max_response : false;
+    return chatTemplate?.config.max_context ? msg.totalChars / 3 > chatTemplate.config.max_context - chatTemplate.config.max_tokens : false;
   });
 
   const handleSwipe = (messageId: string, direction: "left" | "right") => {
@@ -491,49 +270,20 @@ const WidgetMessages: React.FC = () => {
 
     if (streamingState.messageId) {
       setStreamingMessages((prev) => {
-        // If already tracked, no need to update
         if (prev[streamingState.messageId as string]) {
           return prev;
         }
-
-        // Add the new streaming message
         return {
           ...prev,
           [streamingState.messageId as string]: true,
         };
       });
 
-      // Store reasoning data separately if it exists
       if (streamingState.accumulatedReasoning && streamingState.accumulatedReasoning.trim() !== "") {
         setMessageReasonings((prev) => ({
           ...prev,
           [streamingState.messageId as string]: streamingState.accumulatedReasoning,
         }));
-
-        // Only auto-expand reasoning for new messages that haven't been initialized
-        setInitializedReasoningIds((prev) => {
-          // If we've already initialized this reasoning, don't update
-          if (prev[streamingState.messageId as string]) {
-            return prev;
-          }
-
-          // Mark this reasoning as initialized
-          return {
-            ...prev,
-            [streamingState.messageId as string]: true,
-          };
-        });
-
-        // Only set the expanded state if this reasoning was not previously initialized
-        setExpandedReasoningIds((prev) => {
-          if (!initializedReasoningIds[streamingState.messageId as string]) {
-            return {
-              ...prev,
-              [streamingState.messageId as string]: true,
-            };
-          }
-          return prev;
-        });
       }
     } else {
       // If no message is currently streaming according to the service,
@@ -558,15 +308,7 @@ const WidgetMessages: React.FC = () => {
         }
       }
     }
-  }, [inferenceService, messages, streamingMessages, initializedReasoningIds]);
-
-  // Handle toggling reasoning display
-  const handleToggleReasoning = (messageId: string) => {
-    setExpandedReasoningIds((prev) => ({
-      ...prev,
-      [messageId]: !prev[messageId],
-    }));
-  };
+  }, [inferenceService, messages, streamingMessages]);
 
   // Check if a message has reasoning data
   const hasReasoning = (messageId: string) => {
@@ -656,7 +398,6 @@ const WidgetMessages: React.FC = () => {
     const isStreaming = isMessageStreaming(message.id);
     const isLastMessage = index === messagesWithCharCount.length - 1;
     const hasReasoningData = hasReasoning(message.id);
-    const isReasoningExpanded = !!expandedReasoningIds[message.id]; // Default to collapsed if not set
 
     return (
       <div key={message.id}>
@@ -688,20 +429,14 @@ const WidgetMessages: React.FC = () => {
             {isStreaming && <StreamingIndicator />}
 
             {/* Reasoning section if available */}
-            {hasReasoningData && message.type === "character" && (
-              <ReasoningSection
-                content={messageReasonings[message.id]}
-                onToggle={() => handleToggleReasoning(message.id)}
-                isExpanded={isReasoningExpanded}
-              />
-            )}
+            {hasReasoningData && message.type === "character" && <ReasoningSection content={messageReasonings[message.id]} />}
 
-            <TipTapTextArea
+            <MarkdownTextArea
               initialValue={getCurrentContent(message)}
               editable={isEditingID === message.id && !isStreaming}
               placeholder="Edit message..."
               className={cn(
-                "select-text text-md",
+                "select-text text-base text-sans",
                 isEditingID !== message.id ? "bg-transparent border-none" : "text-left ring-1 ring-border rounded-lg h-auto",
                 isStreaming && "animate-pulse duration-500",
               )}
@@ -730,9 +465,6 @@ const WidgetMessages: React.FC = () => {
                     onGenerateImage={onGenerateImage}
                     onExcludeFromPrompt={onExcludeFromPrompt}
                     isLastMessage={isLastMessage}
-                    onToggleReasoning={handleToggleReasoning}
-                    hasReasoning={hasReasoningData}
-                    isShowingReasoning={isReasoningExpanded}
                   />
 
                   {message.type === "character" && (

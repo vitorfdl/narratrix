@@ -8,28 +8,36 @@ export const ManifestFieldSchema = z.object({
   label: z.string(),
   placeholder: z.string().optional(),
   required: z.boolean().default(false),
-  field_type: z.enum([
-    "string",
-    "number",
-    "boolean",
-    "secret",
-    "url",
-    "hidden",
-  ]),
+  field_type: z.enum(["string", "number", "boolean", "secret", "url", "hidden"]),
   hints: z.array(z.string()).optional(),
   default: z.union([z.string(), z.number(), z.boolean()]).optional(),
   value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  links: z
+    .array(
+      z.object({
+        label: z.string(),
+        url: z.string(),
+      }),
+    )
+    .optional(),
+  request: z
+    .object({
+      label: z.string(),
+      method: z.enum(["GET", "POST", "PUT"]),
+      url: z.string().url(),
+      headers: z.record(z.string(), z.string()).optional(),
+      response: z
+        .object({
+          label: z.string(),
+          value: z.string(),
+          parse: z.any(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
-/**
- * Zod schema for reasoning configuration
- */
-export const ReasoningSchema = z.object({
-  enabled: z.boolean().default(false),
-  has_budget: z.boolean().optional().default(false),
-  has_options: z.array(z.string()).optional(),
-});
-
+const engineSchema = z.enum(["openai_compatible", "anthropic", "google", "runpod", "aws_bedrock", "openrouter"]);
 /**
  * Zod schema representing a manifest file structure
  */
@@ -41,8 +49,7 @@ export const ManifestSchema = z.object({
   type: z.literal("llm"),
   inference_type: z.array(z.string()),
   inference_fields: z.array(z.string()).optional(),
-  engine: z.string(),
-  reasoning: ReasoningSchema.optional(),
+  engine: engineSchema,
   fields: z.array(ManifestFieldSchema),
 });
 
@@ -50,3 +57,5 @@ export const ManifestSchema = z.object({
  * Type definition derived from the Zod schema
  */
 export type Manifest = z.infer<typeof ManifestSchema>;
+
+export type Engine = z.infer<typeof engineSchema>;

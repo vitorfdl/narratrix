@@ -22,7 +22,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
   // const [manifestFields, setManifestFields] = useState<Manifest["fields"]>([]);
   const inferenceTemplate = useInferenceTemplate(model.inference_template_id || "");
   // For demonstration purposes, you can replace these with actual model properties
-  const isNew = model.created_at && new Date().getTime() - new Date(model.created_at).getTime() < 7 * 24 * 60 * 60 * 1000; // 7 days
+  const isNew = model.created_at && new Date().getTime() - new Date(model.created_at).getTime() < 1 * 24 * 60 * 60 * 1000; // 2 days
   const isPopular = false; // Replace with actual logic if you have popularity metrics
 
   useEffect(() => {

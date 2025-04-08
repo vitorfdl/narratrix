@@ -46,7 +46,7 @@ export function ChatTabs({
                     )}
                     onClick={() => onTabChange(tab.id)}
                   >
-                    <span className="mr-2 max-h-6 text-xs overflow-hidden text-ellipsis whitespace-nowrap">{tab.name}</span>
+                    <span className="mr-2 max-h-6 text-sm overflow-hidden text-ellipsis whitespace-nowrap">{tab.name}</span>
 
                     <button
                       onClick={(e) => {

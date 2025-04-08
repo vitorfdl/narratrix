@@ -1,9 +1,9 @@
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
@@ -147,7 +147,6 @@ const WidgetExpressions = () => {
   // Manual expression generation function (now reads from refs AND selected text)
   const generateExpression = useCallback(
     async (userPickedText?: string) => {
-      console.log("Generating expression with userPickedText:", userPickedText);
       // Determine the character ID: Use selected character if text is selected, otherwise use the last speaker
       const currentSpeakerId = userPickedText ? selectedMessageCharacterId : lastSpeakerIdRef.current;
       const currentLastMessage = lastMessageRef.current; // Still needed for chapter ID
@@ -203,7 +202,7 @@ const WidgetExpressions = () => {
           prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
           parameters: {
             max_tokens: 8000,
-            max_response: 40,
+            max_context: 40,
             min_p: 0.5,
             temperature: 0.8,
             stop: ["\n"],
@@ -249,26 +248,18 @@ const WidgetExpressions = () => {
   ); // Added characterExpressions and selected text related vars
 
   // Create a throttled version for updates during streaming - Call useThrottledCallback directly
-  const throttledGenerateExpression = useThrottledCallback(
-    generateExpression,
-    3000, // Throttle generation to max once per 3000ms
-    { leading: true, trailing: false }, // Trigger on the leading edge, not trailing
-  );
+  const throttledGenerateExpression = useThrottledCallback(generateExpression, 3000, { leading: true, trailing: false });
 
   // Effect to trigger THROTTLED generation DURING streaming
   useEffect(() => {
     if (autoRefreshEnabled && selectedModelId && selectedModelId !== "none") {
       if (selectedText && selectedMessageCharacterId) {
-        throttledGenerateExpression(selectedText); // Call the throttled function directly
+        generateExpression(selectedText);
       }
       if (lastSpeakerId && lastMessageContent) {
-        // console.log("Change detected (speaker/message), triggering throttled generation (max 1 per 3s)...");
         throttledGenerateExpression(); // Call the throttled function directly
       }
-      // No else log needed here to avoid spamming console during rapid changes before throttle window
     }
-    // Dependencies: Run when the definitive message content, speaker, or settings change
-    // Add throttledGenerateExpression to dependencies
   }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, selectedModelId, selectedText, throttledGenerateExpression]);
 
   // Simplified Toggle auto-refresh: just update the state
@@ -278,6 +269,8 @@ const WidgetExpressions = () => {
 
   // Function to handle saving settings from the dialog
   const handleSaveSettings = useCallback(() => {
+    console.log("requestPrompt", tempRequestPrompt);
+    console.log("systemPrompt", tempSystemPrompt);
     setExpressionSettings((prev) => ({
       ...prev,
       requestPrompt: tempRequestPrompt,
@@ -305,12 +298,6 @@ const WidgetExpressions = () => {
   // Fill entire available space - using flex-1 to ensure the component properly fills available space in any container
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" style={{ minHeight: "200px" }}>
-      {/* Add visual indicator for selected text */}
-      {selectedText && (
-        <div className="bg-primary/10 border-l-4 border-primary px-2 py-1 text-sm z-10 shadow-sm">
-          <p className="text-xs text-primary mb-0.5">Generating expression from selected text!</p>
-        </div>
-      )}
       {/* Controls at the top */}
       <div className="bg-card border-b px-2 py-1">
         <div className="flex items-center justify-between gap-2">
@@ -376,7 +363,7 @@ const WidgetExpressions = () => {
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="system-prompt">System Prompt</Label>
-                  <TipTapTextArea
+                  <MarkdownTextArea
                     initialValue={tempSystemPrompt}
                     onChange={(value) => setTempSystemPrompt(value)}
                     editable={true}
@@ -388,7 +375,7 @@ const WidgetExpressions = () => {
 
                 <div className="grid gap-2">
                   <Label htmlFor="request-prompt">User Prompt (Request)</Label>
-                  <TipTapTextArea
+                  <MarkdownTextArea
                     initialValue={tempRequestPrompt}
                     onChange={(value) => setTempRequestPrompt(value)}
                     editable={true}
@@ -440,7 +427,13 @@ const WidgetExpressions = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-center">
-                      <p className="text-lg font-medium text-primary-foreground drop-shadow-md">
+                      <p className="text-sm font-medium text-primary-foreground drop-shadow-md">
+                        {/* Add visual indicator for selected text */}
+                        {selectedText && (
+                          <div className="bg-primary/10 border-l-4 border-primary px-2 py-1 text-sm z-10 shadow-sm">
+                            <p className="text-xs text-foreground mb-0.5">Generating expression from selected text!</p>
+                          </div>
+                        )}
                         {displayCharacter.name}
                         {/* Show expression if it's the last speaker OR if text was selected for this character */}
                         {(displayCharacter.id === lastSpeakerId || (selectedText && displayCharacter.id === selectedMessageCharacterId)) && (

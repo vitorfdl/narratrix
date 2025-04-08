@@ -212,7 +212,7 @@ export function useBackgroundInference() {
           chatTemplate: {
             custom_prompts: [],
             config: {
-              max_response: parameters?.max_response || 100,
+              max_context: parameters?.max_context || 100,
               max_tokens: parameters?.max_tokens || 3000,
               max_depth: parameters?.max_depth || 100,
             },
@@ -238,7 +238,7 @@ export function useBackgroundInference() {
           systemPrompt: formattedSystemPrompt,
           parameters: {
             ...parameters,
-            max_tokens: parameters?.max_response || 100,
+            max_tokens: parameters?.max_context || 100,
           },
         });
       } catch (error) {

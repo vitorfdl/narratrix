@@ -1,11 +1,11 @@
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
 import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
 import { Button } from "@/components/ui/button";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useState } from "react";
 
 export default function LexicalTestPage() {
-  const [content, setContent] = useState("# Hello, this is a test for TipTapTextArea!\n\ntest");
+  const [content, setContent] = useState("# Hello, this is a test for MarkdownTextArea!\n\ntest");
   const [editorKey, setEditorKey] = useState(0);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
 
@@ -49,7 +49,7 @@ export default function LexicalTestPage() {
       </div>
 
       <div className="mb-4">
-        <TipTapTextArea
+        <MarkdownTextArea
           key={editorKey}
           initialValue={content}
           onChange={handleChange}

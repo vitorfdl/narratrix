@@ -12,15 +12,15 @@
   }
   /* Quoted text styling (Uses var from markdown.css) */
   .markdown-quoted-text {
-    color: var(--color-prettylights-syntax-string);
     padding: 0 2px;
     border-radius: 3px;
+
+    @apply text-primary
   }
 
   /* Special text styling (Uses var from markdown.css) */
   .markdown-special-text {
-    color: var(--color-prettylights-syntax-entity);
-    font-weight: 500;
+    @apply text-primary font-medium;
     padding: 0 2px;
     border-radius: 3px;
   }

@@ -3,14 +3,7 @@
   "title": "Model Manifest Schema",
   "description": "Schema for validating model integration manifests in Narratrix",
   "type": "object",
-  "required": [
-    "id",
-    "name",
-    "description",
-    "type",
-    "inference_type",
-    "fields"
-  ],
+  "required": ["id", "name", "description", "type", "inference_type", "fields"],
   "properties": {
     "$schema": {
       "type": "string",
@@ -37,35 +30,19 @@
     "type": {
       "type": "string",
       "description": "Type of model integration",
-      "enum": [
-        "llm",
-        "embedding",
-        "image",
-        "audio"
-      ]
+      "enum": ["llm", "embedding", "image", "audio"]
     },
     "engine": {
       "type": "string",
       "description": "Engine type for the model integration",
-      "enum": [
-        "openai_compatible",
-        "aws_bedrock",
-        "anthropic"
-      ]
+      "enum": ["openai_compatible", "aws_bedrock", "anthropic", "google"]
     },
     "inference_type": {
       "type": "array",
       "description": "Supported inference types",
       "items": {
         "type": "string",
-        "enum": [
-          "chat",
-          "completion",
-          "embedding",
-          "image",
-          "audio",
-          "vision"
-        ]
+        "enum": ["chat", "completion", "embedding", "image", "audio", "vision"]
       },
       "minItems": 1,
       "uniqueItems": true
@@ -90,39 +67,18 @@
           "smoothing_sampling",
           "dry",
           "seed",
-          "reasoning_effort"
+          "reasoning",
+          "prompt_cache"
         ]
       },
       "uniqueItems": true
-    },
-    "reasoning": {
-      "type": "object",
-      "description": "Reasoning capabilities configuration",
-      "properties": {
-        "has_budget": {
-          "type": "boolean",
-          "description": "Whether the model supports token budgeting"
-        },
-        "has_options": {
-          "type": "array",
-          "description": "Available reasoning options for the model",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
     },
     "fields": {
       "type": "array",
       "description": "Configuration fields required for the model integration",
       "items": {
         "type": "object",
-        "required": [
-          "key",
-          "label",
-          "required",
-          "field_type"
-        ],
+        "required": ["key", "label", "required", "field_type"],
         "properties": {
           "key": {
             "type": "string",
@@ -143,15 +99,7 @@
           "field_type": {
             "type": "string",
             "description": "Type of the field",
-            "enum": [
-              "string",
-              "number",
-              "boolean",
-              "secret",
-              "select",
-              "url",
-              "hidden"
-            ]
+            "enum": ["string", "number", "boolean", "secret", "select", "url", "hidden"]
           },
           "hints": {
             "type": "array",
@@ -176,10 +124,7 @@
             "description": "Available options for select fields",
             "items": {
               "type": "object",
-              "required": [
-                "value",
-                "label"
-              ],
+              "required": ["value", "label"],
               "properties": {
                 "value": {
                   "type": "string",

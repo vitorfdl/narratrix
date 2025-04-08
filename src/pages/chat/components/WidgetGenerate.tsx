@@ -1,5 +1,5 @@
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
@@ -287,7 +287,8 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           </Button>
         )}
       </div>
-      <TipTapTextArea
+
+      <MarkdownTextArea
         key={editorKey}
         initialValue={text}
         onChange={(e) => setText(e)}

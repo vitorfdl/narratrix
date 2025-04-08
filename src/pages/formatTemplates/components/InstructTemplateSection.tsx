@@ -242,7 +242,7 @@ export function InstructTemplateSection() {
             onExport={handleExportTemplate}
           />
 
-          <div className="bg-accent p-3 rounded-md text-sm mb-4">
+          <div className="bg-foreground/5 p-3 rounded-md text-sm mb-4">
             <h3 className="font-medium mb-1">About Inference Templates</h3>
             <p className="text-muted-foreground mb-2">
               Inference templates control how messages are formatted when sent to text completion models. Each section below allows you to customize

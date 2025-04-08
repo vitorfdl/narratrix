@@ -211,16 +211,21 @@ impl InferenceQueueManager {
                         Ok(_) => {}
                         Err(e) => {
                             // Error processing
+                            let error_json = match serde_json::to_string(&serde_json::json!({
+                                "message": e.to_string(),
+                                "details": format!("{:?}", e),
+                                "source": e.source().map(|s| s.to_string())
+                            })) {
+                                Ok(json) => Some(json),
+                                Err(_) => Some(e.to_string()),
+                            };
+
                             let response = InferenceResponse {
                                 request_id: request_clone.id.clone(),
                                 status: "error".to_string(),
                                 result: None,
-                                error: Some(e.to_string()),
+                                error: error_json,
                             };
-                            // println!(
-                            //     "!!! Emitting inference error response: {}",
-                            //     serde_json::to_string_pretty(&response).unwrap_or_default()
-                            // );
 
                             // Use the result to check if emission succeeded
                             if let Err(e) = app_handle_clone.emit("inference-response", response) {

@@ -33,6 +33,7 @@ export interface StreamingState {
   accumulatedReasoning: string;
   characterId: string | null;
   messageIndex?: number;
+  isThinking: boolean;
 }
 
 /**
@@ -65,6 +66,7 @@ export function useInferenceService() {
     accumulatedReasoning: "",
     characterId: null,
     messageIndex: 0,
+    isThinking: false,
   });
   const { currentProfile } = useProfile();
 
@@ -98,13 +100,53 @@ export function useInferenceService() {
         return;
       }
 
-      if (streamingState.current.characterId && streamingState.current.messageId && (response.result?.text || response.result?.reasoning)) {
-        // Append the new text to our accumulated text
-        streamingState.current.accumulatedText += response.result.text || "";
-        streamingState.current.accumulatedReasoning += response.result.reasoning || "";
+      // Directly append any explicit reasoning provided
+      streamingState.current.accumulatedReasoning += response.result.reasoning || "";
 
-        // Update the message with the accumulated text
-        updateMessageByID(streamingState.current.messageId, streamingState.current.accumulatedText, streamingState.current.messageIndex || 0);
+      let currentChunk = response.result.text || "";
+      let textToAdd = "";
+      let reasoningToAdd = "";
+
+      // Process the text chunk to separate user-facing text and <think> content
+      while (currentChunk.length > 0) {
+        if (streamingState.current.isThinking) {
+          const endTagIndex = currentChunk.indexOf("</think>");
+          if (endTagIndex !== -1) {
+            // Found the end tag in this chunk
+            reasoningToAdd += currentChunk.substring(0, endTagIndex);
+            currentChunk = currentChunk.substring(endTagIndex + "</think>".length);
+            streamingState.current.isThinking = false;
+          } else {
+            // End tag not in this chunk, the whole remaining chunk is reasoning
+            reasoningToAdd += currentChunk;
+            currentChunk = ""; // Consumed the whole chunk
+          }
+        } else {
+          const startTagIndex = currentChunk.indexOf("<think>");
+          if (startTagIndex !== -1) {
+            // Found the start tag in this chunk
+            textToAdd += currentChunk.substring(0, startTagIndex);
+            currentChunk = currentChunk.substring(startTagIndex + "<think>".length);
+            streamingState.current.isThinking = true;
+          } else {
+            // Start tag not in this chunk, the whole remaining chunk is text
+            textToAdd += currentChunk;
+            currentChunk = ""; // Consumed the whole chunk
+          }
+        }
+      }
+
+      // Append processed parts to the accumulated state
+      streamingState.current.accumulatedText += textToAdd;
+      streamingState.current.accumulatedReasoning += reasoningToAdd;
+
+      if (streamingState.current.characterId && streamingState.current.messageId) {
+        // Update the message in the UI with the accumulated *user-facing text* only
+        updateMessageByID(
+          streamingState.current.messageId,
+          streamingState.current.accumulatedText, // Only show user-facing text
+          streamingState.current.messageIndex || 0,
+        );
       }
     },
     onComplete: (response, requestId) => {
@@ -116,7 +158,6 @@ export function useInferenceService() {
       if (streamingState.current.characterId && streamingState.current.messageId) {
         // Determine the final text, prioritizing the most complete response
         const finalText = trimToEndSentence(response.result?.full_response || response.result?.text || streamingState.current.accumulatedText);
-        console.log("Trimmed text", finalText);
         // Final update to the message
         updateMessageByID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0);
 
@@ -124,15 +165,17 @@ export function useInferenceService() {
         resetStreamingState();
       }
     },
-    onError: (error: string, requestId) => {
+    onError: (error: any, requestId) => {
       // Skip if this is for a different request
       if (requestId !== streamingState.current.requestId) {
         return;
       }
 
       toast.error("Inference error:", {
-        description: error || "Unknown error",
+        description: error.message || error.details || JSON.stringify(error || "Unknown error"),
       });
+
+      console.error("Inference error:", error);
       console.error("Inference error:", error);
 
       // Reset streaming state
@@ -191,6 +234,7 @@ export function useInferenceService() {
       accumulatedReasoning: "",
       characterId: null,
       messageIndex: 0,
+      isThinking: false,
     };
 
     return previousState;
@@ -199,200 +243,194 @@ export function useInferenceService() {
   /**
    * Format prompts for the inference engine
    */
-  const formatPrompt = useCallback(
-    (userMessage?: string, systemPromptOverride?: string, chatTemplateID?: string, extraSuggestions?: Record<string, any>) => {
-      const chatTemplate = chatTemplateID
-        ? chatTemplateList.find((template) => template.id === chatTemplateID)!
-        : chatTemplateList.find((template) => template.id === currentChatTemplateId)!;
+  const formatPrompt = (userMessage?: string, systemPromptOverride?: string, chatTemplateID?: string, extraSuggestions?: Record<string, any>) => {
+    const chatTemplate = chatTemplateID
+      ? chatTemplateList.find((template) => template.id === chatTemplateID)!
+      : chatTemplateList.find((template) => template.id === currentChatTemplateId)!;
 
-      if (!chatTemplate) {
-        console.error("Chat template not found");
-        return null;
-      }
+    if (!chatTemplate) {
+      console.error("Chat template not found");
+      return null;
+    }
 
-      const modelSettings = modelList.find((model) => model.id === chatTemplate.model_id)!;
-      const manifestSettings = modelManifestList.find((manifest) => manifest.id === modelSettings.manifest_id)!;
+    const modelSettings = modelList.find((model) => model.id === chatTemplate.model_id)!;
+    const manifestSettings = modelManifestList.find((manifest) => manifest.id === modelSettings.manifest_id)!;
 
-      const formatTemplate = formatTemplateList.find((template) => template.id === chatTemplate.format_template_id)!;
-      const inferenceTemplate = inferenceTemplateList.find((template) => template.id === modelSettings.inference_template_id)!;
+    const formatTemplate = formatTemplateList.find((template) => template.id === chatTemplate.format_template_id)!;
+    const inferenceTemplate = inferenceTemplateList.find((template) => template.id === modelSettings.inference_template_id)!;
 
-      const chatWithNames = chatMessages
-        ?.map((msg) => {
-          return {
-            ...msg,
-            character_name: msg.character_id ? characterList.find((character) => character.id === msg.character_id)?.name : undefined,
-          };
-        })
-        ?.filter((msg) => streamingState.current.messageId !== msg.id);
+    const chatWithNames = chatMessages
+      ?.map((msg) => {
+        return {
+          ...msg,
+          character_name: msg.character_id ? characterList.find((character) => character.id === msg.character_id)?.name : undefined,
+        };
+      })
+      ?.filter((msg) => streamingState.current.messageId !== msg.id);
 
-      const prompt = formatPromptUtil({
-        messageHistory: chatWithNames || [],
-        userPrompt: userMessage,
-        systemOverridePrompt: systemPromptOverride,
-        modelSettings,
-        formatTemplate,
-        inferenceTemplate,
-        chatTemplate: {
-          custom_prompts: chatTemplate?.custom_prompts,
-          config: chatTemplate?.config,
-        },
-        chatConfig: {
-          character: characterList.find((character) => character.id === streamingState.current.characterId),
-          user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
-          chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
-          extra: extraSuggestions,
-        },
-      });
-      return { ...prompt, manifestSettings, modelSettings, chatTemplate };
-    },
-    [chatMessages, modelList, currentChatTemplateId, currentChapterID, characterList, userCharacterOrProfileName],
-  );
+    const prompt = formatPromptUtil({
+      messageHistory: chatWithNames || [],
+      userPrompt: userMessage,
+      systemOverridePrompt: systemPromptOverride,
+      modelSettings,
+      formatTemplate,
+      inferenceTemplate,
+      chatTemplate: {
+        custom_prompts: chatTemplate?.custom_prompts,
+        config: chatTemplate?.config,
+      },
+      chatConfig: {
+        character: characterList.find((character) => character.id === streamingState.current.characterId),
+        user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
+        chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
+        extra: extraSuggestions,
+      },
+    });
+    return { ...prompt, manifestSettings, modelSettings, chatTemplate };
+  };
 
   /**
    * Generate a new message
    */
-  const generateMessage = useCallback(
-    async (options: GenerationOptions): Promise<string | null> => {
-      const {
-        chatTemplateID,
-        characterId,
-        userMessage,
-        quietUserMessage = false,
-        quietResponse = false,
-        systemPromptOverride = "",
-        parametersOverride,
-        stream = true,
-        existingMessageId = null,
-        messageIndex = 0,
-        onStreamingStateChange,
-        extraSuggestions = {},
-      } = options;
+  const generateMessage = async (options: GenerationOptions): Promise<string | null> => {
+    const {
+      chatTemplateID,
+      characterId,
+      userMessage,
+      quietUserMessage = false,
+      quietResponse = false,
+      systemPromptOverride = "",
+      parametersOverride,
+      stream = true,
+      existingMessageId = null,
+      messageIndex = 0,
+      onStreamingStateChange,
+      extraSuggestions = {},
+    } = options;
 
-      if (!characterId) {
-        console.error("Character ID is required");
+    if (!characterId) {
+      console.error("Character ID is required");
+      return null;
+    }
+
+    try {
+      // Reset any previous streaming state
+      resetStreamingState();
+
+      // Update streaming state with new character ID
+      streamingState.current.characterId = characterId;
+
+      // Notify about streaming state change if callback provided
+      if (onStreamingStateChange) {
+        onStreamingStateChange(streamingState.current);
+      }
+
+      // Create or use existing message
+      let messageId: string;
+
+      if (userMessage && !quietUserMessage) {
+        // Add user message if not quiet
+        await addChatMessage({
+          character_id: null,
+          type: "user" as ChatMessageType,
+          messages: [userMessage],
+        });
+      }
+
+      if (existingMessageId) {
+        // Use existing message
+        messageId = existingMessageId;
+
+        const existingMessage = chatMessages.find((msg) => msg.id === messageId);
+        if (existingMessage) {
+          existingMessage.messages[messageIndex] = "...";
+        }
+
+        // Update message to show loading state
+        await updateChatMessage(messageId, {
+          messages: existingMessage?.messages || ["..."],
+          message_index: messageIndex,
+        });
+      } else if (!quietResponse) {
+        // Then create a placeholder message for the character
+        const newMessage = await addChatMessage({
+          character_id: characterId,
+          type: "character" as ChatMessageType,
+          messages: ["..."],
+        });
+
+        messageId = newMessage.id;
+      } else {
+        messageId = "generate-input-area";
+      }
+
+      // Store the message ID for streaming updates
+      streamingState.current.messageId = messageId;
+      streamingState.current.messageIndex = messageIndex;
+
+      // Prepare messages for inference
+      const promptResult = formatPrompt(userMessage, systemPromptOverride, chatTemplateID, extraSuggestions);
+      if (!promptResult) {
+        console.error("Failed to format prompt");
         return null;
       }
 
-      try {
-        // Reset any previous streaming state
-        resetStreamingState();
+      const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
 
-        // Update streaming state with new character ID
-        streamingState.current.characterId = characterId;
+      console.log("inferenceMessages", inferenceMessages);
+      console.log("systemPrompt", systemPrompt);
+
+      if (!modelSettings || !manifestSettings) {
+        console.error("Model or manifest settings not available. Check chat template configuration.");
+        return null;
+      }
+
+      // Create ModelSpecs using the model and manifest settings
+      const modelSpecs: ModelSpecs = {
+        id: modelSettings.id,
+        model_type: "chat",
+        config: modelSettings.config || {},
+        max_concurrent_requests: modelSettings.max_concurrency || 1,
+        engine: manifestSettings.engine,
+      };
+
+      // Start the inference process
+      const requestId = await runInference({
+        messages: inferenceMessages,
+        modelSpecs,
+        systemPrompt: systemPrompt,
+        parameters: removeNestedFields(parametersOverride || chatTemplate?.config || {}),
+        stream,
+      });
+
+      // Store the request ID
+      if (requestId) {
+        streamingState.current.requestId = requestId;
 
         // Notify about streaming state change if callback provided
         if (onStreamingStateChange) {
           onStreamingStateChange(streamingState.current);
         }
-
-        // Create or use existing message
-        let messageId: string;
-
-        if (userMessage && !quietUserMessage) {
-          // Add user message if not quiet
-          await addChatMessage({
-            character_id: null,
-            type: "user" as ChatMessageType,
-            messages: [userMessage],
-          });
-        }
-
-        if (existingMessageId) {
-          // Use existing message
-          messageId = existingMessageId;
-
-          const existingMessage = chatMessages.find((msg) => msg.id === messageId);
-          if (existingMessage) {
-            existingMessage.messages[messageIndex] = "...";
-          }
-
-          // Update message to show loading state
-          await updateChatMessage(messageId, {
-            messages: existingMessage?.messages || ["..."],
-            message_index: messageIndex,
-          });
-        } else if (!quietResponse) {
-          // Then create a placeholder message for the character
-          const newMessage = await addChatMessage({
-            character_id: characterId,
-            type: "character" as ChatMessageType,
-            messages: ["..."],
-          });
-
-          messageId = newMessage.id;
-        } else {
-          messageId = "generate-input-area";
-        }
-
-        // Store the message ID for streaming updates
-        streamingState.current.messageId = messageId;
-        streamingState.current.messageIndex = messageIndex;
-
-        // Prepare messages for inference
-        const promptResult = formatPrompt(userMessage, systemPromptOverride, chatTemplateID, extraSuggestions);
-        if (!promptResult) {
-          console.error("Failed to format prompt");
-          return null;
-        }
-
-        const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
-
-        console.log("inferenceMessages", inferenceMessages);
-        console.log("systemPrompt", systemPrompt);
-
-        if (!modelSettings || !manifestSettings) {
-          console.error("Model or manifest settings not available. Check chat template configuration.");
-          return null;
-        }
-
-        // Create ModelSpecs using the model and manifest settings
-        const modelSpecs: ModelSpecs = {
-          id: modelSettings.id,
-          model_type: "chat",
-          config: modelSettings.config || {},
-          max_concurrent_requests: modelSettings.max_concurrency || 1,
-          engine: manifestSettings.engine,
-        };
-
-        // Start the inference process
-        const requestId = await runInference({
-          messages: inferenceMessages,
-          modelSpecs,
-          systemPrompt: systemPrompt,
-          parameters: removeNestedFields(parametersOverride || chatTemplate?.config || {}),
-          stream,
-        });
-
-        // Store the request ID
-        if (requestId) {
-          streamingState.current.requestId = requestId;
-
-          // Notify about streaming state change if callback provided
-          if (onStreamingStateChange) {
-            onStreamingStateChange(streamingState.current);
-          }
-        }
-
-        // Update the message with the accumulated text
-        updateMessageByID(streamingState.current.messageId, streamingState.current.accumulatedText, messageIndex);
-
-        return requestId;
-      } catch (error) {
-        console.error("Error generating message:", error);
-
-        // Reset streaming state
-        resetStreamingState();
-
-        // Notify about streaming state change if callback provided
-        if (onStreamingStateChange) {
-          onStreamingStateChange(null);
-        }
-
-        return null;
       }
-    },
-    [currentChatId, addChatMessage, updateChatMessage, runInference, resetStreamingState, formatPrompt, chatMessages],
-  );
+
+      // Update the message with the accumulated text
+      updateMessageByID(streamingState.current.messageId, streamingState.current.accumulatedText, messageIndex);
+
+      return requestId;
+    } catch (error) {
+      console.error("Error generating message:", error);
+
+      // Reset streaming state
+      resetStreamingState();
+
+      // Notify about streaming state change if callback provided
+      if (onStreamingStateChange) {
+        onStreamingStateChange(null);
+      }
+
+      return null;
+    }
+  };
 
   /**
    * Regenerate a specific message
@@ -422,7 +460,7 @@ export function useInferenceService() {
         onStreamingStateChange: options.onStreamingStateChange,
       });
     },
-    [generateMessage, cancelRequest, currentChatId],
+    [generateMessage, cancelRequest, modelList, currentChatId],
   );
   /**
    * Cancel ongoing generation

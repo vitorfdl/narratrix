@@ -1,5 +1,7 @@
 import { cancelInferenceRequest, listenForInferenceResponses, queueInferenceRequest } from "@/commands/inference";
 import type { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
+import { Engine } from "@/schema/model-manifest-schema";
+import { parseEngineParameters } from "@/services/inference-steps/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // Define types needed for inference
@@ -16,7 +18,7 @@ interface InferenceRequestState {
 
 interface UseInferenceOptions {
   onComplete?: (response: InferenceResponse, requestId: string) => void;
-  onError?: (error: string, requestId: string) => void;
+  onError?: (error: any, requestId: string) => void;
   onStream?: (partialResponse: InferenceResponse, requestId: string) => void;
 }
 
@@ -113,11 +115,7 @@ export function useInference(options: UseInferenceOptions = {}) {
       } else if (response.status === "error") {
         // Clean up the last chunks record for this request
         delete lastStreamChunks.current[requestId];
-        if (response.status === "error") {
-          optionsRef.current.onError?.(response.error || "Unknown error", requestId);
-        } else {
-          optionsRef.current.onComplete?.(response, requestId);
-        }
+        optionsRef.current.onError?.(JSON.parse(response.error || "{}") || "Unknown error", requestId);
       }
 
       // Update the request state regardless of the event type
@@ -147,6 +145,9 @@ export function useInference(options: UseInferenceOptions = {}) {
   const runInference = useCallback(async (params: InferenceParams) => {
     const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false } = params;
 
+    const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, parameters);
+    console.log("parsedParameters", parsedParameters);
+    console.log("modelSpecs", modelSpecs);
     try {
       // Queue request with backend
       const requestId = await queueInferenceRequest(
@@ -154,7 +155,7 @@ export function useInference(options: UseInferenceOptions = {}) {
           id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           message_list: messages,
           system_prompt: systemPrompt,
-          parameters,
+          parameters: parsedParameters,
           stream,
         },
         modelSpecs,

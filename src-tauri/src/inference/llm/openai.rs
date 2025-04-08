@@ -1,3 +1,4 @@
+use crate::inference::{InferenceRequest, ModelSpecs};
 use anyhow::{anyhow, Context, Result};
 use async_openai::{
     types::{
@@ -5,21 +6,20 @@ use async_openai::{
         ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
         ChatCompletionRequestSystemMessageContent, ChatCompletionRequestUserMessage,
         ChatCompletionRequestUserMessageContent, CreateChatCompletionRequest,
-        CreateChatCompletionRequestArgs, Role,
+        CreateChatCompletionRequestArgs,
     },
     Client,
 };
 use futures::StreamExt;
-use serde_json::Value;
-
-use crate::inference::{InferenceRequest, ModelSpecs};
+use std::collections::HashMap;
 
 // Initialize OpenAI client with credentials from model specs
-fn initialize_openai_client(
+pub fn initialize_openai_client(
     specs: &ModelSpecs,
 ) -> Result<(Client<async_openai::config::OpenAIConfig>, String)> {
     // Extract config from the model specs
     let config = &specs.config;
+    let engine = &specs.engine;
 
     // Get model with fallback
     let model = config["model"]
@@ -36,6 +36,12 @@ fn initialize_openai_client(
 
     // Create a client builder
     let mut builder = async_openai::config::OpenAIConfig::new();
+
+    if engine == "anthropic" {
+        let mut headers_map = HashMap::new();
+        headers_map.insert("anthropic-version".to_string(), "2023-06-01".to_string());
+        builder = builder.with_headers(headers_map);
+    }
 
     // Set API key if provided
     if !api_key.is_empty() {
@@ -54,7 +60,9 @@ fn initialize_openai_client(
 }
 
 // Convert messages from our format to async-openai format
-fn prepare_messages(request: &InferenceRequest) -> Result<Vec<ChatCompletionRequestMessage>> {
+pub fn openai_prepare_messages(
+    request: &InferenceRequest,
+) -> Result<Vec<ChatCompletionRequestMessage>> {
     let mut messages = Vec::new();
 
     // Add system prompt if provided
@@ -126,9 +134,17 @@ fn create_chat_completion_request(
     if let Some(obj) = request.parameters.as_object() {
         for (key, value) in obj {
             match key.as_str() {
+                "max_completion_tokens" => {
+                    if let Some(max_completion_tokens) = value.as_i64() {
+                        builder.max_completion_tokens(max_completion_tokens as u32);
+                    }
+                }
                 "max_tokens" => {
-                    if let Some(max_tokens) = value.as_i64() {
-                        builder.max_tokens(max_tokens as u32);
+                    // Only use max_tokens if max_completion_tokens is not present
+                    if !obj.contains_key("max_completion_tokens") {
+                        if let Some(max_tokens) = value.as_i64() {
+                            builder.max_tokens(max_tokens as u32);
+                        }
                     }
                 }
                 "temperature" => {
@@ -185,14 +201,17 @@ fn create_chat_completion_request(
                 | "dry_sequence_breakers"
                 | "xtc_threshold"
                 | "xtc_probability"
+                | "thinking" // Anthropic
                 | "sampling_order" => {
                     // Store these parameters in our custom_params map
                     custom_params.insert(key.clone(), value.clone());
                     println!("Adding custom parameter: {} = {}", key, value);
                 }
                 // For any other parameters, we'll add them directly to the request JSON
+                // TODO: May want to handle this differently.
                 _ => {
                     custom_params.insert(key.clone(), value.clone());
+                    println!("Adding custom parameter: {} = {}", key, value);
                 }
             }
         }
@@ -228,19 +247,16 @@ fn create_chat_completion_request(
 ///
 /// This function handles non-streaming inference requests.
 pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<String> {
-    println!("Starting OpenAI chat completion using async-openai");
-
     // Initialize client
     let (client, model) = initialize_openai_client(specs)?;
 
     // Prepare messages
-    let messages = prepare_messages(request)?;
+    let messages = openai_prepare_messages(request)?;
 
     // Create chat completion request
     let chat_request = create_chat_completion_request(&model, messages, request)?;
 
     // Send the request
-    println!("Sending request to OpenAI API");
     let response = client
         .chat()
         .create(chat_request)
@@ -275,7 +291,7 @@ pub async fn converse_stream(
     let (client, model) = initialize_openai_client(specs)?;
 
     // Prepare messages
-    let messages = prepare_messages(request)?;
+    let messages = openai_prepare_messages(request)?;
 
     // Create chat completion request
     let mut chat_request = create_chat_completion_request(&model, messages, request)?;
@@ -284,7 +300,6 @@ pub async fn converse_stream(
     chat_request.stream = Some(true);
 
     // Send the streaming request
-    println!("Sending streaming request to OpenAI API");
     let mut stream = client
         .chat()
         .create_stream(chat_request)
@@ -297,6 +312,17 @@ pub async fn converse_stream(
             Ok(Some(Ok(response))) => {
                 // Extract content from the first choice
                 if let Some(choice) = response.choices.first() {
+                    if let Some(delta) = &choice.delta.reasoning {
+                        if !delta.is_empty() {
+                            let payload = serde_json::json!({
+                                "type": "reasoning",
+                                "value": delta.clone()
+                            });
+                            callback(payload)?;
+                        }
+                    }
+
+                    // Process content if present
                     if let Some(content) = &choice.delta.content {
                         if !content.is_empty() {
                             // Construct the JSON payload
@@ -305,25 +331,22 @@ pub async fn converse_stream(
                                 "value": content.clone()
                             });
                             callback(payload)?;
-
-                            // Add a small delay between tokens if specified
-                            let delay_ms = request
-                                .parameters
-                                .get("stream_delay_ms")
-                                .and_then(|v| v.as_u64())
-                                .unwrap_or(10); // Default 10ms delay
-
-                            if delay_ms > 0 {
-                                tokio::time::sleep(std::time::Duration::from_millis(delay_ms))
-                                    .await;
-                            }
                         }
                     }
                 }
+                // Add a small delay between tokens if specified
+                let delay_ms = request
+                    .parameters
+                    .get("stream_delay_ms")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(10); // Default 10ms delay
+
+                if delay_ms > 0 {
+                    tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                }
             }
             Ok(Some(Err(e))) => {
-                println!("Stream error occurred: {:?}", e);
-                return Err(anyhow!("Stream error: {}", e));
+                return Err(anyhow!("Error: {}", e));
             }
             Ok(None) => break, // Stream has ended
             Err(_) => return Err(anyhow!("Stream timeout after 120 seconds")),

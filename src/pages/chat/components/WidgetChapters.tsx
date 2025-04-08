@@ -1,3 +1,4 @@
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -9,7 +10,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { TipTapTextArea } from "@/components/ui/tiptap-textarea";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
@@ -77,7 +77,7 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
 
           <div className="grid gap-2">
             <Label htmlFor={`${idPrefix}scenario`}>Scenario (optional)</Label>
-            <TipTapTextArea
+            <MarkdownTextArea
               key={`${idPrefix}scenario`}
               initialValue={chapterData.scenario || ""}
               editable={true}
@@ -90,7 +90,7 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
 
           <div className="grid gap-2">
             <Label htmlFor={`${idPrefix}instructions`}>Instructions</Label>
-            <TipTapTextArea
+            <MarkdownTextArea
               key={`${idPrefix}instructions`}
               initialValue={chapterData.instructions || ""}
               editable={true}

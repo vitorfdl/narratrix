@@ -20,11 +20,11 @@ export const chatTemplateSchema = baseTemplateSchema.extend({
   config: z
     .object({
       max_tokens: z.number(),
-      max_response: z.number(),
+      max_context: z.number().default(4096),
       max_depth: z.number().optional().default(100),
     })
     .passthrough()
-    .default(() => ({ max_tokens: 8000, max_response: 4000, max_depth: 100 })),
+    .default(() => ({ max_tokens: 8000, max_context: 4000, max_depth: 100 })),
   custom_prompts: chatTemplateCustomPromptSchema.array().default([]),
 });
 

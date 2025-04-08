@@ -1,4 +1,6 @@
 pub mod aws_bedrock;
+pub mod gemini;
+pub mod gemini_types;
 pub mod openai;
 
 pub use aws_bedrock::BedrockConverseError;
@@ -63,11 +65,30 @@ fn handle_inference_response(
     error: Option<String>,
     app_handle: &AppHandle,
 ) -> Result<()> {
+    // Format error as JSON if it's not already
+    let formatted_error = error.map(|err_msg| {
+        // Check if the error is already JSON
+        if err_msg.trim().starts_with('{')
+            && serde_json::from_str::<serde_json::Value>(&err_msg).is_ok()
+        {
+            err_msg
+        } else {
+            // Format as JSON
+            match serde_json::to_string(&serde_json::json!({
+                "message": err_msg,
+                "details": err_msg,
+            })) {
+                Ok(json) => json,
+                Err(_) => err_msg,
+            }
+        }
+    });
+
     let inference_response = InferenceResponse {
         request_id: request_id.to_string(),
         status: status.to_string(),
         result,
-        error,
+        error: formatted_error,
     };
 
     // Emit the response event
@@ -123,6 +144,56 @@ fn handle_streaming_chunk(
     Ok(())
 }
 
+// Helper function to process stream chunks consistently
+fn process_chunk(
+    payload: serde_json::Value,
+    response_text: &Arc<Mutex<String>>,
+    reasoning_text: &Arc<Mutex<String>>,
+    request_id: &str,
+    app_handle: &AppHandle,
+) -> Result<()> {
+    // Emit the standardized streaming chunk event
+    handle_streaming_chunk(request_id, &payload, app_handle)?;
+
+    // Append content to the appropriate aggregated string based on payload type
+    if let Some(obj) = payload.as_object() {
+        if let Some(type_val) = obj.get("type").and_then(|v| v.as_str()) {
+            if let Some(value_val) = obj.get("value").and_then(|v| v.as_str()) {
+                match type_val {
+                    "text" => {
+                        if let Ok(mut response) = response_text.lock() {
+                            response.push_str(value_val);
+                        } else {
+                            // Log or handle mutex poisoning error if necessary
+                            eprintln!(
+                                "Error: response_text mutex poisoned during chunk processing for request {}",
+                                request_id
+                            );
+                            // Optionally return an error here:
+                            // return Err(anyhow!("response_text mutex poisoned"));
+                        }
+                    }
+                    "reasoning" => {
+                        if let Ok(mut reasoning) = reasoning_text.lock() {
+                            reasoning.push_str(value_val);
+                        } else {
+                            // Log or handle mutex poisoning error if necessary
+                            eprintln!(
+                                "Error: reasoning_text mutex poisoned during chunk processing for request {}",
+                                request_id
+                            );
+                            // Optionally return an error here:
+                            // return Err(anyhow!("reasoning_text mutex poisoned"));
+                        }
+                    }
+                    _ => {} // Ignore unknown types or handle them as needed
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 // Shared function to handle streaming inference for different providers
 async fn handle_streaming<F, Fut>(
     request: &InferenceRequest,
@@ -143,13 +214,28 @@ where
     let request_id = request.id.clone();
     let app_handle_clone = app_handle.clone();
 
-    stream_fn(
+    // Execute streaming function and handle potential errors
+    if let Err(e) = stream_fn(
         Arc::clone(&response_text),
         Arc::clone(&reasoning_text), // Pass reasoning text mutex
         request_id.clone(),
         app_handle_clone,
     )
-    .await?;
+    .await
+    {
+        // If an error occurs during streaming, report it to the frontend
+        let error_message = format!("Streaming error: {:?}", e);
+        println!("Streaming Error Reported: {}", error_message); // Log the error server-side
+        handle_inference_response(
+            &request_id,
+            "error", // Use "error" status for frontend
+            None,
+            Some(error_message.clone()), // Send the detailed error message
+            app_handle,
+        )?;
+        // Propagate the original error to the caller (e.g., process_inference)
+        return Err(e.context(error_message));
+    }
 
     // Lock both mutexes to get the final aggregated strings
     let final_response = response_text
@@ -219,88 +305,75 @@ pub async fn process_inference(
                     request,
                     &app_handle,
                     |response_text, reasoning_text, request_id, app_handle_clone| async move {
+                        // AWS Bedrock converse_stream calls the provided closure for each chunk
                         aws_bedrock::converse_stream(request, specs, move |payload| {
-                            // Emit the raw payload chunk
-                            handle_streaming_chunk(&request_id, &payload, &app_handle_clone)?;
-
-                            // Append to the correct string based on type
-                            if let Some(obj) = payload.as_object() {
-                                if let Some(type_val) = obj.get("type").and_then(|v| v.as_str()) {
-                                    if let Some(value_val) =
-                                        obj.get("value").and_then(|v| v.as_str())
-                                    {
-                                        match type_val {
-                                            "text" => {
-                                                if let Ok(mut response) = response_text.lock() {
-                                                    response.push_str(value_val);
-                                                }
-                                            }
-                                            "reasoning" => {
-                                                if let Ok(mut reasoning) = reasoning_text.lock() {
-                                                    reasoning.push_str(value_val);
-                                                }
-                                            }
-                                            _ => {}
-                                        }
-                                    }
-                                }
-                            }
-                            Ok(())
+                            // Use the shared chunk processor for Bedrock chunks (handles text/reasoning)
+                            process_chunk(
+                                payload,
+                                &response_text,
+                                &reasoning_text, // Bedrock uses reasoning
+                                &request_id,
+                                &app_handle_clone,
+                            )
                         })
                         .await
-                        .context("AWS Bedrock stream processing failed")
                     },
                 )
                 .await
             } else {
-                let result = aws_bedrock::converse(request, specs)
-                    .await
-                    .context("AWS Bedrock inference failed")?;
-
+                let result = aws_bedrock::converse(request, specs).await?;
                 handle_non_streaming(request, result, &app_handle).await
             }
         }
-        "openai_compatible" => {
+        "anthropic" | "openai_compatible" | "openrouter" => {
             if request.stream {
                 handle_streaming(
                     request,
                     &app_handle,
-                    |response_text, _reasoning_text, request_id, app_handle_clone| async move {
-                        // Note: OpenAI doesn't have separate reasoning stream yet, so _reasoning_text is unused
+                    |response_text, reasoning_text, request_id, app_handle_clone| async move {
+                        // OpenAI compatible converse_stream calls the provided closure for each chunk
                         openai::converse_stream(request, specs, move |payload| {
-                            // Emit the raw payload chunk
-                            handle_streaming_chunk(&request_id, &payload, &app_handle_clone)?;
-
-                            // OpenAI only sends text for now
-                            if let Some(obj) = payload.as_object() {
-                                if let Some(type_val) = obj.get("type").and_then(|v| v.as_str()) {
-                                    if type_val == "text" {
-                                        if let Some(value_val) =
-                                            obj.get("value").and_then(|v| v.as_str())
-                                        {
-                                            if let Ok(mut response) = response_text.lock() {
-                                                response.push_str(value_val);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            Ok(())
+                            // Use the shared chunk processor (reasoning_text likely unused by OpenAI)
+                            process_chunk(
+                                payload,
+                                &response_text,
+                                &reasoning_text, // Pass along, even if unused by provider
+                                &request_id,
+                                &app_handle_clone,
+                            )
                         })
                         .await
-                        .context("OpenAI stream processing failed")
                     },
                 )
                 .await
             } else {
-                let result = openai::converse(request, specs)
-                    .await
-                    .map_err(|e| {
-                        println!("OpenAI error details: {:?}", e);
-                        e
-                    })
-                    .with_context(|| "OpenAI inference failed")?;
-
+                let result = openai::converse(request, specs).await?;
+                handle_non_streaming(request, result, &app_handle).await
+            }
+        }
+        "google" => {
+            if request.stream {
+                handle_streaming(
+                    request,
+                    &app_handle,
+                    |response_text, reasoning_text, request_id, app_handle_clone| async move {
+                        // Gemini converse_stream calls the provided closure for each chunk
+                        gemini::converse_stream(request, specs, move |payload| {
+                            // Use the shared chunk processor (reasoning_text likely unused by Gemini BYOT)
+                            process_chunk(
+                                payload,
+                                &response_text,
+                                &reasoning_text, // Pass along, even if unused by provider
+                                &request_id,
+                                &app_handle_clone,
+                            )
+                        })
+                        .await
+                    },
+                )
+                .await
+            } else {
+                let result = gemini::converse(request, specs).await?;
                 handle_non_streaming(request, result, &app_handle).await
             }
         }
