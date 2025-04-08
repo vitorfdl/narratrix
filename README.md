@@ -2,9 +2,8 @@
 
 [![Build](https://github.com/vitorfdl/Narratrix/actions/workflows/tauri-deploy.yml/badge.svg)](https://github.com/vitorfdl/Narratrix/actions/workflows/tauri-deploy.yml)
 [![Latest Stable](https://img.shields.io/github/v/release/vitorfdl/Narratrix?label=Latest%20Stable&link=https%3A%2F%2Fgithub.com%2Fvitorfdl%2FNarratrix%2Freleases%2Flatest)](https://github.com/vitorfdl/Narratrix/releases/latest)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](https://github.com/vitorfdl/Narratrix/releases)
-[![Discord](https://img.shields.io/discord/1226645827878256650?logo=discord&logoColor=white&label=Discord%20Server)](https://discord.gg/NAMqeYNh)
+[![Discord](https://img.shields.io/discord/1340496503441199146?logo=discord&logoColor=white&label=Discord%20Server)](https://discord.gg/NAMqeYNh)
 
 <p align="center">
   <img src="/public/full_logo.png" width="250px" alt="Narratrix"></img>
