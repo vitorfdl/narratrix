@@ -1,5 +1,5 @@
 import { relaunch } from "@tauri-apps/plugin-process";
-import { Update, check } from "@tauri-apps/plugin-updater";
+import { check } from "@tauri-apps/plugin-updater";
 import { toast } from "sonner";
 
 /**
@@ -8,8 +8,8 @@ import { toast } from "sonner";
  */
 export async function checkForUpdates(): Promise<void> {
   try {
-    const update: Update | null = await check();
-    // const update = {
+    const update = await check();
+    // update = {
     //   version: "0.9.2",
     //   date: "2025-04-09",
     //   body: "This is a test release.",
@@ -32,7 +32,7 @@ export async function checkForUpdates(): Promise<void> {
               href="https://github.com/vitorfdl/Narratrix/releases"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#3b82f6", textDecoration: "underline" }}
+              style={{ textDecoration: "underline" }}
             >
               View full release notes
             </a>
@@ -40,6 +40,10 @@ export async function checkForUpdates(): Promise<void> {
         ),
         action: {
           label: "Update & Restart",
+          actionButtonStyle: {
+            backgroundColor: "var(--primary)",
+            color: "var(--primary-foreground)",
+          },
           onClick: async (): Promise<void> => {
             const installingToastId = toast.loading("Installing update...");
             try {

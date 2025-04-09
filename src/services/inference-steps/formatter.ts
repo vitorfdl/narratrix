@@ -184,7 +184,6 @@ export function formatPrompt(config: PromptFormatterConfig) {
   const prefixOption = config.formatTemplate?.config.settings.prefix_messages;
   // Step 1: Get chat history with user message
   const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt, prefixOption);
-
   // Step 2: Process custom prompts from the chat template
   let processedMessages = processCustomPrompts(chatHistory, config.chatTemplate?.custom_prompts);
 

@@ -4,6 +4,7 @@ import { Engine } from "@/schema/model-manifest-schema";
 import { parseEngineParameters } from "@/services/inference-steps/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useConsoleStoreActions } from "./consoleStore";
 
 // Define types needed for inference
 type InferenceStatus = "idle" | "queued" | "streaming" | "completed" | "error" | "cancelled";
@@ -43,6 +44,9 @@ let unlisten: (() => Promise<void>) | null = null;
 export function useInference(options: UseInferenceOptions = {}) {
   // Track all active requests in local state
   const [requests, setRequests] = useState<Record<string, InferenceRequestState>>({});
+
+  // Get console store actions for history tracking
+  const consoleActions = useConsoleStoreActions();
 
   // Use refs for callback options to avoid unnecessary effect triggers
   const optionsRef = useRef(options);
@@ -113,10 +117,16 @@ export function useInference(options: UseInferenceOptions = {}) {
         // Clean up the last chunks record for this request
         delete lastStreamChunks.current[requestId];
         optionsRef.current.onComplete?.(response, requestId);
+
+        // Update the console store with the completed response
+        if (response.status === "completed") {
+          consoleActions.updateRequestResponse(requestId, response);
+        }
       } else if (response.status === "error") {
         // Clean up the last chunks record for this request
         delete lastStreamChunks.current[requestId];
         optionsRef.current.onError?.(JSON.parse(response.error || "{}") || "Unknown error", requestId);
+        consoleActions.updateRequestResponse(requestId, response);
       }
 
       // Update the request state regardless of the event type
@@ -140,53 +150,66 @@ export function useInference(options: UseInferenceOptions = {}) {
     return () => {
       globalListeners.delete(handleResponse);
     };
-  }, [requests]);
+  }, [requests, consoleActions]);
 
   // Run inference and track the request
-  const runInference = useCallback(async (params: InferenceParams) => {
-    const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false, requestId: providedId } = params;
+  const runInference = useCallback(
+    async (params: InferenceParams) => {
+      const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false, requestId: providedId } = params;
 
-    // Use provided ID or generate a new one
-    const requestId = providedId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      // Use provided ID or generate a new one
+      const requestId = providedId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-    // Immediately register this request in our tracking
-    setRequests((current) => ({
-      ...current,
-      [requestId]: {
-        id: requestId,
-        modelId: modelSpecs.id,
-        status: "queued",
-        response: null,
-        error: null,
-        timestamp: Date.now(),
-      },
-    }));
-
-    // Clear any existing tracking for this request ID
-    delete lastStreamChunks.current[requestId];
-
-    const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, modelSpecs.config, parameters);
-
-    try {
-      // Queue request with backend
-      await queueInferenceRequest(
-        {
+      // Immediately register this request in our tracking
+      setRequests((current) => ({
+        ...current,
+        [requestId]: {
           id: requestId,
-          message_list: messages,
-          system_prompt: systemPrompt,
-          parameters: parsedParameters,
-          stream,
+          modelId: modelSpecs.id,
+          status: "queued",
+          response: null,
+          error: null,
+          timestamp: Date.now(),
         },
-        modelSpecs,
-      );
+      }));
 
-      return requestId;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      optionsRef.current.onError?.(errorMessage, "queue-error");
-      return null;
-    }
-  }, []);
+      // Clear any existing tracking for this request ID
+      delete lastStreamChunks.current[requestId];
+
+      const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, modelSpecs.config, parameters);
+
+      try {
+        // Add request to console store history
+        consoleActions.addRequest({
+          id: requestId,
+          systemPrompt: systemPrompt || "",
+          messages: messages,
+          modelSpecs: modelSpecs,
+          parameters: parsedParameters,
+          engine: modelSpecs.engine as Engine,
+        });
+
+        // Queue request with backend
+        await queueInferenceRequest(
+          {
+            id: requestId,
+            message_list: messages,
+            system_prompt: systemPrompt,
+            parameters: parsedParameters,
+            stream,
+          },
+          modelSpecs,
+        );
+
+        return requestId;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        optionsRef.current.onError?.(errorMessage, "queue-error");
+        return null;
+      }
+    },
+    [consoleActions],
+  );
 
   // Cancel a specific request
   const cancelRequest = useCallback(
@@ -204,6 +227,13 @@ export function useInference(options: UseInferenceOptions = {}) {
 
         // Clean up tracking for this request
         delete lastStreamChunks.current[requestId];
+        consoleActions.updateRequestResponse(requestId, {
+          status: "cancelled",
+          request_id: requestId,
+          result: {
+            text: "\n\n<Request cancelled by user>",
+          },
+        });
 
         setRequests((current) => ({
           ...current,

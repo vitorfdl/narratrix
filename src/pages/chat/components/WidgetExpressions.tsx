@@ -203,8 +203,8 @@ const WidgetExpressions = () => {
           modelId: selectedModelId,
           prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
           parameters: {
-            max_tokens: 8000,
-            max_context: 40,
+            max_tokens: 50,
+            max_context: 2048,
             min_p: 0.5,
             temperature: 0.8,
             stop: ["\n"],

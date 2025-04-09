@@ -174,7 +174,6 @@ export function useInferenceService() {
       toast.error("Inference error:", {
         description: error.message || error.details || JSON.stringify(error || "Unknown error"),
       });
-
       console.error("Inference error:", error);
 
       // Reset streaming state
@@ -375,10 +374,6 @@ export function useInferenceService() {
       }
 
       const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
-
-      console.log("inferenceMessages", inferenceMessages);
-      console.log("systemPrompt", systemPrompt);
-
       if (!modelSettings || !manifestSettings) {
         console.error("Model or manifest settings not available. Check chat template configuration.");
         return null;

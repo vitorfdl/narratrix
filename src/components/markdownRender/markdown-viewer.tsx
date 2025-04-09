@@ -17,9 +17,9 @@ export interface MarkdownViewerProps {
 export function MarkdownViewer({ content, className, label }: MarkdownViewerProps) {
   // Define markdown components for view-only mode
   const markdownComponents: Components = {
-    pre: ({ children }) => <pre className="p-4 bg-accent/50 rounded">{children}</pre>,
+    pre: ({ children }) => <pre className="p-4 bg-accent/50 rounded ">{children}</pre>,
     code: ({ className, children, ...props }) => (
-      <code className={cn("font-mono text-sm overflow-wrap-anywhere", className)} {...props}>
+      <code className={cn("font-mono text-sm  !whitespace-pre-wrap !break-words", className)} {...props}>
         {children}
       </code>
     ),

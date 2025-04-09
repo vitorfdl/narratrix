@@ -66,8 +66,6 @@ export function useBackgroundInference() {
         return;
       }
 
-      console.log("response", response);
-
       // Remove from active requests
       delete activeRequests.current[requestId];
 
@@ -78,6 +76,7 @@ export function useBackgroundInference() {
         if (promiseResolvers.current[requestId]) {
           promiseResolvers.current[requestId].resolve(completeText);
           delete promiseResolvers.current[requestId];
+          // consoleActions.updateRequestResponse(requestId, completeText);
         }
       }
     },
@@ -212,9 +211,9 @@ export function useBackgroundInference() {
           chatTemplate: {
             custom_prompts: [],
             config: {
-              max_context: parameters?.max_context || 100,
-              max_tokens: parameters?.max_tokens || 3000,
-              max_depth: parameters?.max_depth || 100,
+              max_context: parameters?.max_context || 2048,
+              max_tokens: parameters?.max_tokens || 50,
+              max_depth: parameters?.max_depth || 2,
             },
           },
           systemOverridePrompt: systemPrompt,
@@ -225,9 +224,6 @@ export function useBackgroundInference() {
             extra: context?.extra,
           },
         });
-
-        console.log("!!! inferenceMessages", inferenceMessages);
-        console.log("formattedSystemPrompt", formattedSystemPrompt);
 
         // Execute the inference
         return await executeInference({

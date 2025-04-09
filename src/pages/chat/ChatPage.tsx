@@ -1,3 +1,4 @@
+import { LiveInspector } from "@/components/shared/LiveInspector";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
 import type { Chat } from "@/schema/chat-schema";
@@ -53,6 +55,9 @@ export default function ChatPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [chatToDeleteId, setChatToDeleteId] = useState<string | null>(null);
 
+  // State for Live Inspector Drawer
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+
   // Fetch all chats when component mounts
   useEffect(() => {
     const loadAllChats = async () => {
@@ -78,6 +83,24 @@ export default function ChatPage() {
     setSelectedChatById(openTabIds[0]);
     setIsLoading(false);
   }, [selectedChatID, openTabIds]);
+
+  // Effect for handling keyboard shortcut to toggle Live Inspector
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Ctrl + ' or Cmd + '
+      if (event.key === "'" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault(); // Prevent browser find or other default actions
+        setIsInspectorOpen((prev) => !prev);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup listener on component unmount
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []); // Empty dependency array ensures this runs only on mount and unmount
 
   // Memoize tabs to prevent unnecessary recalculations
   const tabs = useMemo(() => {
@@ -291,106 +314,119 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      {tabs.length > 0 ? (
-        <>
-          <ChatTabs
-            tabs={tabs}
-            allChats={allChats}
-            profileId={profileId}
-            activeTab={selectedChatID || ""}
-            onTabChange={handleTabChange}
-            onNewChat={handleNewChat}
-            onCloseTab={handleCloseTab}
-            onRenameRequest={handleRenameRequest}
-            onDuplicateRequest={handleDuplicateRequest}
-            onDeleteRequest={handleDeleteRequest}
-          />
-          <div className="flex-1">{selectedChatID && <GridLayout tabId={selectedChatID} />}</div>
-        </>
-      ) : (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="mb-4 text-muted-foreground">No active chat. Create a new one to get started.</p>
-            {allChats.length > 0 ? (
-              <ChatMenuDropdown
-                profileId={profileId}
-                allChats={allChats}
-                openChatIds={openTabIds}
-                onSelectChat={handleTabChange}
-                onCreateChat={handleNewChat}
-                onRenameRequest={handleRenameRequest}
-                onDuplicateRequest={handleDuplicateRequest}
-                onDeleteRequest={handleDeleteRequest}
-              >
-                <Button>Create New Chat</Button>
-              </ChatMenuDropdown>
-            ) : (
-              <Button onClick={handleNewChat}>Create New Chat</Button>
-            )}
+    <Sheet open={isInspectorOpen} onOpenChange={setIsInspectorOpen}>
+      <div className="flex flex-col h-screen">
+        {/* Drawer Content for Live Inspector */}
+        <SheetContent side="top" className="h-[80vh]">
+          <SheetHeader>
+            <SheetTitle>Live Request Inspector</SheetTitle>
+          </SheetHeader>
+          <div className="overflow-auto p-4">
+            <LiveInspector maxHeight="calc(80vh - 80px)" />
           </div>
-        </div>
-      )}
+        </SheetContent>
 
-      {/* Rename Dialog */}
-      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Chat</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={newChatName}
-                onChange={(e) => setNewChatName(e.target.value)}
-                className="col-span-3"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleRenameSubmit();
-                  }
-                }}
-              />
+        {/* Existing Chat Page Content */}
+        {tabs.length > 0 ? (
+          <>
+            <ChatTabs
+              tabs={tabs}
+              allChats={allChats}
+              profileId={profileId}
+              activeTab={selectedChatID || ""}
+              onTabChange={handleTabChange}
+              onNewChat={handleNewChat}
+              onCloseTab={handleCloseTab}
+              onRenameRequest={handleRenameRequest}
+              onDuplicateRequest={handleDuplicateRequest}
+              onDeleteRequest={handleDeleteRequest}
+            />
+            <div className="flex-1 overflow-hidden">{selectedChatID && <GridLayout tabId={selectedChatID} />}</div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <p className="mb-4 text-muted-foreground">No active chat. Create a new one to get started.</p>
+              {allChats.length > 0 ? (
+                <ChatMenuDropdown
+                  profileId={profileId}
+                  allChats={allChats}
+                  openChatIds={openTabIds}
+                  onSelectChat={handleTabChange}
+                  onCreateChat={handleNewChat}
+                  onRenameRequest={handleRenameRequest}
+                  onDuplicateRequest={handleDuplicateRequest}
+                  onDeleteRequest={handleDeleteRequest}
+                >
+                  <Button>Create New Chat</Button>
+                </ChatMenuDropdown>
+              ) : (
+                <Button onClick={handleNewChat}>Create New Chat</Button>
+              )}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRenameSubmit} disabled={!newChatName.trim()}>
-              Save changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        )}
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the chat "
-              {allChats.find((c) => c.id === chatToDeleteId)?.name || "this chat"}" and all associated messages and chapters.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setChatToDeleteId(null);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        {/* Rename Dialog */}
+        <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Chat</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={newChatName}
+                  onChange={(e) => setNewChatName(e.target.value)}
+                  className="col-span-3"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleRenameSubmit();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleRenameSubmit} disabled={!newChatName.trim()}>
+                Save changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the chat "
+                {allChats.find((c) => c.id === chatToDeleteId)?.name || "this chat"}" and all associated messages and chapters.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={() => {
+                  setChatToDeleteId(null);
+                }}
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </Sheet>
   );
 }

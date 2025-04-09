@@ -502,6 +502,18 @@ const WidgetMessages: React.FC = () => {
     );
   };
 
+  if (messagesWithCharCount.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <p className="text-muted-foreground text-center">
+          No messages yet. Add participants to start the conversation.
+          <br />
+          View the live request console by pressing <strong>Ctrl</strong> + <strong>'</strong> (or <strong>Cmd</strong> + <strong>'</strong> on Mac)
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex flex-col h-full">
       <div ref={messagesContainerRef} className="flex flex-col gap-2 p-1 overflow-y-auto h-full" onScroll={handleScroll}>
