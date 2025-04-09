@@ -107,7 +107,7 @@ Each model can be configured through JSON manifests that specify parameters,
 endpoints, and behaviors—no coding required!
 
 <p align="center">
-  <img src="path/to/model-management-screenshot.png" alt="Model Management" width="80%"/>
+  <img src="https://github.com/user-attachments/assets/5cb26b4d-6027-4671-9b0e-97ff5faef2f2" alt="Model Management" width="80%"/>
 </p>
 
 ## 🤝 Contributing
