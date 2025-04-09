@@ -22,7 +22,7 @@ solo player seeking adventures, Narratrix empowers you to create and share your
 own stories.
 
 <p align="center">
-  <img src="[path/to/narratrix-screenshot.png](https://github.com/user-attachments/assets/d0f26578-2dc1-4bf8-973d-c485d8025497)" alt="Narratrix Interface" width="80%"/>
+  ![image](https://github.com/user-attachments/assets/733875dc-db4c-4fbf-a02b-596244128113)
 </p>
 
 ## 🚀 Key Features
