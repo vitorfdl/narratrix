@@ -101,6 +101,9 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.16
         version: 0.5.16(tailwindcss@3.4.17)
+      '@tanstack/react-virtual':
+        specifier: ^3.13.6
+        version: 3.13.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tauri-apps/api':
         specifier: ^2.2.0
         version: 2.2.0
@@ -1575,6 +1578,15 @@ packages:
     resolution: {integrity: sha512-0wDLwCVF5V3x3b1SGXPCDcdsbDHMBe+lkFzBRaHeLvNi+nrrnZ1lA18u+OTWO8iSWU2GxUOCvlXtDuqftc1oiA==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders || >=4.0.0-alpha.20 || >=4.0.0-beta.1'
+
+  '@tanstack/react-virtual@3.13.6':
+    resolution: {integrity: sha512-WT7nWs8ximoQ0CDx/ngoFP7HbQF9Q2wQe4nh2NB+u2486eX3nZRE40P9g6ccCVq7ZfTSH5gFOuCoVH5DLNS/aA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@tanstack/virtual-core@3.13.6':
+    resolution: {integrity: sha512-cnQUeWnhNP8tJ4WsGcYiX24Gjkc9ALstLbHcBj1t3E7EimN6n6kHH+DPV4PpDnuw00NApQp+ViojMj1GRdwYQg==}
 
   '@tauri-apps/api@2.2.0':
     resolution: {integrity: sha512-R8epOeZl1eJEl603aUMIGb4RXlhPjpgxbGVEaqY+0G5JG9vzV/clNlzTeqc+NLYXVqXcn8mb4c5b9pJIUDEyAg==}
@@ -4890,6 +4902,14 @@ snapshots:
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
       tailwindcss: 3.4.17
+
+  '@tanstack/react-virtual@3.13.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@tanstack/virtual-core': 3.13.6
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
+  '@tanstack/virtual-core@3.13.6': {}
 
   '@tauri-apps/api@2.2.0': {}
 
