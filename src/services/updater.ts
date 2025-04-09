@@ -25,7 +25,7 @@ export async function checkForUpdates(): Promise<void> {
               await update.downloadAndInstall((progress) => {
                 switch (progress.event) {
                   case "Started":
-                    toast.loading(`Downloading update... ${(progress.data?.contentLength ?? 0 / (1024 * 1024)).toFixed(1)} MB`);
+                    toast.loading(`Downloading update... ${((progress.data?.contentLength ?? 0) / (1024 * 1024)).toFixed(1)} MB`);
                     break;
                   // case "Progress":
                   //   toast.loading(`Downloading update: ${progress.data.percent}%`);
