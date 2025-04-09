@@ -1,6 +1,5 @@
 # NarratrixAI
 
-[![Build](https://github.com/vitorfdl/Narratrix/actions/workflows/tauri-deploy.yml/badge.svg)](https://github.com/vitorfdl/Narratrix/actions/workflows/tauri-deploy.yml)
 [![Latest Stable](https://img.shields.io/github/v/release/vitorfdl/Narratrix?label=Latest%20Stable&link=https%3A%2F%2Fgithub.com%2Fvitorfdl%2FNarratrix%2Freleases%2Flatest)](https://github.com/vitorfdl/Narratrix/releases/latest)
 [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](https://github.com/vitorfdl/Narratrix/releases)
 [![Discord](https://img.shields.io/discord/1340496503441199146?logo=discord&logoColor=white&label=Discord%20Server)](https://discord.gg/Q69R4aWCFR)
@@ -22,7 +21,7 @@ solo player seeking adventures, Narratrix empowers you to create and share your
 own stories.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/f7a715be-f39d-4334-aac7-f8d469f230a5" alt="Narratrix Interface" width="80%"/>
+  <img src="https://github.com/user-attachments/assets/d88144a3-a24b-4d58-82ae-d195af0c9854" alt="Narratrix Interface" width="80%"/>
 </p>
 
 ## 🚀 Key Features
