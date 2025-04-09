@@ -223,6 +223,7 @@ dependencies = [
 [[package]]
 name = "async-openai"
 version = "0.28.0"
+source = "git+https://github.com/vitorfdl/async-openai-narratrix#7b769b74feb40aa21e420936822f79f3906532c0"
 dependencies = [
  "async-openai-macros",
  "backoff",
@@ -247,6 +248,7 @@ dependencies = [
 [[package]]
 name = "async-openai-macros"
 version = "0.1.0"
+source = "git+https://github.com/vitorfdl/async-openai-narratrix#7b769b74feb40aa21e420936822f79f3906532c0"
 dependencies = [
  "proc-macro2",
  "quote",
