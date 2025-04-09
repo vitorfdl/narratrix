@@ -215,42 +215,74 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
   // Update form values when manifest changes or when switching between add/edit mode
   useEffect(() => {
-    if (model && selectedManifest) {
-      // Pre-populate form with model data for edit mode
-      form.setValue("name", model.name);
-      form.setValue("type", model.type);
-      form.setValue("manifest_id", model.manifest_id);
+    // Set type first, regardless of mode
+    if (selectedType) {
+      form.setValue("type", selectedType);
+    }
 
-      // Pre-populate config fields
-      const config = typeof model.config === "string" ? JSON.parse(model.config) : model.config;
-      for (const field of selectedManifest.fields) {
-        if (config[field.key] !== undefined) {
-          form.setValue(field.key, config[field.key]);
-        } else if (field.field_type === "hidden" && field.default) {
-          // Set default value for hidden fields not in the config
-          form.setValue(field.key, field.default);
-        }
-      }
-    } else {
-      // Set default values for add mode
-      if (selectedType) {
-        form.setValue("type", selectedType);
-      }
+    if (selectedManifest) {
+      form.setValue("manifest_id", selectedManifest.id);
 
-      if (selectedManifest) {
-        form.setValue("manifest_id", selectedManifest.id);
+      if (model && mode === "edit") {
+        // --- Edit Mode Logic ---
+        form.setValue("name", model.name);
+        // Type and manifest_id already set above
 
-        // Set default values for hidden fields in add mode
+        // Pre-populate config fields from existing model data
+        const config = typeof model.config === "string" ? JSON.parse(model.config) : model.config || {};
+        const existingKeys = new Set(Object.keys(config));
+
         for (const field of selectedManifest.fields) {
-          if (field.field_type === "hidden" && field.default !== undefined) {
+          if (config[field.key] !== undefined) {
+            form.setValue(field.key, config[field.key]);
+          } else if (field.default !== undefined) {
+            // Apply default if not present in saved config (e.g., new field added to manifest)
             form.setValue(field.key, field.default);
+          } else {
+            // Ensure field is registered but has no value if not in config and no default
+            form.setValue(field.key, undefined); // Or appropriate empty value based on type if needed
           }
+          existingKeys.delete(field.key);
         }
       } else {
-        form.setValue("manifest_id", "");
+        // --- Add or Duplicate Mode Logic ---
+
+        // Set name: empty for 'add', copy indicator for 'duplicate'
+        if (mode === "duplicate" && model) {
+          form.setValue("name", `${model.name} (Copy)`);
+        } else if (mode === "add") {
+          if (!form.getValues("name")) {
+            form.setValue("name", "");
+          }
+        } else if (model) {
+          // If model exists but not edit/duplicate (e.g. initial render before mode fully settles?)
+          // Use model name as a base, potentially clear later if needed by specific mode logic
+          form.setValue("name", model.name);
+        }
+
+        // Reset fields to manifest defaults for 'add' or 'duplicate'
+        for (const field of selectedManifest.fields) {
+          form.setValue(field.key, field.default);
+        }
+
+        // ? Optional: Clear fields that existed in a previous manifest but not in the current one
+        // This requires tracking previous fields or comparing current form keys against new manifest keys.
+        // For now, relying on conditional rendering of fields might be sufficient.
       }
+    } else {
+      form.setValue("manifest_id", "");
+      const currentFields = form.getValues();
+      Object.keys(currentFields).forEach((key) => {
+        if (key !== "name" && key !== "type" && key !== "manifest_id") {
+          // This is a basic heuristic; might need refinement if non-manifest fields exist
+          form.setValue(key, undefined);
+        }
+      });
     }
-  }, [selectedManifest, model, form, selectedType]);
+
+    // Reset test result whenever the core config changes
+    setTestResult(null);
+  }, [selectedManifest, selectedType, model, mode, form]); // form is included as setValue is used
 
   // Handle type selection
   const handleTypeChange = (value: string) => {
@@ -332,8 +364,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
           }
         }
       }
-
-      console.log(configFields);
 
       // Create temporary model specs for testing
       const modelSpecs = ModelSpecsSchema.parse({

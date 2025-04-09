@@ -189,6 +189,7 @@ export async function listChatMessages(filter?: ChatMessageFilter): Promise<Chat
   return result.map((message) => ({
     ...message,
     messages: JSON.parse(message.messages || "[]"),
+    disabled: message.disabled === "true" || message.disabled === 1,
     created_at: new Date(message.created_at),
     updated_at: new Date(message.updated_at),
   })) as ChatMessage[];

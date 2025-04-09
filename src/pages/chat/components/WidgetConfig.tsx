@@ -7,6 +7,7 @@ import type { SectionField } from "@/schema/template-chat-settings-types";
 import { ChevronDown, Layers, Layers2, PaperclipIcon, PlusIcon, ServerIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
@@ -499,8 +500,9 @@ const WidgetConfig = ({
 
         {/* Context Size */}
         <div className="space-y-2 items-center gap-2 pb-4">
-          <div className="w-1/3 flex items-center">
+          <div className="w-1/3 flex items-center gap-1">
             <h3 className="text-xs font-normal">Context Size:</h3>
+            <HelpTooltip>Defines the total token limit for the model's input history. Excess history is truncated.</HelpTooltip>
           </div>
           <div className="flex-1">
             <StepButton
@@ -518,8 +520,9 @@ const WidgetConfig = ({
 
         {/* Response Length */}
         <div className="flex items-center gap-2">
-          <div className="w-1/3 flex items-center">
+          <div className="w-1/3 flex items-center gap-1">
             <h3 className="text-xs font-normal">Response Length:</h3>
+            <HelpTooltip>Sets the maximum number of tokens the model is allowed to generate in a single response.</HelpTooltip>
           </div>
           <div className="flex-1">
             <StepButton
@@ -536,8 +539,9 @@ const WidgetConfig = ({
 
         {/* Max Depth */}
         <div className="flex items-center gap-2">
-          <div className="w-1/3 flex items-center">
+          <div className="w-1/3 flex items-center gap-1">
             <h3 className="text-xs font-normal">Max Depth:</h3>
+            <HelpTooltip>Limits the number of recent messages included in the context sent to the model. Older messages are dropped.</HelpTooltip>
           </div>
           <div className="flex-1">
             <StepButton

@@ -1,4 +1,5 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -240,7 +241,20 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
     <Card>
       <CardHeader>
         <CardTitle className="inference-section-header flex items-center gap-1 pb-2 border-b ">
-          <Paperclip className="h-5 w-5" /> System Prompts
+          <div className="flex items-center gap-1">
+            <Paperclip className="h-5 w-5" /> System Prompts
+            <HelpTooltip>
+              <p>
+                Define the AI's core behavior and instructions using System Prompts. Multiple prompts added here are automatically combined into a
+                single system message sent to the AI.
+              </p>
+              <br />
+              <p>
+                <strong>Context-specific prompts</strong> (like 'character-context', 'chapter-context', 'user-context') are only included if the
+                relevant information (e.g., active character, chapter scenario, user persona) is available in the current chat configuration.
+              </p>
+            </HelpTooltip>
+          </div>
         </CardTitle>
         {/* <div className="flex items-center space-x-2">
           <Checkbox id="useGlobal" checked={useGlobal} onCheckedChange={handleGlobalCheckChange} />

@@ -1,11 +1,10 @@
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { FormatTemplate, TemplateSettings } from "@/schema/template-format-schema";
-import { HelpCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { TemplatePicker } from "./TemplatePicker";
@@ -193,7 +192,16 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
               )}
               disabled={!currentTemplate}
             />
-            <Label htmlFor="trimAssistant">Trim Assistant Incomplete Sequences</Label>
+            <Label htmlFor="trimAssistant">Trim Incomplete Sequences</Label>
+            <HelpTooltip>
+              <p>
+                Removes any text following the last sentence-ending punctuation (e.g., '.', '?', '!') or emoji. Helps clean up responses that trail
+                off mid-sentence.
+                <br />
+                <br />
+                <strong>Example:</strong> <i>"The story ends here. And th"</i> becomes <i>"The story ends here."</i>
+              </p>
+            </HelpTooltip>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -263,7 +271,17 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
               )}
               disabled={!currentTemplate}
             />
-            <Label htmlFor="mergeMessages">Squash all messages on User</Label>
+            <div className="flex items-center space-x-1">
+              <Label htmlFor="mergeMessages">Squash all messages on User</Label>
+              <HelpTooltip>
+                <p>
+                  Squash the entire chat history into a single user message before sending to model.
+                  <br />
+                  <br />
+                  System Prompts are not included in the squashed message.
+                </p>
+              </HelpTooltip>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -275,7 +293,12 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
               )}
               disabled={!currentTemplate}
             />
-            <Label htmlFor="applyCensorship">Apply censorship to messages</Label>
+            <div className="flex items-center space-x-1">
+              <Label htmlFor="applyCensorship">Apply censorship to messages</Label>
+              <HelpTooltip>
+                <p>Setup words to be censored with asterisks in your Profile Settings.</p>
+              </HelpTooltip>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -287,17 +310,14 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
               )}
               disabled={!currentTemplate}
             />
-            <Label htmlFor="mergeSubsequent">Squash Subsequent Role Messages</Label>
-            <TooltipProvider>
-              <Tooltip delayDuration={100} disableHoverableContent={true}>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <img src="/docs/merge_messages.png" alt="Merge subsequent messages example" className="max-w-xs" />
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex items-center space-x-1">
+              <Label htmlFor="mergeSubsequent">Squash subsequent Message</Label>
+              <HelpTooltip>
+                <p>Squash all messages from the same role into a single message before sending to model.</p>
+                <br />
+                <img src="/docs/merge_messages.png" alt="Merge subsequent messages example" className="max-w-xs block mx-auto" />
+              </HelpTooltip>
+            </div>
           </div>
         </div>
       </div>

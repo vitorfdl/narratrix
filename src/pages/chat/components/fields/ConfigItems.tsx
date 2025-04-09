@@ -1,3 +1,4 @@
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DragArray } from "@/components/ui/drag-array";
@@ -89,9 +90,9 @@ export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false,
   return (
     <Card className={cardClasses}>
       <div className="flex justify-between items-center">
-        <div>
+        <div className="flex items-center gap-2">
           <h4 className={titleClasses}>{field.title}</h4>
-          {/* <p className="text-xs text-muted-foreground">{field.description}</p> */}
+          <HelpTooltip>{field.description}</HelpTooltip>
         </div>
         {!isNested && onRemove && (
           <Button variant="ghost" className="w-6 h-6" size="icon" onClick={onRemove}>

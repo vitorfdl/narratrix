@@ -191,7 +191,6 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
   const onRefresh = () => {
     reloadAll();
-    console.log("Refreshing expressions");
   };
 
   const onOpenFolder = async () => {
@@ -398,7 +397,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
                 className="h-8 rounded-full hover:bg-white/10 transition-colors flex items-center gap-1"
                 title="Refresh expressions"
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin text-primary" : ""}`} />
                 <span className="text-xs">Refresh</span>
               </Button>
               <Button

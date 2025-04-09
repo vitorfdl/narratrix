@@ -1,5 +1,6 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,7 +49,19 @@ function CharacterFormContent({
           <Collapsible>
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between cursor-pointer mb-1">
-                <h3 className="text-sm font-medium">Expression Pack</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium">Expression Pack</h3>
+                  <HelpTooltip>
+                    <p>Define visual expressions (e.g., happy, sad) for this character using images.</p>
+                    <p>These expressions are automatically displayed during chats based on the conversation flow.</p>
+                    <br />
+                    <p>
+                      <strong>How to Add:</strong> Drag & drop image files or use the 'Add' button. The filename (without extension) becomes the
+                      expression name (e.g., <code>happy.png</code> becomes "happy").
+                    </p>
+                    <br />
+                  </HelpTooltip>
+                </div>
                 <ChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
               </div>
             </CollapsibleTrigger>
@@ -67,7 +80,12 @@ function CharacterFormContent({
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between cursor-pointer mb-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium">Custom System Prompt</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-medium">Custom System Prompt</h3>
+                    <HelpTooltip>
+                      <p>Overrides the context system prompt for this character.</p>
+                    </HelpTooltip>
+                  </div>
                   {systemPrompt && <CircleCheckBig className="h-4 w-4 text-primary" />}
                 </div>
                 <ChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />

@@ -39,8 +39,8 @@
     },
     {
       "key": "model",
-      "label": "Anthropic Model",
-      "placeholder": "The Anthropic model to use",
+      "label": "Bedrock Model",
+      "placeholder": "The Bedrock model to use",
       "required": true,
       "field_type": "string",
       "hints": [

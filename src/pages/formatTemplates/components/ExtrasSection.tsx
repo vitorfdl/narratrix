@@ -1,3 +1,4 @@
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { BrainCircuitIcon } from "lucide-react";
@@ -81,7 +82,16 @@ export function ExtraSections({ formatTemplateID }: ExtraSectionsProps) {
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
                 <BrainCircuitIcon className="h-4 w-4" /> Reasoning
-              </CardTitle>
+                <HelpTooltip>
+                  <p>
+                    Define the markers used to identify reasoning text within the assistant's response.
+                    <br />
+                    <br />
+                    The content between the specified <strong>Prefix</strong> and <strong>Suffix</strong> will be automatically extracted from the
+                    main chat message and displayed in a separate reasoning section.
+                  </p>
+                </HelpTooltip>
+              </CardTitle>  
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <LabeledInput

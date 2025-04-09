@@ -52,6 +52,7 @@ export const createChatMessageSchema = chatMessageSchema.omit({
 export const updateChatMessageSchema = chatMessageSchema.partial().pick({
   messages: true,
   message_index: true,
+  disabled: true,
   character_id: true,
 });
 

@@ -6,6 +6,7 @@ import { useExpressionStore } from "@/hooks/expressionStore";
 import { cn } from "@/lib/utils";
 import { Check, ChevronDown, Loader2, Scissors, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatTemplate } from "@/hooks/chatTemplateStore";
@@ -238,8 +239,19 @@ const WidgetMessages: React.FC = () => {
     }
   };
 
-  const onExcludeFromPrompt = (messageId: string) => {
-    console.log("Exclude from prompt", messageId);
+  const onExcludeFromPrompt = async (messageId: string) => {
+    const message = messages.find((m) => m.id === messageId);
+    if (!message) {
+      return;
+    }
+
+    try {
+      await updateChatMessage(messageId, { disabled: !message.disabled });
+      toast.success("Message excluded from future context");
+    } catch (error) {
+      console.error("Failed to exclude message:", error);
+      toast.error("Failed to exclude message from context");
+    }
   };
 
   const onCreateCheckpoint = (messageId: string) => {
@@ -398,6 +410,7 @@ const WidgetMessages: React.FC = () => {
     const isStreaming = isMessageStreaming(message.id);
     const isLastMessage = index === messagesWithCharCount.length - 1;
     const hasReasoningData = hasReasoning(message.id);
+    const isDisabled = !!message.disabled;
 
     return (
       <div key={message.id}>
@@ -406,10 +419,13 @@ const WidgetMessages: React.FC = () => {
         <div
           className={cn(
             "group relative flex gap-4 p-4 rounded-lg border-b-2 border-secondary hover:shadow-md transition-all",
-            (message.type === "user" || message.type === "character") && "bg-card",
+            // Apply base card background unless disabled
+            !isDisabled && (message.type === "user" || message.type === "character") && "bg-card",
             message.type === "user" && "flex-row-reverse",
             message.type === "system" && "bg-muted justify-center",
             isStreaming && "border-primary border-b-2 animate-pulse",
+            // Add styles for disabled messages
+            isDisabled && "border-dashed border-muted-foreground opacity-60 bg-chart-5/20",
           )}
         >
           {/* Avatar section */}
