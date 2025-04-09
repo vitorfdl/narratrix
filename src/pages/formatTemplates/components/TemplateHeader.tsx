@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
-import { FormatTemplate, TemplateSettings } from "@/schema/template-format-schema";
+import { FormatTemplate, NewFormatTemplate, TemplateSettings } from "@/schema/template-format-schema";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { TemplatePicker } from "./TemplatePicker";
@@ -115,12 +115,13 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   };
 
   // Handler for creating a new template
-  const handleNewTemplate = async (name: string) => {
-    const newTemplate = await createFormatTemplate({
+  const handleNewTemplate = async (name: string, sourceTemplateId?: string) => {
+    let newTemplateObj: NewFormatTemplate = {
       name: name,
       profile_id: profile?.currentProfile?.id || "",
       config: {
         settings: {
+          // Default settings for a brand new template
           trim_assistant_incomplete: false,
           trim_double_spaces: true,
           collapse_consecutive_lines: true,
@@ -135,9 +136,33 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         },
       },
       prompts: [],
-    });
+    };
 
-    onTemplateChange(newTemplate.id);
+    if (sourceTemplateId) {
+      // Find the template to duplicate using the provided sourceTemplateId
+      const templateToDuplicate = formatTemplates.find((t) => t.id === sourceTemplateId);
+
+      if (templateToDuplicate) {
+        // Create the new template object based on the found template
+        newTemplateObj = {
+          name: `${templateToDuplicate.name} (Copy)`, // Use the duplicated template's name
+          profile_id: templateToDuplicate.profile_id,
+          config: templateToDuplicate.config, // Deep copy config
+          prompts: templateToDuplicate.prompts, // Deep copy prompts
+        };
+        // Note: Ensure config and prompts are deep copied if they contain nested objects/arrays
+        // For simplicity here, we assume a shallow copy is sufficient or that the structure allows it.
+        // If deep cloning is needed, libraries like lodash.cloneDeep or structuredClone might be necessary.
+      } else {
+        console.error("Template to duplicate not found:", sourceTemplateId);
+        // Handle error - maybe show a notification to the user
+        return; // Exit if the source template isn't found
+      }
+    }
+
+    const newTemplate = await createFormatTemplate(newTemplateObj);
+
+    onTemplateChange(newTemplate.id); // Switch to the newly created/duplicated template
   };
 
   // Handlers for editing name, importing, and exporting
@@ -172,7 +197,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         onExport={handleExport}
       />
     ),
-    [formatTemplateID, formatTemplates],
+    [formatTemplateID, formatTemplates, handleTemplateSelect, handleDeleteTemplate, handleNewTemplate, handleEditName, handleImport, handleExport],
   );
 
   return (

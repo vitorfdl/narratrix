@@ -302,12 +302,14 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
 
   return (
     <InferenceServiceProvider>
-      <div className="flex h-full overflow-hidden p-0">
-        {/* Grid Sidebar */}
-        <GridSidebar hiddenWidgets={hiddenWidgets} toggleCard={toggleCard} tabId={tabId} />
+      <div className="flex h-full relative p-0">
+        {/* Grid Sidebar - fixed position */}
+        <div className="sticky top-0 h-[95vh] flex-shrink-0 overflow-hidden">
+          <GridSidebar hiddenWidgets={hiddenWidgets} toggleCard={toggleCard} tabId={tabId} />
+        </div>
 
-        {/* Grid Container */}
-        <div ref={containerRef} className="flex-1 overflow-hidden">
+        {/* Grid Container - with independent scrolling */}
+        <div ref={containerRef} className="flex-1 overflow-hidden overflow-y-auto">
           {layoutReady && (
             <ResponsiveGridLayout
               className="layout"

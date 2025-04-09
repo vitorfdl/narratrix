@@ -215,7 +215,6 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
             }}
             markdown={content}
             onChange={handleChange}
-            suppressHtmlProcessing={true}
             plugins={[
               diffSourcePlugin({
                 codeMirrorExtensions: [

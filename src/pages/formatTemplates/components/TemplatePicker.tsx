@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
+import { CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 
 export interface Template {
@@ -27,7 +27,7 @@ export interface TemplatePickerProps {
   selectedTemplateId: string | null;
   onTemplateSelect: (templateId: string) => void;
   onDelete: (templateId: string) => void;
-  onNewTemplate: (name: string) => void;
+  onNewTemplate: (name: string, sourceTemplateId?: string) => void;
   onEditName: (templateId: string, name: string) => void;
   onImport: () => void;
   onExport: (templateId: string) => void;
@@ -136,6 +136,14 @@ export function TemplatePicker({
                 New Template
               </DropdownMenuItem>
               <DropdownMenuItem
+                onClick={() => selectedTemplateId && onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId)}
+                disabled={!selectedTemplateId}
+                className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
+              >
+                <CopyPlus className="h-3.5 w-3.5 mr-1.5" />
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={handleEditNameClick}
                 disabled={!selectedTemplateId}
                 className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
@@ -195,7 +203,16 @@ export function TemplatePicker({
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end" className="text-sm">
+                <DropdownMenuItem
+                  onClick={() => selectedTemplateId && onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId)}
+                  disabled={!selectedTemplateId}
+                  className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
+                >
+                  <CopyPlus className="h-3.5 w-3.5 mr-1.5" />
+                  Duplicate
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={onImport} disabled={true}>
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
                   Import

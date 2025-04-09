@@ -39,7 +39,7 @@ function parseOpenAIParameters(rawParameters: Record<string, any>, { model }: Mo
   const parameters = structuredClone(rawParameters);
   const { reasoning_temperature } = parameters;
 
-  if (model.includes("o3-mini") || model.startsWith("o1-mini") || model.startsWith("o1-")) {
+  if (model?.includes("o3-mini") || model?.startsWith("o1-mini") || model?.startsWith("o1-")) {
     const { max_tokens } = parameters;
     parameters.max_completion_tokens = max_tokens;
   }

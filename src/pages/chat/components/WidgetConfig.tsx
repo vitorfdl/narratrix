@@ -16,6 +16,7 @@ import { useModels, useModelsActions } from "@/hooks/modelsStore";
 import { useFormatTemplateList } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
+import { NewChatTemplateParams } from "@/services/template-chat-service";
 import { configFields } from "../manifests/configFields";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
@@ -154,26 +155,33 @@ const WidgetConfig = ({
     updateSelectedChat({ chat_template_id: templateId });
   };
 
-  const handleCreateTemplate = (name: string) => {
-    // Implementation will be done via dialog in the UI
-    // The TemplatePicker just needs a callback without parameters
-    if (name) {
-      // Create new template with default settings
-      createChatTemplate({
-        profile_id: profileId,
-        name,
-        model_id: null,
-        config: {
-          max_tokens: 4096,
-          max_context: 4096 * 2,
-          max_depth: 100,
-        },
-        custom_prompts: [],
-      }).then((newTemplate) => {
-        // Select the newly created template
-        updateSelectedChat({ chat_template_id: newTemplate.id });
-      });
+  const handleCreateTemplate = (name: string, sourceTemplateId?: string) => {
+    let newChatTemplate: NewChatTemplateParams = {
+      profile_id: profileId,
+      name,
+      model_id: null,
+      config: {
+        max_tokens: 4096,
+        max_context: 4096 * 2,
+        max_depth: 100,
+      },
+      custom_prompts: [],
+    };
+
+    if (sourceTemplateId) {
+      const sourceTemplate = chatTemplateList.find((template) => template.id === sourceTemplateId);
+      if (sourceTemplate) {
+        newChatTemplate = {
+          ...sourceTemplate,
+          name: `${sourceTemplate.name} (Copy)`,
+        };
+      }
     }
+
+    createChatTemplate(newChatTemplate).then((newTemplate) => {
+      // Select the newly created template
+      updateSelectedChat({ chat_template_id: newTemplate.id });
+    });
   };
 
   const handleDeleteTemplate = () => {

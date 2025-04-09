@@ -22,6 +22,7 @@ export async function createFormatTemplate(templateData: NewFormatTemplate): Pro
     profile_id: profileId,
     name: templateData.name,
     config: templateData.config || {},
+    prompts: templateData.prompts || [],
     created_at: new Date(now),
     updated_at: new Date(now),
   });
@@ -186,4 +187,3 @@ export async function deleteFormatTemplate(id: string): Promise<boolean> {
   // Return true if a row was affected (template was deleted)
   return result.rowsAffected > 0;
 }
-

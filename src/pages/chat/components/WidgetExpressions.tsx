@@ -183,7 +183,9 @@ const WidgetExpressions = () => {
       setAnimateLastSpeaker(true);
       setTimeout(() => setAnimateLastSpeaker(false), 1000);
 
-      const availableExpressions = targetCharacter.expressions?.length ? targetCharacter.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
+      const availableExpressions = targetCharacter.expressions?.length
+        ? targetCharacter.expressions.filter((exp) => exp.image_path).map((exp) => exp.name)
+        : EXPRESSION_LIST;
       const availableExpressionNames = targetCharacter.expressions?.length ? targetCharacter.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
 
       try {
