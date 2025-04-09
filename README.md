@@ -3,7 +3,7 @@
 [![Build](https://github.com/vitorfdl/Narratrix/actions/workflows/tauri-deploy.yml/badge.svg)](https://github.com/vitorfdl/Narratrix/actions/workflows/tauri-deploy.yml)
 [![Latest Stable](https://img.shields.io/github/v/release/vitorfdl/Narratrix?label=Latest%20Stable&link=https%3A%2F%2Fgithub.com%2Fvitorfdl%2FNarratrix%2Freleases%2Flatest)](https://github.com/vitorfdl/Narratrix/releases/latest)
 [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](https://github.com/vitorfdl/Narratrix/releases)
-[![Discord](https://img.shields.io/discord/1340496503441199146?logo=discord&logoColor=white&label=Discord%20Server)](https://discord.gg/NAMqeYNh)
+[![Discord](https://img.shields.io/discord/1340496503441199146?logo=discord&logoColor=white&label=Discord%20Server)](https://discord.gg/Q69R4aWCFR)
 
 <p align="center">
   <img src="/public/full_logo.png" width="250px" alt="Narratrix"></img>
@@ -95,22 +95,6 @@ Narratrix is built with Tauri, providing native performance across platforms:
   <img src="path/to/narratrix-feature-demo.gif" alt="Feature Demo" width="80%"/>
 </p>
 
-## 🚩 Getting Started
-
-```bash
-# Clone the repository
-git clone https://github.com/vitorfdl/Narratrix.git
-
-# Navigate to the project directory
-cd Narratrix
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm run tauri dev
-```
-
 ## 🌐 AI Models Support
 
 Narratrix uses a flexible manifest system to support various AI providers:
@@ -137,6 +121,19 @@ improving documentation, please feel free to make a pull request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+```bash
+# Clone the repository
+git clone https://github.com/vitorfdl/Narratrix.git
+
+# Navigate to the project directory
+cd Narratrix
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run tauri dev
+```
 ## 📄 License
 
 This repository maintains the latest source code release for Narratrix, and is
@@ -156,5 +153,5 @@ Binaries and executable releases are licensed under the
 <p align="center">
   <a href="https://github.com/vitorfdl/Narratrix/releases/latest">Download Latest Release</a> •
   <!-- <a href="https://narratrix.ai/docs">Documentation</a> • -->
-  <a href="https://discord.gg/NAMqeYNh">Join Discord</a>
+  <a href="https://discord.gg/Q69R4aWCFR">Join Discord</a>
 </p>
