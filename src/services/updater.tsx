@@ -9,13 +9,35 @@ import { toast } from "sonner";
 export async function checkForUpdates(): Promise<void> {
   try {
     const update: Update | null = await check();
+    // const update = {
+    //   version: "0.9.2",
+    //   date: "2025-04-09",
+    //   body: "This is a test release.",
+    //   downloadAndInstall: async (progress: (progress: { event: string; data?: { contentLength?: number } }) => void) => {
+    //     console.log("Downloading update...");
+    //     progress({ event: "Started" });
+    //     progress({ event: "Finished" });
+    //   },
+    // };
 
     if (update) {
       const releaseDateString = update.date ? new Date(update.date).toLocaleDateString() : "Date unknown";
-      const releaseNotes = update.body ? `${update.body.substring(0, 100)}...` : "No details provided.";
+      // const releaseNotes = update.body ? `${update.body.substring(0, 100)}...` : "No details provided.";
 
       toast(`New version ${update.version} available!`, {
-        description: `Released on: ${releaseDateString}. Notes: ${releaseNotes}`,
+        description: (
+          <div>
+            Released on: {releaseDateString}. <br />
+            <a
+              href="https://github.com/vitorfdl/Narratrix/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#3b82f6", textDecoration: "underline" }}
+            >
+              View full release notes
+            </a>
+          </div>
+        ),
         action: {
           label: "Update & Restart",
           onClick: async (): Promise<void> => {
