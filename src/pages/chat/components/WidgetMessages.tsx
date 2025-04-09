@@ -436,7 +436,7 @@ const WidgetMessages: React.FC = () => {
               editable={isEditingID === message.id && !isStreaming}
               placeholder="Edit message..."
               className={cn(
-                "select-text text-base text-sans",
+                "select-text text-sm text-white text-sans",
                 isEditingID !== message.id ? "bg-transparent border-none" : "text-left ring-1 ring-border rounded-lg h-auto",
                 isStreaming && "animate-pulse duration-500",
               )}

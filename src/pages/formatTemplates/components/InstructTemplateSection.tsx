@@ -232,6 +232,7 @@ export function InstructTemplateSection() {
         </CardHeader>
         <CardContent className="space-y-2">
           <TemplatePicker
+            disabled
             templates={templateList}
             selectedTemplateId={instructTemplateID}
             onTemplateSelect={setInstructTemplateID}

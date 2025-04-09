@@ -237,7 +237,7 @@ export default function Models() {
           </DialogHeader>
           {selectedModel && (
             <ModelForm
-              mode="add"
+              mode="duplicate"
               model={selectedModel}
               onSuccess={() => {
                 setDuplicateDialogOpen(false);

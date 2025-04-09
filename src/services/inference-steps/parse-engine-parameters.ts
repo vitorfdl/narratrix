@@ -1,4 +1,5 @@
 import { Engine } from "@/schema/model-manifest-schema";
+import { Model } from "../model-service";
 
 function parseAnthropicParameters(rawParameters: Record<string, any>) {
   const newParameters = structuredClone(rawParameters);
@@ -34,9 +35,14 @@ function parseOpenRouterParameters(rawParameters: Record<string, any>) {
   return parameters;
 }
 
-function parseOpenAIParameters(rawParameters: Record<string, any>) {
+function parseOpenAIParameters(rawParameters: Record<string, any>, { model }: Model["config"]) {
   const parameters = structuredClone(rawParameters);
   const { reasoning_temperature, reasoning_budget } = parameters;
+
+  if (model.includes("o3-mini") || model.startsWith("o1-mini") || model.startsWith("o1-")) {
+    const { max_tokens } = parameters;
+    parameters.max_completion_tokens = max_tokens;
+  }
 
   // OpenAI parameters
   if (reasoning_temperature) {
@@ -45,16 +51,16 @@ function parseOpenAIParameters(rawParameters: Record<string, any>) {
       effort: temperatureLabel,
     };
 
-    const { max_context, max_tokens } = parameters;
-    if (max_context || max_tokens) {
-      parameters.max_completion_tokens = max_context || max_tokens;
+    const { max_tokens } = parameters;
+    if (max_tokens) {
+      parameters.max_completion_tokens = max_tokens;
     }
   }
 
   return parameters;
 }
 
-export function parseEngineParameters(engine: Engine, parameters: Record<string, any>) {
+export function parseEngineParameters(engine: Engine, modelConfig: Model["config"], parameters: Record<string, any>) {
   switch (engine) {
     case "anthropic":
       return parseAnthropicParameters(parameters);
@@ -69,6 +75,6 @@ export function parseEngineParameters(engine: Engine, parameters: Record<string,
     // case "aws_bedrock":
     //   return parameters;
     default:
-      return parseOpenAIParameters(parameters);
+      return parseOpenAIParameters(parameters, modelConfig || {});
   }
 }

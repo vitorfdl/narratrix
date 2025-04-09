@@ -176,7 +176,6 @@ export function useInferenceService() {
       });
 
       console.error("Inference error:", error);
-      console.error("Inference error:", error);
 
       // Reset streaming state
       resetStreamingState();
@@ -394,29 +393,32 @@ export function useInferenceService() {
         engine: manifestSettings.engine,
       };
 
+      const localRequestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      // Set it to streaming state BEFORE making the backend call
+      streamingState.current.requestId = localRequestId;
+
       // Start the inference process
-      const requestId = await runInference({
+      const confirmID = await runInference({
         messages: inferenceMessages,
         modelSpecs,
         systemPrompt: systemPrompt,
         parameters: removeNestedFields(parametersOverride || chatTemplate?.config || {}),
         stream,
+        requestId: localRequestId,
       });
 
-      // Store the request ID
-      if (requestId) {
-        streamingState.current.requestId = requestId;
-
-        // Notify about streaming state change if callback provided
-        if (onStreamingStateChange) {
-          onStreamingStateChange(streamingState.current);
-        }
+      if (!confirmID || !streamingState.current.requestId) {
+        resetStreamingState();
+        return null;
       }
 
-      // Update the message with the accumulated text
-      updateMessageByID(streamingState.current.messageId, streamingState.current.accumulatedText, messageIndex);
+      if (onStreamingStateChange) {
+        onStreamingStateChange(streamingState.current);
+      }
 
-      return requestId;
+      updateMessageByID(streamingState.current.messageId, streamingState.current.accumulatedText ?? "...", messageIndex);
+
+      return confirmID;
     } catch (error) {
       console.error("Error generating message:", error);
 

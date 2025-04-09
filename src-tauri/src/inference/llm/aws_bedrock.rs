@@ -87,9 +87,19 @@ async fn initialize_bedrock_request(
     let aws_access_key_id = config["aws_access_key_id"]
         .as_str()
         .context("Missing AWS access key ID")?;
-    let aws_secret_access_key = config["aws_secret_access_key"]
+
+    let encrypted_aws_secret_access_key = config["aws_secret_access_key"]
         .as_str()
         .context("Missing AWS secret access key")?;
+    let aws_secret_access_key = if !encrypted_aws_secret_access_key.is_empty() {
+        match crate::utils::decrypt_api_key(&encrypted_aws_secret_access_key) {
+            Ok(decrypted) => decrypted,
+            Err(_) => encrypted_aws_secret_access_key.to_string(),
+        }
+    } else {
+        "".to_string()
+    };
+
     let aws_region = config["aws_region"]
         .as_str()
         .context("Missing AWS region")?;
@@ -243,9 +253,7 @@ pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
         .await
         .map_err(|e| anyhow!("Bedrock API error: {}", e))?;
 
-    println!("Waiting for response");
     let text = get_converse_output_text(response)?;
-    println!("text: {}", text);
     Ok(text)
 }
 

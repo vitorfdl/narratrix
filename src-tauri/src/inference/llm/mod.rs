@@ -217,23 +217,26 @@ where
     // Execute streaming function and handle potential errors
     if let Err(e) = stream_fn(
         Arc::clone(&response_text),
-        Arc::clone(&reasoning_text), // Pass reasoning text mutex
+        Arc::clone(&reasoning_text),
         request_id.clone(),
         app_handle_clone,
     )
     .await
     {
-        // If an error occurs during streaming, report it to the frontend
         let error_message = format!("Streaming error: {:?}", e);
         println!("Streaming Error Reported: {}", error_message); // Log the error server-side
-        handle_inference_response(
+
+        // Ensure the error is emitted to the frontend
+        if let Err(emit_err) = handle_inference_response(
             &request_id,
-            "error", // Use "error" status for frontend
+            "error",
             None,
-            Some(error_message.clone()), // Send the detailed error message
+            Some(error_message.clone()),
             app_handle,
-        )?;
-        // Propagate the original error to the caller (e.g., process_inference)
+        ) {
+            eprintln!("Failed to emit error to frontend: {:?}", emit_err);
+        }
+
         return Err(e.context(error_message));
     }
 
@@ -262,6 +265,7 @@ where
         }
     }
 
+    println!("Final response: {:?}", result_payload);
     // Final completed response event
     handle_inference_response(
         &request.id,

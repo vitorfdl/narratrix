@@ -183,6 +183,7 @@ const ProfilePicker: React.FC = () => {
 
       {/* Password Dialog */}
       <PasswordDialog
+        avatar_path={urlMap[selectedProfileId || ""] || ""}
         open={showPasswordDialog}
         onClose={() => setShowPasswordDialog(false)}
         onSubmit={handlePasswordSubmit}

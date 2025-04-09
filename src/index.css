@@ -39,12 +39,12 @@ body,
     --chart-6: 230 60% 60%; /* #5A7EE5 - cool contrast */
     --chart-7: 180 50% 45%; /* #39A3A3 - teal complement */
     --chart-8: 30 80% 60%;  /* #E5A33A - warm contrast */
-    --radius: 0.8rem;
+    --radius: 0.4rem;
     --font-sans: "Inter", sans-serif;
     --font-serif: "Merriweather", serif;
   }
   .dark {
-    --background: 0 0% 16%; /* #282828 */
+    --background: 277 5% 11%; /* #282828 */
     --foreground: 0 0% 85%; /* #D9D9D9 */
     --content: 0 0% 21%; /* #353535 */
     --sidebar: 0 0% 8%; /* #141415 */

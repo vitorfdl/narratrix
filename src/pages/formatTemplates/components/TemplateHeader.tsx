@@ -1,9 +1,11 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { FormatTemplate, TemplateSettings } from "@/schema/template-format-schema";
+import { HelpCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { TemplatePicker } from "./TemplatePicker";
@@ -203,7 +205,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
               )}
               disabled={!currentTemplate}
             />
-            <Label htmlFor="trimSpaces">Trim Double+ Spaces</Label>
+            <Label htmlFor="trimSpaces">Trim Double Spaces</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -261,7 +263,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
               )}
               disabled={!currentTemplate}
             />
-            <Label htmlFor="mergeMessages">Merge all messages on User</Label>
+            <Label htmlFor="mergeMessages">Squash all messages on User</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -285,7 +287,17 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
               )}
               disabled={!currentTemplate}
             />
-            <Label htmlFor="mergeSubsequent">Merge subsquent Messages</Label>
+            <Label htmlFor="mergeSubsequent">Squash Subsequent Role Messages</Label>
+            <TooltipProvider>
+              <Tooltip delayDuration={100} disableHoverableContent={true}>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <img src="/docs/merge_messages.png" alt="Merge subsequent messages example" className="max-w-xs" />
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </div>

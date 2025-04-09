@@ -1,15 +1,9 @@
-import { LockIcon } from "lucide-react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, LockIcon, UserCircleIcon } from "lucide-react";
 import React, { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert.tsx";
+import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar.tsx";
 import { Button } from "../../../components/ui/button.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../../../components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog.tsx";
 import { Input } from "../../../components/ui/input.tsx";
 
 interface PasswordDialogProps {
@@ -17,14 +11,10 @@ interface PasswordDialogProps {
   onClose: () => void;
   onSubmit: (password: string) => Promise<void>;
   profileName: string;
+  avatar_path: string;
 }
 
-const PasswordDialog: React.FC<PasswordDialogProps> = ({
-  open,
-  onClose,
-  onSubmit,
-  profileName,
-}) => {
+const PasswordDialog: React.FC<PasswordDialogProps> = ({ open, onClose, onSubmit, profileName, avatar_path }) => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -70,7 +60,12 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center" />
+            <Avatar className="w-24 h-24 mb-3 rounded-full">
+              <AvatarImage src={avatar_path} alt={profileName} />
+              <AvatarFallback>
+                <UserCircleIcon className="w-full h-full text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
           </div>
 
           <p className="text-center text-sm text-muted-foreground">

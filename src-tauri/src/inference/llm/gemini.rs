@@ -31,10 +31,18 @@ fn initialize_gemini_client(specs: &ModelSpecs) -> Result<(Client<OpenAIConfig>,
         .to_string();
 
     // Get API key (required for Gemini)
-    let api_key = config["api_key"]
+    let encrypted_api_key = config["api_key"]
         .as_str()
         .ok_or_else(|| anyhow!("Gemini API key ('api_key') is required in model configuration"))?
         .to_string();
+    let api_key = if !encrypted_api_key.is_empty() {
+        match crate::utils::decrypt_api_key(&encrypted_api_key) {
+            Ok(decrypted) => decrypted,
+            Err(_) => encrypted_api_key.to_string(),
+        }
+    } else {
+        "".to_string()
+    };
 
     // Get base URL or use the default Gemini URL
     let base_url = config["base_url"]

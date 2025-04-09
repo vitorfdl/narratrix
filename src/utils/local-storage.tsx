@@ -2,6 +2,7 @@ import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
 import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
 import { QuickAction } from "@/pages/chat/components/utils-generate/QuickActions";
 import { GridPosition, defaultPositions } from "@/schema/grid";
+import { Theme } from "@tauri-apps/api/window";
 import { produce } from "immer";
 import { useAtom } from "jotai";
 import { atomFamily, atomWithStorage } from "jotai/utils";
@@ -100,4 +101,13 @@ const quickActionsAtom = atomWithStorage<QuickAction[]>("quickActions", []);
 
 export function useLocalQuickActions() {
   return useAtom(quickActionsAtom);
+}
+
+/**
+ * Local Storage for Theme
+ */
+const themeAtom = atomWithStorage<Theme | "system">("theme", "system");
+
+export function useLocalTheme() {
+  return useAtom(themeAtom);
 }

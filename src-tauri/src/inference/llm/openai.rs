@@ -28,7 +28,16 @@ pub fn initialize_openai_client(
         .to_string();
 
     // Get API key and base URL with fallbacks
-    let api_key = config["api_key"].as_str().unwrap_or("").to_string();
+    let encrypted_api_key = config["api_key"].as_str().unwrap_or("").to_string();
+    let api_key = if !encrypted_api_key.is_empty() {
+        match crate::utils::decrypt_api_key(&encrypted_api_key) {
+            Ok(decrypted) => decrypted,
+            Err(_) => encrypted_api_key.to_string(),
+        }
+    } else {
+        "".to_string()
+    };
+
     let base_url = config["base_url"]
         .as_str()
         .unwrap_or("https://api.openai.com/v1")
@@ -205,13 +214,11 @@ fn create_chat_completion_request(
                 | "sampling_order" => {
                     // Store these parameters in our custom_params map
                     custom_params.insert(key.clone(), value.clone());
-                    println!("Adding custom parameter: {} = {}", key, value);
                 }
                 // For any other parameters, we'll add them directly to the request JSON
                 // TODO: May want to handle this differently.
                 _ => {
                     custom_params.insert(key.clone(), value.clone());
-                    println!("Adding custom parameter: {} = {}", key, value);
                 }
             }
         }

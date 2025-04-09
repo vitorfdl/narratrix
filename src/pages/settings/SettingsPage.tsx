@@ -40,9 +40,13 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { logout, setCurrentProfile, currentProfileAvatarUrl, refreshAvatar } = useProfile();
-  const nameDialogRef = useRef<HTMLButtonElement>(null);
-  const passwordDialogRef = useRef<HTMLButtonElement>(null);
-  const avatarDialogRef = useRef<HTMLButtonElement>(null);
+
+  // State for controlling dialog visibility
+  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (currentProfile?.name) {
@@ -64,12 +68,10 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
     try {
       setIsChangingName(true);
       const updatedProfile = await updateProfile(currentProfile.id, { name: newProfileName.trim() });
-      // Update the current profile in context directly with the updated profile
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
       toast.success("Profile name updated successfully");
-      // Close the dialog programmatically
-      nameDialogRef.current?.click();
+      setIsNameDialogOpen(false); // Close the dialog on success
     } catch (error) {
       console.error("Failed to update profile name:", error);
       toast.error("Failed to update profile name");
@@ -96,19 +98,13 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
 
     try {
       setIsChangingPassword(true);
-
-      // Use the appropriate method for password change and get the updated profile
       let updatedProfile: any;
       if (currentProfile.hasPassword) {
-        // For existing passwords, we would need a special method
-        // that handles current password verification
         updatedProfile = await updateProfilePassword(currentProfile.id, currentPassword, newPassword);
       } else {
-        // For new passwords, just update the profile
         updatedProfile = await updateProfilePassword(currentProfile.id, "", newPassword);
       }
 
-      // Update the current profile in context directly with the updated profile
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
       toast.success("Password updated successfully");
@@ -118,8 +114,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
       setNewPassword("");
       setConfirmPassword("");
 
-      // Close the dialog programmatically
-      passwordDialogRef.current?.click();
+      setIsPasswordDialogOpen(false); // Close the dialog on success
     } catch (error) {
       console.error("Failed to update password:", error);
       toast.error("Failed to update password. Please check your current password.");
@@ -137,22 +132,43 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
     try {
       setIsChangingAvatar(true);
       const avatarPath = await saveImage(croppedImage, currentProfile.id);
-      // Update profile with new avatar
       const updatedProfile = await updateProfile(currentProfile.id, { avatar_path: avatarPath });
-      // Update the current profile in context directly with the updated profile
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
-      // Force refresh the avatar
       refreshAvatar();
       toast.success("Avatar updated successfully");
-
-      // Close the dialog programmatically
-      avatarDialogRef.current?.click();
+      setIsAvatarDialogOpen(false); // Close the dialog on success
     } catch (error) {
       console.error("Failed to update avatar:", error);
       toast.error("Failed to update avatar");
     } finally {
       setIsChangingAvatar(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsLogoutDialogOpen(false); // Ensure dialog closes
+  };
+
+  const deleteProfile = async () => {
+    if (!currentProfile) {
+      toast.error("No profile selected");
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await deleteProfileService(currentProfile.id);
+      toast.success("Profile deleted successfully");
+      logout(); // Logout implicitly closes the dialog by navigating away
+      // No need to explicitly set setIsDeleteDialogOpen(false) if logout always navigates
+    } catch (error) {
+      console.error("Failed to delete profile:", error);
+      toast.error("Failed to delete profile.");
+      setIsDeleteDialogOpen(false); // Close dialog on error
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -170,25 +186,6 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
     }
   };
 
-  const deleteProfile = async () => {
-    if (!currentProfile) {
-      toast.error("No profile selected");
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      await deleteProfileService(currentProfile.id);
-      toast.success("Profile deleted successfully");
-      logout();
-    } catch (error) {
-      console.error("Failed to delete profile:", error);
-      toast.error("Failed to delete profile.");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   return (
     <div className="space-y-3">
       <h2 className="text-lg font-medium">Profile</h2>
@@ -199,7 +196,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
               <User className="w-4 h-4" />
               <Label>Profile: {currentProfile.name}</Label>
             </div>
-            <Dialog>
+            <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">Change Profile Name</Button>
               </DialogTrigger>
@@ -224,15 +221,12 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                   <DialogClose asChild>
                     <Button variant="secondary">Cancel</Button>
                   </DialogClose>
-                  <DialogClose asChild>
-                    <Button
-                      ref={nameDialogRef}
-                      onClick={handleProfileNameChange}
-                      disabled={isChangingName || !newProfileName.trim() || newProfileName === currentProfile?.name}
-                    >
-                      {isChangingName ? "Saving..." : "Save"}
-                    </Button>
-                  </DialogClose>
+                  <Button
+                    onClick={handleProfileNameChange}
+                    disabled={isChangingName || !newProfileName.trim() || newProfileName === currentProfile?.name}
+                  >
+                    {isChangingName ? "Saving..." : "Save"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -250,7 +244,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                 </div>
               )}
             </div>
-            <Dialog>
+            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">Change Avatar</Button>
               </DialogTrigger>
@@ -277,11 +271,6 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                   <DialogClose asChild>
                     <Button variant="secondary">Cancel</Button>
                   </DialogClose>
-                  <DialogClose asChild>
-                    <Button ref={avatarDialogRef} variant="default" disabled={isChangingAvatar}>
-                      {isChangingAvatar ? "Saving..." : "Save"}
-                    </Button>
-                  </DialogClose>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -294,7 +283,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
               <KeyIcon className="w-4 h-4" />
               <Label>Password</Label>
             </div>
-            <Dialog>
+            <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">Change Password</Button>
               </DialogTrigger>
@@ -346,17 +335,14 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                   <DialogClose asChild>
                     <Button variant="secondary">Cancel</Button>
                   </DialogClose>
-                  <DialogClose asChild>
-                    <Button
-                      ref={passwordDialogRef}
-                      onClick={handlePasswordChange}
-                      disabled={
-                        isChangingPassword || !newPassword || newPassword !== confirmPassword || (currentProfile?.hasPassword && !currentPassword)
-                      }
-                    >
-                      {isChangingPassword ? "Saving..." : "Save"}
-                    </Button>
-                  </DialogClose>
+                  <Button
+                    onClick={handlePasswordChange}
+                    disabled={
+                      isChangingPassword || !newPassword || newPassword !== confirmPassword || (currentProfile?.hasPassword && !currentPassword)
+                    }
+                  >
+                    {isChangingPassword ? "Saving..." : "Save"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -369,7 +355,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
               <LogOut className="w-4 h-4" />
               <Label>Log out from your profile</Label>
             </div>
-            <Dialog>
+            <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="default" className="flex items-center gap-2">
                   <LogOut className="w-4 h-4" />
@@ -385,7 +371,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                   <DialogClose asChild>
                     <Button variant="secondary">Cancel</Button>
                   </DialogClose>
-                  <Button variant="default" onClick={logout} className="flex items-center gap-2">
+                  <Button variant="default" onClick={handleLogout} className="flex items-center gap-2">
                     <LogOut className="w-4 h-4" />
                     Logout
                   </Button>
@@ -400,7 +386,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
               <Trash className="w-4 h-4" />
               <Label>Delete your profile</Label>
             </div>
-            <Dialog>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="destructive" className="flex items-center gap-2">
                   <Trash className="w-4 h-4" />
@@ -589,7 +575,7 @@ export default function Settings() {
         </div>
 
         <div className="space-y-8">
-          <ProfileSection currentProfile={currentProfile} refreshProfiles={refreshProfiles} />
+          {currentProfile && <ProfileSection currentProfile={currentProfile} refreshProfiles={refreshProfiles} />}
 
           <div className="space-y-3">
             <h2 className="text-lg font-medium">General</h2>

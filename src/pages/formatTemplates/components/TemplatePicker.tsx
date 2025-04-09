@@ -32,6 +32,7 @@ export interface TemplatePickerProps {
   onImport: () => void;
   onExport: (templateId: string) => void;
   compact?: boolean;
+  disabled?: boolean;
 }
 
 export function TemplatePicker({
@@ -44,6 +45,7 @@ export function TemplatePicker({
   onImport,
   onExport,
   compact = false,
+  disabled = false,
 }: TemplatePickerProps): JSX.Element {
   const hasTemplates = templates.length > 0;
   const selectedTemplate = selectedTemplateId ? templates.find((t) => t.id === selectedTemplateId) : null;
@@ -107,7 +109,7 @@ export function TemplatePicker({
     <>
       <div className="flex items-center space-x-1.5">
         <div className="flex-1">
-          <Select value={selectedTemplateId ?? undefined} onValueChange={onTemplateSelect} disabled={!hasTemplates}>
+          <Select value={selectedTemplateId ?? undefined} onValueChange={onTemplateSelect} disabled={!hasTemplates || disabled}>
             <SelectTrigger className="w-full h-8 text-sm font-bold focus:border-none">
               <SelectValue placeholder={hasTemplates ? "Select Template" : "No templates available"} />
             </SelectTrigger>
@@ -124,7 +126,7 @@ export function TemplatePicker({
         {compact ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="Options">
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="Options" disabled={disabled}>
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -170,13 +172,20 @@ export function TemplatePicker({
               size="sm"
               className="h-8 w-8 p-0"
               onClick={handleEditNameClick}
-              disabled={!selectedTemplateId}
+              disabled={!selectedTemplateId || disabled}
               title="Edit Template Name"
             >
               <Edit className="h-3.5 w-3.5" />
             </Button>
 
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={handleNewTemplateClick} title="Create New Template">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={handleNewTemplateClick}
+              title="Create New Template"
+              disabled={disabled}
+            >
               <Plus className="h-3.5 w-3.5" />
             </Button>
 

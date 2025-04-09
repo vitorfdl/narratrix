@@ -3,6 +3,7 @@ import type { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/i
 import { Engine } from "@/schema/model-manifest-schema";
 import { parseEngineParameters } from "@/services/inference-steps/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 // Define types needed for inference
 type InferenceStatus = "idle" | "queued" | "streaming" | "completed" | "error" | "cancelled";
@@ -28,6 +29,7 @@ interface InferenceParams {
   systemPrompt?: string;
   parameters?: Record<string, any>;
   stream?: boolean;
+  requestId?: string;
 }
 
 // Global listener to ensure it's only initialized once
@@ -63,7 +65,6 @@ export function useInference(options: UseInferenceOptions = {}) {
 
           unlisten = await listenForInferenceResponses(handleInferenceResponse);
           listenerInitialized = true;
-          console.log("Global inference listener initialized");
 
           // Cleanup on window unload
           window.addEventListener("beforeunload", () => {
@@ -143,16 +144,34 @@ export function useInference(options: UseInferenceOptions = {}) {
 
   // Run inference and track the request
   const runInference = useCallback(async (params: InferenceParams) => {
-    const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false } = params;
+    const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false, requestId: providedId } = params;
 
-    const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, parameters);
-    console.log("parsedParameters", parsedParameters);
-    console.log("modelSpecs", modelSpecs);
+    // Use provided ID or generate a new one
+    const requestId = providedId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+    // Immediately register this request in our tracking
+    setRequests((current) => ({
+      ...current,
+      [requestId]: {
+        id: requestId,
+        modelId: modelSpecs.id,
+        status: "queued",
+        response: null,
+        error: null,
+        timestamp: Date.now(),
+      },
+    }));
+
+    // Clear any existing tracking for this request ID
+    delete lastStreamChunks.current[requestId];
+
+    const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, modelSpecs.config, parameters);
+
     try {
       // Queue request with backend
-      const requestId = await queueInferenceRequest(
+      await queueInferenceRequest(
         {
-          id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: requestId,
           message_list: messages,
           system_prompt: systemPrompt,
           parameters: parsedParameters,
@@ -160,22 +179,6 @@ export function useInference(options: UseInferenceOptions = {}) {
         },
         modelSpecs,
       );
-
-      // Clear any existing tracking for this request ID
-      delete lastStreamChunks.current[requestId];
-
-      // Add to local tracking state
-      setRequests((current) => ({
-        ...current,
-        [requestId]: {
-          id: requestId,
-          modelId: modelSpecs.id,
-          status: "queued",
-          response: null,
-          error: null,
-          timestamp: Date.now(),
-        },
-      }));
 
       return requestId;
     } catch (error) {
@@ -195,23 +198,23 @@ export function useInference(options: UseInferenceOptions = {}) {
 
       try {
         const success = await cancelInferenceRequest(request.modelId, requestId);
-
-        if (success) {
-          // Clean up tracking for this request
-          delete lastStreamChunks.current[requestId];
-
-          setRequests((current) => ({
-            ...current,
-            [requestId]: {
-              ...current[requestId],
-              status: "cancelled",
-            },
-          }));
+        if (!success) {
+          toast.error("Failed to cancel request");
         }
 
-        return success;
+        // Clean up tracking for this request
+        delete lastStreamChunks.current[requestId];
+
+        setRequests((current) => ({
+          ...current,
+          [requestId]: {
+            ...current[requestId],
+            status: "cancelled",
+          },
+        }));
+
+        return true;
       } catch (error) {
-        console.error("Failed to cancel request:", error);
         return false;
       }
     },

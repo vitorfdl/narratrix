@@ -1,5 +1,6 @@
 import type { AppSettings } from "@/schema/profiles-schema";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { useLocalTheme } from "@/utils/local-storage";
+import React, { createContext, useContext, useEffect } from "react";
 
 type Theme = AppSettings["appearance"]["theme"];
 
@@ -11,7 +12,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setTheme] = useLocalTheme();
 
   useEffect(() => {
     // Handle system theme preference

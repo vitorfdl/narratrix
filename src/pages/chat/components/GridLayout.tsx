@@ -13,8 +13,8 @@ import "../styles/react-grid-overrides.css";
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 const COLUMNS = {
-  lg: 10,
-  md: 8,
+  lg: 12,
+  md: 10,
   sm: 6,
   xs: 6,
   xxs: 2,

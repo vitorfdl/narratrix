@@ -6,7 +6,7 @@ import { GridPosition } from "@/schema/grid";
 import { PopoverArrow } from "@radix-ui/react-popover";
 import { Pin } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
-import { WidgetId, renderWidget, widgetTitles } from "../hooks/registry";
+import { WidgetId, renderWidget, widgetConfigurations, widgetTitles } from "../hooks/registry";
 
 interface GridSidebarProps {
   hiddenWidgets: GridPosition[];
@@ -35,23 +35,27 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
 
   return (
     <div className="w-auto h-full">
-      <div className="left-0 top-0 h-full flex flex-col items-start mt-1 gap-2">
+      <div className="left-0 top-0 h-full justify-center flex flex-col items-start mt-1 gap-2">
+        <Separator orientation="horizontal" className="w-full my-0" />
         {hiddenWidgets.map((widget, index) => (
           <Fragment key={widget.id}>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant="ghost"
-                  style={{
-                    writingMode: "vertical-rl",
-                    transform: "rotate(-180deg)",
-                    textOrientation: "mixed",
-                    fontSize: "0.75rem",
-                    height: "auto",
-                  }}
-                  className="h-auto bg-transparent whitespace-nowrap text-sm p-0.5 pt-1 pb-1 font-light"
+                  variant="outline"
+                  // style={{
+                  //   writingMode: "vertical-rl",
+                  //   transform: "rotate(-180deg)",
+                  //   textOrientation: "mixed",
+                  //   fontSize: "0.75rem",
+                  //   height: "auto",
+                  // }}
+                  className="m-1 h-auto bg-transparent whitespace-nowrap text-sm p-0.5 pt-1 pb-1 font-light"
                 >
-                  {widgetTitles[widget.id as WidgetId]}
+                  <div className="flex items-center gap-1">
+                    {widgetConfigurations[widget.id as WidgetId].icon}
+                    {/* {widgetTitles[widget.id as WidgetId]} */}
+                  </div>
                 </Button>
               </PopoverTrigger>
               <PopoverContent side="right" className="max-w-[80vw] w-auto shadow-md bg-background p-0">
@@ -73,7 +77,7 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
                 </ResizablePopoverContent>
               </PopoverContent>
             </Popover>
-            {index < hiddenWidgets.length - 1 && <Separator orientation="horizontal" className="my-0" />}
+            <Separator orientation="horizontal" className="my-0" />
           </Fragment>
         ))}
       </div>

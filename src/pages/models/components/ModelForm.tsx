@@ -23,7 +23,7 @@ const MODEL_TYPES: ModelType[] = ["llm", "audio", "image", "database"];
 interface ModelFormProps {
   onSuccess: () => void;
   model?: Model; // Optional model for edit mode
-  mode: "add" | "edit";
+  mode: "add" | "edit" | "duplicate";
 }
 
 export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
@@ -313,34 +313,27 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     try {
       // Extract config fields from form values
       const configFields: Record<string, any> = {};
-      const formValues = form.getValues();
-
-      // Validate required fields are filled before testing
-      const missingRequiredFields = selectedManifest.fields
-        .filter((field) => field.required)
-        .some((field) => {
-          const value = formValues[field.key];
-          return value === undefined || value === null || value === "";
-        });
-
-      if (missingRequiredFields) {
-        setTestResult({
-          state: "error",
-          message: "Please fill all required fields before testing",
-        });
-        return;
-      }
 
       for (const field of selectedManifest.fields) {
-        if (formValues[field.key] !== undefined) {
+        const fieldValue = form.getValues()[field.key];
+
+        // Skip empty secret fields in edit mode to avoid overwriting with empty string
+        if (mode === "edit" && field.field_type === "secret" && !fieldValue) {
+          continue; // Don't include this field in the configFields payload
+        }
+
+        // Include other fields if they have a value
+        if (fieldValue !== undefined) {
           // Format URL fields with proper prefix
-          if (field.field_type === "url" && formValues[field.key]) {
-            configFields[field.key] = formatUrl(formValues[field.key].trim());
+          if (field.field_type === "url" && fieldValue) {
+            configFields[field.key] = formatUrl(String(fieldValue).trim());
           } else {
-            configFields[field.key] = formValues[field.key];
+            configFields[field.key] = fieldValue;
           }
         }
       }
+
+      console.log(configFields);
 
       // Create temporary model specs for testing
       const modelSpecs = ModelSpecsSchema.parse({
@@ -388,30 +381,21 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
       // Extract config fields from form values
       const configFields: Record<string, any> = {};
 
-      // If in edit mode, first get the existing config
-      let existingConfig: Record<string, any> = {};
-      if (mode === "edit" && model) {
-        existingConfig = typeof model.config === "string" ? JSON.parse(model.config) : model.config;
-      }
-
       for (const field of selectedManifest.fields) {
-        // Handle special case for secret fields in edit mode
-        if (mode === "edit" && field.field_type === "secret") {
-          // Only update secret if a new value is provided (non-empty)
-          if (values[field.key]) {
-            configFields[field.key] = values[field.key];
-          } else if (existingConfig[field.key]) {
-            // Keep existing value
-            configFields[field.key] = existingConfig[field.key];
-          }
+        const fieldValue = values[field.key];
+
+        // Skip empty secret fields in edit mode to avoid overwriting with empty string
+        if (mode === "edit" && field.field_type === "secret" && !fieldValue) {
+          continue; // Don't include this field in the configFields payload
         }
-        // Handle other fields normally
-        else if (values[field.key] !== undefined) {
+
+        // Include other fields if they have a value
+        if (fieldValue !== undefined) {
           // Format URL fields with proper prefix
-          if (field.field_type === "url" && values[field.key]) {
-            configFields[field.key] = formatUrl(values[field.key]);
+          if (field.field_type === "url" && fieldValue) {
+            configFields[field.key] = formatUrl(String(fieldValue).trim());
           } else {
-            configFields[field.key] = values[field.key];
+            configFields[field.key] = fieldValue;
           }
         }
       }
@@ -540,7 +524,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
           .filter((field) => field.field_type !== "hidden")
           .map((field) => (
             <ModelInputFields
-              isEditMode={mode === "edit"}
+              isEditMode={mode === "edit" || mode === "duplicate"}
               key={field.key}
               field={field}
               form={form}
@@ -589,7 +573,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
             )}
           </Button>
           <Button type="submit" className="flex-1" disabled={!selectedManifest || !selectedType}>
-            {mode === "edit" ? "Update" : "Add"} Model
+            {mode === "edit" ? "Update" : mode === "duplicate" ? "Duplicate" : "Add"} Model
           </Button>
         </div>
       </form>
