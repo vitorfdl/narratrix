@@ -139,7 +139,7 @@ This repository maintains the latest source code release for Narratrix, and is
 licensed under the
 [GNU Affero General Public License](https://www.gnu.org/licenses/agpl-3.0.en.html).
 Binaries and executable releases are licensed under the
-[End User License Agreement](LICENSE).
+[End User License Agreement](LICENSE_2).
 
 ## 🙏 Acknowledgments
 
