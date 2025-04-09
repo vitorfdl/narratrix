@@ -22,7 +22,7 @@ solo player seeking adventures, Narratrix empowers you to create and share your
 own stories.
 
 <p align="center">
-  <img src="path/to/narratrix-screenshot.png" alt="Narratrix Interface" width="80%"/>
+  <img src="https://github.com/user-attachments/assets/f7a715be-f39d-4334-aac7-f8d469f230a5" alt="Narratrix Interface" width="80%"/>
 </p>
 
 ## 🚀 Key Features
@@ -107,7 +107,7 @@ Each model can be configured through JSON manifests that specify parameters,
 endpoints, and behaviors—no coding required!
 
 <p align="center">
-  <img src="path/to/model-management-screenshot.png" alt="Model Management" width="80%"/>
+  <img src="https://github.com/user-attachments/assets/5cb26b4d-6027-4671-9b0e-97ff5faef2f2" alt="Model Management" width="80%"/>
 </p>
 
 ## 🤝 Contributing
