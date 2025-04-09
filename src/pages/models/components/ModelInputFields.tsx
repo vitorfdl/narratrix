@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ManifestField } from "@/schema/model-manifest-schema";
 import { Eye, EyeOff, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FieldValues, UseFormReturn } from "react-hook-form";
+import { UseFormReturn } from "react-hook-form";
 
 interface ModelInputFieldsProps {
   field: ManifestField;
@@ -15,7 +15,7 @@ interface ModelInputFieldsProps {
   toggleSecretVisibility: (key: string) => void;
 }
 
-export function ModelInputFields<T extends FieldValues>({ field, form, showSecrets, toggleSecretVisibility, isEditMode }: ModelInputFieldsProps) {
+export function ModelInputFields({ field, form, showSecrets, toggleSecretVisibility, isEditMode }: ModelInputFieldsProps) {
   const [secretEditValue, setSecretEditValue] = useState<string>("");
 
   useEffect(() => {

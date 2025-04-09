@@ -1,7 +1,7 @@
 import Characters from "@/pages/characters/CharactersPage";
 import ChatPage from "@/pages/chat/ChatPage";
 import InferenceTemplatePage from "@/pages/formatTemplates/FormatTemplatePage";
-import LexicalTestPage from "@/pages/lorebooks/LorebooksPage";
+import LorebooksPage from "@/pages/lorebooks/LorebooksPage";
 import Models from "@/pages/models/ModelsPage";
 import Settings from "@/pages/settings/SettingsPage";
 
@@ -17,7 +17,7 @@ const Content: React.FC<ContentProps> = ({ activeSection }) => {
       {activeSection === "inference" && <InferenceTemplatePage />}
       {activeSection === "chat" && <ChatPage />}
       {activeSection === "characters" && <Characters />}
-      {activeSection === "lorebooks" && <LexicalTestPage />}
+      {activeSection === "lorebooks" && <LorebooksPage />}
       {activeSection === "settings" && <Settings />}
     </div>
   );

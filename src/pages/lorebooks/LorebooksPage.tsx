@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Construction } from "lucide-react";
 
-export default function LexicalTestPage() {
+export default function LorebooksPage() {
   return (
     <div className="flex flex-col items-center justify-center h-full p-8 text-center">
       <motion.div

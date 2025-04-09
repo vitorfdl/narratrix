@@ -37,7 +37,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingName, setIsChangingName] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isChangingAvatar, setIsChangingAvatar] = useState(false);
+  const [_isChangingAvatar, setIsChangingAvatar] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { logout, setCurrentProfile, currentProfileAvatarUrl, refreshAvatar } = useProfile();
 

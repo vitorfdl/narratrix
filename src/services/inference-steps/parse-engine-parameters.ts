@@ -37,7 +37,7 @@ function parseOpenRouterParameters(rawParameters: Record<string, any>) {
 
 function parseOpenAIParameters(rawParameters: Record<string, any>, { model }: Model["config"]) {
   const parameters = structuredClone(rawParameters);
-  const { reasoning_temperature, reasoning_budget } = parameters;
+  const { reasoning_temperature } = parameters;
 
   if (model.includes("o3-mini") || model.startsWith("o1-mini") || model.startsWith("o1-")) {
     const { max_tokens } = parameters;

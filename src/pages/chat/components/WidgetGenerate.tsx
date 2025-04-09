@@ -17,7 +17,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const inferenceService = useInferenceServiceFromContext();
   // const { generateQuietly } = useBackgroundInference();
   const [text, setText] = React.useState("");
-  const [autoTranslate, setAutoTranslate] = React.useState(false);
+  // const [autoTranslate, setAutoTranslate] = React.useState(false);
   const [streamingCharacters, setStreamingCharacters] = useState<Record<string, boolean>>({});
   const streamingCheckRef = useRef<number | null>(null);
   const quietResponseRef = useRef<boolean>(false);

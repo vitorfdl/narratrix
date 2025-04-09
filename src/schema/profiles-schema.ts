@@ -62,7 +62,7 @@ const ProfileSchema = z.object({
   avatar_path: z.string().optional(),
   password: z.string().min(3).optional(),
   settings: AppSettingsSchema.default({}),
-  quick_buttons: z.array(z.string()).default([]),
+  // quick_buttons: z.array(z.string()).default([]),
   created_at: dateUtils.withDefaultNow(),
   updated_at: dateUtils.withDefaultNow(),
 });
