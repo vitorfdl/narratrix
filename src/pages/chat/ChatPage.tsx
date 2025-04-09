@@ -21,6 +21,7 @@ import { useLocalChatTabs } from "@/utils/local-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ChatTabs } from "./ChatTabs";
+import { ChatMenuDropdown } from "./components/ChatMenuDropdown";
 import { GridLayout } from "./components/GridLayout";
 
 export default function ChatPage() {
@@ -311,7 +312,22 @@ export default function ChatPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="mb-4 text-muted-foreground">No active chat. Create a new one to get started.</p>
-            <Button onClick={handleNewChat}>Create New Chat</Button>
+            {allChats.length > 0 ? (
+              <ChatMenuDropdown
+                profileId={profileId}
+                allChats={allChats}
+                openChatIds={openTabIds}
+                onSelectChat={handleTabChange}
+                onCreateChat={handleNewChat}
+                onRenameRequest={handleRenameRequest}
+                onDuplicateRequest={handleDuplicateRequest}
+                onDeleteRequest={handleDeleteRequest}
+              >
+                <Button>Create New Chat</Button>
+              </ChatMenuDropdown>
+            ) : (
+              <Button onClick={handleNewChat}>Create New Chat</Button>
+            )}
           </div>
         </div>
       )}

@@ -1,9 +1,7 @@
 import {
-  FormatTemplateFilter,
   createFormatTemplate as createFormatTemplateAPI,
   deleteFormatTemplate as deleteFormatTemplateAPI,
   getFormatTemplateById as getFormatTemplateByIdAPI,
-  getFormatTemplatesByProfile as getFormatTemplatesByProfileAPI,
   listFormatTemplates as listFormatTemplatesAPI,
   updateFormatTemplate as updateFormatTemplateAPI,
 } from "@/services/template-format-service";
@@ -40,7 +38,7 @@ interface TemplateState {
       updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
     ) => Promise<FormatTemplate | null>;
     deleteFormatTemplate: (id: string) => Promise<boolean>;
-    fetchFormatTemplates: (filter?: FormatTemplateFilter) => Promise<void>;
+    fetchFormatTemplates: (profileId: string) => Promise<void>;
     getFormatTemplatesByProfile: (profileId: string) => Promise<FormatTemplate[]>;
 
     // Inference Template Operations
@@ -173,10 +171,10 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       }
     },
 
-    fetchFormatTemplates: async (filter?: FormatTemplateFilter) => {
+    fetchFormatTemplates: async (profileId: string) => {
       try {
         set({ isLoading: true, error: null });
-        const templates = await listFormatTemplatesAPI(filter);
+        const templates = await listFormatTemplatesAPI(profileId);
         set({ formatTemplates: templates, isLoading: false });
       } catch (error) {
         set({
@@ -195,10 +193,10 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
         // If we don't have any templates yet, fetch them first
         if (existingTemplates.length === 0) {
-          await get().actions.fetchFormatTemplates({ profile_id: profileId });
+          await get().actions.fetchFormatTemplates(profileId);
         }
 
-        const templates = await getFormatTemplatesByProfileAPI(profileId);
+        const templates = await listFormatTemplatesAPI(profileId);
         set({ isLoading: false });
         return templates;
       } catch (error) {

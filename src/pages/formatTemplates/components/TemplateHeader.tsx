@@ -63,9 +63,9 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   // Fetch templates on component mount if not already loaded
   useEffect(() => {
     if (formatTemplates.length === 0) {
-      fetchFormatTemplates();
+      fetchFormatTemplates(profile?.currentProfile?.id || "");
     }
-  }, [fetchFormatTemplates, formatTemplates.length]);
+  }, [fetchFormatTemplates, formatTemplates.length, profile?.currentProfile?.id]);
 
   // Update current template when selectedTemplate changes
   useEffect(() => {

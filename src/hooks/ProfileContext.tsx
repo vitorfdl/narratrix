@@ -150,11 +150,13 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     if (state.currentProfile) {
       setSessionProfileID(state.currentProfile);
       fetchManifests();
-      fetchFormatTemplates({ profile_id: state.currentProfile.id });
-      fetchInferenceTemplates({ profile_id: state.currentProfile.id });
-      fetchChatTemplates({ profile_id: state.currentProfile.id });
-      fetchCharacters(state.currentProfile.id);
-      fetchChatList(state.currentProfile.id);
+      if (state.currentProfile.id) {
+        fetchFormatTemplates(state.currentProfile.id);
+        fetchInferenceTemplates({ profile_id: state.currentProfile.id });
+        fetchChatTemplates({ profile_id: state.currentProfile.id });
+        fetchCharacters(state.currentProfile.id);
+        fetchChatList(state.currentProfile.id);
+      }
       setTheme(state.currentProfile.settings.appearance.theme || "system");
     } else {
       setSessionProfileID(undefined);

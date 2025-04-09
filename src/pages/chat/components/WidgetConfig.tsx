@@ -47,8 +47,8 @@ const WidgetConfig = ({
   const [activeFields, setActiveFields] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, any>>({});
   const [, setSelectedField] = useState<string>("");
-  const [selectedModelId, setSelectedModelId] = useState<string>("");
-  const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string>("");
+  const [selectedModelId, setSelectedModelId] = useState<string>("none");
+  const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string>("none");
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
   const [maxDepth, setMaxDepth] = useState<number>(100);
@@ -454,7 +454,11 @@ const WidgetConfig = ({
               selectedValue={selectedModelId}
               placeholder="Search a model..."
               trigger={
-                <Button variant="outline" className="w-full justify-between text-xs px-2" disabled={isDisabled}>
+                <Button
+                  variant={selectedFormatTemplateId ? "outline" : "destructive"}
+                  className="w-full justify-between text-xs px-2"
+                  disabled={isDisabled}
+                >
                   {selectedModelId
                     ? modelOptions.find((model) => model.value === selectedModelId)?.label || "Select a model..."
                     : "Select a model..."}

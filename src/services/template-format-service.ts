@@ -82,8 +82,10 @@ export async function getFormatTemplateById(id: string): Promise<FormatTemplate 
 }
 
 // List format templates with optional filtering
-export async function listFormatTemplates(filter?: FormatTemplateFilter): Promise<FormatTemplate[]> {
-  let query = `
+export async function listFormatTemplates(profileID: string): Promise<FormatTemplate[]> {
+  const validatedProfileID = uuidUtils.uuid().parse(profileID);
+
+  const query = `
     SELECT 
       id, 
       profile_id, 
@@ -93,30 +95,11 @@ export async function listFormatTemplates(filter?: FormatTemplateFilter): Promis
       created_at, 
       updated_at
     FROM format_template
+    WHERE profile_id = $1
+    ORDER BY created_at DESC
   `;
 
-  const conditions: string[] = [];
-  const params: any[] = [];
-  let paramIndex = 1;
-
-  // Add filter conditions if provided
-  if (filter) {
-    if (filter.profile_id) {
-      conditions.push(`profile_id = $${paramIndex}`);
-      params.push(uuidUtils.uuid().parse(filter.profile_id));
-      paramIndex++;
-    }
-  }
-
-  // Add WHERE clause if there are conditions
-  if (conditions.length > 0) {
-    query += ` WHERE ${conditions.join(" AND ")}`;
-  }
-
-  // Add order by to ensure consistent results
-  query += " ORDER BY created_at DESC";
-
-  const result = await selectDBQuery<any[]>(query, params);
+  const result = await selectDBQuery<any[]>(query, [validatedProfileID]);
 
   // Process results
   return result.map((template) => {
@@ -204,8 +187,3 @@ export async function deleteFormatTemplate(id: string): Promise<boolean> {
   return result.rowsAffected > 0;
 }
 
-// Get templates by profile ID
-export async function getFormatTemplatesByProfile(profileId: string): Promise<FormatTemplate[]> {
-  const validProfileId = uuidUtils.uuid().parse(profileId);
-  return listFormatTemplates({ profile_id: validProfileId });
-}

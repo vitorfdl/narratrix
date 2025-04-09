@@ -19,6 +19,7 @@ interface ChatMenuDropdownProps {
   onRenameRequest: (chatId: string) => void;
   onDuplicateRequest: (chatId: string) => void;
   onDeleteRequest: (chatId: string) => void;
+  children: React.ReactNode;
 }
 
 export function ChatMenuDropdown({
@@ -29,6 +30,7 @@ export function ChatMenuDropdown({
   onRenameRequest,
   onDuplicateRequest,
   onDeleteRequest,
+  children,
 }: ChatMenuDropdownProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,7 +54,7 @@ export function ChatMenuDropdown({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" className="px-2">
-          <PlusIcon className="h-4 w-4 text-foreground" />
+          {children}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="p-0 w-[350px]" align="start">

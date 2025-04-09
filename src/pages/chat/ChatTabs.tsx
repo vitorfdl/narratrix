@@ -2,7 +2,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator,
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Chat, ChatTab } from "@/schema/chat-schema";
-import { X } from "lucide-react";
+import { PlusIcon, X } from "lucide-react";
 import { ChatMenuDropdown } from "./components/ChatMenuDropdown";
 
 interface ChatTabsProps {
@@ -80,7 +80,9 @@ export function ChatTabs({
             onRenameRequest={onRenameRequest}
             onDuplicateRequest={onDuplicateRequest}
             onDeleteRequest={onDeleteRequest}
-          />
+          >
+            <PlusIcon className="h-4 w-4 text-foreground" />
+          </ChatMenuDropdown>
         </div>
       </ScrollArea>
     </div>
