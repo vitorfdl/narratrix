@@ -2,19 +2,25 @@ import { SuggestionItem } from "@/components/markdownRender/markdown-textarea";
 import { z } from "zod";
 import { uuidUtils } from "./utils-schema";
 
+const functionSuggestionList: SuggestionItem[] = [
+  { title: "word1|word2|word3", description: "Randomizer", type: "function" },
+  { title: "N$$word1|word2", description: "Randomize next N words", type: "function" },
+];
+
 export const basicPromptSuggestionList: SuggestionItem[] = [
-  { title: "user", description: "User Character Name or Profile Name" },
-  { title: "char", description: "Character Name." },
-  { title: "character.name" },
-  { title: "user.personality" },
-  { title: "character.personality" },
+  { title: "user", description: "User Character/Profile Name", section: "prompt" },
+  { title: "char", description: "Character Name.", section: "prompt" },
+  { title: "character.name", description: "Same as {{char}}", section: "prompt" },
+  { title: "user.personality", section: "prompt" },
+  { title: "character.personality", section: "prompt" },
+  ...functionSuggestionList.map((item) => ({ ...item, section: "function" as const })),
 ];
 
 export const promptReplacementSuggestionList: SuggestionItem[] = [
   ...basicPromptSuggestionList,
-  { title: "character.expression", description: "Character Latest Expression" },
-  { title: "chapter.scenario" },
-  { title: "chapter.title" },
+  { title: "character.expression", description: "Character latest expression", section: "prompt" },
+  { title: "chapter.scenario", section: "prompt" },
+  { title: "chapter.title", section: "prompt" },
 ];
 
 /**

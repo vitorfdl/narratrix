@@ -5,9 +5,9 @@ import { tooltips } from "@codemirror/view";
 import { MDXEditor, MDXEditorMethods, diffSourcePlugin } from "@mdxeditor/editor";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import "../layout/styles/mdxeditor.css";
 import { highlightBracketsExtension } from "./codemirror-highlight-brackets";
 import { SuggestionItem } from "./markdown-textarea";
+import "./styles/mdxeditor.css";
 
 export interface MDXEditorProps {
   initialValue?: string;
@@ -59,8 +59,9 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
         // Transform SuggestionItems to CodeMirror completion format
         const options = suggestions.map((item) => ({
           label: item.title,
+          section: item.section,
           detail: item.description,
-          type: "variable",
+          type: item.type || "variable",
         }));
 
         return {
@@ -72,17 +73,23 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
       };
     }, []);
 
-    useImperativeHandle(ref, () => {
-      if (!editorRef.current) {
-        return {
-          getMarkdown: () => "",
-          setMarkdown: () => {},
-          insertMarkdown: () => {},
-          focus: () => {},
-        } as MDXEditorMethods;
-      }
-      return editorRef.current;
-    });
+    useImperativeHandle(
+      ref,
+      () => {
+        if (!editorRef.current) {
+          // Create a fallback implementation if editor ref is null
+          return {
+            getMarkdown: () => "",
+            setMarkdown: () => {},
+            insertMarkdown: () => {},
+            focus: () => {},
+          } as MDXEditorMethods;
+        }
+        // Pass through all MDXEditor methods directly
+        return editorRef.current;
+      },
+      [editorRef.current],
+    );
 
     // Only sync from props on mount or when initialValue changes and user is not actively editing
     useEffect(() => {
@@ -224,6 +231,9 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
                     defaultKeymap: true,
                     aboveCursor: true,
                     maxRenderedOptions: 10,
+                    tooltipClass: (state) => {
+                      return "custom-tooltip";
+                    },
                   }),
                   highlightBracketsExtension(),
                 ],

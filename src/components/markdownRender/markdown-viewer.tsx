@@ -5,8 +5,8 @@ import ReactMarkdown from "react-markdown";
 import RehypeHighlight from "rehype-highlight";
 import RemarkBreaks from "remark-breaks";
 import RemarkGfm from "remark-gfm";
-import "../layout/styles/highlight.css";
-import "../layout/styles/markdown.css";
+import "./styles/highlight.css";
+import "./styles/markdown.css";
 
 export interface MarkdownViewerProps {
   content: string;

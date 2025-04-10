@@ -63,12 +63,12 @@
 
   /** Diff viewer */
   & .cm-mergeView .cm-scroller {
-    @apply font-thin text-sm;
+    @apply font-thin;
   }
 
   /** Diff viewer */
   & .cm-sourceView .cm-scroller {
-    @apply font-thin text-sm;
+    @apply font-thin;
   }
 
   & .cm-gutters {

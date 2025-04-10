@@ -4,6 +4,7 @@ import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { GenerationOptions, StreamingState } from "@/services/inference-service";
+import { MDXEditorMethods } from "@mdxeditor/editor";
 import { StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const streamingCheckRef = useRef<number | null>(null);
   const quietResponseRef = useRef<boolean>(false);
   const [inputStreamingText, setInputStreamingText] = useState<string>("");
+  const textAreaRef = useRef<MDXEditorMethods>(null);
 
   const profile = useProfile();
   const sendCommand = profile.currentProfile?.settings.chat.sendShortcut;
@@ -53,6 +55,45 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       setText(inputStreamingText);
     }
   }, [inputStreamingText, quietResponseRef.current]);
+
+  // Add event listener for Tab key to focus textarea
+  useEffect(() => {
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key === "Tab") {
+        e.preventDefault();
+
+        // Find the CodeMirror editor inside the markdown textarea
+        const editorElement = document.querySelector(".rich-text-area .cm-editor");
+        if (editorElement) {
+          // Focus the editor
+          (editorElement as HTMLElement).focus();
+
+          // Try to place cursor at end if possible
+          const textArea = editorElement.querySelector(".cm-content");
+          if (textArea) {
+            const range = document.createRange();
+            const sel = window.getSelection();
+
+            // Try to position at the end
+            if (textArea.lastChild) {
+              range.setStartAfter(textArea.lastChild);
+              range.collapse(true);
+
+              if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleTabKey);
+    return () => {
+      window.removeEventListener("keydown", handleTabKey);
+    };
+  }, []);
 
   const handleSubmit = useCallback(
     async (submittedText: string) => {
@@ -295,6 +336,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
         sendShortcut={sendCommand}
         onSubmit={handleSubmit}
+        ref={textAreaRef}
       />
     </div>
   );
