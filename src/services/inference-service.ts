@@ -282,6 +282,9 @@ export function useInferenceService() {
         user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
         chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
         extra: extraSuggestions,
+        censorship: {
+          words: currentProfile?.settings?.censorship?.customWords,
+        },
       },
     });
     return { ...prompt, manifestSettings, modelSettings, chatTemplate };

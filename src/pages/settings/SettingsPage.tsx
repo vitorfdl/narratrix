@@ -1,7 +1,6 @@
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
@@ -14,9 +13,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useTheme } from "@/hooks/ThemeContext";
 import { defaultSettings } from "@/schema/default-settings";
@@ -24,7 +25,7 @@ import { AppSettings } from "@/schema/profiles-schema";
 import { saveImage } from "@/services/file-system-service";
 import { deleteProfile as deleteProfileService, updateProfile, updateProfilePassword, updateProfileSettings } from "@/services/profile-service";
 import { getVersion } from "@tauri-apps/api/app";
-import { ChevronDown, Download, KeyIcon, Languages, LogOut, MessageSquare, Palette, Save, Trash, User, UserCircle } from "lucide-react";
+import { ChevronDown, Download, EyeOff, KeyIcon, Languages, LogOut, MessageSquare, Palette, Save, Trash, User, UserCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import "./styles/settings.css";
@@ -681,7 +682,7 @@ export default function Settings() {
                     </div>
                     <ChevronDown className="w-4 h-4" />
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-3 pt-2">
+                  <CollapsibleContent className="space-y-3 pt-2 pl-6">
                     {/* <div className="flex items-center justify-between">
                       <Label htmlFor="timestamp-format">Timestamp Format</Label>
                       <Select value={settings.chat.timestampFormat} onValueChange={(value) => handleSettingChange("chat", "timestampFormat", value)}>
@@ -706,7 +707,7 @@ export default function Settings() {
                       </div>
                     </div> */}
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between py-1">
                       <Label htmlFor="send-shortcut">Send Shortcut</Label>
                       <Select value={settings.chat.sendShortcut} onValueChange={(value) => handleSettingChange("chat", "sendShortcut", value)}>
                         <SelectTrigger className="w-36" id="send-shortcut">
@@ -723,7 +724,7 @@ export default function Settings() {
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* <Separator />
+                <Separator />
 
                 <Collapsible className="w-full">
                   <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
@@ -733,55 +734,18 @@ export default function Settings() {
                     </div>
                     <ChevronDown className="w-4 h-4" />
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-3 pt-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="censorship-enabled"
-                        checked={settings.censorship.enabled}
-                        onCheckedChange={(checked) => handleSettingChange("censorship", "enabled", !!checked)}
+                  <CollapsibleContent className="space-y-3 pt-2 pl-6">
+                    <div className="flex items-center justify-between py-1">
+                      <Label htmlFor="censorship-custom-words" className="w-40">
+                        Censored Words
+                      </Label>
+                      <CommandTagInput
+                        value={settings.censorship.customWords}
+                        onChange={(value) => handleSettingChange("censorship", "customWords", value)}
                       />
-                      <div className="space-y-1 leading-none">
-                        <Label htmlFor="censorship-enabled">Enable censorship</Label>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="censorship-system"
-                        checked={settings.censorship.applyToSystemPrompts}
-                        onCheckedChange={(checked) => handleSettingChange("censorship", "applyToSystemPrompts", !!checked)}
-                        disabled={!settings.censorship.enabled}
-                      />
-                      <div className="space-y-1 leading-none">
-                        <Label htmlFor="censorship-system">Apply to system prompts</Label>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="censorship-user"
-                        checked={settings.censorship.applyToUserMessages}
-                        onCheckedChange={(checked) => handleSettingChange("censorship", "applyToUserMessages", !!checked)}
-                        disabled={!settings.censorship.enabled}
-                      />
-                      <div className="space-y-1 leading-none">
-                        <Label htmlFor="censorship-user">Apply to user messages</Label>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="censorship-assistant"
-                        checked={settings.censorship.applyToAssistantMessages}
-                        onCheckedChange={(checked) => handleSettingChange("censorship", "applyToAssistantMessages", !!checked)}
-                        disabled={!settings.censorship.enabled}
-                      />
-                      <div className="space-y-1 leading-none">
-                        <Label htmlFor="censorship-assistant">Apply to assistant messages</Label>
-                      </div>
                     </div>
                   </CollapsibleContent>
-                </Collapsible> */}
+                </Collapsible>
               </CardContent>
             </Card>
           </div>
@@ -894,26 +858,22 @@ export default function Settings() {
 
                 <Separator />
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
+                <div className="flex items-center justify-between py-1">
+                  <Label htmlFor="system-debug">Debug Mode</Label>
+                  <Switch
                     id="system-debug"
                     checked={settings.system.debugMode}
                     onCheckedChange={(checked) => handleSettingChange("system", "debugMode", !!checked)}
                   />
-                  <div className="space-y-1 leading-none">
-                    <Label htmlFor="system-debug">Debug Mode</Label>
-                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
+                <div className="flex items-center justify-between py-1">
+                  <Label htmlFor="system-autoupdate">Automatic Updates</Label>
+                  <Switch
                     id="system-autoupdate"
                     checked={settings.system.autoUpdate}
                     onCheckedChange={(checked) => handleSettingChange("system", "autoUpdate", !!checked)}
                   />
-                  <div className="space-y-1 leading-none">
-                    <Label htmlFor="system-autoupdate">Automatic Updates</Label>
-                  </div>
                 </div>
               </CardContent>
             </Card>

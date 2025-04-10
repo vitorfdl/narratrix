@@ -39,6 +39,9 @@ export interface PromptFormatterConfig {
     character?: Pick<CharacterUnion, "name" | "settings" | "custom" | "type">;
     chapter?: Pick<ChatChapter, "title" | "scenario" | "instructions">;
     extra?: Record<string, string>;
+    censorship?: {
+      words?: string[];
+    };
   };
 }
 

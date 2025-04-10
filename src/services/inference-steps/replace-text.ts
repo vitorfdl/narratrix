@@ -1,4 +1,5 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
+import { applyCensorship } from "./apply-censorship";
 import { FormattedPromptResult, PromptFormatterConfig } from "./formatter";
 
 /**
@@ -51,6 +52,45 @@ function applyTextReplacements(text: string, config: PromptFormatterConfig["chat
 }
 
 /**
+ * Random Pattern is a text embraced by a single bracket:
+ * Using this script, the prompt:
+ * A {{house|apartment|lodge|cottage}} in {{summer|winter|autumn|spring}} by {{2$$artist1|artist2|artist3}}
+ * Will produce any of the following prompts:
+ * A house in summer by artist1, artist2
+ * A lodge in autumn by artist3, artist1
+ * A cottage in winter by artist2, artist3
+ * @param text
+ */
+export function replaceRandomPattern(text: string): string {
+  // Regular expression to match patterns like {{option1|option2|...}}
+  const patternRegex = /\{\{([^{}]+)\}\}/g;
+
+  return text.replace(patternRegex, (_match, content) => {
+    // Split options by pipe character
+    const options = content.split("|");
+
+    // Check if this is a multi-select pattern (starts with a number followed by $$)
+    const multiSelectMatch = options[0].match(/^(\d+)\$\$(.*)/);
+
+    if (multiSelectMatch) {
+      // Extract count and first option
+      const count = Number.parseInt(multiSelectMatch[1], 10);
+      options[0] = multiSelectMatch[2]; // Replace first option with cleaned version
+
+      // Shuffle options and pick the first 'count' items
+      const shuffled = [...options].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, Math.min(count, options.length));
+
+      // Join selected options with comma and space
+      return selected.join(", ");
+    }
+    // Single selection: pick a random option
+    const randomIndex = Math.floor(Math.random() * options.length);
+    return options[randomIndex];
+  });
+}
+
+/**
  * Replace placeholder text in messages and system prompt
  */
 export function replaceTextPlaceholders(
@@ -59,21 +99,27 @@ export function replaceTextPlaceholders(
   config: PromptFormatterConfig["chatConfig"],
 ): FormattedPromptResult {
   // console.log("⚠️ !> config", config);
-  const { character, user_character, chapter, extra } = config || {};
+  const { character, user_character, chapter, extra, censorship } = config || {};
 
   // Skip if no replacements needed
-  if (!character && !user_character && !chapter && !extra) {
+  if (!character && !user_character && !chapter && !extra && !censorship) {
     return { inferenceMessages: messages, systemPrompt };
   }
+
+  const processText = (text: string): string => {
+    const withReplacements = applyTextReplacements(text, config);
+    const withRandomPattern = replaceRandomPattern(withReplacements);
+    return applyCensorship(withRandomPattern, censorship?.words || []);
+  };
 
   // Process text replacements in messages
   const processedMessages = messages.map((message) => ({
     ...message,
-    ...(message.text ? { text: applyTextReplacements(message.text, config) } : {}),
+    ...(message.text ? { text: processText(message.text) } : {}),
   }));
 
   // Process text replacements in system prompt
-  const processedSystemPrompt = systemPrompt ? applyTextReplacements(systemPrompt, config) : undefined;
+  const processedSystemPrompt = systemPrompt ? processText(systemPrompt) : undefined;
 
   return {
     inferenceMessages: processedMessages,
