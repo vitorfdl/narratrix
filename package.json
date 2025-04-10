@@ -87,6 +87,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@tailwindcss/container-queries": "^0.1.1",
     "@tauri-apps/cli": "^2.2.7",
     "@types/hast": "^3.0.4",
     "@types/lodash": "^4.17.15",

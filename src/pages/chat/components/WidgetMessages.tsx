@@ -4,7 +4,7 @@ import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatMessages, useCurrentChatTemplateID, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { cn } from "@/lib/utils";
-import { Check, ChevronDown, Command, Loader2, Scissors, X } from "lucide-react";
+import { Check, ChevronDown, Loader2, Scissors, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ import { CharacterUnion } from "@/schema/characters-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
 import { MessageActions } from "./message-controls/AdditionalActions";
 import { MessageAvatar } from "./message-controls/MessageAvatar";
+import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
 import { ReasoningSection } from "./message-controls/ReasoningCollapsible";
 import { VersionControls } from "./message-controls/VersionButtons";
 
@@ -503,49 +504,7 @@ const WidgetMessages: React.FC = () => {
   };
 
   if (messagesWithCharCount.length === 0) {
-    const kbdClass = "px-2 py-1 text-xs font-sans font-semibold text-muted-foreground bg-muted border border-border rounded-md";
-    const sendShortcut = currentProfile?.settings.chat.sendShortcut || "Ctrl+Enter"; // Default to Ctrl+Enter
-    const shortcutParts = sendShortcut.split("+");
-    const mainKey = shortcutParts.pop(); // Get the last part as the main key
-    const modifierKeys = shortcutParts; // The rest are modifiers
-
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-sm">
-        <div className="text-muted-foreground text-center mb-6">No messages yet. Start the conversation by sending a message.</div>
-        <div className="w-full max-w-xs space-y-2">
-          <strong className="block text-center mb-2">Keyboard Shortcuts:</strong>
-          <div className="flex justify-between items-center">
-            <span>Toggle Live Inspector</span>
-            <div className="flex items-center gap-1">
-              <kbd className={kbdClass}>Ctrl</kbd>
-              <kbd className={kbdClass}>'</kbd>
-              <span className="text-xs mx-1">or</span>
-              <kbd className={kbdClass}>
-                <Command className="w-3 h-3" />
-              </kbd>
-              <kbd className={kbdClass}>'</kbd>
-            </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <span>Send Message</span>
-            <div className="flex items-center gap-1">
-              {modifierKeys.map((key) => (
-                <kbd key={key} className={kbdClass}>
-                  {key === "CMD" ? <Command className="w-3 h-3" /> : key}
-                </kbd>
-              ))}
-              {mainKey && <kbd className={kbdClass}>{mainKey}</kbd>}
-            </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <span>Focus Generation Input</span>
-            <div className="flex items-center gap-1">
-              <kbd className={kbdClass}>Tab</kbd>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <NoMessagePlaceholder currentProfile={currentProfile} />;
   }
 
   return (
