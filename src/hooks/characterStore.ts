@@ -9,7 +9,8 @@ import {
 } from "@/services/character-service";
 import { nanoid } from "nanoid";
 import { useCallback } from "react";
-import { create } from "zustand";
+import { StoreApi, UseBoundStore, create } from "zustand";
+import { useShallow } from "zustand/shallow";
 import { useMultipleImageUrls } from "./useImageUrl";
 
 interface CharacterState {
@@ -37,7 +38,8 @@ interface CharacterState {
   };
 }
 
-export const useCharacterStore = create<CharacterState>((set, get) => ({
+// Explicitly type the hook returned by create
+export const useCharacterStore: UseBoundStore<StoreApi<CharacterState>> = create<CharacterState>((set, get) => ({
   // Initial state
   characters: [],
   isLoading: false,
@@ -194,6 +196,13 @@ export const useCharacterById = (id: string) => useCharacterStore((state) => sta
 export const useCharactersLoading = () => useCharacterStore((state) => state.isLoading);
 export const useCharactersError = () => useCharacterStore((state) => state.error);
 export const useCharacterActions = () => useCharacterStore((state) => state.actions);
+export const useCharacterTagList = () =>
+  useCharacterStore(
+    useShallow((state) => {
+      const allTags = state.characters.flatMap((character) => character.tags || []);
+      return [...new Set(allTags)];
+    }),
+  );
 
 /**
  * Custom hook to efficiently load and cache avatar URLs for all characters

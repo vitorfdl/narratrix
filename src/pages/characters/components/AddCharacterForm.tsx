@@ -6,17 +6,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
+import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { StringArray } from "@/components/ui/string-array";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useCharacterActions } from "@/hooks/characterStore";
+import { useCharacterActions, useCharacterTagList } from "@/hooks/characterStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { saveImage } from "@/services/file-system-service";
 import { ChevronDown, CircleCheckBig } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ExpressionPackPreview } from "./ExpressionPackPreview";
 
@@ -96,7 +96,7 @@ function CharacterFormContent({
 
               <MarkdownTextArea
                 key={`${characterId}-system-prompt`}
-                className="h-full max-h-[400px] overflow-y-auto min-h-24"
+                className="h-full max-h-[400px] overflow-y-auto"
                 editable={true}
                 initialValue={systemPrompt}
                 onChange={onSystemPromptChange}
@@ -113,7 +113,7 @@ function CharacterFormContent({
         </Label>
         <MarkdownTextArea
           key={`${characterId}-personality`}
-          className="h-full max-h-[400px] min-h-24 overflow-y-auto"
+          className="h-full max-h-[400px] overflow-y-auto"
           editable={true}
           initialValue={personality}
           onChange={onPersonalityChange}
@@ -170,7 +170,7 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
   const { currentProfile } = useProfile();
   const profileId = currentProfile!.id;
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const tagList = useCharacterTagList();
   // Form state
   const [type, setType] = useState<"character" | "agent">(initialData?.type || "character");
   const [name, setName] = useState(initialData?.name || "");
@@ -310,9 +310,9 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2">
             <Label htmlFor="tags">Tags</Label>
-            <StringArray values={tags} onChange={setTags} placeholder="Add a tag..." />
+            <CommandTagInput value={tags} onChange={setTags} suggestions={tagList} placeholder="Add a tag..." maxTags={10} />
           </div>
         </div>
 
