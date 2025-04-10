@@ -3,6 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Chat, ChatTab } from "@/schema/chat-schema";
 import { PlusIcon, X } from "lucide-react";
+import { useEffect } from "react";
 import { ChatMenuDropdown } from "./components/ChatMenuDropdown";
 
 interface ChatTabsProps {
@@ -30,6 +31,20 @@ export function ChatTabs({
   onDuplicateRequest,
   onDeleteRequest,
 }: ChatTabsProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "w" && activeTab) {
+        e.preventDefault();
+        onCloseTab(activeTab);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeTab, onCloseTab]);
+
   return (
     <div className="flex items-center border-b border-border bg-background/80 mt-1">
       <ScrollArea className="flex-1">
