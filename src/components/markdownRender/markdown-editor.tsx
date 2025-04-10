@@ -203,10 +203,14 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
     return (
       <div className={className} ref={containerRef}>
         {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
-        <div className={cn("flex-1 relative bg-accent overflow-y-auto", className, isDarkMode && "dark")} onFocus={handleFocus} onBlur={handleBlur}>
+        <div
+          className={cn("flex-1 relative input-fields overflow-y-auto", className, isDarkMode && "dark")}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        >
           {showPlaceholder && placeholder && (
             <div className="absolute inset-0 flex items-start ml-5 px-4 py-1 pointer-events-none z-10" onClick={handlePlaceholderClick}>
-              <span className="text-muted-foreground/30 italic font-mono text-sm">{placeholder}</span>
+              <span className="text-muted-foreground/30 italic font-mono text-xs">{placeholder}</span>
             </div>
           )}
 

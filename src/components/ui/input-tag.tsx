@@ -75,16 +75,16 @@ export function CommandTagInput({
   const showCommandList = open && inputValue.length > 0 && filteredSuggestions.length > 0;
 
   return (
-    <div className="flex flex-col gap-2 w-full">
-      <Command shouldFilter={false} className="relative overflow-visible">
+    <div className="flex flex-col gap-2 w-full bg-none">
+      <Command shouldFilter={false} className="relative overflow-visible bg-transparent">
         {" "}
         {/* Ensure Command allows overflow */}
         <div
           className={cn(
-            "flex flex-wrap gap-x-2 gap-y-1 items-center w-full rounded-sm bg-accent px-3 py-1 min-h-7", // Adjusted vertical padding and height
-            "border-0 border-b-2 border-b-primary/20",
+            "flex flex-wrap gap-x-2 gap-y-1 items-center w-full rounded-sm px-3 py-1 min-h-7", // Adjusted vertical padding and height
+            "input-fields narratrix-input-border",
             "transition-all duration-100",
-            "focus-within:border-b-primary ", // Use focus-within for container focus
+            "focus-within:border-b-primary focus-within:bg-transparent/15", // Use focus-within for container focus
             disabled ? "cursor-not-allowed opacity-50" : "cursor-text", // Add disabled style and cursor
             className,
           )}
@@ -96,7 +96,7 @@ export function CommandTagInput({
           {value.map((tag) => (
             <Badge
               key={tag}
-              variant="secondary"
+              variant="default"
               className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] h-5" // Slightly smaller badge
             >
               {tag}
@@ -110,7 +110,7 @@ export function CommandTagInput({
                 }}
                 disabled={disabled}
                 aria-label={`Remove ${tag} tag`}
-                className="rounded-full bg-accent p-0.5 focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                className="rounded-full text-accent-foreground p-0.5 focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
               >
                 <X className="h-2.5 w-2.5" /> {/* Slightly smaller X */}
               </button>

@@ -129,6 +129,15 @@ body,
     @apply focus-within:border-b-2 focus-within:border-b-primary;
   }
 
+  .input-fields {
+    @apply bg-foreground/[7%] focus:bg-transparent/15 focus:border-b-primary;
+    @apply placeholder:text-muted-foreground/40 placeholder:italic;
+  }
+
+  .narratrix-input-border {
+    @apply border-0 border-b-2 border-b-primary/20;
+  }
+
 }
 @layer components {
   /* Custom animation for the speaker border */
