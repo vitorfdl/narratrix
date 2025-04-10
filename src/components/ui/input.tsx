@@ -123,7 +123,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-autocomplete="none"
             spellCheck="false"
             className={cn(
-              "flex h-7 w-full rounded-sm bg-foreground/5 px-3 py-1/2 text-xs font-mono ",
+              "flex h-7 w-full rounded-sm bg-accent px-3 py-1/2 text-foreground text-xs font-mono ",
               "border-0 border-b-2 border-b-primary/20",
               "transition-all duration-100",
               "focus:border-b-primary focus:bg-accent",

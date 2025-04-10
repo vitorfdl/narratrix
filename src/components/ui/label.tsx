@@ -14,7 +14,7 @@ const Label = React.forwardRef<React.ElementRef<typeof LabelPrimitive.Root>, Lab
   <LabelPrimitive.Root ref={ref} className={cn(labelVariants(), className)} {...props}>
     {children}
     {descriptionTag && (
-      <span className="ml-2 inline-flex items-center rounded-md bg-accent/80 px-1.5 py-0.5 text-xs italic font-light text-accent-foreground/55">
+      <span className="ml-2 inline-flex items-center rounded-md bg-accent/80 px-1.5 py-0.5 text-xs italic font-light text-accent-foreground">
         {descriptionTag}
       </span>
     )}
