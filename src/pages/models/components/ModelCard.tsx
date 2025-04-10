@@ -91,7 +91,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
 
   return (
     <>
-      <Card className="bg-background border-border hover:border-primary/50 transition-all overflow-hidden group h-full flex flex-col">
+      <Card className="bg-card border-border hover:border-primary/50 transition-all overflow-hidden group h-full flex flex-col">
         <CardHeader className="pb-2 flex flex-row justify-between items-start">
           <div>
             <div className="flex items-center gap-2">

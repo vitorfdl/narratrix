@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { CharacterUnion } from "@/schema/characters-schema";
-import { Edit, Palette, Trash2 } from "lucide-react";
+import { Edit, LoaderIcon, Palette, Trash2 } from "lucide-react";
 
 interface CharacterCardProps {
   model: CharacterUnion;
@@ -29,11 +29,17 @@ export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDel
   return (
     <Card className="group relative overflow-hidden flex flex-col h-full">
       <CardHeader className="relative h-48 p-0">
-        <img
-          src={avatarUrl || defaultAvatar}
-          alt={model.name}
-          className={`h-full w-full object-cover ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
-        />
+        {isLoadingAvatar ? (
+          <div className="h-full w-full flex items-center justify-center">
+            <LoaderIcon className="w-10 h-10 animate-spin" />
+          </div>
+        ) : (
+          <img
+            src={avatarUrl || defaultAvatar}
+            alt={model.name}
+            className={`h-full w-full object-cover ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
+          />
+        )}
         <div className="absolute left-2 top-2 flex flex-col gap-1">
           <Badge variant={model.type === "character" ? "default" : "highlight"}>{model.type}</Badge>
           {hasExpressions && (

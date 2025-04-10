@@ -15,7 +15,7 @@ import { ChatMessage, basicPromptSuggestionList } from "@/schema/chat-message-sc
 import { useBackgroundInference } from "@/services/background-inference-service";
 import { findClosestExpressionMatch } from "@/utils/fuzzy-search";
 import { useLocalExpressionGenerationSettings } from "@/utils/local-storage";
-import { Pause, Play, RefreshCw, Settings, User } from "lucide-react";
+import { LoaderIcon, Pause, Play, RefreshCw, Settings, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useThrottledCallback } from "use-debounce";
 
@@ -424,8 +424,8 @@ const WidgetExpressions = () => {
                         alt={displayCharacter.name}
                         className="w-full h-full object-cover"
                       />
-                      <AvatarFallback className="text-4xl bg-accent text-accent-foreground">
-                        {displayCharacter.name.substring(0, 2).toUpperCase()}
+                      <AvatarFallback>
+                        <LoaderIcon className="w-[50%] h-[50%] animate-spin" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-center">
