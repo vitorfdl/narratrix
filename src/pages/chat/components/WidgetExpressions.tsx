@@ -431,7 +431,7 @@ const WidgetExpressions = () => {
                     <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-center">
                       <p className="text-sm font-medium text-primary-foreground drop-shadow-md">
                         {/* Add visual indicator for selected text */}
-                        {selectedText && (
+                        {selectedText && autoRefreshEnabled && (
                           <div className="bg-primary/10 border-l-4 border-primary px-2 py-1 text-sm z-10 shadow-sm">
                             <p className="text-xs text-foreground mb-0.5">Generating expression from selected text!</p>
                           </div>

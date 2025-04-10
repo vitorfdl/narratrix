@@ -508,7 +508,7 @@ const WidgetConfig = ({
 
         {/* Context Size */}
         <div className="space-y-2 items-center gap-2 pb-4">
-          <div className="w-1/3 flex items-center gap-1">
+          <div className="w-1/3 flex items-center gap-1 col-span-2">
             <h3 className="text-xs font-normal">Context Size:</h3>
             <HelpTooltip>Defines the total token limit for the model's input history. Excess history is truncated.</HelpTooltip>
           </div>

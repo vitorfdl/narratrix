@@ -70,7 +70,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
 
         {!prompt.isCollapsed && (
           <div className="space-y-4">
-            <div className="mb-2 mr-1 ml-1">
+            <div className="mb-2 mr-1 ml-1 md:text-xs xl:text-sm">
               <MarkdownTextArea
                 initialValue={prompt.content}
                 onChange={(e) => onUpdate(prompt.id, { content: e })}

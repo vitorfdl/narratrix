@@ -201,7 +201,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   );
 
   return (
-    <div className="space-y-4 bg-card p-4 rounded-md border w-full max-w-[1200px] 2xl:justify-self-center">
+    <div className="space-y-4 bg-card p-4 rounded-md border border-border w-full max-w-[1200px] 2xl:justify-self-center">
       <div className="grid xs:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5 2xl:justify-items-center">
         <div className="lg:col-span-2 2xl:col-span-3 w-full">{templatePickerMemo}</div>
         {/* Left Column - Checkboxes */}
