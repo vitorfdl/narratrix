@@ -53,9 +53,9 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
                   </div>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="right" className="max-w-[80vw] w-auto shadow-md bg-background p-0">
+              <PopoverContent side="right" className="max-w-[80vw] shadow-lg shadow-foreground/25  w-auto  bg-card p-0">
                 <PopoverArrow width={10} height={8} className="fill-muted-foreground" />
-                <div className="flex items-top justify-between p-2">
+                <div className="flex items-top justify-between px-2 py-1">
                   <span className="text-xs ml-2 font-semibold">{widgetTitles[widget.id as WidgetId]}</span>
                   <button onClick={() => toggleCard(widget.id)} className="p-1 hover:bg-accent rounded">
                     <Pin className="w-3 h-3" />

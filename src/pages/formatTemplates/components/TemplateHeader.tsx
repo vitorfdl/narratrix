@@ -254,37 +254,8 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
           </div>
         </div>
 
-        {/* Middle Column - Template Type and Prefix Messages */}
+        {/* Middle Column - Additional Checkboxes */}
         <div className="space-y-2">
-          <div className="space-y-2">
-            <Label className="font-medium text-muted-foreground">Prefix Messages with Character Names</Label>
-            <RadioGroup
-              value={memoizedSettings.prefix_messages}
-              onValueChange={useCallback(
-                (value: string) => handleSettingChange("prefix_messages", value as "never" | "always" | "characters"),
-                [handleSettingChange],
-              )}
-              className="flex space-x-4"
-              disabled={!currentTemplate}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="never" id="never" />
-                <Label htmlFor="never">Never</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="always" id="always" />
-                <Label htmlFor="always">Always</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="characters" id="characters" />
-                <Label htmlFor="characters">2+ Characters</Label>
-              </div>
-            </RadioGroup>
-          </div>
-        </div>
-
-        {/* Right Column - Additional Checkboxes */}
-        <div className="space-y-3 2xl:justify-self-end ">
           <h3 className="text-sm font-medium text-muted-foreground">Message Formatting</h3>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -343,6 +314,35 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
                 <img src="/docs/merge_messages.png" alt="Merge subsequent messages example" className="max-w-xs block mx-auto" />
               </HelpTooltip>
             </div>
+          </div>
+        </div>
+
+        {/* Right Column - Template Type and Prefix Messages */}
+        <div className="space-y-2 col-span-2 2xl:col-span-1 2xl:justify-self-end">
+          <div className="space-y-2">
+            <Label className="font-medium text-muted-foreground">Prefix Messages with Character Names</Label>
+            <RadioGroup
+              value={memoizedSettings.prefix_messages}
+              onValueChange={useCallback(
+                (value: string) => handleSettingChange("prefix_messages", value as "never" | "always" | "characters"),
+                [handleSettingChange],
+              )}
+              className="flex space-x-4"
+              disabled={!currentTemplate}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="never" id="never" />
+                <Label htmlFor="never">Never</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="always" id="always" />
+                <Label htmlFor="always">Always</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="characters" id="characters" />
+                <Label htmlFor="characters">2+ Characters</Label>
+              </div>
+            </RadioGroup>
           </div>
         </div>
       </div>
