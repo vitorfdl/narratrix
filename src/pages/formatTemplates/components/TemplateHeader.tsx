@@ -201,11 +201,11 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   );
 
   return (
-    <div className="space-y-4 bg-card p-4 rounded-md border w-full max-w-[1200px] justify-self-center">
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 xl:justify-items-center">
-        <div className="xl:col-span-3 w-full">{templatePickerMemo}</div>
+    <div className="space-y-4 bg-card p-4 rounded-md border w-full max-w-[1200px] 2xl:justify-self-center">
+      <div className="grid xs:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5 2xl:justify-items-center">
+        <div className="lg:col-span-2 2xl:col-span-3 w-full">{templatePickerMemo}</div>
         {/* Left Column - Checkboxes */}
-        <div className="space-y-2 md:justify-self-start">
+        <div className="space-y-2 2xl:justify-self-start">
           <h3 className="text-sm font-medium text-muted-foreground">Text Cleanup</h3>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -277,14 +277,14 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="characters" id="characters" />
-                <Label htmlFor="characters">Only 2+ Characters</Label>
+                <Label htmlFor="characters">2+ Characters</Label>
               </div>
             </RadioGroup>
           </div>
         </div>
 
         {/* Right Column - Additional Checkboxes */}
-        <div className="space-y-3 xl:justify-self-end ">
+        <div className="space-y-3 2xl:justify-self-end ">
           <h3 className="text-sm font-medium text-muted-foreground">Message Formatting</h3>
           <div className="flex items-center space-x-2">
             <Checkbox
