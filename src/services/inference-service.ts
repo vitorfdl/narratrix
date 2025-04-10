@@ -247,8 +247,7 @@ export function useInferenceService() {
       : chatTemplateList.find((template) => template.id === currentChatTemplateId)!;
 
     if (!chatTemplate) {
-      console.error("Chat template not found");
-      return null;
+      throw new Error("Chat template not found");
     }
 
     const modelSettings = modelList.find((model) => model.id === chatTemplate.model_id)!;
@@ -310,8 +309,19 @@ export function useInferenceService() {
     } = options;
 
     if (!characterId) {
-      console.error("Character ID is required");
-      return null;
+      throw new Error("Character ID is required");
+    }
+
+    // Prepare messages for inference
+    const promptResult = formatPrompt(userMessage, systemPromptOverride, chatTemplateID, extraSuggestions);
+    if (!promptResult) {
+      throw new Error("Failed to format prompt");
+    }
+
+    const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
+    if (!modelSettings || !manifestSettings) {
+      console.error("Model or manifest settings not available. Check chat template configuration.");
+      throw new Error("Model or manifest settings not available. Check chat template configuration.");
     }
 
     try {
@@ -369,19 +379,6 @@ export function useInferenceService() {
       streamingState.current.messageId = messageId;
       streamingState.current.messageIndex = messageIndex;
 
-      // Prepare messages for inference
-      const promptResult = formatPrompt(userMessage, systemPromptOverride, chatTemplateID, extraSuggestions);
-      if (!promptResult) {
-        console.error("Failed to format prompt");
-        return null;
-      }
-
-      const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
-      if (!modelSettings || !manifestSettings) {
-        console.error("Model or manifest settings not available. Check chat template configuration.");
-        return null;
-      }
-
       // Create ModelSpecs using the model and manifest settings
       const modelSpecs: ModelSpecs = {
         id: modelSettings.id,
@@ -428,7 +425,7 @@ export function useInferenceService() {
         onStreamingStateChange(null);
       }
 
-      return null;
+      throw error;
     }
   };
 
