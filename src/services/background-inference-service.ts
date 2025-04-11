@@ -234,7 +234,7 @@ export function useBackgroundInference() {
           systemPrompt: formattedSystemPrompt,
           parameters: {
             ...parameters,
-            max_tokens: parameters?.max_context || 100,
+            max_tokens: parameters?.max_tokens || 100,
           },
         });
       } catch (error) {

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
 import type { Chat } from "@/schema/chat-schema";
@@ -317,12 +317,9 @@ export default function ChatPage() {
     <Sheet open={isInspectorOpen} onOpenChange={setIsInspectorOpen}>
       <div className="flex flex-col h-screen">
         {/* Drawer Content for Live Inspector */}
-        <SheetContent side="top" className="h-[80vh]">
-          <SheetHeader>
-            <SheetTitle>Live Request Inspector</SheetTitle>
-          </SheetHeader>
+        <SheetContent side="top" className="h-[90vh]">
           <div className="overflow-auto p-4">
-            <LiveInspector maxHeight="calc(80vh - 80px)" />
+            <LiveInspector maxHeight="calc(90vh - 80px)" />
           </div>
         </SheetContent>
 
