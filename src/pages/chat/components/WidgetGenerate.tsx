@@ -105,14 +105,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       if (!submittedText.trim()) {
         return;
       }
-
-      // Add to history if not a duplicate of the most recent entry
-      if (!generationInputHistory.length || generationInputHistory[generationInputHistory.length - 1] !== submittedText) {
-        // Add to history, limiting entries to X
-        const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
-        setGenerationInputHistory(newHistory);
-      }
-
       // Get the next enabled character to respond
       const nextCharacter = enabledParticipants[0];
       if (!nextCharacter) {
@@ -154,6 +146,13 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
 
         // Clear the input text if not in quiet mode
         if (!quietResponseRef.current) {
+          // Add to history if not a duplicate of the most recent entry
+          if (!generationInputHistory.length || generationInputHistory[generationInputHistory.length - 1] !== submittedText) {
+            // Add to history, limiting entries to X
+            const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
+            setGenerationInputHistory(newHistory);
+          }
+
           setText("");
         }
       } catch (error) {
@@ -316,6 +315,10 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     }
 
     try {
+      if (generationConfig.userMessage) {
+        const newHistory = [...generationInputHistory, generationConfig.userMessage].slice(-25);
+        setGenerationInputHistory(newHistory);
+      }
       setText("");
       await inferenceService.generateMessage(generationConfig);
     } catch (error) {
