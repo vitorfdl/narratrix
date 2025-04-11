@@ -316,7 +316,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     (participantId === "user" && streamingState.messageId === "generate-input-area");
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-none">
       {/* Participants List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-0.5 custom-scrollbar">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>

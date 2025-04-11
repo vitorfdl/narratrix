@@ -182,7 +182,6 @@ const WidgetChapters = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"sequence" | "title" | "updated_at">("sequence");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-
   // Initial state for new chapter
   const [newChapterData, setNewChapterData] = useState<ChapterFormData>({
     title: "",
@@ -394,7 +393,7 @@ const WidgetChapters = () => {
   };
 
   return (
-    <Card className="w-full h-full border-none p-0 m-0 backdrop-blur-sm flex flex-col">
+    <Card className="w-full h-full border-none bg-transparent p-0 m-0 flex flex-col">
       <CardHeader className="space-y-0.5 pb-1 py-1 px-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2" />

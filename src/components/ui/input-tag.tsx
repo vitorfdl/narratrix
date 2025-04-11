@@ -110,7 +110,7 @@ export function CommandTagInput({
                 }}
                 disabled={disabled}
                 aria-label={`Remove ${tag} tag`}
-                className="rounded-full text-accent-foreground p-0.5 focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                className="rounded-full bg-muted text-foreground p-0.5 focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
               >
                 <X className="h-2.5 w-2.5" /> {/* Slightly smaller X */}
               </button>
