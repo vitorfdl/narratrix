@@ -38,5 +38,11 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: include_str!("./migrations/06_create_messages.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 07,
+            description: "message_new_column",
+            sql: include_str!("./migrations/07_message_new_column.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }

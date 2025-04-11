@@ -1,7 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { BookmarkMinus, Flag, Image, Languages, MoreHorizontal, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import {
+  BookmarkMinus,
+  BookmarkPlus,
+  Check,
+  Flag,
+  Image,
+  Languages,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  RefreshCw,
+  Scissors,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 
 export const MessageActions = ({
@@ -9,6 +23,7 @@ export const MessageActions = ({
   messageType,
   isStreaming,
   isLastMessage,
+  isDisabled,
   onEdit,
   onRegenerateMessage,
   onDeleteMessage,
@@ -21,6 +36,7 @@ export const MessageActions = ({
   messageType: string;
   isStreaming: boolean;
   isLastMessage: boolean;
+  isDisabled: boolean;
   onEdit: (id: string) => void;
   onRegenerateMessage: (id: string) => void;
   onDeleteMessage: (id: string) => void;
@@ -30,12 +46,25 @@ export const MessageActions = ({
   onExcludeFromPrompt: (id: string) => void;
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const handleRegenerate = async () => {
+    setIsRegenerating(true);
+    try {
+      await onRegenerateMessage(messageId);
+    } finally {
+      // Reset after a short delay to ensure UI shows loading state
+      setTimeout(() => setIsRegenerating(false), 500);
+    }
+  };
+
+  // Determine the actual disabled state for regenerate button
+  const isRegenerateDisabled = isStreaming || isRegenerating;
 
   return (
     <div
       className={cn(
-        "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1",
-        messageType === "user" ? "order-1" : "order-2",
+        "flex gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1",
         isDropdownOpen && "opacity-100",
       )}
     >
@@ -45,7 +74,7 @@ export const MessageActions = ({
         className="h-6 w-6 hover:bg-accent"
         onClick={() => onEdit(messageId)}
         title="Edit Message"
-        disabled={isStreaming}
+        disabled={isRegenerateDisabled}
       >
         <Pencil className="w-4 h-4" />
       </Button>
@@ -54,11 +83,11 @@ export const MessageActions = ({
           variant="ghost"
           size="icon"
           className="h-6 w-6 hover:bg-accent"
-          onClick={() => onRegenerateMessage(messageId)}
+          onClick={handleRegenerate}
           title="Regenerate Message"
-          disabled={isStreaming || !isLastMessage}
+          disabled={isRegenerateDisabled || !isLastMessage}
         >
-          <RefreshCw className={cn("w-4 h-4", isStreaming && "animate-spin")} />
+          <RefreshCw className={cn("w-4 h-4", (isStreaming || isRegenerating) && "animate-spin")} />
         </Button>
       )}
       <Button
@@ -66,7 +95,7 @@ export const MessageActions = ({
         size="icon"
         className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
         onClick={() => onDeleteMessage(messageId)}
-        disabled={isStreaming}
+        disabled={isRegenerateDisabled}
         title="Delete Message"
       >
         <Trash2 className="w-4 h-4" />
@@ -91,11 +120,45 @@ export const MessageActions = ({
             Generate Image
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onExcludeFromPrompt(messageId)}>
-            <BookmarkMinus className="w-4 h-4 mr-2" />
-            Exclude from Prompt
+            {isDisabled ? <BookmarkPlus className="w-4 h-4 mr-2" /> : <BookmarkMinus className="w-4 h-4 mr-2" />}
+            {isDisabled ? "Restore to history" : "Exclude from history"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
   );
 };
+
+// Extracted EditControls component
+export const EditControls = ({ onCancel, onSave }: { onCancel: () => void; onSave: () => void }) => (
+  <div className="flex gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 ml-auto shadow-sm">
+    <Button variant="outline" size="sm" onClick={onCancel}>
+      <X className="!w-4 !h-4" />
+      Cancel
+    </Button>
+    <Button variant="default" size="sm" onClick={onSave}>
+      <Check className="!w-4 !h-4" />
+      Save
+    </Button>
+  </div>
+);
+
+// Extracted ContextCutDivider component
+export const ContextCutDivider = () => (
+  <div className="flex items-center justify-center w-full my-4">
+    <div className="flex-grow border-t-2 border-dashed border-border" />
+    <div className="mx-4 text-muted-foreground flex items-center gap-2">
+      <Scissors className="w-4 h-4" />
+      Context Cut
+    </div>
+    <div className="flex-grow border-t-2 border-dashed border-border" />
+  </div>
+);
+
+// Extracted StreamingIndicator component
+export const StreamingIndicator = () => (
+  <div className="absolute right-0 top-[-1rem] flex items-center gap-2 p-1 bg-background/80 backdrop-blur-sm rounded-md animate-pulse">
+    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+    <span className="text-xs text-primary font-medium">Thinking...</span>
+  </div>
+);

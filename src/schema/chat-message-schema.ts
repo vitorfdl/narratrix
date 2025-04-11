@@ -29,6 +29,12 @@ export const promptReplacementSuggestionList: SuggestionItem[] = [
 export const ChatMessageTypeSchema = z.enum(["user", "character", "system"]);
 export type ChatMessageType = z.infer<typeof ChatMessageTypeSchema>;
 
+const extraSchema = z.object({
+  script: z.enum(["agent", "summary"]).optional(),
+  startPosition: z.number().int().optional(),
+  endPosition: z.number().int().optional(),
+});
+
 /**
  * Chat Message Schema
  */
@@ -42,6 +48,8 @@ export const chatMessageSchema = z.object({
   messages: z.array(z.string()), // JSON Array of messages ["message", "message", "message"]
   message_index: z.number().int().min(0), // Use 0, 1, 2, 3... Refer to which message in the messages array this is
   disabled: z.boolean().optional().default(false),
+  tokens: z.number().int().nullable().optional(),
+  extra: extraSchema.optional().nullable().default({}),
   created_at: z.date(),
   updated_at: z.date(),
 });
@@ -59,6 +67,8 @@ export const updateChatMessageSchema = chatMessageSchema.partial().pick({
   messages: true,
   message_index: true,
   disabled: true,
+  tokens: true,
+  extra: true,
   character_id: true,
 });
 

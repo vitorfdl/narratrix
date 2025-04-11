@@ -1,10 +1,17 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/ProfileContext";
-import { useChatActions, useCurrentChatMessages, useCurrentChatTemplateID, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import {
+  useChatActions,
+  useCurrentChatActiveChapterID,
+  useCurrentChatId,
+  useCurrentChatMessages,
+  useCurrentChatTemplateID,
+  useCurrentChatUserCharacterID,
+} from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { cn } from "@/lib/utils";
-import { Check, ChevronDown, Loader2, Scissors, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -13,60 +20,31 @@ import { useChatTemplate } from "@/hooks/chatTemplateStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { CharacterUnion } from "@/schema/characters-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
-import { MessageActions } from "./message-controls/AdditionalActions";
+import { disableChatMessagesByFilter } from "@/services/chat-message-service";
+import { ContextCutDivider, EditControls, MessageActions, StreamingIndicator } from "./message-controls/AdditionalActions";
 import { MessageAvatar } from "./message-controls/MessageAvatar";
+import { MidMessageLayerControl } from "./message-controls/MidMessageLayerControl";
 import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
 import { ReasoningSection } from "./message-controls/ReasoningCollapsible";
+import { SummarySettings } from "./message-controls/SummaryDialog";
 import { VersionControls } from "./message-controls/VersionButtons";
-
-// Extracted EditControls component
-const EditControls = ({ onCancel, onSave }: { onCancel: () => void; onSave: () => void }) => (
-  <div className="flex gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 ml-auto shadow-sm">
-    <Button variant="outline" size="sm" onClick={onCancel}>
-      <X className="!w-4 !h-4" />
-      Cancel
-    </Button>
-    <Button variant="default" size="sm" onClick={onSave}>
-      <Check className="!w-4 !h-4" />
-      Save
-    </Button>
-  </div>
-);
-
-// Extracted ContextCutDivider component
-const ContextCutDivider = () => (
-  <div className="flex items-center justify-center w-full my-4">
-    <div className="flex-grow border-t-2 border-dashed border-border" />
-    <div className="mx-4 text-muted-foreground flex items-center gap-2">
-      <Scissors className="w-4 h-4" />
-      Context Cut
-    </div>
-    <div className="flex-grow border-t-2 border-dashed border-border" />
-  </div>
-);
-
-// Extracted StreamingIndicator component
-const StreamingIndicator = () => (
-  <div className="absolute right-0 top-[-1rem] flex items-center gap-2 p-1 bg-background/80 backdrop-blur-sm rounded-md animate-pulse">
-    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-    <span className="text-xs text-primary font-medium">Thinking...</span>
-  </div>
-);
 
 const WidgetMessages: React.FC = () => {
   const inferenceService = useInferenceServiceFromContext();
   const { currentProfileAvatarUrl, currentProfile } = useProfile();
 
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
+  const currentChatId = useCurrentChatId();
+  const currentChatActiveChapterID = useCurrentChatActiveChapterID();
   const characters = useCharacters();
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
   const messages = useCurrentChatMessages();
-  const { updateChatMessage, deleteChatMessage } = useChatActions();
+  const { updateChatMessage, deleteChatMessage, addChatMessage } = useChatActions();
   const setSelectedText = useExpressionStore((state) => state.setSelectedText);
 
   const [isEditingID, setIsEditingID] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
-  const [streamingMessages, setStreamingMessages] = useState<Record<string, boolean>>({});
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [messageReasonings, setMessageReasonings] = useState<Record<string, string>>({});
   const streamingCheckRef = useRef<number | null>(null);
 
@@ -97,6 +75,11 @@ const WidgetMessages: React.FC = () => {
   });
 
   const handleSwipe = (messageId: string, direction: "left" | "right") => {
+    // If already streaming, don't allow swipes
+    if (streamingMessageId) {
+      return;
+    }
+
     const message = messages.find((m) => m.id === messageId);
     if (!message) {
       return;
@@ -152,6 +135,39 @@ const WidgetMessages: React.FC = () => {
     setEditedContent("");
   };
 
+  // Add a useEffect to handle focusing the editor after the editing state is updated
+  useEffect(() => {
+    if (isEditingID) {
+      // Use setTimeout to wait for the DOM to update
+      setTimeout(() => {
+        const messageElement = document.querySelector(`[data-message-id="${isEditingID}"]`);
+        if (!messageElement) {
+          return;
+        }
+        const editorElement = messageElement.querySelector(".cm-editor");
+        if (editorElement) {
+          (editorElement as HTMLElement).focus();
+          const textArea = editorElement.querySelector(".cm-content");
+          if (textArea) {
+            const range = document.createRange();
+            const sel = window.getSelection();
+
+            // Try to position at the end of this specific message's content
+            if (textArea.lastChild) {
+              range.setStartAfter(textArea.lastChild);
+              range.collapse(true);
+
+              if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }
+            }
+          }
+        }
+      }, 50); // Small delay to ensure component has updated
+    }
+  }, [isEditingID]);
+
   const handleSaveEdit = async (messageId: string) => {
     if (editedContent.trim()) {
       await onEditMessage(messageId);
@@ -188,17 +204,21 @@ const WidgetMessages: React.FC = () => {
 
   const onRegenerateMessage = async (messageId: string, targetIndex?: number) => {
     try {
+      // Mark this message as streaming immediately
+      setStreamingMessageId(messageId);
+
       // Find the message to regenerate
       const message = messages.find((m) => m.id === messageId);
       if (!message || message.type !== "character" || !message.character_id) {
+        setStreamingMessageId(null); // Clear if invalid
         return;
       }
 
       // Get the character settings
       const character = characters.find((c) => c.id === message.character_id);
-
       if (!character) {
         console.error("Character not found");
+        setStreamingMessageId(null); // Clear if character not found
         return;
       }
 
@@ -211,32 +231,21 @@ const WidgetMessages: React.FC = () => {
         });
       }
 
-      // Mark this message as streaming
-      setStreamingMessages((prev) => ({ ...prev, [messageId]: true }));
-      console.log("Regenerating message", messageId, targetIndex);
       // Use the inference service to regenerate the message
       await inferenceService.regenerateMessage(messageId, {
         characterId: message.character_id,
         messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
         onStreamingStateChange: (state) => {
-          // When streaming stops or errors out, remove from streaming messages
+          // When streaming stops or errors out, clear the streaming message ID
           if (!state) {
-            setStreamingMessages((prev) => {
-              const newState = { ...prev };
-              delete newState[messageId];
-              return newState;
-            });
+            setStreamingMessageId(null);
           }
         },
       });
     } catch (error) {
       console.error("Failed to regenerate message:", error);
-      // Remove from streaming messages if there was an error
-      setStreamingMessages((prev) => {
-        const newState = { ...prev };
-        delete newState[messageId];
-        return newState;
-      });
+      // Clear streaming message ID if there was an error
+      setStreamingMessageId(null);
     }
   };
 
@@ -270,27 +279,12 @@ const WidgetMessages: React.FC = () => {
     console.log("Translate", messageId);
   };
 
-  const isMessageStreaming = useCallback(
-    (messageId: string) => {
-      return !!streamingMessages[messageId];
-    },
-    [streamingMessages],
-  );
-
   // Sync streaming state with the inference service and capture reasoning
   const syncStreamingState = useCallback(() => {
     const streamingState = inferenceService.getStreamingState();
 
     if (streamingState.messageId) {
-      setStreamingMessages((prev) => {
-        if (prev[streamingState.messageId as string]) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [streamingState.messageId as string]: true,
-        };
-      });
+      setStreamingMessageId(streamingState.messageId as string);
 
       if (streamingState.accumulatedReasoning && streamingState.accumulatedReasoning.trim() !== "") {
         setMessageReasonings((prev) => ({
@@ -298,30 +292,15 @@ const WidgetMessages: React.FC = () => {
           [streamingState.messageId as string]: streamingState.accumulatedReasoning,
         }));
       }
-    } else {
-      // If no message is currently streaming according to the service,
-      // but we have tracked streaming messages, we need to check if they're really done
-      if (Object.keys(streamingMessages).length > 0) {
-        // Create a new empty state - we'll repopulate with only active streaming messages
-        const newStreamingState: Record<string, boolean> = {};
-
-        // Keep only messages that are actually still being streamed
-        for (const msgId of Object.keys(streamingMessages)) {
-          // If the message no longer exists or its content isn't a placeholder,
-          // it's probably done streaming
-          const message = messages.find((m) => m.id === msgId);
-          if (message && message.messages[0] === "...") {
-            newStreamingState[msgId] = true;
-          }
-        }
-
-        // Only update state if something changed
-        if (Object.keys(newStreamingState).length !== Object.keys(streamingMessages).length) {
-          setStreamingMessages(newStreamingState);
-        }
+    } else if (streamingMessageId) {
+      // Check if the message that was streaming is still in progress
+      const message = messages.find((m) => m.id === streamingMessageId);
+      if (!message || message.messages[0] !== "...") {
+        // If the message no longer has a placeholder, it's done streaming
+        setStreamingMessageId(null);
       }
     }
-  }, [inferenceService, messages, streamingMessages]);
+  }, [inferenceService, messages, streamingMessageId]);
 
   // Check if a message has reasoning data
   const hasReasoning = (messageId: string) => {
@@ -371,13 +350,11 @@ const WidgetMessages: React.FC = () => {
     }
   }, []);
 
-  // Scroll to bottom when new messages are added or streaming state changes
   useEffect(() => {
-    // Only auto-scroll if user hasn't manually scrolled up
     if (!userScrolled) {
       scrollToBottom();
     }
-  }, [messages, streamingMessages, userScrolled, scrollToBottom]);
+  }, [messages, streamingMessageId, userScrolled, scrollToBottom]);
 
   // Initial scroll to the bottom when component mounts
   useEffect(() => {
@@ -406,10 +383,102 @@ const WidgetMessages: React.FC = () => {
     [setSelectedText],
   );
 
+  // New methods for mid-message layer actions
+  const handleMergeMessages = (messageIdBefore: string, messageIdAfter: string) => {
+    // Placeholder for the merge functionality
+    console.log("Merge messages", messageIdBefore, messageIdAfter);
+    toast.info("Merge functionality will be implemented soon");
+  };
+
+  const handleSummarizeMessages = (messageBefore: string, settings: SummarySettings) => {
+    // Find the message with the given ID to get its position
+    const targetMessage = messagesWithCharCount.find((m) => m.id === messageBefore);
+    if (!targetMessage) {
+      toast.error("Message not found");
+      return;
+    }
+
+    // Find the last system message with summary script if any
+    const lastSummaryIndex = messagesWithCharCount.findIndex(
+      (msg) => msg.type === "system" && msg.extra?.script === "summary" && msg.position <= targetMessage.position,
+    );
+
+    // Determine the start position (either after the last summary or from the beginning)
+    const startIndex = lastSummaryIndex !== -1 ? lastSummaryIndex + 1 : 0;
+    const targetIndex = messagesWithCharCount.findIndex((m) => m.id === messageBefore);
+    if (targetIndex <= startIndex) {
+      toast.error("Cannot summarize. Target message must be after the selected range start.");
+      return;
+    }
+
+    // Get all messages that need to be summarized
+    const messagesToSummarize = messagesWithCharCount.slice(startIndex, targetIndex + 1);
+    if (messagesToSummarize.length === 0) {
+      toast.error("No messages to summarize");
+      return;
+    }
+
+    // Create the summarization request
+    const createSummary = async () => {
+      try {
+        await disableChatMessagesByFilter({
+          chat_id: currentChatId,
+          chapter_id: currentChatActiveChapterID!,
+          position_lte: targetMessage.position,
+          not_type: "system",
+        });
+
+        // Create a new system message for the summary
+        const summaryMessage = await addChatMessage({
+          character_id: null,
+          type: "system",
+          messages: ["Generating summary..."],
+          position: targetMessage.position + 1,
+          extra: {
+            script: "summary",
+            startPosition: startIndex,
+            endPosition: targetMessage.position,
+          },
+        });
+
+        // Generate a summary using the inference service
+        try {
+          // Start inference to generate the summary
+          await inferenceService.generateMessage({
+            existingMessageId: summaryMessage.id,
+            messageIndex: 0,
+            userMessage: settings.requestPrompt,
+            chatTemplateID: settings.chatTemplateID || undefined,
+            characterId: currentChatUserCharacterID || "",
+            systemPromptOverride: settings.systemPrompt || undefined,
+            quietUserMessage: true,
+            extraSuggestions: {},
+          });
+
+          toast.success("Summary generated successfully");
+        } catch (error) {
+          console.error("Error generating summary:", error);
+          toast.error("Failed to generate summary");
+
+          // Update the summary message to show the error
+          await updateChatMessage(summaryMessage.id, {
+            messages: ["Failed to generate summary. Please try again."],
+          });
+        }
+      } catch (error) {
+        console.error("Error creating summary:", error);
+        toast.error("Failed to create summary");
+      }
+    };
+
+    // Execute the summarization process
+    createSummary();
+  };
+
   const renderMessage = (message: ChatMessage & { totalChars: number }, index: number, isContextCut: boolean) => {
     const avatarPath = getAvatarForMessage(message);
-    const isStreaming = isMessageStreaming(message.id);
-    const isLastMessage = index === messagesWithCharCount.length - 1;
+    const isStreaming = streamingMessageId === message.id;
+    const isLastMessage = index === messagesWithCharCount.length - 1 || message.type === "system";
     const hasReasoningData = hasReasoning(message.id);
     const isDisabled = !!message.disabled;
 
@@ -418,13 +487,14 @@ const WidgetMessages: React.FC = () => {
         {isContextCut && <ContextCutDivider />}
 
         <div
+          data-message-id={message.id}
           className={cn(
-            "group relative flex gap-4 p-4 rounded-lg border-b-2 border-secondary hover:shadow-md transition-all",
+            "group relative flex gap-4 p-4 rounded-lg border-b-2 border-secondary hover:shadow-md",
             // Apply base card background unless disabled
             !isDisabled && (message.type === "user" || message.type === "character") && "bg-card",
             message.type === "user" && "flex-row-reverse",
-            message.type === "system" && "bg-muted justify-center",
-            isStreaming && "border-primary border-b-2 animate-pulse",
+            message.type === "system" && "bg-muted mx-5 @md:mx-10 @lg:mx-40",
+            isStreaming && "border-primary border-b-2 animate-pulse transition-all",
             // Add styles for disabled messages
             isDisabled && "border-dashed border-muted-foreground opacity-60 bg-chart-5/20",
           )}
@@ -437,18 +507,21 @@ const WidgetMessages: React.FC = () => {
           {/* Message content */}
           <div
             onMouseUp={() => handleMessageSelection(message.character_id || undefined)}
-            className={cn(
-              "flex-grow relative pb-6 text-justify",
-              message.type === "user" && isEditingID !== message.id && "flex justify-end",
-              message.type === "system" && "text-center max-w-2xl",
-            )}
+            className={cn("flex-grow relative pb-6 text-justify", message.type === "user" && isEditingID !== message.id && "flex justify-end")}
           >
             {isStreaming && <StreamingIndicator />}
 
             {/* Reasoning section if available */}
             {hasReasoningData && message.type === "character" && <ReasoningSection content={messageReasonings[message.id]} />}
-
+            {message.extra?.script && (
+              <div className="flex justify-center items-center mb-2">
+                <div className="px-3 py-1 text-xs font-semibold font-mono rounded-full bg-primary/20 text-primary-foreground border border-primary/30 uppercase tracking-wider shadow-sm">
+                  {message.extra.script}
+                </div>
+              </div>
+            )}
             <MarkdownTextArea
+              autofocus={isEditingID === message.id}
               initialValue={getCurrentContent(message)}
               editable={isEditingID === message.id && !isStreaming}
               placeholder="Edit message..."
@@ -470,30 +543,35 @@ const WidgetMessages: React.FC = () => {
                 <EditControls onCancel={handleCancelEdit} onSave={() => handleSaveEdit(message.id)} />
               ) : (
                 <>
-                  <MessageActions
-                    messageId={message.id}
-                    messageType={message.type}
-                    isStreaming={isStreaming}
-                    onEdit={setIsEditingID}
-                    onRegenerateMessage={onRegenerateMessage}
-                    onDeleteMessage={onDeleteMessage}
-                    onTranslate={onTranslate}
-                    onCreateCheckpoint={onCreateCheckpoint}
-                    onGenerateImage={onGenerateImage}
-                    onExcludeFromPrompt={onExcludeFromPrompt}
-                    isLastMessage={isLastMessage}
-                  />
-
-                  {message.type === "character" && (
-                    <VersionControls
+                  <div className="flex justify-start">
+                    {message.type === "character" && (
+                      <VersionControls
+                        messageId={message.id}
+                        messageType={message.type}
+                        currentIndex={message.message_index}
+                        totalVersions={message.messages.length}
+                        onSwipe={handleSwipe}
+                        isLastMessage={isLastMessage}
+                        isStreaming={isStreaming}
+                      />
+                    )}
+                  </div>
+                  <div className="flex justify-end">
+                    <MessageActions
                       messageId={message.id}
                       messageType={message.type}
-                      currentIndex={message.message_index}
-                      totalVersions={message.messages.length}
-                      onSwipe={handleSwipe}
+                      isDisabled={isDisabled}
+                      isStreaming={isStreaming}
+                      onEdit={setIsEditingID}
+                      onRegenerateMessage={onRegenerateMessage}
+                      onDeleteMessage={onDeleteMessage}
+                      onTranslate={onTranslate}
+                      onCreateCheckpoint={onCreateCheckpoint}
+                      onGenerateImage={onGenerateImage}
+                      onExcludeFromPrompt={onExcludeFromPrompt}
                       isLastMessage={isLastMessage}
                     />
-                  )}
+                  </div>
                 </>
               )}
             </div>
@@ -507,12 +585,29 @@ const WidgetMessages: React.FC = () => {
     return <NoMessagePlaceholder currentProfile={currentProfile} />;
   }
 
+  console.log("messageList Re-render");
+
   return (
-    <div className="relative flex flex-col h-full">
-      <div ref={messagesContainerRef} className="flex flex-col gap-2 p-1 overflow-y-auto h-full" onScroll={handleScroll}>
+    <div className="relative flex flex-col h-full @container">
+      <div ref={messagesContainerRef} className="messages-container flex flex-col gap-2 p-1 overflow-y-auto h-full" onScroll={handleScroll}>
         {messagesWithCharCount.map((message, index) => {
           const isContextCut = index === contextCutIndex;
-          return renderMessage(message, index, isContextCut);
+
+          return (
+            <div key={`message-wrapper-${message.id}`} className="message-group relative group/message transition-all">
+              {/* Add MidMessageLayerControl before each message except the first */}
+              {index > 0 && !message.disabled && !messagesWithCharCount[index - 1].disabled && (
+                <MidMessageLayerControl
+                  messageBefore={messagesWithCharCount[index - 1]}
+                  messageAfter={message}
+                  onMerge={() => handleMergeMessages(messagesWithCharCount[index - 1].id, message.id)}
+                  onSummarize={(messageBefore, settings) => handleSummarizeMessages(messageBefore, settings)}
+                />
+              )}
+
+              {renderMessage(message, index, isContextCut)}
+            </div>
+          );
         })}
         {/* This empty div is our scroll target */}
         <div ref={messagesEndRef} />

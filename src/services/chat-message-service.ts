@@ -33,6 +33,8 @@ export async function createChatMessage(messageData: CreateChatMessageParams): P
     messages: messageData.messages,
     message_index: messageData.message_index,
     disabled: messageData.disabled ?? false,
+    tokens: messageData.tokens,
+    extra: messageData.extra,
     created_at: new Date(now),
     updated_at: new Date(now),
   });
@@ -51,9 +53,11 @@ export async function createChatMessage(messageData: CreateChatMessageParams): P
       messages, 
       message_index,
       disabled, 
+      tokens,
+      extra,
       created_at, 
       updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
     [
       validatedMessage.id,
       validatedMessage.chat_id,
@@ -64,6 +68,8 @@ export async function createChatMessage(messageData: CreateChatMessageParams): P
       messagesStr,
       validatedMessage.message_index,
       validatedMessage.disabled,
+      validatedMessage.tokens,
+      validatedMessage.extra,
       now,
       now,
     ],
@@ -88,6 +94,8 @@ export async function getChatMessageById(id: string): Promise<ChatMessage | null
       messages, 
       message_index,
       disabled, 
+      tokens,
+      extra,
       created_at, 
       updated_at
     FROM chat_messages 
@@ -103,6 +111,7 @@ export async function getChatMessageById(id: string): Promise<ChatMessage | null
 
   // Parse JSON string back to array
   message.messages = JSON.parse(message.messages || "[]");
+  message.extra = JSON.parse(message.extra || "{}");
 
   // Convert date strings to Date objects
   message.created_at = new Date(message.created_at);
@@ -129,6 +138,8 @@ export async function listChatMessages(filter?: ChatMessageFilter): Promise<Chat
       messages, 
       message_index,
       disabled, 
+      tokens,
+      extra,
       created_at, 
       updated_at
     FROM chat_messages
@@ -189,6 +200,7 @@ export async function listChatMessages(filter?: ChatMessageFilter): Promise<Chat
   return result.map((message) => ({
     ...message,
     messages: JSON.parse(message.messages || "[]"),
+    extra: JSON.parse(message.extra || "{}"),
     disabled: message.disabled === "true" || message.disabled === 1,
     created_at: new Date(message.created_at),
     updated_at: new Date(message.updated_at),
@@ -211,6 +223,7 @@ export async function updateChatMessage(id: string, updateData: UpdateChatMessag
   // Define field transformations
   const fieldMapping = {
     messages: (value: string[]) => JSON.stringify(value),
+    extra: (value: Record<string, any>) => JSON.stringify(value),
   };
 
   // Build update parameters
@@ -262,3 +275,158 @@ export async function getNextMessagePosition(chatId: string, chapterId: string):
 
 // Export type definitions
 export type { ChatMessage, ChatMessageType };
+
+// Disable all messages from a specific character in a chat and chapter, except the last one
+export async function disableCharacterMessagesExceptLast(chatId: string, chapterId: string, characterId: string): Promise<number> {
+  const validChatId = uuidUtils.uuid().parse(chatId);
+  const validChapterId = uuidUtils.uuid().parse(chapterId);
+  const validCharacterId = uuidUtils.uuid().parse(characterId);
+  const now = formatDateTime();
+
+  const result = await executeDBQuery(
+    `UPDATE chat_messages
+     SET disabled = true, updated_at = $4
+     WHERE chat_id = $1 
+       AND chapter_id = $2 
+       AND character_id = $3 
+       AND position < (SELECT MAX(position) FROM chat_messages WHERE chat_id = $1 AND chapter_id = $2 AND character_id = $3)`,
+    [validChatId, validChapterId, validCharacterId, now],
+  );
+
+  return result.rowsAffected;
+}
+
+// Filter interface with position comparison operators
+export interface ChatMessageFilterWithComparison extends ChatMessageFilter {
+  position_gt?: number;
+  position_lt?: number;
+  position_gte?: number;
+  position_lte?: number;
+  not_type?: ChatMessageType;
+}
+
+/**
+ * Delete chat messages based on a flexible filter
+ *
+ * @param filter Object containing filter criteria for deletion
+ * @returns Number of affected rows
+ */
+export async function deleteChatMessagesByFilter(filter: ChatMessageFilterWithComparison): Promise<number> {
+  // Ensure we have at least one filter condition to prevent deleting all messages
+  if (Object.keys(filter).length === 0) {
+    throw new Error("At least one filter condition must be provided");
+  }
+
+  const { conditions, params } = buildFilterConditions(filter);
+  const query = `DELETE FROM chat_messages WHERE ${conditions.join(" AND ")}`;
+  const result = await executeDBQuery(query, params);
+
+  return result.rowsAffected;
+}
+
+/**
+ * Disable chat messages based on a flexible filter
+ *
+ * @param filter Object containing filter criteria for messages to disable
+ * @returns Number of affected rows
+ */
+export async function disableChatMessagesByFilter(filter: ChatMessageFilterWithComparison): Promise<number> {
+  // Ensure we have at least one filter condition to prevent disabling all messages
+  if (Object.keys(filter).length === 0) {
+    throw new Error("At least one filter condition must be provided");
+  }
+
+  const { conditions, params } = buildFilterConditions(filter);
+
+  // Get current timestamp for update
+  const now = formatDateTime();
+
+  // Add updated_at to params
+  params.push(now);
+  const paramIndex = params.length;
+
+  const query = `UPDATE chat_messages SET disabled = true, updated_at = $${paramIndex} WHERE ${conditions.join(" AND ")}`;
+  const result = await executeDBQuery(query, params);
+
+  return result.rowsAffected;
+}
+
+/**
+ * Helper function to build filter conditions for SQL queries
+ *
+ * @param filter Filter object with comparison operators
+ * @returns Object containing conditions array and params array
+ */
+function buildFilterConditions(filter: ChatMessageFilterWithComparison): { conditions: string[]; params: any[] } {
+  const conditions: string[] = [];
+  const params: any[] = [];
+  let paramIndex = 1;
+
+  // Build filter conditions dynamically
+  if (filter.chat_id) {
+    conditions.push(`chat_id = $${paramIndex}`);
+    params.push(uuidUtils.uuid().parse(filter.chat_id));
+    paramIndex++;
+  }
+
+  if (filter.chapter_id) {
+    conditions.push(`chapter_id = $${paramIndex}`);
+    params.push(uuidUtils.uuid().parse(filter.chapter_id));
+    paramIndex++;
+  }
+
+  if (filter.character_id !== undefined) {
+    if (filter.character_id === null) {
+      conditions.push("character_id IS NULL");
+    } else {
+      conditions.push(`character_id = $${paramIndex}`);
+      params.push(uuidUtils.uuid().parse(filter.character_id));
+      paramIndex++;
+    }
+  }
+
+  if (filter.type) {
+    conditions.push(`type = $${paramIndex}`);
+    params.push(filter.type);
+    paramIndex++;
+  }
+
+  if (filter.not_type) {
+    conditions.push(`type != $${paramIndex}`);
+    params.push(filter.not_type);
+    paramIndex++;
+  }
+
+  if (filter.disabled !== undefined) {
+    conditions.push(`disabled = $${paramIndex}`);
+    params.push(filter.disabled);
+    paramIndex++;
+  }
+
+  // Position operators
+  if (filter.position_gt !== undefined) {
+    conditions.push(`position > $${paramIndex}`);
+    params.push(filter.position_gt);
+    paramIndex++;
+  }
+
+  if (filter.position_lt !== undefined) {
+    conditions.push(`position < $${paramIndex}`);
+    params.push(filter.position_lt);
+    paramIndex++;
+  }
+
+  if (filter.position_gte !== undefined) {
+    conditions.push(`position >= $${paramIndex}`);
+    params.push(filter.position_gte);
+    paramIndex++;
+  }
+
+  if (filter.position_lte !== undefined) {
+    conditions.push(`position <= $${paramIndex}`);
+    params.push(filter.position_lte);
+    paramIndex++;
+  }
+
+  return { conditions, params };
+}
