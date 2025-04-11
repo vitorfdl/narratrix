@@ -8,8 +8,8 @@ use tokio::task::JoinHandle;
 
 // Add this to expose our LLM module
 mod llm;
+pub mod tokenizer;
 pub use llm::process_inference;
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct InferenceMessage {
     pub role: String, // Must be either "assistant" or "user"

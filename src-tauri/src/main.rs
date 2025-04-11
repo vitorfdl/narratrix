@@ -62,6 +62,7 @@ fn main() {
             inference::queue_inference_request,
             inference::cancel_inference_request,
             inference::clean_inference_queues,
+            inference::tokenizer::count_tokens,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
