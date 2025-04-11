@@ -17,6 +17,7 @@ import { findClosestExpressionMatch } from "@/utils/fuzzy-search";
 import { useLocalExpressionGenerationSettings } from "@/utils/local-storage";
 import { Loader2Icon, Pause, Play, RefreshCw, Settings, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useThrottledCallback } from "use-debounce";
 
 export type ExpressionGenerateSettings = {
@@ -141,7 +142,7 @@ const WidgetExpressions = () => {
   const getIdForItem = useCallback((item: { id: string }) => item.id, []);
 
   // Use useMultipleImageUrls hook
-  const { urlMap: expressionUrlMap } = useMultipleImageUrls(expressionObjectsToLoad, getPathForItem, getIdForItem);
+  const { urlMap: expressionUrlMap, isLoading } = useMultipleImageUrls(expressionObjectsToLoad, getPathForItem, getIdForItem);
   // ------------------------------
 
   // Manual expression generation function (now reads from refs AND selected text)
@@ -204,7 +205,7 @@ const WidgetExpressions = () => {
           prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
           parameters: {
             max_tokens: 50,
-            max_context: 2048,
+            max_context: 4052,
             min_p: 0.5,
             temperature: 0.8,
             stop: ["\n"],
@@ -224,6 +225,9 @@ const WidgetExpressions = () => {
           clearSelection();
         }
       } catch (error) {
+        toast.error(`Error generating expression for ${targetCharacter.name}:`, {
+          description: error instanceof Error ? error.message : "An unknown error occurred",
+        });
         console.error(`Error generating expression for ${targetCharacter.name}:`, error);
         setCharacterExpressions((prev) => ({
           ...prev,
@@ -271,8 +275,6 @@ const WidgetExpressions = () => {
 
   // Function to handle saving settings from the dialog
   const handleSaveSettings = useCallback(() => {
-    console.log("requestPrompt", tempRequestPrompt);
-    console.log("systemPrompt", tempSystemPrompt);
     setExpressionSettings((prev) => ({
       ...prev,
       requestPrompt: tempRequestPrompt,
@@ -419,11 +421,13 @@ const WidgetExpressions = () => {
                     style={{ minHeight: "200px", height: "100%" }}
                   >
                     <Avatar className="w-full h-full shadow-lg" style={{ aspectRatio: "1/1", minHeight: "100px" }}>
-                      <AvatarImage
-                        src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
-                        alt={displayCharacter.name}
-                        className="w-full h-full object-cover"
-                      />
+                      {!isLoading && (
+                        <AvatarImage
+                          src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
+                          alt={displayCharacter.name}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                       <AvatarFallback>
                         <Loader2Icon className="w-[50%] h-[50%] animate-spin" />
                       </AvatarFallback>
