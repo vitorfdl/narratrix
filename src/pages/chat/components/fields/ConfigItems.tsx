@@ -2,9 +2,9 @@ import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DragArray } from "@/components/ui/drag-array";
+import { CommandTagInput } from "@/components/ui/input-tag";
 import { RandomButton } from "@/components/ui/random-button";
 import { StepButton } from "@/components/ui/step-button";
-import { StringArray } from "@/components/ui/string-array";
 import type {
   ConfigField,
   DragArrayField,
@@ -50,7 +50,7 @@ export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false,
       case "string_array": {
         const arrayField = field as StringArrayField;
         const arrayValue = Array.isArray(value) ? value : (arrayField.default ?? []);
-        return <StringArray values={arrayValue} onChange={onChange} placeholder="Enter value..." />;
+        return <CommandTagInput value={arrayValue} onChange={onChange} placeholder="Enter value..." />;
       }
       case "drag_array": {
         const dragField = field as DragArrayField;
