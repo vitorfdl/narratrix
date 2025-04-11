@@ -437,7 +437,7 @@ const WidgetExpressions = () => {
                         {/* Add visual indicator for selected text */}
                         {selectedText && autoRefreshEnabled && (
                           <div className="bg-primary/10 border-l-4 border-primary px-2 py-1 text-sm z-10 shadow-sm">
-                            <p className="text-xs text-foreground mb-0.5">Generating expression from selected text!</p>
+                            <p className="text-xs text-muted mb-0.5">Generating expression from selected text!</p>
                           </div>
                         )}
                         {displayCharacter.name}

@@ -18,6 +18,7 @@ import { Character } from "@/schema/characters-schema";
 import { ChatMessageType } from "@/schema/chat-message-schema";
 import { ModelSpecs } from "@/schema/inference-engine-schema";
 import { formatPrompt as formatPromptUtil } from "@/services/inference-steps/formatter";
+import { useLocalSummarySettings } from "@/utils/local-storage";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { removeNestedFields } from "./inference-steps/remove-nested-fields";
@@ -88,6 +89,7 @@ export function useInferenceService() {
   const currentChapterID = useCurrentChatActiveChapterID();
 
   const characterList = useCharacters();
+  const [localSummarySettings] = useLocalSummarySettings();
 
   const userCharacter = characterList.find((character) => character.id === currentChatUserCharacterID);
   const userCharacterOrProfileName = userCharacter?.name || currentProfile?.name;
@@ -241,7 +243,13 @@ export function useInferenceService() {
   /**
    * Format prompts for the inference engine
    */
-  const formatPrompt = (userMessage?: string, systemPromptOverride?: string, chatTemplateID?: string, extraSuggestions?: Record<string, any>) => {
+  const formatPrompt = async (
+    userMessage?: string,
+    characterId?: string,
+    systemPromptOverride?: string,
+    chatTemplateID?: string,
+    extraSuggestions?: Record<string, any>,
+  ) => {
     const chatTemplate = chatTemplateID
       ? chatTemplateList.find((template) => template.id === chatTemplateID)!
       : chatTemplateList.find((template) => template.id === currentChatTemplateId)!;
@@ -265,7 +273,7 @@ export function useInferenceService() {
       })
       ?.filter((msg) => streamingState.current.messageId !== msg.id);
 
-    const prompt = formatPromptUtil({
+    const prompt = await formatPromptUtil({
       messageHistory: chatWithNames || [],
       userPrompt: userMessage,
       systemOverridePrompt: systemPromptOverride,
@@ -277,7 +285,10 @@ export function useInferenceService() {
         config: chatTemplate?.config,
       },
       chatConfig: {
-        character: characterList.find((character) => character.id === streamingState.current.characterId),
+        injectionPrompts: {
+          summary: localSummarySettings.requestPrompt,
+        },
+        character: characterList.find((character) => character.id === characterId),
         user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
         chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
         extra: extraSuggestions,
@@ -312,18 +323,6 @@ export function useInferenceService() {
       throw new Error("Character ID is required");
     }
 
-    // Prepare messages for inference
-    const promptResult = formatPrompt(userMessage, systemPromptOverride, chatTemplateID, extraSuggestions);
-    if (!promptResult) {
-      throw new Error("Failed to format prompt");
-    }
-
-    const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
-    if (!modelSettings || !manifestSettings) {
-      console.error("Model or manifest settings not available. Check chat template configuration.");
-      throw new Error("Model or manifest settings not available. Check chat template configuration.");
-    }
-
     try {
       // Reset any previous streaming state
       resetStreamingState();
@@ -336,6 +335,18 @@ export function useInferenceService() {
         onStreamingStateChange(streamingState.current);
       }
 
+      // Prepare messages for inference
+      const promptResult = await formatPrompt(userMessage, characterId, systemPromptOverride, chatTemplateID, extraSuggestions);
+      if (!promptResult) {
+        throw new Error("Failed to format prompt");
+      }
+
+      const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
+      if (!modelSettings || !manifestSettings) {
+        console.error("Model or manifest settings not available. Check chat template configuration.");
+        throw new Error("Model or manifest settings not available. Check chat template configuration.");
+      }
+
       // Create or use existing message
       let messageId: string;
 
@@ -345,6 +356,7 @@ export function useInferenceService() {
           character_id: null,
           type: "user" as ChatMessageType,
           messages: [userMessage],
+          extra: {},
         });
       }
 
@@ -368,6 +380,7 @@ export function useInferenceService() {
           character_id: characterId,
           type: "character" as ChatMessageType,
           messages: ["..."],
+          extra: {},
         });
 
         messageId = newMessage.id;

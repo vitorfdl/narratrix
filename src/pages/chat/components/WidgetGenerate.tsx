@@ -2,11 +2,12 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
+import { cn } from "@/lib/utils";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { GenerationOptions, StreamingState } from "@/services/inference-service";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { MDXEditorMethods } from "@mdxeditor/editor";
-import { StopCircle } from "lucide-react";
+import { LoaderCircleIcon, StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QuickActions, { QuickAction } from "./utils-generate/QuickActions";
@@ -309,6 +310,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           character_id: null,
           messages: ["..."],
           type: "user",
+          extra: {},
         });
         generationConfig.existingMessageId = newChatID;
       }
@@ -351,10 +353,17 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         editable={!isAnyCharacterStreaming() || quietResponseRef.current} // Allow editing during quiet response
         placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
         sendShortcut={sendCommand}
+        className={cn(isAnyCharacterStreaming() && "animate-pulse")}
         onSubmit={handleSubmit}
         enableHistory={true}
         ref={textAreaRef}
       />
+      {/* Absolute spinning icon for when we're generating */}
+      {isAnyCharacterStreaming() && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <LoaderCircleIcon className="w-10 h-10 animate-spin" />
+        </div>
+      )}
     </div>
   );
 };

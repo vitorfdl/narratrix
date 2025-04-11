@@ -15,9 +15,9 @@ export interface ConsoleRequest {
   engine: Engine;
   fullResponse?: string;
   statistics?: {
-    totalTokens: number;
     systemTokens: number;
     historyTokens: number;
+    responseTokens: number;
   };
 }
 
@@ -28,7 +28,7 @@ interface ConsoleState {
   requests: ConsoleRequest[];
   actions: {
     addRequest: (request: Omit<ConsoleRequest, "timestamp">) => void;
-    updateRequestResponse: (id: string, response: InferenceResponse) => void;
+    updateRequestResponse: (id: string, response: InferenceResponse, statistics?: Partial<ConsoleRequest["statistics"]>) => void;
     clearHistory: () => void;
     getRequestById: (id: string) => ConsoleRequest | undefined;
   };
@@ -71,7 +71,7 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
     /**
      * Update a request's response by ID
      */
-    updateRequestResponse: (id, inferenceResponse) =>
+    updateRequestResponse: (id, inferenceResponse, statistics) =>
       set((state) => {
         const updatedRequests = state.requests.map((req) => {
           if (req.id === id) {
@@ -82,9 +82,16 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
               response = inferenceResponse.result.text;
             }
 
+            const statisticsNew = {
+              historyTokens: statistics?.historyTokens ?? req.statistics?.historyTokens ?? 0,
+              systemTokens: statistics?.systemTokens ?? req.statistics?.systemTokens ?? 0,
+              responseTokens: statistics?.responseTokens ?? req.statistics?.responseTokens ?? 0,
+            };
+
             return {
               ...req,
               fullResponse: response,
+              statistics: statisticsNew,
             };
           }
           return req;

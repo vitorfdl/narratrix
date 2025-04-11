@@ -204,7 +204,7 @@ export function useBackgroundInference() {
         const messages: ChatMessage[] = [];
         const activeChapter = chapterList.find((chapter) => chapter.id === currentChapterID);
 
-        const { inferenceMessages, systemPrompt: formattedSystemPrompt } = formatPrompt({
+        const { inferenceMessages, systemPrompt: formattedSystemPrompt } = await formatPrompt({
           messageHistory: messages,
           userPrompt: prompt,
           modelSettings: model,
