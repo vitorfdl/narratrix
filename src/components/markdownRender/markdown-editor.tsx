@@ -1,11 +1,13 @@
 import { useTheme } from "@/hooks/ThemeContext";
 import { cn } from "@/lib/utils";
+import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { CompletionContext, CompletionResult, autocompletion } from "@codemirror/autocomplete";
 import { tooltips } from "@codemirror/view";
 import { MDXEditor, MDXEditorMethods, diffSourcePlugin } from "@mdxeditor/editor";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { highlightBracketsExtension } from "./codemirror-highlight-brackets";
+import { createHistoryCompletionSource, historyExtension } from "./codemirror-history";
 import { SuggestionItem } from "./markdown-textarea";
 import "./styles/mdxeditor.css";
 
@@ -21,13 +23,17 @@ export interface MDXEditorProps {
   onBlur?: () => void;
   minHeight?: string;
   suggestions?: SuggestionItem[];
+  enableHistory?: boolean;
 }
 
 /**
  * I probably should have integrated CodeMirror directly.
  */
 export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
-  ({ initialValue = "", onChange, className, label, placeholder, sendShortcut, onSubmit, onFocus, onBlur, suggestions = [] }, ref) => {
+  (
+    { initialValue = "", enableHistory = false, onChange, className, label, placeholder, sendShortcut, onSubmit, onFocus, onBlur, suggestions = [] },
+    ref,
+  ) => {
     const [content, setContent] = useState(initialValue);
     const [showPlaceholder, setShowPlaceholder] = useState(!initialValue);
     const editorRef = useRef<MDXEditorMethods>(null);
@@ -35,6 +41,8 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
     const isInitialMount = useRef(true);
     const isUserEditing = useRef(false);
     const { theme } = useTheme();
+    const [generationInputHistory] = useLocalGenerationInputHistory();
+
     // Determine if dark mode is active
     const isDarkMode =
       theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -231,15 +239,16 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
                 codeMirrorExtensions: [
                   tooltips({ parent: document.body }),
                   autocompletion({
-                    override: [completionSource],
+                    override: enableHistory ? [completionSource, createHistoryCompletionSource(generationInputHistory)] : [completionSource],
                     defaultKeymap: true,
                     aboveCursor: true,
                     maxRenderedOptions: 10,
-                    tooltipClass: (state) => {
+                    tooltipClass: () => {
                       return "custom-tooltip";
                     },
                   }),
                   highlightBracketsExtension(),
+                  ...(enableHistory ? [historyExtension(generationInputHistory)] : []),
                 ],
                 viewMode: "source",
               }),

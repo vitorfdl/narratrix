@@ -27,10 +27,27 @@ interface MarkdownTextAreaProps {
   onSubmit?: (text: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
+  enableHistory?: boolean;
 }
 
 export const MarkdownTextArea = forwardRef<MDXEditorMethods, MarkdownTextAreaProps>(
-  ({ initialValue = "", onChange, className, label, placeholder, editable = true, suggestions, sendShortcut, onSubmit, onFocus, onBlur }, ref) => {
+  (
+    {
+      initialValue = "",
+      enableHistory = false,
+      onChange,
+      className,
+      label,
+      placeholder,
+      editable = true,
+      suggestions,
+      sendShortcut,
+      onSubmit,
+      onFocus,
+      onBlur,
+    },
+    ref,
+  ) => {
     const [nonEditableContent, setNonEditableContent] = useState(initialValue);
 
     useEffect(() => {
@@ -53,6 +70,7 @@ export const MarkdownTextArea = forwardRef<MDXEditorMethods, MarkdownTextAreaPro
           suggestions={suggestions}
           sendShortcut={sendShortcut}
           className={className}
+          enableHistory={enableHistory}
           onSubmit={onSubmit}
           onFocus={onFocus}
           onBlur={onBlur}

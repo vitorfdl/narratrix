@@ -4,6 +4,7 @@ import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { GenerationOptions, StreamingState } from "@/services/inference-service";
+import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import { StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -18,12 +19,14 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const inferenceService = useInferenceServiceFromContext();
   // const { generateQuietly } = useBackgroundInference();
   const [text, setText] = React.useState("");
+  const [generationInputHistory, setGenerationInputHistory] = useLocalGenerationInputHistory();
   // const [autoTranslate, setAutoTranslate] = React.useState(false);
   const [streamingCharacters, setStreamingCharacters] = useState<Record<string, boolean>>({});
   const streamingCheckRef = useRef<number | null>(null);
   const quietResponseRef = useRef<boolean>(false);
   const [inputStreamingText, setInputStreamingText] = useState<string>("");
   const textAreaRef = useRef<MDXEditorMethods>(null);
+  // Track history navigation
 
   const profile = useProfile();
   const sendCommand = profile.currentProfile?.settings.chat.sendShortcut;
@@ -56,7 +59,9 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     }
   }, [inputStreamingText, quietResponseRef.current]);
 
-  // Add event listener for Tab key to focus textarea
+  /**
+   * Focus the editor when the Tab key is pressed
+   */
   useEffect(() => {
     const handleTabKey = (e: KeyboardEvent) => {
       if (e.key === "Tab") {
@@ -100,6 +105,14 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       if (!submittedText.trim()) {
         return;
       }
+
+      // Add to history if not a duplicate of the most recent entry
+      if (!generationInputHistory.length || generationInputHistory[generationInputHistory.length - 1] !== submittedText) {
+        // Add to history, limiting entries to X
+        const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
+        setGenerationInputHistory(newHistory);
+      }
+
       // Get the next enabled character to respond
       const nextCharacter = enabledParticipants[0];
       if (!nextCharacter) {
@@ -114,7 +127,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         // Use the inference service to generate a message
         await inferenceService.generateMessage({
           characterId: nextCharacter?.id ?? "",
-          userMessage: submittedText,
+          userMessage: submittedText.trim(),
           stream: true,
           onStreamingStateChange: (state) => {
             // Handle streaming state changes for both regular and quiet responses
@@ -144,7 +157,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           setText("");
         }
       } catch (error) {
-        console.error("Error generating message:", error);
+        toast.error(`${error}`);
         setStreamingCharacters((prev) => {
           const newState = { ...prev };
           if (nextCharacter?.id) {
@@ -154,7 +167,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         });
       }
     },
-    [enabledParticipants, inferenceService, handleStreamingStateChange],
+    [enabledParticipants, inferenceService, handleStreamingStateChange, generationInputHistory],
   );
 
   // Function to check if any character is currently streaming
@@ -336,6 +349,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
         sendShortcut={sendCommand}
         onSubmit={handleSubmit}
+        enableHistory={true}
         ref={textAreaRef}
       />
     </div>
