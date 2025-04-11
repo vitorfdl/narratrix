@@ -1,3 +1,4 @@
+import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useProfile } from "@/hooks/ProfileContext";
@@ -209,25 +210,18 @@ export default function Models() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+      <DestructiveConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Confirm Deletion"
+        description={
+          <>
             <p>Are you sure you want to delete {selectedModel?.name}?</p>
             <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
-          </div>
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+        onConfirm={confirmDelete}
+      />
 
       {/* Duplicate Model Dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>

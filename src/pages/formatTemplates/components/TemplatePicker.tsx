@@ -1,20 +1,12 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
+import { EditNameDialog } from "@/components/shared/EditNameDialog";
 import { Button } from "@/components/ui/button";
+import { Combobox, ComboboxItem } from "@/components/ui/combobox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
+import { ChevronsUpDown, CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 
 export interface Template {
@@ -105,22 +97,33 @@ export function TemplatePicker({
     }
   };
 
+  // Map templates to ComboboxItem format
+  const comboboxItems: ComboboxItem[] = templates.map((template) => ({
+    value: template.id,
+    label: template.name,
+  }));
+
   return (
     <>
       <div className="flex items-center space-x-1.5">
         <div className="flex-1">
-          <Select value={selectedTemplateId ?? undefined} onValueChange={onTemplateSelect} disabled={!hasTemplates || disabled}>
-            <SelectTrigger className="w-full h-8 text-sm font-bold focus:border-none">
-              <SelectValue placeholder={hasTemplates ? "Select Template" : "No templates available"} />
-            </SelectTrigger>
-            <SelectContent>
-              {templates.map((template) => (
-                <SelectItem key={template.id} value={template.id} className="text-xs">
-                  {template.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            items={comboboxItems}
+            onChange={onTemplateSelect}
+            selectedValue={selectedTemplateId ?? undefined}
+            placeholder="Search templates..."
+            trigger={
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full h-8 justify-between text-sm font-bold focus:border-none"
+                disabled={!hasTemplates || disabled}
+              >
+                {selectedTemplate ? selectedTemplate.name : hasTemplates ? "Select Template" : "No templates available"}
+                <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+              </Button>
+            }
+          />
         </div>
 
         {compact ? (
@@ -273,53 +276,27 @@ export function TemplatePicker({
       </Dialog>
 
       {/* Edit Template Name Dialog */}
-      <Dialog open={isEditTemplateDialogOpen} onOpenChange={setIsEditTemplateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold">Edit Template Name</DialogTitle>
-            <DialogDescription className="text-base mt-2">Update the name of your template.</DialogDescription>
-          </DialogHeader>
-          <div className="py-2 flex flex-col space-y-2">
-            <div className="flex items-center gap-4">
-              <Label htmlFor="edit-name" className="min-w-10">
-                Name:
-              </Label>
-              <Input
-                id="edit-name"
-                value={editedTemplateName}
-                onChange={(e) => setEditedTemplateName(e.target.value)}
-                className="flex-1"
-                placeholder="Template name"
-                autoFocus
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsEditTemplateDialogOpen(false)} className="min-w-24">
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateTemplateName} disabled={!editedTemplateName.trim()} className="min-w-24 bg-primary hover:bg-primary/90">
-              Update
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditNameDialog
+        open={isEditTemplateDialogOpen}
+        onOpenChange={setIsEditTemplateDialogOpen}
+        initialName={selectedTemplate?.name ?? ""}
+        onSave={handleUpdateTemplateName}
+        title="Edit Template Name"
+        description="Update the name of your template."
+        label="Name"
+        placeholder="Template name"
+        saveButtonText="Update"
+      />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this template? This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DestructiveConfirmDialog
+        open={isDeleteConfirmOpen}
+        onOpenChange={setIsDeleteConfirmOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Template"
+        description="Are you sure you want to delete this template? This action cannot be undone."
+        confirmText="Delete"
+      />
     </>
   );
 }
