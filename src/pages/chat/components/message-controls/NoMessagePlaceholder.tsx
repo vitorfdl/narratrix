@@ -84,21 +84,21 @@ export const NoMessagePlaceholder: React.FC<NoMessagePlaceholderProps> = ({ curr
             { type: "key", value: "W" },
           ],
         },
-        { label: "Focus Generation Input", keys: [{ type: "key", value: "Tab" }] },
       ],
     },
     {
       title: "Generation Input",
       shortcuts: [
+        { label: "Focus ", keys: [{ type: "key", value: "Tab" }] },
         { label: "Send Message", keys: getSendMessageKeys() },
         { label: "Access Input History", keys: [{ type: "key", value: "Up" }] },
-        {
-          label: "Edit Last Message",
-          keys: [
-            { type: "key", value: "Ctrl" },
-            { type: "key", value: "Up" },
-          ],
-        },
+        // {
+        //   label: "Edit Last Message",
+        //   keys: [
+        //     { type: "key", value: "Ctrl" },
+        //     { type: "key", value: "Up" },
+        //   ],
+        // },
       ],
     },
     // Add more sections here in the future by extending the 'sections' array
@@ -107,7 +107,7 @@ export const NoMessagePlaceholder: React.FC<NoMessagePlaceholderProps> = ({ curr
   return (
     <div className="flex flex-col items-center justify-center h-full text-sm @container">
       <div className="text-muted-foreground text-center mb-6">No messages yet. Start the conversation by sending a message.</div>
-      <div className="w-full max-w-[80%] px-4">
+      <div className="w-full max-w-[60%] xl:max-w-[800px] px-4">
         <h3 className="text-center mb-5 font-medium text-base">Keyboard Shortcuts:</h3>
 
         <div className="grid grid-cols-1 @xl:grid-cols-2 gap-x-10 gap-y-4">
