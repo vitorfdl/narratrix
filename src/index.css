@@ -26,7 +26,7 @@ body,
     --muted-foreground: 240 3.8% 46.1%; /* #71717A */
     --accent: 225 25% 94%; /* #EEF1F8 soft accent background */
     --accent-foreground: 293 59% 74%; /* #DB9EE5 */
-    --destructive: 293 45% 40%; /* #8b3794 */
+    --destructive: 0 52% 55%; /* #C2362E */
     --destructive-foreground: 0 0% 98%; /* #FAFAFA */
     --border: 220 13% 85%; /* #D9DEE5 softer border */
     --input: 220 13% 85%; /* #D9DEE5 softer input */
