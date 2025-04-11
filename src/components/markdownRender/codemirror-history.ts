@@ -9,14 +9,20 @@ import { keymap } from "@codemirror/view";
  */
 export function createHistoryCompletionSource(historyItems: string[]) {
   return (context: CompletionContext): CompletionResult | null => {
-    // Only trigger when editor is empty and explicitly activated
-    if (!context.explicit || context.state.doc.length > 0) {
+    // Only trigger when editor is empty or has at most 3 characters and is explicitly activated
+    if (!context.explicit || context.state.doc.length > 3) {
       return null;
     }
+
+    const currentInput = context.state.doc.sliceString(0);
 
     // Filter out empty history items and create completion options
     const options: Completion[] = historyItems
       .filter((item) => item.trim().length > 0)
+      .filter((item) => {
+        // If there's input text, only show items that start with that text
+        return currentInput.length === 0 || item.trim().toLowerCase().startsWith(currentInput.toLowerCase());
+      })
       .map((item, index) => ({
         label: item.trim().length > 300 ? `${item.trim().substring(0, 300)}...` : item.trim(),
         type: "text",
@@ -31,13 +37,13 @@ export function createHistoryCompletionSource(historyItems: string[]) {
     return {
       from: 0,
       options,
-      validFor: /^.*$/,
+      validFor: /^.{0,3}$/, // Only valid for up to 3 characters
     };
   };
 }
 
 /**
- * Creates a keymap that triggers history completion on up arrow key when editor is empty
+ * Creates a keymap that triggers history completion on up arrow key when editor is empty or has limited content
  * @returns A keymap extension for CodeMirror
  */
 function createHistoryKeymap() {
@@ -45,8 +51,8 @@ function createHistoryKeymap() {
     {
       key: "ArrowUp",
       run: (view) => {
-        // Only trigger when editor is empty
-        if (view.state.doc.length === 0) {
+        // Only trigger when editor is empty or has at most 3 characters
+        if (view.state.doc.length <= 3) {
           // Use the imported startCompletion function which is the proper way
           // to trigger completion programmatically
           startCompletion(view);

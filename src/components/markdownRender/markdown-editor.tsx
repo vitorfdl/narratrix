@@ -76,7 +76,7 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
           from: wordStartPos,
           options,
           // Valid as long as we're still within a {{ ... }} expression and haven't closed it
-          validFor: /^\w*(?!\}\})$/,
+          validFor: /^[\w.]*(?!\}\})$/,
         };
       };
     }, []);
