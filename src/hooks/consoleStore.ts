@@ -14,6 +14,11 @@ export interface ConsoleRequest {
   parameters: Record<string, any>;
   engine: Engine;
   fullResponse?: string;
+  statistics?: {
+    totalTokens: number;
+    systemTokens: number;
+    historyTokens: number;
+  };
 }
 
 /**

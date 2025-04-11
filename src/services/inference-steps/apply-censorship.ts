@@ -1,6 +1,9 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 
 export function applyCensorship(prompt: string, badWords: string[], replacer = "*"): string {
+  if (!badWords || badWords.length === 0) {
+    return prompt;
+  }
   return prompt.replace(new RegExp(`\\b(${badWords.join("|")})\\b`, "gi"), replacer);
 }
 

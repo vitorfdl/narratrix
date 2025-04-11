@@ -1,17 +1,10 @@
+import { ConsoleRequest } from "@/hooks/consoleStore";
 import { ChatTemplate } from "@/schema/template-chat-schema";
 import { FormattedPromptResult } from "./formatter";
 
-interface FormattedPromptCutResult extends FormattedPromptResult {
-  engine_max_tokens: {
-    openai: number;
-    anthropic: number;
-  };
-  max_tokens: number;
-  total_tokens: number;
-  frozen_tokens: number;
-}
+interface FormattedPromptCutResult extends FormattedPromptResult, Pick<ConsoleRequest, "statistics"> {}
 
-export const getTokenCount = (text: string) => Math.ceil(text.length / 4);
+export const getTokenCount = (text: string) => Math.ceil(text.length / 3.3);
 
 /**
  * Applies a context limit to the formatted prompt
@@ -27,7 +20,6 @@ export function applyContextLimit(
   const maxContextSize = (chatConfig.config.max_context as number) - maxResponseTokens;
 
   const maxMessageTokens = maxContextSize - frozenTokens;
-
   // Calculate token counts for each message
   const messagesWithTokens = formattedPrompt.inferenceMessages.map((message) => ({
     ...message,
@@ -59,12 +51,13 @@ export function applyContextLimit(
   return {
     inferenceMessages: finalMessages,
     systemPrompt: formattedPrompt.systemPrompt,
-    max_tokens: chatConfig.config.max_context as number,
-    frozen_tokens: frozenTokens,
-    total_tokens: currentTokenCount,
-    engine_max_tokens: {
-      openai: maxMessageTokens + maxResponseTokens,
-      anthropic: maxMessageTokens + maxResponseTokens,
+    statistics: {
+      totalTokens: currentTokenCount,
+      systemTokens: frozenTokens,
+      historyTokens: currentTokenCount - frozenTokens,
+      // engine_max_tokens: {
+      //   openai: maxMessageTokens + maxResponseTokens,
+      //   anthropic: maxMessageTokens + maxResponseTokens,
     },
   };
 }

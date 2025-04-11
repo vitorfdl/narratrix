@@ -1,6 +1,7 @@
 import { cancelInferenceRequest, listenForInferenceResponses, queueInferenceRequest } from "@/commands/inference";
 import type { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
+import { getTokenCount } from "@/services/inference-steps/apply-context-limit";
 import { parseEngineParameters } from "@/services/inference-steps/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -187,6 +188,11 @@ export function useInference(options: UseInferenceOptions = {}) {
           modelSpecs: modelSpecs,
           parameters: parsedParameters,
           engine: modelSpecs.engine as Engine,
+          statistics: {
+            totalTokens: 0,
+            systemTokens: getTokenCount(systemPrompt || ""),
+            historyTokens: getTokenCount(messages.map((m) => m.text).join("")),
+          },
         });
 
         // Queue request with backend
