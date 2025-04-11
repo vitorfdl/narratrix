@@ -1,14 +1,5 @@
-import { LiveInspector } from "@/components/shared/LiveInspector";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { LiveInspector } from "@/components/liveInspector/LiveInspector";
+import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -400,29 +391,22 @@ export default function ChatPage() {
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the chat "
-                {allChats.find((c) => c.id === chatToDeleteId)?.name || "this chat"}" and all associated messages and chapters.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                onClick={() => {
-                  setChatToDeleteId(null);
-                }}
-              >
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DestructiveConfirmDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          title="Are you absolutely sure?"
+          description={
+            <>
+              This action cannot be undone. This will permanently delete the chat "
+              {allChats.find((c) => c.id === chatToDeleteId)?.name || "this chat"}" and all associated messages and chapters.
+            </>
+          }
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => {
+            setChatToDeleteId(null);
+          }}
+          confirmText="Delete"
+        />
       </div>
     </Sheet>
   );
