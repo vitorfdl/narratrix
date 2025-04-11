@@ -88,7 +88,7 @@ export function useInference(options: UseInferenceOptions = {}) {
 
   // Register this hook's response handler
   useEffect(() => {
-    const handleResponse = (response: InferenceResponse) => {
+    const handleResponse = async (response: InferenceResponse) => {
       const requestId = response.request_id;
 
       // Skip if this request isn't being tracked by this hook instance
@@ -121,7 +121,13 @@ export function useInference(options: UseInferenceOptions = {}) {
 
         // Update the console store with the completed response
         if (response.status === "completed") {
-          consoleActions.updateRequestResponse(requestId, response);
+          const responseTokens =
+            response.result?.text || response.result?.full_response
+              ? await getTokenCount(response.result.text || response.result.full_response || "")
+              : 0;
+          consoleActions.updateRequestResponse(requestId, response, {
+            responseTokens,
+          });
         }
       } else if (response.status === "error") {
         // Clean up the last chunks record for this request
@@ -179,6 +185,12 @@ export function useInference(options: UseInferenceOptions = {}) {
 
       const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, modelSpecs.config, parameters);
 
+      const statistics = {
+        systemTokens: await getTokenCount(systemPrompt || ""),
+        historyTokens: await getTokenCount(messages.map((m) => m.text).join("")),
+        responseTokens: 0,
+      };
+
       try {
         // Add request to console store history
         consoleActions.addRequest({
@@ -188,11 +200,7 @@ export function useInference(options: UseInferenceOptions = {}) {
           modelSpecs: modelSpecs,
           parameters: parsedParameters,
           engine: modelSpecs.engine as Engine,
-          statistics: {
-            totalTokens: 0,
-            systemTokens: getTokenCount(systemPrompt || ""),
-            historyTokens: getTokenCount(messages.map((m) => m.text).join("")),
-          },
+          statistics: statistics,
         });
 
         // Queue request with backend
