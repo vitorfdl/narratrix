@@ -1,9 +1,7 @@
 import { LiveInspector } from "@/components/liveInspector/LiveInspector";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
+import { EditNameDialog } from "@/components/shared/EditNameDialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
@@ -356,39 +354,17 @@ export default function ChatPage() {
         )}
 
         {/* Rename Dialog */}
-        <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Rename Chat</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  value={newChatName}
-                  onChange={(e) => setNewChatName(e.target.value)}
-                  className="col-span-3"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleRenameSubmit();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleRenameSubmit} disabled={!newChatName.trim()}>
-                Save changes
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <EditNameDialog
+          open={isRenameDialogOpen}
+          onOpenChange={setIsRenameDialogOpen}
+          initialName={newChatName}
+          onSave={handleRenameSubmit}
+          title="Rename Chat"
+          description="Enter a new name for your chat."
+          label="Name"
+          placeholder="Chat name"
+          saveButtonText="Save changes"
+        />
 
         {/* Delete Confirmation Dialog */}
         <DestructiveConfirmDialog
