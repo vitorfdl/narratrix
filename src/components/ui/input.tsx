@@ -124,7 +124,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             spellCheck="false"
             className={cn(
               "flex h-7 w-full rounded-sm input-fields px-3 py-1/2 text-foreground text-xs font-mono ",
-              "narratrix-input-border",
               "transition-all duration-100",
               "outline-none ring-0",
               "disabled:cursor-not-allowed disabled:opacity-50",

@@ -82,7 +82,7 @@ export function CommandTagInput({
         <div
           className={cn(
             "flex flex-wrap gap-x-2 gap-y-1 items-center w-full rounded-sm px-3 py-1 min-h-7", // Adjusted vertical padding and height
-            "input-fields narratrix-input-border",
+            "input-fields ",
             "transition-all duration-100",
             "focus-within:border-b-primary focus-within:bg-transparent/15", // Use focus-within for container focus
             disabled ? "cursor-not-allowed opacity-50" : "cursor-text", // Add disabled style and cursor
