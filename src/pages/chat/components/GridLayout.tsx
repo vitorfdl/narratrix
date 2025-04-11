@@ -239,15 +239,18 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
 
       // Mark cells as occupied based on current visible widgets
       for (const widget of visibleWidgets) {
-        const x = widget[currentBreakpoint]?.x ?? 0;
-        const y = widget[currentBreakpoint]?.y ?? 0;
-        const w = widget[currentBreakpoint]?.w ?? 3;
-        const h = widget[currentBreakpoint]?.h ?? 4;
+        const widgetPos = widget[currentBreakpoint];
+        if (widgetPos) {
+          const x = widgetPos.x ?? 0;
+          const y = widgetPos.y ?? 0;
+          const w = widgetPos.w ?? 3;
+          const h = widgetPos.h ?? 4;
 
-        for (let i = y; i < y + h && i < gridMap.length; i++) {
-          for (let j = x; j < x + w && j < gridCols; j++) {
-            if (i >= 0 && j >= 0) {
-              gridMap[i][j] = true;
+          for (let i = y; i < y + h && i < gridMap.length; i++) {
+            for (let j = x; j < x + w && j < gridCols; j++) {
+              if (i >= 0 && j >= 0) {
+                gridMap[i][j] = true;
+              }
             }
           }
         }
@@ -285,15 +288,30 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
         }
       }
 
-      // Unhide widget at the computed position
-      setPositions((prev) =>
-        prev.map((p) =>
-          p.id === cardId ? { ...p, hidden: false, x: bestX, y: bestY, w: p[currentBreakpoint]?.w ?? 2, h: p[currentBreakpoint]?.h ?? 1 } : p,
-        ),
-      );
+      // Create updated position with current breakpoint
+      const updatedPositions = positions.map((p) => {
+        if (p.id === cardId) {
+          // Create a new position object with updated properties
+          const updatedPos = { ...p, hidden: false };
+
+          // Update the breakpoint-specific position
+          updatedPos[currentBreakpoint] = {
+            ...(updatedPos[currentBreakpoint] || {}),
+            x: bestX,
+            y: bestY,
+            w: updatedPos[currentBreakpoint]?.w ?? 2,
+            h: updatedPos[currentBreakpoint]?.h ?? 1,
+          };
+
+          return updatedPos;
+        }
+        return p;
+      });
+
+      setPositions(updatedPositions);
     } else {
-      // Hide widget
-      setPositions((prev) => prev.map((p) => (p.id === cardId ? { ...p, hidden: true, w: 2, h: 3 } : p)));
+      // Hide widget while preserving decorated state
+      setPositions((prev) => prev.map((p) => (p.id === cardId ? { ...p, hidden: true } : p)));
     }
   };
 

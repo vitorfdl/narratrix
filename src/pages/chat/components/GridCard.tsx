@@ -1,13 +1,27 @@
 // src/components/GridCard.tsx
 import { CardProps } from "@/schema/grid";
+import { useLocalGridLayout } from "@/utils/local-storage";
 import { EyeIcon, EyeOffIcon, Grip, PinOffIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, buttons = [], dragHandleClassName }) => {
+  const [positions, setPositions] = useLocalGridLayout();
   const [isDecorated, setIsDecorated] = useState(true);
 
+  // Initialize decoration state from local storage
+  useEffect(() => {
+    const position = positions.find((pos) => pos.id === id);
+    if (position && position.decorated !== undefined) {
+      setIsDecorated(position.decorated);
+    }
+  }, [id, positions]);
+
   const toggleDecorations = () => {
-    setIsDecorated(!isDecorated);
+    const newDecoratedState = !isDecorated;
+    setIsDecorated(newDecoratedState);
+
+    // Update in local storage
+    setPositions((prev) => prev.map((pos) => (pos.id === id ? { ...pos, decorated: newDecoratedState } : pos)));
   };
 
   return (
