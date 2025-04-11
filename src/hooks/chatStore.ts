@@ -52,6 +52,7 @@ interface chatState {
     addChatMessage: (message: AddChatMessageParams) => Promise<ChatMessage>;
     deleteChatMessage: (messageId: string) => Promise<void>;
     updateChatMessage: (messageId: string, message: Partial<UpdateChatMessageParams>) => Promise<ChatMessage>;
+    fetchChatMessages: (chatId?: string, chapterId?: string) => Promise<ChatMessage[]>;
 
     // Chapters
     addChatChapter: (chapter: AddChatChapterParams) => Promise<ChatChapter>;
@@ -413,8 +414,11 @@ export const useChatStore = create<chatState>((set, get) => ({
           disabled: message.disabled ?? false,
         });
 
+        // Fetch all messages again to ensure correct positioning
+        const updatedMessages = await getChatMessagesByChatId(currentChat.id, currentChat.active_chapter_id!);
+
         set((state) => ({
-          selectedChatMessages: [...state.selectedChatMessages, newMessage],
+          selectedChatMessages: updatedMessages,
           isLoading: false,
         }));
 
@@ -459,6 +463,13 @@ export const useChatStore = create<chatState>((set, get) => ({
 
         let updatedMessage: ChatMessage | null = null;
         if (persist) {
+          // if (messageData.message_index !== undefined) {
+          //   const message = messageData.messages![messageData.message_index];
+          //   if (!message) {
+          //     const tokens = await getTokenCount(message);
+          //     messageData.tokens = tokens;
+          //   }
+          // }
           updatedMessage = await apiUpdateChatMessage(messageId, messageData);
           if (!updatedMessage) {
             throw new Error(`Failed to update message with ID ${messageId}`);
@@ -483,6 +494,27 @@ export const useChatStore = create<chatState>((set, get) => ({
         toast.error(error instanceof Error ? error.message : "Failed to update message");
         set({
           error: error instanceof Error ? error.message : "Failed to update message",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    fetchChatMessages: async (chatId?: string, chapterId?: string) => {
+      try {
+        set({ isLoading: true, error: null });
+        const currentChat = get().selectedChat;
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        const messages = await getChatMessagesByChatId(chatId || currentChat.id, chapterId || currentChat.active_chapter_id!);
+        set({ selectedChatMessages: messages, isLoading: false });
+        return messages;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to fetch chat messages");
+        set({
+          error: error instanceof Error ? error.message : "Failed to fetch chat messages",
           isLoading: false,
         });
         throw error;

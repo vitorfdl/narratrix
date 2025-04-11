@@ -1,15 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
-import { StringArray } from "@/components/ui/string-array";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { TemplatePicker } from "./TemplatePicker";
-
 // Helper component for labeled input to reduce nesting
 interface LabeledInputProps {
   label: string;
@@ -406,8 +405,8 @@ export function InstructTemplateSection() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <StringArray
-                values={templateState.customStopStrings}
+              <CommandTagInput
+                value={templateState.customStopStrings}
                 placeholder="e.g., </s>, [DONE], [END]"
                 className={isDisabled ? "opacity-60 pointer-events-none" : ""}
                 onChange={(newValues) => handleUpdate(["customStopStrings"], newValues.filter(Boolean))}
