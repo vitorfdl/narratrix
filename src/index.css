@@ -134,6 +134,19 @@ body,
     @apply placeholder:text-muted-foreground/40 placeholder:italic;
   }
 
+  /* Theme-specific input field styling */
+  :root .input-fields {
+    @apply bg-muted focus:bg-transparent/5;
+    @apply border-b-2 border-border/50 focus:border-b-primary;
+    @apply transition-colors duration-200;
+  }
+
+  .dark .input-fields {
+    @apply bg-foreground/5 focus:bg-transparent/20;
+    @apply border-b-2 border-border/30 focus:border-b-primary;
+    @apply transition-colors duration-200;
+  }
+
   .narratrix-input-border {
     @apply border-0 border-b-2 border-b-primary/20;
   }
@@ -202,6 +215,7 @@ body,
   @apply hover:bg-primary/90 hover:text-primary-foreground;
 }
 
+/* Custom tooltip from mdxeditor.css */
 .custom-tooltip {
   @apply text-muted-foreground bg-background text-xs border-2 border-border rounded custom-scrollbar;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
@@ -220,12 +234,13 @@ body,
   padding-right: 80px; /* Make space for the detail box */
 }
 
-.custom-tooltip li > span {
-  @apply text-muted-foreground;
+/* Style for selected autocomplete item */
+.custom-tooltip li[aria-selected] {
+  @apply !bg-primary/20 text-primary font-medium;
 }
 
-.custom-tooltip li[aria-selected="true"] {
-  @apply bg-secondary text-secondary-foreground;
+.custom-tooltip li > span {
+  @apply text-muted-foreground;
 }
 
 /* Style for the autocomplete detail text (description) */
@@ -238,3 +253,18 @@ body,
   margin-top: 1px;
 }
 
+/* Style for completion sections */
+.custom-tooltip completion-section {
+  @apply text-accent-foreground font-medium text-xs;
+  background: linear-gradient(135deg, hsl(var(--muted)/50%), hsl(var(--muted)/30%));
+  padding: 3px 8px;
+  display: block;
+  border-left: 3px solid hsl(var(--primary));
+  margin-top: 6px;
+  margin-bottom: 2px;
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: sectionFadeIn 0.3s ease-out;
+}

@@ -111,3 +111,12 @@ const themeAtom = atomWithStorage<Theme | "system">("theme", "system");
 export function useLocalTheme() {
   return useAtom(themeAtom);
 }
+
+/**
+ * Local Storage Generation Input History
+ */
+const generationInputHistoryAtom = atomWithStorage<string[]>("generationInputHistory", []);
+
+export function useLocalGenerationInputHistory() {
+  return useAtom(generationInputHistoryAtom);
+}
