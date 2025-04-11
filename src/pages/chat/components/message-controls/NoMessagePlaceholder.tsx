@@ -107,7 +107,7 @@ export const NoMessagePlaceholder: React.FC<NoMessagePlaceholderProps> = ({ curr
   return (
     <div className="flex flex-col items-center justify-center h-full text-sm @container">
       <div className="text-muted-foreground text-center mb-6">No messages yet. Start the conversation by sending a message.</div>
-      <div className="w-full max-w-[60%] xl:max-w-[800px] px-4">
+      <div className="w-full max-w-[90%] xl:max-w-[800px] px-4">
         <h3 className="text-center mb-5 font-medium text-base">Keyboard Shortcuts:</h3>
 
         <div className="grid grid-cols-1 @xl:grid-cols-2 gap-x-10 gap-y-4">

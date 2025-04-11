@@ -35,6 +35,7 @@ export interface PromptFormatterConfig {
     config?: ChatTemplate["config"];
   };
   chatConfig?: {
+    injectionPrompts?: Record<string, string>;
     user_character?: Pick<Character, "name" | "custom">;
     character?: Pick<CharacterUnion, "name" | "settings" | "custom" | "type">;
     chapter?: Pick<ChatChapter, "title" | "scenario" | "instructions">;
@@ -72,11 +73,10 @@ export function getChatHistory(
   const inferenceMessages: InferenceMessage[] = [];
 
   const canInsertPrefix = prefixOption === "always" || (prefixOption === "characters" && hasMoreThanOneCharacter(messages));
-
   // Process existing chat messages
   if (messages && messages.length > 0) {
     for (const message of messages) {
-      if (message.messages.length === 0) {
+      if (message.messages.length === 0 || message.disabled) {
         continue;
       }
 
@@ -92,6 +92,11 @@ export function getChatHistory(
         inferenceMessages.push({
           role: "assistant",
           text: canInsertPrefix ? addPrefix(messageText, character) : messageText,
+        });
+      } else if (message.type === "system") {
+        inferenceMessages.push({
+          role: "user",
+          text: messageText,
         });
       }
     }
@@ -120,6 +125,8 @@ export function createSystemPrompt(
   }
 
   let prompts = structuredClone(systemPromptTemplate.prompts);
+
+  console.log("chatConfig", chatConfig);
 
   const hasCharacter = !!chatConfig?.character && chatConfig?.character.type === "character";
   const hasChapter = !!chatConfig?.chapter?.scenario;
@@ -205,7 +212,7 @@ export function formatPrompt(config: PromptFormatterConfig) {
   // }
 
   // Step 3: Create system prompt
-  const rawSystemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate);
+  const rawSystemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate, config.chatConfig);
 
   const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 

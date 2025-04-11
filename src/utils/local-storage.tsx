@@ -1,5 +1,6 @@
 import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
 import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
+import { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
 import { QuickAction } from "@/pages/chat/components/utils-generate/QuickActions";
 import { GridPosition, defaultPositions } from "@/schema/grid";
 import { Theme } from "@tauri-apps/api/window";
@@ -119,4 +120,18 @@ const generationInputHistoryAtom = atomWithStorage<string[]>("generationInputHis
 
 export function useLocalGenerationInputHistory() {
   return useAtom(generationInputHistoryAtom);
+}
+
+/**
+ * Local Storage Generation Input History
+ */
+const summarySettingsAtom = atomWithStorage<SummarySettings>("summarySettings", {
+  chatTemplateID: "",
+  requestPrompt: "",
+  systemPrompt: "",
+  injectionPrompt: "",
+});
+
+export function useLocalSummarySettings() {
+  return useAtom(summarySettingsAtom);
 }
