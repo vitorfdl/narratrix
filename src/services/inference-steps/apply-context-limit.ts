@@ -1,13 +1,37 @@
-import { countTokens } from "@/commands/inference";
-import { ConsoleRequest } from "@/hooks/consoleStore";
 import { ChatTemplate } from "@/schema/template-chat-schema";
 import { FormattedPromptResult } from "./formatter";
 
-interface FormattedPromptCutResult extends FormattedPromptResult, Pick<ConsoleRequest, "statistics"> {}
+import { countTokens } from "@/commands/inference";
+interface FormattedPromptCutResult extends FormattedPromptResult {
+  statistics: {
+    systemTokens: number;
+    historyTokens: number;
+    responseTokens: number;
+  };
+}
 
-export const getTokenCount = async (text: string) => {
-  const result = await countTokens(text, "DEFAULT");
-  return result.count;
+/**
+ * This formula is not accurate, but it's a good estimate.
+ * Testing in multiple chats give me around 8% error margin.
+ */
+function estimateTokens(text: string, padding = 164): number {
+  const wordCount = text.split(/\s+/).filter((w) => w.length > 0).length;
+  const punctCount = (text.match(/[.,!?;:()[\]{}'"\/\\<>@#$%^&*_\-+=|~`]/g) || []).length;
+  const accentedCount = (text.match(/[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/g) || []).length;
+  const contractionCount = (text.match(/\b(d[oa]s?|n[oa]s?|pel[oa]s?|a[oa]s?)\b/gi) || []).length;
+  return Math.ceil(wordCount * 1.5 + punctCount * 0.3 + accentedCount * 0.1 + contractionCount * 0.2) + padding;
+}
+
+export const USE_TOKENIZER = true as const;
+export const getTokenCount = async (text: string, useTokenizer = false) => {
+  // ? Tokenizer slows down the APP.
+  if (useTokenizer) {
+    const result = await countTokens(text, "DEFAULT");
+    return result.count;
+  }
+
+  const result = estimateTokens(text);
+  return result;
 };
 
 /**
@@ -19,7 +43,7 @@ export async function applyContextLimit(
   formattedPrompt: FormattedPromptResult,
   chatConfig: Pick<ChatTemplate, "config" | "custom_prompts">,
 ): Promise<FormattedPromptCutResult> {
-  const frozenTokens = await getTokenCount(formattedPrompt.systemPrompt || "");
+  const frozenTokens = await getTokenCount(formattedPrompt.systemPrompt || "", USE_TOKENIZER);
   const maxResponseTokens = chatConfig.config.max_tokens as number;
   const maxContextSize = (chatConfig.config.max_context as number) - maxResponseTokens;
 
