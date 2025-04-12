@@ -86,7 +86,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
   return (
     <Popover open={isOpen} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-64 p-2 rounded-md" align="end" side="top" sideOffset={10}>
+      <PopoverContent className="w-64 p-2 rounded-md bg-muted" align="end" side="top" sideOffset={10}>
         <div className="flex items-center gap-2 mb-2">
           <UserRound size={14} className="text-primary" />
           <h4 className="text-sm font-medium">{title || "Add Participant"}</h4>
