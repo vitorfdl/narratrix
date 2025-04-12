@@ -20,6 +20,11 @@ interface LiveInspectorProps {
   maxHeight?: string;
 }
 
+export const formatMarkdownValue = (value: string) => {
+  return `\`\`\`\`\`markdown\n${value}\n\`\`\`\`\``;
+};
+export const markdownClass = cn("p-3 rounded text-xs font-mono w-auto max-w-[90vw]");
+
 export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%" }) => {
   const requests = useConsoleStoreRequests();
   const modelList = useModels();
@@ -42,11 +47,6 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
     const seconds = date.getSeconds().toString().padStart(2, "0");
     return `${hours}:${minutes}:${seconds}`;
   };
-
-  const formatMarkdownValue = (value: string) => {
-    return `\`\`\`\`\`markdown\n${value}\n\`\`\`\`\``;
-  };
-  const markdownClass = cn("p-3 rounded text-xs font-mono w-auto max-w-[90vw]");
 
   return (
     <Card className="w-full overflow-hidden border rounded-lg">
@@ -118,21 +118,15 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
 
                 <div className="flex-1 overflow-hidden">
                   <TabsContent value="payload" className="h-full p-0 m-0 relative">
-                    <Payload
-                      selectedRequest={selectedRequest}
-                      activeTab={activeTab}
-                      selectedRequestId={selectedRequestId!}
-                      markdownClass={markdownClass}
-                      formatMarkdownValue={formatMarkdownValue}
-                    />
+                    <Payload selectedRequest={selectedRequest} activeTab={activeTab} selectedRequestId={selectedRequestId!} />
                   </TabsContent>
 
                   <TabsContent value="parameters" className="h-full p-0 m-0">
-                    <Parameters selectedRequest={selectedRequest} markdownClass={markdownClass} formatMarkdownValue={formatMarkdownValue} />
+                    <Parameters selectedRequest={selectedRequest} />
                   </TabsContent>
 
                   <TabsContent value="response" className="h-full p-0 m-0">
-                    <Response selectedRequest={selectedRequest} markdownClass={markdownClass} formatMarkdownValue={formatMarkdownValue} />
+                    <Response selectedRequest={selectedRequest} />
                   </TabsContent>
 
                   <TabsContent value="stats" className="h-full p-0 m-0">

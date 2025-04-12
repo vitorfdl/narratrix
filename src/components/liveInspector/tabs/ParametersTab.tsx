@@ -1,14 +1,17 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import React from "react";
+import { markdownClass } from "../LiveInspector";
 
 interface ParametersProps {
   selectedRequest: any;
-  markdownClass: string;
-  formatMarkdownValue: (value: string) => string;
 }
 
-export const Parameters: React.FC<ParametersProps> = ({ selectedRequest, markdownClass, formatMarkdownValue }) => {
+export const formatJSONToMarkdown = (value: string) => {
+  return `\`\`\`\`\`json\n${value}\n\`\`\`\`\``;
+};
+
+export const Parameters: React.FC<ParametersProps> = ({ selectedRequest }) => {
   return (
     <div className="h-full p-0 m-0">
       <ScrollArea className="h-full custom-scrollbar">
@@ -18,7 +21,7 @@ export const Parameters: React.FC<ParametersProps> = ({ selectedRequest, markdow
             <MarkdownTextArea
               editable={false}
               className={markdownClass}
-              initialValue={formatMarkdownValue(JSON.stringify(selectedRequest.modelSpecs, null, 2))}
+              initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.modelSpecs, null, 2))}
             />
           </div>
 
@@ -27,7 +30,7 @@ export const Parameters: React.FC<ParametersProps> = ({ selectedRequest, markdow
             <MarkdownTextArea
               editable={false}
               className={markdownClass}
-              initialValue={formatMarkdownValue(JSON.stringify(selectedRequest.parameters, null, 2))}
+              initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.parameters, null, 2))}
             />
           </div>
         </div>

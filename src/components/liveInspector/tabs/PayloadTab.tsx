@@ -4,16 +4,15 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { formatMarkdownValue, markdownClass } from "../LiveInspector";
 
 interface PayloadProps {
   selectedRequest: any;
   activeTab: string;
   selectedRequestId: string;
-  markdownClass: string;
-  formatMarkdownValue: (value: string) => string;
 }
 
-export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, selectedRequestId, markdownClass, formatMarkdownValue }) => {
+export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, selectedRequestId }) => {
   const payloadScrollRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);

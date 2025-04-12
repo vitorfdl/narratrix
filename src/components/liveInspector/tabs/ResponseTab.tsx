@@ -2,14 +2,13 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileQuestion } from "lucide-react";
 import React from "react";
+import { formatMarkdownValue, markdownClass } from "../LiveInspector";
 
 interface ResponseProps {
   selectedRequest: any;
-  markdownClass: string;
-  formatMarkdownValue: (value: string) => string;
 }
 
-export const Response: React.FC<ResponseProps> = ({ selectedRequest, markdownClass, formatMarkdownValue }) => {
+export const Response: React.FC<ResponseProps> = ({ selectedRequest }) => {
   return (
     <div className="h-full p-0 m-0">
       <ScrollArea className="h-full custom-scrollbar">
