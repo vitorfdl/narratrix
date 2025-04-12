@@ -1,7 +1,6 @@
 import { cancelInferenceRequest, listenForInferenceResponses, queueInferenceRequest } from "@/commands/inference";
 import type { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
-import { getTokenCount } from "@/services/inference-steps/apply-context-limit";
 import { parseEngineParameters } from "@/services/inference-steps/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -121,13 +120,7 @@ export function useInference(options: UseInferenceOptions = {}) {
 
         // Update the console store with the completed response
         if (response.status === "completed") {
-          const responseTokens =
-            response.result?.text || response.result?.full_response
-              ? await getTokenCount(response.result.text || response.result.full_response || "")
-              : 0;
-          consoleActions.updateRequestResponse(requestId, response, {
-            responseTokens,
-          });
+          consoleActions.updateRequestResponse(requestId, response);
         }
       } else if (response.status === "error") {
         // Clean up the last chunks record for this request
@@ -185,12 +178,6 @@ export function useInference(options: UseInferenceOptions = {}) {
 
       const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, modelSpecs.config, parameters);
 
-      const statistics = {
-        systemTokens: await getTokenCount(systemPrompt || ""),
-        historyTokens: await getTokenCount(messages.map((m) => m.text).join("")),
-        responseTokens: 0,
-      };
-
       try {
         // Add request to console store history
         consoleActions.addRequest({
@@ -200,7 +187,6 @@ export function useInference(options: UseInferenceOptions = {}) {
           modelSpecs: modelSpecs,
           parameters: parsedParameters,
           engine: modelSpecs.engine as Engine,
-          statistics: statistics,
         });
 
         // Queue request with backend

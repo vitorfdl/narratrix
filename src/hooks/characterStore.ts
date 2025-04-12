@@ -7,23 +7,26 @@ import {
   listCharacters as listCharactersAPI,
   updateCharacter as updateCharacterAPI,
 } from "@/services/character-service";
+import { getImageUrl } from "@/services/file-system-service";
 import { nanoid } from "nanoid";
-import { useCallback } from "react";
+import { useEffect } from "react";
 import { StoreApi, UseBoundStore, create } from "zustand";
 import { useShallow } from "zustand/shallow";
-import { useMultipleImageUrls } from "./useImageUrl";
 
 interface CharacterState {
   // State
   characters: CharacterUnion[];
   isLoading: boolean;
   error: string | null;
+  avatarUrls: Record<string, string>;
+  isLoadingAvatars: boolean;
 
   actions: {
     // CRUD Operations
     createCharacter: (characterData: Character | Agent) => Promise<CharacterUnion>;
     getCharacterById: (id: string) => Promise<CharacterUnion | null>;
     updateCharacter: (
+      profile_id: string,
       id: string,
       updateData: Partial<Omit<CharacterUnion, "id" | "profile_id" | "created_at" | "updated_at">>,
     ) => Promise<CharacterUnion | null>;
@@ -35,6 +38,10 @@ interface CharacterState {
     // Utility Actions
     clearCharacters: () => void;
     clearError: () => void;
+
+    // New actions
+    loadCharacterAvatars: () => Promise<void>;
+    refreshCharacterAvatars: () => Promise<void>;
   };
 }
 
@@ -44,6 +51,8 @@ export const useCharacterStore: UseBoundStore<StoreApi<CharacterState>> = create
   characters: [],
   isLoading: false,
   error: null,
+  avatarUrls: {},
+  isLoadingAvatars: false,
 
   actions: {
     // CRUD Operations
@@ -114,12 +123,13 @@ export const useCharacterStore: UseBoundStore<StoreApi<CharacterState>> = create
       }
     },
 
-    updateCharacter: async (id: string, updateData) => {
+    updateCharacter: async (profile_id: string, id: string, updateData) => {
       try {
         set({ isLoading: true, error: null });
         const updatedCharacter = await updateCharacterAPI(id, updateData as any);
 
         if (updatedCharacter) {
+          await get().actions.fetchCharacters(profile_id);
           // Update the character in our store
           set((state) => ({
             characters: state.characters.map((character) => (character.id === id ? updatedCharacter : character)),
@@ -187,6 +197,75 @@ export const useCharacterStore: UseBoundStore<StoreApi<CharacterState>> = create
     // Utility actions
     clearCharacters: () => set({ characters: [] }),
     clearError: () => set({ error: null }),
+
+    // New actions
+    loadCharacterAvatars: async () => {
+      const { characters } = get();
+      const { avatarUrls } = get();
+
+      // Only load avatars that aren't already cached
+      const charactersToLoad = characters.filter((char) => char.avatar_path && !avatarUrls[char.id]);
+
+      if (!charactersToLoad.length) {
+        return;
+      }
+
+      set({ isLoadingAvatars: true });
+
+      try {
+        const newUrlMap = { ...avatarUrls };
+
+        await Promise.all(
+          charactersToLoad.map(async (char) => {
+            if (char.avatar_path) {
+              try {
+                const url = await getImageUrl(char.avatar_path);
+                newUrlMap[char.id] = url;
+              } catch (error) {
+                console.error(`Failed to load avatar for ${char.id}:`, error);
+              }
+            }
+          }),
+        );
+
+        set({ avatarUrls: newUrlMap, isLoadingAvatars: false });
+      } catch (error) {
+        console.error("Failed to load avatars:", error);
+        set({ isLoadingAvatars: false });
+      }
+    },
+
+    refreshCharacterAvatars: async () => {
+      const { characters } = get();
+
+      if (!characters.length) {
+        return;
+      }
+
+      set({ isLoadingAvatars: true });
+
+      try {
+        const newUrlMap: Record<string, string> = {};
+
+        await Promise.all(
+          characters.map(async (char) => {
+            if (char.avatar_path) {
+              try {
+                const url = await getImageUrl(char.avatar_path);
+                newUrlMap[char.id] = url;
+              } catch (error) {
+                console.error(`Failed to load avatar for ${char.id}:`, error);
+              }
+            }
+          }),
+        );
+
+        set({ avatarUrls: newUrlMap, isLoadingAvatars: false });
+      } catch (error) {
+        console.error("Failed to refresh avatars:", error);
+        set({ isLoadingAvatars: false });
+      }
+    },
   },
 }));
 
@@ -204,20 +283,16 @@ export const useCharacterTagList = () =>
     }),
   );
 
-/**
- * Custom hook to efficiently load and cache avatar URLs for all characters
- * Optimizes performance by using useMultipleImageUrls hook
- */
+// Replace useCharacterAvatars with this simpler hook
 export const useCharacterAvatars = () => {
-  const characters = useCharacters();
+  const avatarUrls = useCharacterStore((state) => state.avatarUrls);
+  const isLoading = useCharacterStore((state) => state.isLoadingAvatars);
+  const { loadCharacterAvatars, refreshCharacterAvatars } = useCharacterStore((state) => state.actions);
 
-  // Memoize the getter functions to prevent unnecessary re-renders
-  const getAvatarPath = useCallback((character: CharacterUnion) => character.avatar_path, []);
-  const getCharacterId = useCallback((character: CharacterUnion) => character.id, []);
+  // Load avatars on first use if not already loaded
+  useEffect(() => {
+    loadCharacterAvatars();
+  }, [loadCharacterAvatars]);
 
-  return useMultipleImageUrls(
-    characters,
-    getAvatarPath, // Use memoized function
-    getCharacterId, // Use memoized function
-  );
+  return { urlMap: avatarUrls, isLoading, reloadAll: refreshCharacterAvatars };
 };

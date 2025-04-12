@@ -438,15 +438,11 @@ export const useChatStore = create<chatState>((set, get) => ({
         set({ isLoading: true, error: null });
 
         const success = await apiDeleteChatMessage(messageId);
-
         if (!success) {
           throw new Error(`Failed to delete message with ID ${messageId}`);
         }
 
-        set((state) => ({
-          selectedChatMessages: state.selectedChatMessages.filter((msg) => msg.id !== messageId),
-          isLoading: false,
-        }));
+        await get().actions.fetchChatMessages();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to delete message");
         set({
@@ -462,33 +458,14 @@ export const useChatStore = create<chatState>((set, get) => ({
         set({ isLoading: true, error: null });
 
         let updatedMessage: ChatMessage | null = null;
-        if (persist) {
-          // if (messageData.message_index !== undefined) {
-          //   const message = messageData.messages![messageData.message_index];
-          //   if (!message) {
-          //     const tokens = await getTokenCount(message);
-          //     messageData.tokens = tokens;
-          //   }
-          // }
-          updatedMessage = await apiUpdateChatMessage(messageId, messageData);
-          if (!updatedMessage) {
-            throw new Error(`Failed to update message with ID ${messageId}`);
-          }
-        } else {
-          updatedMessage = {
-            ...get().selectedChatMessages.find((msg) => msg.id === messageId),
-            ...messageData,
-          } as ChatMessage;
-          if (!updatedMessage) {
-            throw new Error(`Failed to update message with ID ${messageId}`);
-          }
+        updatedMessage = await apiUpdateChatMessage(messageId, messageData);
+        if (!updatedMessage) {
+          throw new Error(`Failed to update message with ID ${messageId}`);
         }
 
-        set((state) => ({
-          selectedChatMessages: state.selectedChatMessages.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg)),
-          isLoading: false,
-        }));
-
+        if (persist) {
+          await get().actions.fetchChatMessages();
+        }
         return updatedMessage;
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to update message");
