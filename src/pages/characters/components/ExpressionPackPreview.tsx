@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacterActions, useCharacterById } from "@/hooks/characterStore";
 import { useMultipleImageUrls } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
   const character = useCharacterById(character_id) as Character | undefined;
   const expressions = character?.expressions;
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
-
+  const { currentProfile } = useProfile();
   // Memoize getter functions for useMultipleImageUrls
   const getExpressionPath = useCallback((expression: Expression) => expression.image_path, []);
   const getExpressionId = useCallback((expression: Expression) => expression.id, []);
@@ -169,7 +170,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
             // Perform batch update if changes were made
             if (needsUpdate) {
-              await updateCharacter(character_id, { expressions: currentExpressions });
+              await updateCharacter(currentProfile!.id, character_id, { expressions: currentExpressions });
             }
           } catch (error) {
             console.error("Error handling file drop:", error);
@@ -241,7 +242,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
         return exp;
       });
 
-      await updateCharacter(character_id, { expressions: updatedExpressions });
+      await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
 
       // 5. Refresh the image URLs - Removed explicit reloadAll, useEffect should handle it
       // await reloadAll();
@@ -260,7 +261,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
     try {
       // 1. Update character state by filtering out the expression
       const updatedExpressions = (expressions ?? []).filter((exp) => exp.id !== expressionToDelete.id);
-      await updateCharacter(character_id, { expressions: updatedExpressions });
+      await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
 
       // 2. Attempt to delete the associated image file
       if (expressionToDelete.image_path) {
@@ -323,7 +324,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
       // 6. Update character state
       const updatedExpressions = [...(expressions ?? []), newExpression];
-      await updateCharacter(character_id, { expressions: updatedExpressions });
+      await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
 
       // 7. Optionally refresh the view or rely on state update
       reloadAll(); // Refresh to attempt loading the new image
@@ -359,7 +360,7 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
       }
 
       // 2. Update character state to remove all expressions
-      await updateCharacter(character_id, { expressions: [] });
+      await updateCharacter(currentProfile!.id, character_id, { expressions: [] });
 
       // 3. Refresh the view
       reloadAll();

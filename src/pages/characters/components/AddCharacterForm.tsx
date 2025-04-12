@@ -16,7 +16,7 @@ import { CharacterUnion } from "@/schema/characters-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { saveImage } from "@/services/file-system-service";
 import { ChevronDown, CircleCheckBig } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExpressionPackPreview } from "./ExpressionPackPreview";
 
@@ -227,7 +227,7 @@ export function CharacterForm({ onSuccess, initialData, mode = "create" }: Chara
       };
 
       if (isEditMode && initialData) {
-        await updateCharacter(initialData.id, formData);
+        await updateCharacter(profileId, initialData.id, formData);
         toast.success(`${type === "character" ? "Character" : "Agent"} updated successfully!`);
       } else {
         await createCharacter(formData as any);
