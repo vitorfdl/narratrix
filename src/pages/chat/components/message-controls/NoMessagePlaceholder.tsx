@@ -1,10 +1,6 @@
-import { ProfileResponse } from "@/schema/profiles-schema";
+import { useProfile } from "@/hooks/ProfileContext";
 import { Command } from "lucide-react";
 import React from "react";
-
-interface NoMessagePlaceholderProps {
-  currentProfile: ProfileResponse | null;
-}
 
 // Define types for better structure
 interface ShortcutKey {
@@ -41,7 +37,9 @@ const RenderKey: React.FC<{ shortcutKey: ShortcutKey; kbdClass: string }> = ({ s
   }
 };
 
-export const NoMessagePlaceholder: React.FC<NoMessagePlaceholderProps> = ({ currentProfile }) => {
+export const NoMessagePlaceholder: React.FC = () => {
+  const { currentProfile } = useProfile();
+
   const kbdClass = "px-2 py-1 text-xs font-sans font-semibold text-muted-foreground bg-muted border border-border rounded-md";
   const sendShortcut = currentProfile?.settings.chat.sendShortcut || "Ctrl+Enter"; // Default to Ctrl+Enter
   const shortcutParts = sendShortcut.split("+");

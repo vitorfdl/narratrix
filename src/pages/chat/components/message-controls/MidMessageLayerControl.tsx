@@ -11,12 +11,10 @@ import { useState } from "react";
 interface MidMessageLayerControlProps {
   messageBefore: ChatMessage;
   messageAfter: ChatMessage;
-  onMerge?: () => void;
   onSummarize?: (lastMessageID: string, settings: SummarySettings) => void;
-  onDelete?: () => void;
 }
 
-export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ messageBefore, messageAfter, onMerge, onSummarize, onDelete }) => {
+export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ messageBefore, messageAfter, onSummarize }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
@@ -34,7 +32,6 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
       position_gte: messageAfter.position,
     });
 
-    onDelete?.();
     setIsDeleteDialogOpen(false);
     setIsHovered(false);
     fetchChatMessages();
@@ -69,9 +66,6 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
 
       // Delete the 'after' message
       await deleteChatMessage(messageAfter.id);
-
-      // Execute callback if provided
-      onMerge?.();
 
       // Close dialog and reset hover state
       setIsMergeDialogOpen(false);
@@ -108,9 +102,9 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
         className={cn(
           "absolute top-[-1rem] w-4 h-4 rounded-full transition-all duration-100",
           "border border-border bg-background flex items-center justify-center",
-          "group-hover:border-primary/50 group-hover:scale-110",
+          "hover:border-primary/50 hover:scale-110",
           // Make dot visible when widget is hovered too
-          "[.messages-container:hover_&]:opacity-60",
+          "group-hover/message:opacity-60",
           isHovered ? "opacity-100" : "opacity-0",
         )}
       >
