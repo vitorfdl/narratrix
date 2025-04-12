@@ -33,9 +33,18 @@ export function ChatTabs({
 }: ChatTabsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle ctrl/meta + w to close tab
       if ((e.metaKey || e.ctrlKey) && e.key === "w" && activeTab) {
         e.preventDefault();
         onCloseTab(activeTab);
+      }
+
+      // Handle ctrl/meta + tab to switch tabs
+      if ((e.metaKey || e.ctrlKey) && e.key === "Tab" && tabs.length > 1) {
+        e.preventDefault();
+        const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
+        const nextIndex = (currentIndex + 1) % tabs.length;
+        onTabChange(tabs[nextIndex].id);
       }
     };
 
@@ -43,7 +52,7 @@ export function ChatTabs({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeTab, onCloseTab]);
+  }, [activeTab, onCloseTab, onTabChange, tabs]);
 
   return (
     <div className="flex items-center border-b border-border bg-background/80 mt-1">
@@ -60,6 +69,13 @@ export function ChatTabs({
                       activeTab === tab.id ? "bg-content text-foreground" : "bg-background text-muted-foreground hover:text-foreground",
                     )}
                     onClick={() => onTabChange(tab.id)}
+                    onMouseDown={(e) => {
+                      if (e.button === 1) {
+                        // Middle mouse button
+                        e.preventDefault();
+                        onCloseTab(tab.id);
+                      }
+                    }}
                   >
                     <span className="mr-2 max-h-6 text-sm overflow-hidden text-ellipsis whitespace-nowrap">{tab.name}</span>
 
