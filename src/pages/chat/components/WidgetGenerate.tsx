@@ -7,7 +7,7 @@ import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvide
 import { GenerationOptions, StreamingState } from "@/services/inference-service";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { MDXEditorMethods } from "@mdxeditor/editor";
-import { LoaderCircleIcon, StopCircle } from "lucide-react";
+import { StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QuickActions, { QuickAction } from "./utils-generate/QuickActions";
@@ -359,11 +359,11 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         ref={textAreaRef}
       />
       {/* Absolute spinning icon for when we're generating */}
-      {isAnyCharacterStreaming() && (
+      {/* {isAnyCharacterStreaming() && (
         <div className="absolute inset-0 flex items-center justify-center">
           <LoaderCircleIcon className="w-10 h-10 animate-spin" />
         </div>
-      )}
+      )} */}
     </div>
   );
 };
