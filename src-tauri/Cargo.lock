@@ -3410,6 +3410,7 @@ dependencies = [
  "base64 0.22.1",
  "dotenvy",
  "futures",
+ "futures-core",
  "once_cell",
  "rand 0.8.5",
  "serde",
