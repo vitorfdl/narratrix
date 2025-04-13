@@ -26,7 +26,8 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
     setLocalValue(value.toString());
   }, [value]);
 
-  const handleIncrement = () => {
+  const handleIncrement = (e: React.MouseEvent) => {
+    e.preventDefault();
     let newValue = value + step;
     if (max !== undefined && newValue > max) {
       newValue = max;
@@ -34,7 +35,8 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
     onValueChange(newValue);
   };
 
-  const handleDecrement = () => {
+  const handleDecrement = (e: React.MouseEvent) => {
+    e.preventDefault();
     let newValue = value - step;
     if (min !== undefined && newValue < min) {
       newValue = min;
@@ -142,7 +144,7 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
             className="h-5 w-5 p-0 hover:bg-accent"
             onClick={handleIncrement}
             onMouseDown={handleButtonMouseDown}
-            disabled={max !== undefined && value >= max}
+            disabled={(max !== undefined && value >= max) || props.disabled}
           >
             <ChevronUp className="h-3 w-3" />
           </Button>
@@ -152,7 +154,7 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
             className="h-5 w-5 p-0 hover:bg-accent"
             onClick={handleDecrement}
             onMouseDown={handleButtonMouseDown}
-            disabled={min !== undefined && value <= min}
+            disabled={(min !== undefined && value <= min) || props.disabled}
           >
             <ChevronDown className="h-3 w-3" />
           </Button>
@@ -161,7 +163,15 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
       {showSlider && (
         <div className="mt-0 px-1">
           <div className="relative">
-            <Slider value={[value]} min={min} max={max} step={effectiveStep} onValueChange={(vals) => onValueChange(vals[0])} className="pt-2 pb-2" />
+            <Slider
+              value={[value]}
+              min={min}
+              max={max}
+              step={effectiveStep}
+              disabled={props.disabled}
+              onValueChange={(vals) => onValueChange(vals[0])}
+              className="pt-2 pb-2"
+            />
             {tickPositions.length > 0 && (
               <div className="absolute left-0 right-0 bottom-1 flex justify-between pointer-events-none">
                 {tickPositions.map((_, index) => (

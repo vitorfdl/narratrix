@@ -25,7 +25,7 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search...", 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0 justify-between" align="end">
+      <PopoverContent className="p-0" style={{ width: "var(--radix-popover-trigger-width)" }} align="start">
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandEmpty>No item found.</CommandEmpty>
