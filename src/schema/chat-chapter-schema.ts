@@ -38,6 +38,7 @@ export const updateChatChapterSchema = chatChapterSchema.partial().pick({
   sequence: true,
   scenario: true,
   instructions: true,
+  start_message: true,
   custom: true,
 });
 

@@ -94,9 +94,13 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
 
           <div className="grid gap-2">
             {chapterData.custom.auto_start_message ? (
-              <Label htmlFor={`${idPrefix}start-message`}>Instruction to AI</Label>
+              <Label htmlFor={`${idPrefix}start-message`}>
+                Instruction to AI <span className="text-xs text-muted-foreground">(In-development)</span>
+              </Label>
             ) : (
-              <Label htmlFor={`${idPrefix}start-message`}>Chat Start Message</Label>
+              <Label htmlFor={`${idPrefix}start-message`}>
+                Chat Start Message <span className="text-xs text-muted-foreground">(Not ready yet)</span>
+              </Label>
             )}
             <MarkdownTextArea
               key={`${idPrefix}start-message`}
@@ -285,6 +289,7 @@ const WidgetChapters = () => {
       title: editingChapter.title,
       sequence: editingChapter.sequence,
       scenario: editingChapter.scenario,
+      start_message: editingChapter.start_message,
       custom: editingChapter.custom,
     });
 

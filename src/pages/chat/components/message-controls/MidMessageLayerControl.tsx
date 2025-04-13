@@ -44,33 +44,36 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
 
   const handleMerge = async () => {
     try {
-      // Ensure both messages have content to merge
+      const freshMessageList = await fetchChatMessages();
+
+      const messageToMergeWith = freshMessageList.find((message) => message.id === messageBefore.id);
+      const messageToBeMerged = freshMessageList.find((message) => message.id === messageAfter.id);
       if (
-        !messageBefore.messages ||
-        messageBefore.messages.length <= messageBefore.message_index ||
-        !messageAfter.messages ||
-        messageAfter.messages.length <= messageAfter.message_index
+        !messageToMergeWith?.messages ||
+        messageToMergeWith.messages.length <= messageToMergeWith.message_index ||
+        !messageToBeMerged?.messages ||
+        messageToBeMerged.messages.length <= messageToBeMerged.message_index
       ) {
         console.error("Cannot merge messages: Invalid message structure.");
         // Optionally show a toast notification here
         return;
       }
 
-      const beforeContent = messageBefore.messages[messageBefore.message_index];
-      const afterContent = messageAfter.messages[messageAfter.message_index];
+      const beforeContent = messageToMergeWith.messages[messageToMergeWith.message_index];
+      const afterContent = messageToBeMerged.messages[messageToBeMerged.message_index];
 
       // Combine content with a separator
       const combinedContent = `${beforeContent}\n\n${afterContent}`;
 
       // Prepare the updated messages array for the 'before' message
-      const updatedMessages = [...messageBefore.messages];
-      updatedMessages[messageBefore.message_index] = combinedContent;
+      const updatedMessages = [...messageToMergeWith.messages];
+      updatedMessages[messageToMergeWith.message_index] = combinedContent;
 
       // Update the 'before' message
-      await updateChatMessage(messageBefore.id, { messages: updatedMessages });
+      await updateChatMessage(messageToMergeWith.id, { messages: updatedMessages });
 
       // Delete the 'after' message
-      await deleteChatMessage(messageAfter.id);
+      await deleteChatMessage(messageToBeMerged.id);
 
       // Close dialog and reset hover state
       setIsMergeDialogOpen(false);

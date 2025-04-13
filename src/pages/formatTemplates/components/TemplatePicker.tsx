@@ -76,9 +76,9 @@ export function TemplatePicker({
     }
   };
 
-  const handleUpdateTemplateName = () => {
-    if (selectedTemplateId && editedTemplateName.trim()) {
-      onEditName(selectedTemplateId, editedTemplateName.trim());
+  const handleUpdateTemplateName = (newName: string) => {
+    if (selectedTemplateId && newName.trim()) {
+      onEditName(selectedTemplateId, newName.trim());
       setIsEditTemplateDialogOpen(false);
       setEditedTemplateName("");
     }

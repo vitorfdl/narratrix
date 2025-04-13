@@ -38,7 +38,8 @@ export function EditNameDialog({
     }
   }, [open, initialName]);
 
-  const handleSave = () => {
+  const handleSave = (event: any) => {
+    event.preventDefault(); // Prevent default form submission if applicable
     if (name.trim()) {
       onSave(name.trim());
       onOpenChange(false); // Close dialog on save
@@ -51,8 +52,7 @@ export function EditNameDialog({
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && name.trim()) {
-      event.preventDefault(); // Prevent default form submission if applicable
-      handleSave();
+      handleSave(event);
     }
   };
 

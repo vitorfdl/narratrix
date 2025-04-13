@@ -212,7 +212,7 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
       <div className={className} ref={containerRef}>
         {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
         <div
-          className={cn("flex-1 relative input-fields bg-muted overflow-y-auto", className, isDarkMode && "dark")}
+          className={cn("flex-1 relative input-fields overflow-y-auto", className, isDarkMode && "dark", "!bg-accent/80")}
           onFocus={handleFocus}
           onBlur={handleBlur}
         >
