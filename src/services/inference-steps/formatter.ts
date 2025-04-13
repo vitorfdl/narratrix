@@ -122,16 +122,36 @@ export function createSystemPrompt(
   systemPromptTemplate?: FormatTemplate | null,
   chatConfig?: PromptFormatterConfig["chatConfig"],
   lorebookContent?: LorebookContentResponse["replacers"],
+  systemOverridePrompt?: string | null,
 ): string | undefined {
   if (!systemPromptTemplate || !systemPromptTemplate.config || systemPromptTemplate.prompts.length === 0) {
-    return undefined;
+    return systemOverridePrompt || undefined; // If no system prompt template is provided, return the system override prompt
   }
 
-  let prompts = structuredClone(systemPromptTemplate.prompts);
+  let prompts = structuredClone(systemPromptTemplate.prompts || []);
+  if (prompts.length === 0 && systemOverridePrompt) {
+    return systemOverridePrompt; // If no system prompt template is provided, return the system override prompt
+  }
 
   const hasCharacter = !!chatConfig?.character && chatConfig?.character.type === "character";
   const hasChapter = !!chatConfig?.chapter?.scenario;
   const hasUserCharacter = !!chatConfig?.user_character?.custom?.personality;
+
+  // System Overrides will override the context prompt, or be added at the top if no context prompt is present
+  if (systemOverridePrompt) {
+    const contextIndex = prompts.findIndex((prompt) => prompt.type === "context");
+    if (contextIndex !== -1) {
+      prompts[contextIndex] = {
+        type: "context",
+        content: systemOverridePrompt,
+      };
+    } else {
+      prompts.unshift({
+        type: "context",
+        content: systemOverridePrompt,
+      });
+    }
+  }
 
   if (!hasCharacter) {
     prompts = prompts.filter((prompt) => prompt.type !== "character-context");
@@ -237,7 +257,7 @@ export async function formatPrompt(config: PromptFormatterConfig) {
   }
 
   // Step 3: Create system prompt
-  const rawSystemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate, config.chatConfig, lorebookContent.replacers);
+  const rawSystemPrompt = createSystemPrompt(config.formatTemplate, config.chatConfig, lorebookContent.replacers, config.systemOverridePrompt);
   const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 
   return applyContextLimit(formattedPrompt, {

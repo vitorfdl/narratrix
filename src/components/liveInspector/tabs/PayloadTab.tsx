@@ -92,7 +92,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
             <MarkdownTextArea
               editable={false}
               className={markdownClass}
-              initialValue={formatMarkdownValue(selectedRequest.systemPrompt || "No system prompt")}
+              initialValue={formatMarkdownValue(selectedRequest.systemPrompt || "<No system prompt>")}
             />
           </div>
 

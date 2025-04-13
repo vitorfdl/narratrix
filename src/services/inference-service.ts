@@ -289,11 +289,13 @@ export function useInferenceService() {
       ?.filter((msg) => streamingState.current.messageId !== msg.id)
       .filter((msg) => !msg.disabled);
 
+    const characterPromptOverride = characterList.find((character) => character.id === characterId)?.system_override;
+
     // Format the prompt
     const prompt = await formatPromptUtil({
       messageHistory: chatWithNames || [],
       userPrompt: userMessage,
-      systemOverridePrompt: systemPromptOverride,
+      systemOverridePrompt: systemPromptOverride || characterPromptOverride || undefined,
       modelSettings,
       formatTemplate,
       inferenceTemplate,

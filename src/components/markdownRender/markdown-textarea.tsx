@@ -62,7 +62,7 @@ export const MarkdownTextArea = forwardRef<MDXEditorMethods, MarkdownTextAreaPro
     }
 
     return (
-      <ScrollArea className="flex-1 min-h-0  rounded rich-text-area">
+      <ScrollArea className="flex-1 min-h-0 rounded rich-text-area">
         <MarkdownEditor
           initialValue={initialValue}
           onChange={onChange}
