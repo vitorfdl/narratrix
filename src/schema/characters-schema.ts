@@ -48,6 +48,7 @@ const BaseCharacterTypeSchema = z.object({
   name: z.string(),
   tags: z.array(z.string()).nullable().default([]),
   avatar_path: z.string().nullable(),
+  lorebook_id: z.string().nullable(),
   version: z
     .string()
     .regex(/^\d+\.\d+\.\d+$/)

@@ -40,8 +40,16 @@ pub fn get_migrations() -> Vec<Migration> {
         },
         Migration {
             version: 07,
-            description: "message_new_column",
-            sql: include_str!("./migrations/07_message_new_column.sql"),
+
+
+            description: "create_lorebooks",
+            sql: include_str!("./migrations/07_lorebooks.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 08,
+            description: "message_extra",
+            sql: include_str!("./migrations/08_message_extra.sql"),
             kind: MigrationKind::Up,
         },
     ]

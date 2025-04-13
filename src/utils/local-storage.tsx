@@ -2,6 +2,7 @@ import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
 import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
 import { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
 import { QuickAction } from "@/pages/chat/components/utils-generate/QuickActions";
+import { LorebookPageSettings, defaultLorebookPageSettings } from "@/pages/lorebooks/LorebooksPage";
 import { GridPosition, defaultPositions } from "@/schema/grid";
 import { Theme } from "@tauri-apps/api/window";
 import { produce } from "immer";
@@ -26,6 +27,15 @@ const charactersPagesSettingsAtom = atomWithStorage<CharacterPageSettings>("char
 
 export function useLocalCharactersPagesSettings() {
   return useAtom(charactersPagesSettingsAtom);
+}
+
+/**
+ * Local storage for lorebook page settings
+ */
+const lorebookPageSettingsAtom = atomWithStorage<LorebookPageSettings>("lorebookPageSettings", defaultLorebookPageSettings);
+
+export function useLocalLorebookPageSettings() {
+  return useAtom(lorebookPageSettingsAtom);
 }
 
 /**

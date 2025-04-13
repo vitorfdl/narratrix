@@ -2,13 +2,15 @@ import { z } from "zod";
 import { baseTemplateSchema } from "./template-base-schema";
 
 // Define the enum values for SystemPromptType since it's only a type in the schema
+
 const SYSTEM_PROMPT_TYPES = [
   "context",
   "chapter-context",
   "character-context",
   "user-context",
   "character-memory",
-  "user-memory",
+  "lorebook-top",
+  "lorebook-bottom",
   "custom-field",
 ] as const;
 
@@ -17,8 +19,9 @@ const SYSTEM_PROMPT_DEFAULT_CONTENT: Record<SystemPromptType, string> = {
   "chapter-context": "# Scenario\n{{chapter.title}}: {{chapter.scenario}}\n\n# Instructions\n{{chapter.instructions}}",
   "character-context": "# Character\n{{character.name}}: {{character.personality}}",
   "user-context": "# User\n{{user.name}}: {{user.personality}}",
-  "character-memory": "# Character Memory\n{{character.name}}: {{character.memory}}",
-  "user-memory": "# User Memory\n{{user.name}}: {{user.memory}}",
+  "character-memory": "# Character Past Events\n{{character.name}}: {{character.memory}}",
+  "lorebook-top": "{{lorebook.top}}",
+  "lorebook-bottom": "{{lorebook.bottom}}",
   "custom-field": "",
 };
 const systemPromptTypeEnum = z.enum(SYSTEM_PROMPT_TYPES);
