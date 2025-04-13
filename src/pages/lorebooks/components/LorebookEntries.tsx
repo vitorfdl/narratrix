@@ -68,7 +68,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
       <TableCell className="p-2 w-10">
         <Checkbox
           checked={entry.enabled}
-          onCheckedChange={(checked) => {
+          onCheckedChange={(_checked) => {
             onToggleEnabled(entry);
           }}
           onClick={(e) => {

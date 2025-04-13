@@ -24,7 +24,6 @@ export interface MDXEditorProps {
   minHeight?: string;
   suggestions?: SuggestionItem[];
   enableHistory?: boolean;
-  autofocus?: boolean;
 }
 
 /**
@@ -32,20 +31,7 @@ export interface MDXEditorProps {
  */
 export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
   (
-    {
-      initialValue = "",
-      enableHistory = false,
-      onChange,
-      className,
-      label,
-      placeholder,
-      sendShortcut,
-      onSubmit,
-      onFocus,
-      onBlur,
-      suggestions = [],
-      autofocus = false,
-    },
+    { initialValue = "", enableHistory = false, onChange, className, label, placeholder, sendShortcut, onSubmit, onFocus, onBlur, suggestions = [] },
     ref,
   ) => {
     const [content, setContent] = useState(initialValue);

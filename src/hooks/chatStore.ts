@@ -468,7 +468,7 @@ export const useChatStore = create<chatState>((set, get) => ({
       }
     },
 
-    updateChatMessage: async (messageId, messageData, persist = true) => {
+    updateChatMessage: async (messageId, messageData) => {
       try {
         set({ isLoading: true, error: null });
 

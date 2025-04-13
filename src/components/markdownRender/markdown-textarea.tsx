@@ -46,7 +46,6 @@ export const MarkdownTextArea = forwardRef<MDXEditorMethods, MarkdownTextAreaPro
       onSubmit,
       onFocus,
       onBlur,
-      autofocus = false,
     },
     ref,
   ) => {
@@ -77,7 +76,6 @@ export const MarkdownTextArea = forwardRef<MDXEditorMethods, MarkdownTextAreaPro
           onFocus={onFocus}
           onBlur={onBlur}
           ref={ref}
-          autofocus={autofocus}
         />
       </ScrollArea>
     );

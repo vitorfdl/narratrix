@@ -55,7 +55,6 @@ interface MessageItemProps {
 
 const MessageItem = ({
   message,
-  index,
   isContextCut,
   isLastMessage,
   isStreaming,
@@ -73,9 +72,9 @@ const MessageItem = ({
 }: MessageItemProps) => {
   // Inside MessageItem.tsx
   const characters = useCharacters();
-  const { urlMap: avatarUrlMap, isLoading: isAvatarLoading } = useCharacterAvatars();
+  const { urlMap: avatarUrlMap } = useCharacterAvatars();
   const currentProfile = useCurrentProfile();
-  const { url: currentProfileAvatarUrl, reload: reloadAvatarImage } = useImageUrl(currentProfile?.avatar_path);
+  const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const { updateChatMessage, deleteChatMessage } = useChatActions();
 

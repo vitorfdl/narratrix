@@ -69,7 +69,7 @@ export function DestructiveConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel
-            onClick={(e) => {
+            onClick={() => {
               if (onCancel) {
                 onCancel();
               }

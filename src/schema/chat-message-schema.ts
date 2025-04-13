@@ -21,6 +21,8 @@ export const promptReplacementSuggestionList: SuggestionItem[] = [
   { title: "character.expression", description: "Character latest expression", section: "prompt" },
   { title: "chapter.scenario", section: "prompt" },
   { title: "chapter.title", section: "prompt" },
+  { title: "lorebook.top", section: "prompt" },
+  { title: "lorebook.bottom", section: "prompt" },
 ];
 
 /**

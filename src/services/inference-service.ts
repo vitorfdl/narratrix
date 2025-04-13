@@ -160,7 +160,7 @@ export function useInferenceService() {
         // Determine the final text, prioritizing the most complete response
         const finalText = trimToEndSentence(response.result?.full_response || response.result?.text || streamingState.current.accumulatedText);
         // Final update to the message
-        inferenceUpdateMessageID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0, true);
+        inferenceUpdateMessageID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0);
 
         // Reset streaming state
         resetStreamingState();
@@ -185,7 +185,7 @@ export function useInferenceService() {
   /**
    * Updates a character message with new text
    */
-  const inferenceUpdateMessageID = async (messageId: string, messageText: string, messageIndex = 0, forceUpdate = false) => {
+  const inferenceUpdateMessageID = async (messageId: string, messageText: string, messageIndex = 0) => {
     try {
       if (messageId === "generate-input-area") {
         return;

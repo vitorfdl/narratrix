@@ -65,28 +65,34 @@ export function replaceRandomPattern(text: string): string {
   // Regular expression to match patterns like {{option1|option2|...}}
   const patternRegex = /\{\{([^{}]+)\}\}/g;
 
-  return text.replace(patternRegex, (_match, content) => {
+  return text.replace(patternRegex, (match, content) => {
     // Split options by pipe character
     const options = content.split("|");
 
     // Check if this is a multi-select pattern (starts with a number followed by $$)
     const multiSelectMatch = options[0].match(/^(\d+)\$\$(.*)/);
 
-    if (multiSelectMatch) {
-      // Extract count and first option
-      const count = Number.parseInt(multiSelectMatch[1], 10);
-      options[0] = multiSelectMatch[2]; // Replace first option with cleaned version
+    // Only process if it's a multi-select pattern or if there are multiple options (contains '|')
+    if (multiSelectMatch || options.length > 1) {
+      if (multiSelectMatch) {
+        // Extract count and first option
+        const count = Number.parseInt(multiSelectMatch[1], 10);
+        options[0] = multiSelectMatch[2]; // Replace first option with cleaned version
 
-      // Shuffle options and pick the first 'count' items
-      const shuffled = [...options].sort(() => Math.random() - 0.5);
-      const selected = shuffled.slice(0, Math.min(count, options.length));
+        // Shuffle options and pick the first 'count' items
+        const shuffled = [...options].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, Math.min(count, options.length));
 
-      // Join selected options with comma and space
-      return selected.join(", ");
+        // Join selected options with comma and space
+        return selected.join(", ");
+      }
+      // Single selection from multiple options: pick a random option
+      const randomIndex = Math.floor(Math.random() * options.length);
+      return options[randomIndex];
     }
-    // Single selection: pick a random option
-    const randomIndex = Math.floor(Math.random() * options.length);
-    return options[randomIndex];
+    // If it's not multi-select and has only one option (no '|'),
+    // assume it's an unmatched variable placeholder and leave it unchanged.
+    return match; // Return the original full match, e.g., "{{character.personality}}"
   });
 }
 

@@ -141,7 +141,7 @@ function LorebookContent({
   profileId: string;
 }) {
   const allLorebooks = useLorebooks();
-  const { createLorebook, deleteLorebook, updateLorebook, loadLorebookEntries } = useLorebookStoreActions();
+  const { createLorebook, deleteLorebook, updateLorebook } = useLorebookStoreActions();
 
   const handleNewLorebook = async (name: string) => {
     try {

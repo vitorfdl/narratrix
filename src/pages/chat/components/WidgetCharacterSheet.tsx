@@ -5,7 +5,7 @@ import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
-import { CharacterUnion } from "@/schema/characters-schema";
+import { Character, CharacterUnion } from "@/schema/characters-schema";
 import { motion } from "framer-motion";
 import { UserCircle, UserPlus, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -170,8 +170,9 @@ const WidgetCharacterSheet = () => {
         <DialogTrigger asChild>{/* The avatar click handlers will now trigger the modal */}</DialogTrigger>
         <DialogContent className="max-w-[90vw] xl:max-w-[70vw] max-h-[90vh] overflow-y-auto">
           <CharacterForm
-            initialData={currentCharacter as CharacterUnion}
+            initialData={currentCharacter as Character}
             mode="edit"
+            setIsEditing={() => null}
             onSuccess={() => {
               setIsEditModalOpen(false);
               // Optionally refresh the character data

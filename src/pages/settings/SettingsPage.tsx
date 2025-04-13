@@ -507,7 +507,7 @@ const ProfileSection = ({
 
 export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const { theme, setTheme } = useThemeStore();
+  const { setTheme } = useThemeStore();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
 
   const currentProfile = useCurrentProfile();

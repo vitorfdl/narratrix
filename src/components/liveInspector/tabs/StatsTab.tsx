@@ -163,16 +163,8 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
     );
   }
 
-  const {
-    tokenBreakdown,
-    contextUtilization,
-    responseUtilization,
-    totalTokens,
-    contextUtilizationPercentage,
-    responseUtilizationPercentage,
-    avgTokensPerHistory,
-    totalMessageCount,
-  } = chartData;
+  const { tokenBreakdown, totalTokens, contextUtilizationPercentage, responseUtilizationPercentage, avgTokensPerHistory, totalMessageCount } =
+    chartData;
 
   const maxContext = selectedRequest.parameters.max_context || 1;
   const maxResponseTokens = selectedRequest.parameters.max_tokens || 1;

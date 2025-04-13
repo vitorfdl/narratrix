@@ -166,7 +166,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
   const characterList = useCharacters();
   const [isEditing, setIsEditing] = useState(false);
   const currentProfile = useCurrentProfile();
-  const { url: currentProfileAvatarUrl, reload: reloadAvatarImage } = useImageUrl(currentProfile?.avatar_path);
+  const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
   const [isEditCharacterModalOpen, setIsEditCharacterModalOpen] = useState<string | null>(null);
 
   const messages = useCurrentChatMessages();
