@@ -1,5 +1,5 @@
 import { ChatChapter } from "@/schema/chat-chapter-schema";
-import { ChatMessage, CreateChatMessageParams, UpdateChatMessageParams } from "@/schema/chat-message-schema";
+import { ChatMessage, ChatMessageType, CreateChatMessageParams, UpdateChatMessageParams } from "@/schema/chat-message-schema";
 import { Chat, ChatParticipant, CreateChatParams } from "@/schema/chat-schema";
 import {
   createChatChapter as apiCreateChatChapter,
@@ -14,6 +14,7 @@ import {
   updateChatMessage as apiUpdateChatMessage,
   getChatMessagesByChatId,
   getNextMessagePosition,
+  updateChatMessagesUsingFilter,
 } from "@/services/chat-message-service";
 import {
   createChat as apiCreateChat,
@@ -417,7 +418,7 @@ export const useChatStore = create<chatState>((set, get) => ({
         // Fetch all messages again to ensure correct positioning
         const updatedMessages = await getChatMessagesByChatId(currentChat.id, currentChat.active_chapter_id!);
 
-        set((state) => ({
+        set(() => ({
           selectedChatMessages: updatedMessages,
           isLoading: false,
         }));
@@ -436,6 +437,20 @@ export const useChatStore = create<chatState>((set, get) => ({
     deleteChatMessage: async (messageId) => {
       try {
         set({ isLoading: true, error: null });
+
+        const message = get().selectedChatMessages.find((m) => m.id === messageId);
+        if (message?.type === "system") {
+          if (message.extra?.script === "summary") {
+            const position = message.position;
+            const startPosition = message.extra?.startPosition;
+            const filter = {
+              position_gte: startPosition,
+              position_lt: position,
+              not_type: "system" as ChatMessageType,
+            };
+            await updateChatMessagesUsingFilter(filter, { disabled: false });
+          }
+        }
 
         const success = await apiDeleteChatMessage(messageId);
         if (!success) {
