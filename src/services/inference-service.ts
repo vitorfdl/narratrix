@@ -35,6 +35,10 @@ export interface StreamingState {
   characterId: string | null;
   messageIndex?: number;
   isThinking: boolean;
+  thinkingConfig?: {
+    prefix: string;
+    suffix: string;
+  };
 }
 
 /**
@@ -68,6 +72,10 @@ export function useInferenceService() {
     characterId: null,
     messageIndex: 0,
     isThinking: false,
+    thinkingConfig: {
+      prefix: "<think>",
+      suffix: "</think>",
+    },
   });
   const { currentProfile } = useProfile();
 
@@ -105,18 +113,18 @@ export function useInferenceService() {
       // Directly append any explicit reasoning provided
       streamingState.current.accumulatedReasoning += response.result.reasoning || "";
 
-      let currentChunk = response.result.text || "";
+      let currentChunk = response.result.text || response.result.full_response || "";
       let textToAdd = "";
       let reasoningToAdd = "";
 
       // Process the text chunk to separate user-facing text and <think> content
       while (currentChunk.length > 0) {
         if (streamingState.current.isThinking) {
-          const endTagIndex = currentChunk.indexOf("</think>");
+          const endTagIndex = currentChunk.indexOf(streamingState.current.thinkingConfig?.suffix || "</think>");
           if (endTagIndex !== -1) {
             // Found the end tag in this chunk
             reasoningToAdd += currentChunk.substring(0, endTagIndex);
-            currentChunk = currentChunk.substring(endTagIndex + "</think>".length);
+            currentChunk = currentChunk.substring(endTagIndex + streamingState.current.thinkingConfig?.suffix.length || "</think>".length);
             streamingState.current.isThinking = false;
           } else {
             // End tag not in this chunk, the whole remaining chunk is reasoning
@@ -124,11 +132,11 @@ export function useInferenceService() {
             currentChunk = ""; // Consumed the whole chunk
           }
         } else {
-          const startTagIndex = currentChunk.indexOf("<think>");
+          const startTagIndex = currentChunk.indexOf(streamingState.current.thinkingConfig?.prefix || "<think>");
           if (startTagIndex !== -1) {
             // Found the start tag in this chunk
             textToAdd += currentChunk.substring(0, startTagIndex);
-            currentChunk = currentChunk.substring(startTagIndex + "<think>".length);
+            currentChunk = currentChunk.substring(startTagIndex + streamingState.current.thinkingConfig?.prefix.length || "<think>".length);
             streamingState.current.isThinking = true;
           } else {
             // Start tag not in this chunk, the whole remaining chunk is text
@@ -235,6 +243,10 @@ export function useInferenceService() {
       characterId: null,
       messageIndex: 0,
       isThinking: false,
+      thinkingConfig: {
+        prefix: "<think>",
+        suffix: "</think>",
+      },
     };
 
     return previousState;
@@ -262,6 +274,13 @@ export function useInferenceService() {
     const manifestSettings = modelManifestList.find((manifest) => manifest.id === modelSettings.manifest_id)!;
 
     const formatTemplate = formatTemplateList.find((template) => template.id === chatTemplate.format_template_id)!;
+    if (formatTemplate.config.reasoning) {
+      streamingState.current.thinkingConfig = {
+        prefix: formatTemplate.config.reasoning.prefix,
+        suffix: formatTemplate.config.reasoning.suffix,
+      };
+    }
+
     const inferenceTemplate = inferenceTemplateList.find((template) => template.id === modelSettings.inference_template_id)!;
 
     const chatWithNames = chatMessages
@@ -272,6 +291,9 @@ export function useInferenceService() {
         };
       })
       ?.filter((msg) => streamingState.current.messageId !== msg.id);
+
+    console.log("streamingState.current.messageId", streamingState.current.messageId);
+    console.log(chatWithNames);
 
     const prompt = await formatPromptUtil({
       messageHistory: chatWithNames || [],
@@ -335,6 +357,11 @@ export function useInferenceService() {
         onStreamingStateChange(streamingState.current);
       }
 
+      if (existingMessageId) {
+        streamingState.current.messageId = existingMessageId;
+        streamingState.current.messageIndex = messageIndex;
+      }
+
       // Prepare messages for inference
       const promptResult = await formatPrompt(userMessage, characterId, systemPromptOverride, chatTemplateID, extraSuggestions);
       if (!promptResult) {
@@ -363,7 +390,7 @@ export function useInferenceService() {
       if (existingMessageId) {
         // Use existing message
         messageId = existingMessageId;
-
+        console.log("messageId", messageId);
         const existingMessage = chatMessages.find((msg) => msg.id === messageId);
         if (existingMessage) {
           existingMessage.messages[messageIndex] = "...";
@@ -470,7 +497,7 @@ export function useInferenceService() {
         onStreamingStateChange: options.onStreamingStateChange,
       });
     },
-    [generateMessage, cancelRequest, modelList, currentChatId],
+    [cancelRequest, modelList, currentChatId, generateMessage],
   );
   /**
    * Cancel ongoing generation
