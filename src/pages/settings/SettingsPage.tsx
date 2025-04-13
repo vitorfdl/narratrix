@@ -18,12 +18,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useProfile } from "@/hooks/ProfileContext";
-import { useTheme } from "@/hooks/ThemeContext";
+import { useCurrentProfile, useProfileActions } from "@/hooks/ProfileStore";
+import { useThemeStore } from "@/hooks/ThemeContext";
+import { useImageUrl } from "@/hooks/useImageUrl";
 import { defaultSettings } from "@/schema/default-settings";
-import { AppSettings } from "@/schema/profiles-schema";
+import { AppSettings, ProfileListItem, ProfileResponse } from "@/schema/profiles-schema";
 import { saveImage } from "@/services/file-system-service";
 import { deleteProfile as deleteProfileService, updateProfile, updateProfilePassword, updateProfileSettings } from "@/services/profile-service";
+import { useSessionProfile } from "@/utils/session-storage";
 import { getVersion } from "@tauri-apps/api/app";
 import { ChevronDown, Download, EyeOff, KeyIcon, Languages, LogOut, MessageSquare, Palette, Save, Trash, User, UserCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -31,16 +33,23 @@ import { toast } from "sonner";
 import "./styles/settings.css";
 
 // Extract sections into separate components for better organization
-const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: any; refreshProfiles: () => Promise<void> }) => {
+const ProfileSection = ({
+  currentProfile,
+  refreshProfiles,
+}: { currentProfile: ProfileResponse; refreshProfiles: () => Promise<ProfileListItem[]> }) => {
   const [newProfileName, setNewProfileName] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingName, setIsChangingName] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isRemovingPassword, setIsRemovingPassword] = useState(false);
   const [_isChangingAvatar, setIsChangingAvatar] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { logout, setCurrentProfile, currentProfileAvatarUrl, refreshAvatar } = useProfile();
+
+  const { logout, setCurrentProfile } = useProfileActions();
+  const { url: currentProfileAvatarUrl, reload: reloadAvatarImage } = useImageUrl(currentProfile?.avatar_path);
+  const [_savedProfile, setSessionProfile] = useSessionProfile();
 
   // State for controlling dialog visibility
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
@@ -99,7 +108,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
 
     try {
       setIsChangingPassword(true);
-      let updatedProfile: any;
+      let updatedProfile: ProfileResponse;
       if (currentProfile.hasPassword) {
         updatedProfile = await updateProfilePassword(currentProfile.id, currentPassword, newPassword);
       } else {
@@ -124,6 +133,42 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
     }
   };
 
+  const handleRemovePassword = async () => {
+    if (!currentProfile) {
+      toast.error("No profile selected");
+      return;
+    }
+    if (!currentProfile.hasPassword) {
+      toast.error("Profile does not have a password to remove.");
+      return;
+    }
+    if (!currentPassword) {
+      toast.error("Please enter your current password to remove it.");
+      return;
+    }
+
+    try {
+      setIsRemovingPassword(true);
+      const updatedProfile = await updateProfilePassword(currentProfile.id, currentPassword, null);
+
+      setCurrentProfile(updatedProfile);
+      await refreshProfiles();
+      toast.success("Password removed successfully");
+
+      // Reset form
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      setIsPasswordDialogOpen(false); // Close the dialog on success
+    } catch (error) {
+      console.error("Failed to remove password:", error);
+      toast.error("Failed to remove password. Please check your current password.");
+    } finally {
+      setIsRemovingPassword(false);
+    }
+  };
+
   const handleAvatarChange = async (croppedImage: string) => {
     if (!currentProfile) {
       toast.error("No profile selected");
@@ -136,9 +181,9 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
       const updatedProfile = await updateProfile(currentProfile.id, { avatar_path: avatarPath });
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
-      refreshAvatar();
+      await reloadAvatarImage();
       toast.success("Avatar updated successfully");
-      setIsAvatarDialogOpen(false); // Close the dialog on success
+      setIsAvatarDialogOpen(false);
     } catch (error) {
       console.error("Failed to update avatar:", error);
       toast.error("Failed to update avatar");
@@ -149,7 +194,9 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
 
   const handleLogout = () => {
     logout();
-    setIsLogoutDialogOpen(false); // Ensure dialog closes
+    setSessionProfile(undefined);
+    setIsLogoutDialogOpen(false);
+    toast.info("Logged out successfully.");
   };
 
   const deleteProfile = async () => {
@@ -161,13 +208,14 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
     try {
       setIsDeleting(true);
       await deleteProfileService(currentProfile.id);
+      await refreshProfiles();
       toast.success("Profile deleted successfully");
-      logout(); // Logout implicitly closes the dialog by navigating away
-      // No need to explicitly set setIsDeleteDialogOpen(false) if logout always navigates
+      logout();
+      setSessionProfile(undefined);
     } catch (error) {
       console.error("Failed to delete profile:", error);
       toast.error("Failed to delete profile.");
-      setIsDeleteDialogOpen(false); // Close dialog on error
+      setIsDeleteDialogOpen(false);
     } finally {
       setIsDeleting(false);
     }
@@ -181,7 +229,11 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
 
   const handlePasswordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      if (!isChangingPassword && newPassword && newPassword === confirmPassword && (!currentProfile?.hasPassword || currentPassword)) {
+      if (currentProfile?.hasPassword && currentPassword && !newPassword && !confirmPassword && !isRemovingPassword && !isChangingPassword) {
+        // Note: This doesn't directly trigger removal, but Enter on the current password field
+        // might feel like it should. We keep the explicit button for clarity.
+        // Perhaps focus the remove button? For now, do nothing specific on Enter here for removal.
+      } else if (!isChangingPassword && newPassword && newPassword === confirmPassword && (!currentProfile?.hasPassword || currentPassword)) {
         handlePasswordChange();
       }
     }
@@ -239,7 +291,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
             <div className="flex items-center space-x-2">
               <UserCircle className="w-4 h-4" />
               <Label>Avatar</Label>
-              {currentProfile?.avatar_path && currentProfileAvatarUrl && (
+              {currentProfileAvatarUrl && (
                 <div className="w-8 h-8 rounded-full overflow-hidden ml-2 border border-border">
                   <img src={currentProfileAvatarUrl} alt={`${currentProfile.name}'s avatar`} className="w-full h-full object-cover" />
                 </div>
@@ -286,13 +338,15 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
             </div>
             <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline">Change Password</Button>
+                <Button variant="outline">{currentProfile?.hasPassword ? "Change" : "Set"} Password</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Change Password</DialogTitle>
+                  <DialogTitle>{currentProfile?.hasPassword ? "Change" : "Set"} Password</DialogTitle>
                   <DialogDescription>
-                    {currentProfile?.hasPassword ? "Enter your current password and a new password." : "Create a new password for your profile."}
+                    {currentProfile?.hasPassword
+                      ? "Enter your current password to change it or remove it entirely."
+                      : "Create a new password for your profile."}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -316,7 +370,7 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="New password"
+                      placeholder={currentProfile?.hasPassword ? "New password (leave blank to remove)" : "New password"}
                       onKeyDown={handlePasswordKeyDown}
                     />
                   </div>
@@ -327,23 +381,50 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm password"
+                      placeholder="Confirm new password"
                       onKeyDown={handlePasswordKeyDown}
+                      disabled={!newPassword}
                     />
                   </div>
                 </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="secondary">Cancel</Button>
-                  </DialogClose>
-                  <Button
-                    onClick={handlePasswordChange}
-                    disabled={
-                      isChangingPassword || !newPassword || newPassword !== confirmPassword || (currentProfile?.hasPassword && !currentPassword)
-                    }
-                  >
-                    {isChangingPassword ? "Saving..." : "Save"}
-                  </Button>
+                <DialogFooter className="gap-2 sm:justify-between">
+                  <div>
+                    {currentProfile?.hasPassword && (
+                      <Button
+                        variant="destructive"
+                        onClick={handleRemovePassword}
+                        disabled={isRemovingPassword || isChangingPassword || !currentPassword}
+                        className="flex items-center gap-1"
+                      >
+                        {isRemovingPassword ? (
+                          <>
+                            <Trash className="w-4 h-4 animate-spin" /> Removing...
+                          </>
+                        ) : (
+                          <>
+                            <Trash className="w-4 h-4" /> Remove Password
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <DialogClose asChild>
+                      <Button variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button
+                      onClick={handlePasswordChange}
+                      disabled={
+                        isChangingPassword ||
+                        isRemovingPassword ||
+                        !newPassword ||
+                        newPassword !== confirmPassword ||
+                        (currentProfile?.hasPassword && !currentPassword)
+                      }
+                    >
+                      {isChangingPassword ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -426,9 +507,12 @@ const ProfileSection = ({ currentProfile, refreshProfiles }: { currentProfile: a
 
 export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const { setTheme } = useTheme();
+  const { theme, setTheme } = useThemeStore();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
-  const { currentProfile, refreshProfiles, setCurrentProfile } = useProfile();
+
+  const currentProfile = useCurrentProfile();
+  const { fetchProfiles: refreshProfiles, setCurrentProfile } = useProfileActions();
+
   const [isSaving, setIsSaving] = useState(false);
 
   // Create a debounce timer ref
@@ -463,7 +547,7 @@ export default function Settings() {
   useEffect(() => {
     if (currentProfile?.settings) {
       setSettings(currentProfile.settings);
-      // Also sync the theme to ThemeContext
+      // Also sync the theme to ThemeStore
       setTheme(currentProfile.settings.appearance.theme);
     } else {
       setSettings(defaultSettings);
@@ -506,7 +590,7 @@ export default function Settings() {
 
       setSettings(updatedSettings);
 
-      // Sync theme changes with ThemeContext immediately for preview
+      // Sync theme changes with ThemeStore immediately for preview
       if (section === "appearance" && key === "theme") {
         setTheme(value);
       }

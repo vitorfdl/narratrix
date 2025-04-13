@@ -207,7 +207,7 @@ export async function updateProfileSettings(id: string, settings: AppSettings): 
   return updatedProfile;
 }
 
-export async function updateProfilePassword(id: string, currentPassword: string, newPassword: string): Promise<ProfileResponse> {
+export async function updateProfilePassword(id: string, currentPassword: string, newPassword: string | null): Promise<ProfileResponse> {
   const validId = uuidUtils.uuid().parse(id);
 
   // First get the profile to verify the current password
@@ -228,7 +228,7 @@ export async function updateProfilePassword(id: string, currentPassword: string,
   }
 
   // Hash new password
-  const hashedPassword = await hashPassword(newPassword);
+  const hashedPassword = newPassword ? await hashPassword(newPassword) : null;
   const now = formatDateTime();
 
   // Update the password
