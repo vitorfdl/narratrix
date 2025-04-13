@@ -1,4 +1,4 @@
-import { useCharacters } from "@/hooks/characterStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
 import { useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useModelManifests } from "@/hooks/manifestStore";
@@ -9,6 +9,7 @@ import { Character } from "@/schema/characters-schema";
 import { InferenceMessage, ModelSpecs } from "@/schema/inference-engine-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { useCallback, useRef } from "react";
+import { listCharacters } from "./character-service";
 import { ChatMessage } from "./chat-message-service";
 import { formatPrompt } from "./inference-steps/formatter";
 
@@ -47,12 +48,12 @@ export interface QuickInferenceOptions {
  * and returns actual results without affecting chat state
  */
 export function useBackgroundInference() {
+  const currentProfile = useCurrentProfile();
   // Get all models, manifests, and templates at the component level
   const models = useModels();
   const manifests = useModelManifests();
   const inferenceTemplates = useInferenceTemplateList();
 
-  const characterList = useCharacters();
   const chapterList = useCurrentChatChapters();
   const currentChapterID = useCurrentChatActiveChapterID();
   const chatTemplates = useChatTemplateList();
@@ -186,7 +187,6 @@ export function useBackgroundInference() {
         }
 
         model = chatTemplate?.model_id ? models.find((m) => m.id === chatTemplate.model_id) : model;
-
         if (!model) {
           console.error(`Model with ID ${modelId} or template with ID ${chatTemplateId} not found`);
           return null;
@@ -204,6 +204,7 @@ export function useBackgroundInference() {
         const messages: ChatMessage[] = [];
         const activeChapter = chapterList.find((chapter) => chapter.id === currentChapterID);
 
+        const characterList = await listCharacters(currentProfile!.id);
         const { inferenceMessages, systemPrompt: formattedSystemPrompt } = await formatPrompt({
           messageHistory: messages,
           userPrompt: prompt,

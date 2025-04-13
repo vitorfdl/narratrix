@@ -111,7 +111,10 @@ export async function createLorebook(lorebookData: CreateLorebookParams): Promis
 }
 
 // Get a lorebook by ID
-export async function getLorebookById(id: string): Promise<Lorebook | null> {
+export async function getLorebookById<T extends boolean = false>(
+  id: string,
+  includeEntries: T = false as T,
+): Promise<T extends true ? (Lorebook & { entries: LorebookEntry[] }) | null : Lorebook | null> {
   const validId = uuidUtils.uuid().parse(id);
   const result = await selectDBQuery<any[]>("SELECT * FROM lorebooks WHERE id = $1", [validId]);
 
@@ -119,7 +122,15 @@ export async function getLorebookById(id: string): Promise<Lorebook | null> {
     return null;
   }
 
-  return parseLorebookJsonFields(result[0]);
+  const lorebook = parseLorebookJsonFields(result[0]);
+
+  if (includeEntries) {
+    // Fetch entries for this lorebook when requested
+    const entries = await listLorebookEntries(lorebook.profile_id, { lorebook_id: lorebook.id });
+    return { ...lorebook, entries } as T extends true ? Lorebook & { entries: LorebookEntry[] } : Lorebook;
+  }
+
+  return lorebook as T extends true ? Lorebook & { entries: LorebookEntry[] } : Lorebook;
 }
 
 // List lorebooks with optional filtering

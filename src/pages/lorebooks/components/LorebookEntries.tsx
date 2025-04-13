@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useIsLoadingEntries, useLorebookStoreActions, useSelectedLorebookEntries } from "@/hooks/lorebookStore";
 import { cn } from "@/lib/utils";
 import { LorebookEntry } from "@/schema/lorebook-schema";
@@ -29,9 +29,10 @@ interface SortableEntryRowProps {
   onToggleEnabled: (entry: LorebookEntry) => void;
   onEdit: (entry: LorebookEntry) => void;
   onDelete: (entry: LorebookEntry) => void;
+  compact?: boolean;
 }
 
-function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete }: SortableEntryRowProps) {
+function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = false }: SortableEntryRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id });
 
   const style: React.CSSProperties = {
@@ -77,7 +78,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete }: Sortable
           title={entry.enabled ? "Disable entry" : "Enable entry"}
         />
       </TableCell>
-      <TableCell className="font-medium truncate max-w-[200px]">{entry.comment}</TableCell>
+      <TableCell className={cn("font-medium truncate max-w-[200px]", compact && "text-xs")}>{entry.comment}</TableCell>
       <TableCell className="max-w-[100px] truncate text-center">
         {entry.group_key ? (
           <Badge variant="secondary" className="text-xs">
@@ -87,7 +88,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete }: Sortable
           <span className="text-muted-foreground text-xs">None</span>
         )}
       </TableCell>
-      <TableCell className="max-w-[100px] truncate text-xs text-center">
+      <TableCell className="max-w-[50px] truncate text-xs text-center">
         <div className="flex items-center justify-center gap-1.5">
           {IconComponent && <IconComponent className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />}
           <span className="truncate">{displayInfo.name}</span>
@@ -104,15 +105,15 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete }: Sortable
           title={entry.constant ? "Constant" : "Not Constant"}
         />
       </TableCell>
-      <TableCell className="w-[15%] max-w-[150px] text-center">
+      <TableCell className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>
         <div className="flex flex-wrap gap-1 justify-center">
           {entry.keywords.slice(0, 2).map((keyword) => (
-            <Badge key={keyword} variant="outline" className="text-xs truncate">
+            <Badge key={keyword} variant="outline" className={"truncate text-[0.55rem] py-0 px-1 m-0"}>
               {keyword}
             </Badge>
           ))}
           {entry.keywords.length > 2 && (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className={"text-[0.55rem] py-0 px-1 m-0"}>
               +{entry.keywords.length - 2}
             </Badge>
           )}
@@ -138,7 +139,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete }: Sortable
 }
 
 export function LorebookEntries({ lorebookId, compact = false }: LorebookEntriesProps) {
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
   const allEntries = useSelectedLorebookEntries();
   const isLoading = useIsLoadingEntries();
   const { loadLorebookEntries, updateLorebookEntry, deleteLorebookEntry, selectLorebookEntry, selectLorebook } = useLorebookStoreActions();
@@ -327,7 +328,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
 
       <div className="p-4 flex items-center gap-3 border-b">
         <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2 top-1 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search entries..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
         </div>
 
@@ -355,15 +356,15 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
             <div className="p-2">
               <label className="flex items-center space-x-2 mb-2 cursor-pointer">
                 <Checkbox id="showEnabledOnly" checked={showEnabledOnly} onCheckedChange={() => setShowEnabledOnly(!showEnabledOnly)} />
-                <span className="text-sm">Enabled only</span>
+                <span className={cn("text-sm", compact && "text-xs")}>Enabled only</span>
               </label>
 
               <div className="mb-2">
-                <p className="text-sm font-medium mb-1">Group</p>
+                <p className={cn("text-sm font-medium mb-1", compact && "text-xs")}>Group</p>
                 <select
                   value={filterGroupKey || ""}
                   onChange={(e) => setFilterGroupKey(e.target.value || null)}
-                  className="w-full rounded border border-input bg-background p-1 text-sm"
+                  className={cn("w-full rounded border border-input bg-background p-1 text-sm", compact && "text-xs")}
                 >
                   <option value="">All Groups</option>
                   <option value="null">No Group</option>
@@ -375,7 +376,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                 </select>
               </div>
 
-              <Button variant="outline" size="sm" className="w-full mt-2" onClick={resetFilters}>
+              <Button variant="outline" size="sm" className={cn("w-full mt-2", compact && "text-xs h-8")} onClick={resetFilters}>
                 Reset Filters
               </Button>
             </div>
@@ -407,34 +408,59 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                       </Button>
                     </TableHead>
                     <TableHead className="w-[25%] max-w-[200px]">
-                      <Button variant="ghost" size="sm" className="-ml-3 font-medium" onClick={() => handleSort("comment")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn("-ml-3 font-medium", compact && "text-xs h-8")}
+                        onClick={() => handleSort("comment")}
+                      >
                         Title
                         {sortField === "comment" &&
                           (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="max-w-[100px] text-center">
-                      <Button variant="ghost" size="sm" className="mx-auto font-medium" onClick={() => handleSort("group_key")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn("mx-auto font-medium", compact && "text-xs h-8")}
+                        onClick={() => handleSort("group_key")}
+                      >
                         Group
                         {sortField === "group_key" &&
                           (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
-                    <TableHead className="max-w-[100px] text-center">
-                      <Button variant="ghost" size="sm" className="mx-auto font-medium" onClick={() => handleSort("insertion_type")}>
+                    <TableHead className="max-w-[50px] text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn("mx-auto font-medium", compact && "text-xs h-8")}
+                        onClick={() => handleSort("insertion_type")}
+                      >
                         Insert Type
                         {sortField === "insertion_type" &&
                           (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="w-[10%] max-w-[100px] text-center">
-                      <Button variant="ghost" size="sm" className="mx-auto font-medium" onClick={() => handleSort("constant")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn("mx-auto font-medium", compact && "h-8")}
+                        onClick={() => handleSort("constant")}
+                      >
                         <span className="text-xs">Constant</span>
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[15%] max-w-[150px] text-center">Keywords</TableHead>
+                    <TableHead className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>Keywords</TableHead>
                     <TableHead className="w-[10%] text-center">
-                      <Button variant="ghost" size="sm" className="mx-auto font-medium" onClick={() => handleSort("priority")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn("mx-auto font-medium", compact && "text-xs h-8")}
+                        onClick={() => handleSort("priority")}
+                      >
                         Priority
                         {sortField === "priority" &&
                           (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
@@ -452,6 +478,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                         onToggleEnabled={handleToggleEnabled}
                         onEdit={handleEditEntry}
                         onDelete={setEntryToDelete}
+                        compact={compact}
                       />
                     ))}
                   </TableBody>
@@ -464,13 +491,14 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
             <div className="rounded-full bg-muted p-3 mb-3">
               <Search className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium">No entries found</h3>
-            <p className="text-sm text-muted-foreground mt-1 mb-4 max-w-md">
+            <h3 className={cn("text-lg font-medium", compact && "text-xs")}>No entries found</h3>
+            <p className={cn("text-sm text-muted-foreground mt-1 mb-4 max-w-md", compact && "text-xs")}>
               {searchQuery || filterGroupKey || showEnabledOnly ? "Try adjusting your search filters" : "Get started by creating your first entry"}
             </p>
             <Button
               variant="default"
               size="sm"
+              className={cn(compact && "text-xs h-8")}
               onClick={(e) => {
                 e.preventDefault();
                 handleCreateNewEntry();

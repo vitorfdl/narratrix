@@ -18,13 +18,13 @@ export const chatTemplateSchema = baseTemplateSchema.extend({
   model_id: z.string().nullable().optional(),
   format_template_id: z.string().nullable().optional(),
 
-
   lorebook_list: z.string().array().optional().default([]),
   config: z
     .object({
       max_tokens: z.number(),
       max_context: z.number().default(4096),
       max_depth: z.number().optional().default(100),
+      lorebook_token_budget: z.number().optional().nullable(),
     })
     .passthrough()
     .default(() => ({ max_tokens: 8000, max_context: 4000, max_depth: 100 })),

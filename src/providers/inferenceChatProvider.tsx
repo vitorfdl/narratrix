@@ -22,6 +22,3 @@ export const useInferenceServiceFromContext = () => {
   }
   return context;
 };
-
-// Export the original hook for direct use when needed
-export { useInferenceServiceOriginal as useInferenceService };

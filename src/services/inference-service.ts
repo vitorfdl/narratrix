@@ -1,5 +1,4 @@
-import { useProfile } from "@/hooks/ProfileContext";
-import { useCharacters } from "@/hooks/characterStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import {
   useChatActions,
   useCurrentChatActiveChapterID,
@@ -9,20 +8,22 @@ import {
   useCurrentChatTemplateID,
   useCurrentChatUserCharacterID,
 } from "@/hooks/chatStore";
-import { useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useModelManifests } from "@/hooks/manifestStore";
-import { useModels } from "@/hooks/modelsStore";
-import { useFormatTemplateList, useInferenceTemplateList } from "@/hooks/templateStore";
 import { useInference } from "@/hooks/useInference";
 import { Character } from "@/schema/characters-schema";
-import { ChatMessageType } from "@/schema/chat-message-schema";
+import { ChatMessage, ChatMessageType } from "@/schema/chat-message-schema";
 import { ModelSpecs } from "@/schema/inference-engine-schema";
 import { formatPrompt as formatPromptUtil } from "@/services/inference-steps/formatter";
 import { useLocalSummarySettings } from "@/utils/local-storage";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { listCharacters } from "./character-service";
 import { removeNestedFields } from "./inference-steps/remove-nested-fields";
 import { trimToEndSentence } from "./inference-steps/trim-incomplete-sentence";
+import { listModels } from "./model-service";
+import { listChatTemplates } from "./template-chat-service";
+import { getFormatTemplateById } from "./template-format-service";
+import { listInferenceTemplates } from "./template-inference-service";
 
 /**
  * StreamingState interface for tracking the streaming state of a message
@@ -59,48 +60,45 @@ export interface GenerationOptions {
   onStreamingStateChange?: (state: StreamingState | null) => void; // Callback for streaming state changes
 }
 
+const DEFAULT_THINKING_CONFIG = {
+  prefix: "<think>",
+  suffix: "</think>",
+};
+
+const INITIAL_STREAMING_STATE: StreamingState = {
+  messageId: null,
+  requestId: null,
+  accumulatedText: "",
+  accumulatedReasoning: "",
+  characterId: null,
+  messageIndex: 0,
+  isThinking: false,
+  thinkingConfig: DEFAULT_THINKING_CONFIG,
+};
+
 /**
  * UseInferenceService hook for centralizing inference functionality
  */
 export function useInferenceService() {
-  // Create a ref to track streaming state
-  const streamingState = useRef<StreamingState>({
-    messageId: null,
-    requestId: null,
-    accumulatedText: "",
-    accumulatedReasoning: "",
-    characterId: null,
-    messageIndex: 0,
-    isThinking: false,
-    thinkingConfig: {
-      prefix: "<think>",
-      suffix: "</think>",
-    },
-  });
-  const { currentProfile } = useProfile();
+  const streamingState = useRef<StreamingState>({ ...INITIAL_STREAMING_STATE });
+  const currentProfile = useCurrentProfile();
+  if (!currentProfile) {
+    throw new Error("Current profile not found");
+  }
 
   // Get chat store information directly
   const currentChatId = useCurrentChatId();
   const currentChatTemplateId = useCurrentChatTemplateID();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const chatMessages = useCurrentChatMessages();
-  const { addChatMessage, updateChatMessage } = useChatActions();
+  const { addChatMessage, updateChatMessage, fetchChatMessages } = useChatActions();
 
-  // Get model and template information directly
-  const chatTemplateList = useChatTemplateList();
-  const modelList = useModels();
   const modelManifestList = useModelManifests();
-  const inferenceTemplateList = useInferenceTemplateList();
-  const formatTemplateList = useFormatTemplateList();
 
   const chapterList = useCurrentChatChapters();
   const currentChapterID = useCurrentChatActiveChapterID();
 
-  const characterList = useCharacters();
   const [localSummarySettings] = useLocalSummarySettings();
-
-  const userCharacter = characterList.find((character) => character.id === currentChatUserCharacterID);
-  const userCharacterOrProfileName = userCharacter?.name || currentProfile?.name;
 
   // Set up inference with callbacks
   const { runInference, cancelRequest } = useInference({
@@ -152,7 +150,7 @@ export function useInferenceService() {
 
       if (streamingState.current.characterId && streamingState.current.messageId) {
         // Update the message in the UI with the accumulated *user-facing text* only
-        updateMessageByID(
+        inferenceUpdateMessageID(
           streamingState.current.messageId,
           streamingState.current.accumulatedText, // Only show user-facing text
           streamingState.current.messageIndex || 0,
@@ -169,7 +167,7 @@ export function useInferenceService() {
         // Determine the final text, prioritizing the most complete response
         const finalText = trimToEndSentence(response.result?.full_response || response.result?.text || streamingState.current.accumulatedText);
         // Final update to the message
-        updateMessageByID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0);
+        inferenceUpdateMessageID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0, true);
 
         // Reset streaming state
         resetStreamingState();
@@ -194,7 +192,7 @@ export function useInferenceService() {
   /**
    * Updates a character message with new text
    */
-  const updateMessageByID = async (messageId: string, messageText: string, messageIndex = 0) => {
+  const inferenceUpdateMessageID = async (messageId: string, messageText: string, messageIndex = 0, forceUpdate = false) => {
     try {
       if (messageId === "generate-input-area") {
         return;
@@ -233,22 +231,7 @@ export function useInferenceService() {
    */
   const resetStreamingState = useCallback(() => {
     const previousState = { ...streamingState.current };
-
-    // Reset the streaming state
-    streamingState.current = {
-      messageId: null,
-      requestId: null,
-      accumulatedText: "",
-      accumulatedReasoning: "",
-      characterId: null,
-      messageIndex: 0,
-      isThinking: false,
-      thinkingConfig: {
-        prefix: "<think>",
-        suffix: "</think>",
-      },
-    };
-
+    streamingState.current = { ...INITIAL_STREAMING_STATE };
     return previousState;
   }, []);
 
@@ -260,8 +243,10 @@ export function useInferenceService() {
     characterId?: string,
     systemPromptOverride?: string,
     chatTemplateID?: string,
+    messagesToUse?: ChatMessage[],
     extraSuggestions?: Record<string, any>,
   ) => {
+    const chatTemplateList = await listChatTemplates({ profile_id: currentProfile!.id });
     const chatTemplate = chatTemplateID
       ? chatTemplateList.find((template) => template.id === chatTemplateID)!
       : chatTemplateList.find((template) => template.id === currentChatTemplateId)!;
@@ -270,10 +255,15 @@ export function useInferenceService() {
       throw new Error("Chat template not found");
     }
 
+    const modelList = await listModels({ profile_id: currentProfile!.id });
     const modelSettings = modelList.find((model) => model.id === chatTemplate.model_id)!;
     const manifestSettings = modelManifestList.find((manifest) => manifest.id === modelSettings.manifest_id)!;
 
-    const formatTemplate = formatTemplateList.find((template) => template.id === chatTemplate.format_template_id)!;
+    const formatTemplate = await getFormatTemplateById(chatTemplate.format_template_id || "");
+    if (!formatTemplate) {
+      throw new Error("Format template not found");
+    }
+
     if (formatTemplate.config.reasoning) {
       streamingState.current.thinkingConfig = {
         prefix: formatTemplate.config.reasoning.prefix,
@@ -281,19 +271,22 @@ export function useInferenceService() {
       };
     }
 
+    const inferenceTemplateList = await listInferenceTemplates({ profile_id: currentProfile!.id });
     const inferenceTemplate = inferenceTemplateList.find((template) => template.id === modelSettings.inference_template_id)!;
+    const characterList = await listCharacters(currentProfile!.id);
 
-    const chatWithNames = chatMessages
+    const chatWithNames = (messagesToUse || chatMessages)
       ?.map((msg) => {
         return {
           ...msg,
           character_name: msg.character_id ? characterList.find((character) => character.id === msg.character_id)?.name : undefined,
         };
       })
-      ?.filter((msg) => streamingState.current.messageId !== msg.id);
+      ?.filter((msg) => streamingState.current.messageId !== msg.id)
+      .filter((msg) => !msg.disabled);
 
-    console.log("streamingState.current.messageId", streamingState.current.messageId);
-    console.log(chatWithNames);
+    const userCharacter = characterList.find((character) => character.id === currentChatUserCharacterID);
+    const userCharacterOrProfileName = userCharacter?.name || currentProfile?.name;
 
     const prompt = await formatPromptUtil({
       messageHistory: chatWithNames || [],
@@ -305,6 +298,7 @@ export function useInferenceService() {
       chatTemplate: {
         custom_prompts: chatTemplate?.custom_prompts,
         config: chatTemplate?.config,
+        lorebook_list: chatTemplate?.lorebook_list || [],
       },
       chatConfig: {
         injectionPrompts: {
@@ -362,8 +356,10 @@ export function useInferenceService() {
         streamingState.current.messageIndex = messageIndex;
       }
 
+      const freshMessages = await fetchChatMessages(currentChatId, currentChapterID);
+
       // Prepare messages for inference
-      const promptResult = await formatPrompt(userMessage, characterId, systemPromptOverride, chatTemplateID, extraSuggestions);
+      const promptResult = await formatPrompt(userMessage, characterId, systemPromptOverride, chatTemplateID, freshMessages, extraSuggestions);
       if (!promptResult) {
         throw new Error("Failed to format prompt");
       }
@@ -390,7 +386,6 @@ export function useInferenceService() {
       if (existingMessageId) {
         // Use existing message
         messageId = existingMessageId;
-        console.log("messageId", messageId);
         const existingMessage = chatMessages.find((msg) => msg.id === messageId);
         if (existingMessage) {
           existingMessage.messages[messageIndex] = "...";
@@ -451,7 +446,7 @@ export function useInferenceService() {
         onStreamingStateChange(streamingState.current);
       }
 
-      updateMessageByID(streamingState.current.messageId, streamingState.current.accumulatedText ?? "...", messageIndex);
+      inferenceUpdateMessageID(streamingState.current.messageId, streamingState.current.accumulatedText ?? "...", messageIndex);
 
       return confirmID;
     } catch (error) {
@@ -497,7 +492,7 @@ export function useInferenceService() {
         onStreamingStateChange: options.onStreamingStateChange,
       });
     },
-    [cancelRequest, modelList, currentChatId, generateMessage],
+    [cancelRequest, currentChatId, chatMessages, generateMessage],
   );
   /**
    * Cancel ongoing generation

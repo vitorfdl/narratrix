@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useIsLoadingLorebooks, useLorebookStoreActions, useLorebooks, useSelectedLorebookId } from "@/hooks/lorebookStore";
 import { Lorebook } from "@/schema/lorebook-schema";
 import { useLocalLorebookPageSettings } from "@/utils/local-storage";
@@ -45,7 +45,7 @@ const categoryIcons: Record<NonNullable<Lorebook["category"]>, React.ElementType
 };
 
 export default function LorebooksPage() {
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
   const lorebooks = useLorebooks();
   const selectedLorebookId = useSelectedLorebookId();
   const isLoading = useIsLoadingLorebooks();

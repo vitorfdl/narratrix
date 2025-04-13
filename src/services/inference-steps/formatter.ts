@@ -7,6 +7,7 @@ import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-s
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { applyContextLimit } from "./apply-context-limit";
+import { LorebookContentResponse, getLorebookContent, processLorebookMessages } from "./apply-lorebook";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./format-template-utils";
 import { replaceTextPlaceholders } from "./replace-text";
 
@@ -33,11 +34,12 @@ export interface PromptFormatterConfig {
   chatTemplate?: {
     custom_prompts?: ChatTemplateCustomPrompt[];
     config?: ChatTemplate["config"];
+    lorebook_list?: ChatTemplate["lorebook_list"];
   };
   chatConfig?: {
     injectionPrompts?: Record<string, string>;
-    user_character?: Pick<Character, "name" | "custom">;
-    character?: Pick<CharacterUnion, "name" | "settings" | "custom" | "type">;
+    user_character?: Pick<Character, "name" | "custom" | "lorebook_id">;
+    character?: Pick<CharacterUnion, "name" | "settings" | "custom" | "type" | "lorebook_id">;
     chapter?: Pick<ChatChapter, "title" | "scenario" | "instructions">;
     extra?: Record<string, string>;
     censorship?: {
@@ -119,14 +121,13 @@ export function getChatHistory(
 export function createSystemPrompt(
   systemPromptTemplate?: FormatTemplate | null,
   chatConfig?: PromptFormatterConfig["chatConfig"],
+  lorebookContent?: LorebookContentResponse["replacers"],
 ): string | undefined {
   if (!systemPromptTemplate || !systemPromptTemplate.config || systemPromptTemplate.prompts.length === 0) {
     return undefined;
   }
 
   let prompts = structuredClone(systemPromptTemplate.prompts);
-
-  console.log("chatConfig", chatConfig);
 
   const hasCharacter = !!chatConfig?.character && chatConfig?.character.type === "character";
   const hasChapter = !!chatConfig?.chapter?.scenario;
@@ -143,7 +144,14 @@ export function createSystemPrompt(
 
   if (!hasUserCharacter) {
     prompts = prompts.filter((prompt) => prompt.type !== "user-context");
-    prompts = prompts.filter((prompt) => prompt.type !== "user-memory");
+  }
+
+  if (lorebookContent?.lorebook_top) {
+    prompts = prompts.filter((prompt) => prompt.type !== "lorebook-top");
+  }
+
+  if (lorebookContent?.lorebook_bottom) {
+    prompts = prompts.filter((prompt) => prompt.type !== "lorebook-bottom");
   }
 
   if (prompts.length === 0) {
@@ -190,7 +198,7 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
 /**
  * Main format prompt function that orchestrates the prompt formatting process
  */
-export function formatPrompt(config: PromptFormatterConfig) {
+export async function formatPrompt(config: PromptFormatterConfig) {
   const prefixOption = config.formatTemplate?.config.settings.prefix_messages;
   // Step 1: Get chat history with user message
   const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt, prefixOption);
@@ -201,18 +209,26 @@ export function formatPrompt(config: PromptFormatterConfig) {
     processedMessages = collapseConsecutiveLines(structuredClone(processedMessages));
   }
 
+  // Get the order of lorebooks to be used (Character > User > Template)
+  const LoreBookOrder = [
+    config.chatConfig?.character?.lorebook_id,
+    config.chatConfig?.user_character?.lorebook_id,
+    ...(config.chatTemplate?.lorebook_list || []),
+  ].filter((id) => id) as string[];
+
+  const LorebookBudget = config.chatTemplate?.config?.lorebook_token_budget || 400;
+
+  const lorebookContent = await getLorebookContent(LoreBookOrder, LorebookBudget, processedMessages);
+  processedMessages = processLorebookMessages(processedMessages, lorebookContent.messages);
+
   if (config.formatTemplate?.config.settings.merge_messages_on_user) {
     processedMessages = mergeMessagesOnUser(structuredClone(processedMessages));
   } else if (config.formatTemplate?.config.settings.merge_subsequent_messages) {
     processedMessages = mergeSubsequentMessages(structuredClone(processedMessages));
   }
 
-  // if () {
-  //   processedMessages = prefixMessages(structuredClone(processedMessages));
-  // }
-
   // Step 3: Create system prompt
-  const rawSystemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate, config.chatConfig);
+  const rawSystemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate, config.chatConfig, lorebookContent.replacers);
 
   const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 

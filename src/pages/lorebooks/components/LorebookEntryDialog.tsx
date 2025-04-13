@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StepButton } from "@/components/ui/step-button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useLorebookStoreActions } from "@/hooks/lorebookStore";
 import { basicPromptSuggestionList } from "@/schema/chat-message-schema";
 import { CreateLorebookEntryParams, LorebookEntry, UpdateLorebookEntryParams, createLorebookEntrySchema } from "@/schema/lorebook-schema";
@@ -48,7 +48,7 @@ const formSchema = createLorebookEntrySchema.omit({ lorebook_id: true, vector_co
 type FormValues = z.infer<typeof formSchema>;
 
 export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, groupKeys }: LorebookEntryDialogProps) {
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
   const { createLorebookEntry, updateLorebookEntry } = useLorebookStoreActions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!entry;

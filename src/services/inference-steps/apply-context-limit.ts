@@ -14,7 +14,7 @@ interface FormattedPromptCutResult extends FormattedPromptResult {
  * This formula is not accurate, but it's a good estimate.
  * Testing in multiple chats give me around 8% error margin.
  */
-function estimateTokens(text: string, padding = 164): number {
+export function estimateTokens(text: string, padding = 32): number {
   const wordCount = text.split(/\s+/).filter((w) => w.length > 0).length;
   const punctCount = (text.match(/[.,!?;:()[\]{}'"\/\\<>@#$%^&*_\-+=|~`]/g) || []).length;
   const accentedCount = (text.match(/[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/g) || []).length;
@@ -38,7 +38,7 @@ export const getTokenCount = async (text: string, useTokenizer = false) => {
   // ? Tokenizer slows down the APP.
   let result: number;
   if (useTokenizer) {
-    result = (await countTokens(text, "DEFAULT")).count;
+    result = (await countTokens(text, "DEFAULT")).count + 32;
   } else {
     result = estimateTokens(text);
   }

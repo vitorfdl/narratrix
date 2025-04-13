@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { Lorebook } from "@/schema/lorebook-schema";
 import { importLorebook, parseLorebookContent, validateAndTransformLorebookData } from "@/services/lorebook-import-service";
@@ -31,7 +31,7 @@ export interface LorebookImportHandle {
 }
 
 export const LorebookImport = forwardRef<LorebookImportHandle, LorebookImportProps>(({ onImportComplete, className = "" }, ref) => {
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
   const { loadLorebooks } = useLorebookStoreActions();
   const lorebooks = useLorebooks();
   const [isDragging, setIsDragging] = useState(false);
