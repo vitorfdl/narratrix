@@ -12,7 +12,7 @@ import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, PlusIcon, S
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useLorebooks } from "@/hooks/lorebookStore";
@@ -20,7 +20,7 @@ import { useModelManifestById } from "@/hooks/manifestStore";
 import { useModels } from "@/hooks/modelsStore";
 import { useFormatTemplateList } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
-import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
+import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { NewChatTemplateParams } from "@/services/template-chat-service";
 import { configFields } from "../manifests/configFields";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
@@ -48,8 +48,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const formatTemplates = useFormatTemplateList();
   const lorebooks = useLorebooks();
 
-  const profile = useProfile();
-  const profileId = profile!.currentProfile!.id;
+  const currentProfile = useCurrentProfile();
+  const profileId = currentProfile?.id;
 
   const [activeFields, setActiveFields] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, any>>({});
@@ -60,6 +60,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
   const [maxDepth, setMaxDepth] = useState<number>(100);
+  const [lorebookTokenBudget, setLorebookTokenBudget] = useState<number>(2048);
 
   if (!currentChatTemplateID && !onChatTemplateChange) {
     currentChatTemplateID = useCurrentChatTemplateID();
@@ -87,11 +88,12 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
         setSelectedLorebookList(currentTemplate.lorebook_list);
       }
 
-      // Set context size and response length from config
+      // Set context size, response length, max depth, and lorebook budget from config
       if (currentTemplate.config) {
         setContextSize(currentTemplate.config.max_context || 4096);
         setResponseLength(currentTemplate.config.max_tokens || 1024);
         setMaxDepth(currentTemplate.config.max_depth || 100);
+        setLorebookTokenBudget(currentTemplate.config.lorebook_token_budget ?? 2048);
       }
 
       // Set custom prompts
@@ -119,6 +121,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       setContextSize(4096);
       setResponseLength(1024);
       setMaxDepth(100);
+      setLorebookTokenBudget(2048);
       setCustomPrompts([]);
       setSelectedLorebookList([]);
     }
@@ -173,14 +176,17 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
 
     if (onChatTemplateChange) {
       onChatTemplateChange(templateId);
-      return;
+    } else {
+      // Update the current chat to use the selected template
+      updateSelectedChat({ chat_template_id: templateId });
     }
-
-    // Update the current chat to use the selected template
-    updateSelectedChat({ chat_template_id: templateId });
   };
 
   const handleCreateTemplate = (name: string, sourceTemplateId?: string) => {
+    if (!profileId) {
+      return;
+    }
+
     let newChatTemplate: NewChatTemplateParams = {
       profile_id: profileId,
       name,
@@ -190,6 +196,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
         max_tokens: 4096,
         max_context: 4096 * 2,
         max_depth: 100,
+        lorebook_token_budget: 2048,
       },
       custom_prompts: [],
     };
@@ -197,16 +204,24 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     if (sourceTemplateId) {
       const sourceTemplate = chatTemplateList.find((template) => template.id === sourceTemplateId);
       if (sourceTemplate) {
+        const sourceConfig = JSON.parse(JSON.stringify(sourceTemplate.config || {}));
         newChatTemplate = {
           ...sourceTemplate,
-          name: `${sourceTemplate.name} (Copy)`,
+          name: `${name}`,
+          config: {
+            ...sourceConfig,
+            lorebook_token_budget: sourceConfig.lorebook_token_budget ?? 2048,
+          },
         };
       }
     }
 
     createChatTemplate(newChatTemplate).then((newTemplate) => {
-      // Select the newly created template
-      updateSelectedChat({ chat_template_id: newTemplate.id });
+      if (onChatTemplateChange) {
+        onChatTemplateChange(newTemplate.id);
+      } else {
+        updateSelectedChat({ chat_template_id: newTemplate.id });
+      }
     });
   };
 
@@ -352,12 +367,20 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       }
 
       // Compile all config values
-      const configValues = {
+      const configValues: ChatTemplate["config"] = {
         ...values,
         max_tokens: responseLength,
         max_context: contextSize,
         max_depth: maxDepth,
       };
+
+      // Only include lorebook budget if lorebooks are selected
+      if (selectedLorebookList.length > 0) {
+        configValues.lorebook_token_budget = lorebookTokenBudget;
+      } else {
+        // Optionally remove or nullify if no lorebooks are selected
+        delete configValues.lorebook_token_budget;
+      }
 
       // Update template
       updateChatTemplate(currentChatTemplateID, {
@@ -369,7 +392,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       });
 
       saveTimeoutRef.current = null;
-    }, 10); // Increase debounce delay to 500ms
+    }, 500); // Keep debounce delay at 500ms for stability
   };
 
   // Save changes when relevant state changes
@@ -391,6 +414,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     contextSize,
     responseLength,
     maxDepth,
+    lorebookTokenBudget,
     values,
     customPrompts,
     currentChatTemplateID,
@@ -620,6 +644,27 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
             />
           </div>
         </div>
+
+        {/* Lorebook Token Budget - Conditionally Rendered */}
+        {selectedLorebookList.length > 0 && (
+          <div className={`${bigScreenBreakpoints} items-center gap-2`}>
+            <div className="w-1/3 flex items-center gap-1">
+              <h3 className="text-xs font-normal">Lorebook Budget:</h3>
+              <HelpTooltip>Specifies the maximum number of tokens allocated to lorebook entries within the context.</HelpTooltip>
+            </div>
+            <div className="flex-1">
+              <StepButton
+                value={lorebookTokenBudget}
+                onValueChange={setLorebookTokenBudget}
+                min={64}
+                max={contextSize}
+                step={64}
+                className="h-7"
+                disabled={isDisabled}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Response Length */}
         <div className={`${bigScreenBreakpoints} items-center gap-2`}>

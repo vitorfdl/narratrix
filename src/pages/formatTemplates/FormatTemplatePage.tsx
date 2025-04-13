@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions, useTemplateError } from "@/hooks/templateStore";
 import { useSessionCurrentFormatTemplate } from "@/utils/session-storage";
 import { HelpCircle } from "lucide-react";
@@ -12,7 +12,7 @@ import { TemplateHeader } from "./components/TemplateHeader";
 
 export default function FormatTemplatePage() {
   const [isDocOpen, setIsDocOpen] = useState(false);
-  const profile = useProfile();
+  const currentProfile = useCurrentProfile();
   const [selectedTemplateId, setSelectedTemplateId] = useSessionCurrentFormatTemplate();
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [templateCreationFailed, setTemplateCreationFailed] = useState(false);
@@ -25,12 +25,12 @@ export default function FormatTemplatePage() {
 
   // Fetch templates when profile changes
   useEffect(() => {
-    if (!profile?.currentProfile?.id) {
+    if (!currentProfile?.id) {
       return;
     }
 
-    getFormatTemplatesByProfile(profile.currentProfile.id);
-  }, [profile?.currentProfile?.id]);
+    getFormatTemplatesByProfile(currentProfile!.id);
+  }, [currentProfile?.id]);
 
   // Auto-select first template or create default one if none exists
   useEffect(() => {
@@ -52,14 +52,14 @@ export default function FormatTemplatePage() {
       }
 
       // Create a default template if none exist
-      if (formatTemplates.length === 0 && profile?.currentProfile?.id) {
+      if (formatTemplates.length === 0 && currentProfile?.id) {
         try {
           setIsCreatingTemplate(true);
 
           // Create a default template with minimum required fields
           const newTemplate = await createFormatTemplate({
             name: "Default Format Template",
-            profile_id: profile.currentProfile.id,
+            profile_id: currentProfile!.id,
             config: {
               settings: {
                 trim_assistant_incomplete: false,

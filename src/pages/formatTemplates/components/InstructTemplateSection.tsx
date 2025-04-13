@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -49,7 +49,7 @@ export function InstructTemplateSection() {
   const currentTemplate = useInferenceTemplate(instructTemplateID ?? "");
   const templateList = useInferenceTemplateList();
   // const error = useTemplateError();
-  const profile = useProfile();
+  const currentProfile = useCurrentProfile();
 
   // Track if we're currently updating to prevent loops
   const isUpdating = useRef(false);
@@ -173,7 +173,7 @@ export function InstructTemplateSection() {
   const handleNewTemplate = useCallback(
     async (name: string) => {
       try {
-        if (!profile?.currentProfile?.id) {
+        if (!currentProfile?.id) {
           console.error("No profile selected");
           return;
         }
@@ -181,7 +181,7 @@ export function InstructTemplateSection() {
         const newTemplate = await createInferenceTemplate({
           name: name,
           config: defaultTemplateState,
-          profile_id: profile.currentProfile.id,
+          profile_id: currentProfile.id,
         });
 
         if (newTemplate) {
@@ -191,7 +191,7 @@ export function InstructTemplateSection() {
         console.error("Failed to create new template:", error);
       }
     },
-    [createInferenceTemplate, profile?.currentProfile?.id, defaultTemplateState],
+    [createInferenceTemplate, currentProfile?.id, defaultTemplateState],
   );
 
   const handleEditName = useCallback(

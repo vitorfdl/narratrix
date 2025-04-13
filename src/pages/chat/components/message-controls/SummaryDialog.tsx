@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
+import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { useLocalSummarySettings } from "@/utils/local-storage";
 import { MessageCircle, Settings, TextSelect } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -55,7 +56,7 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onOpenChange(false)}>
-      <DialogContent className="overflow-hidden custom-scrollbar p-4">
+      <DialogContent size="window" className="custom-scrollbar p-4">
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-1 text-lg">
             <TextSelect className="h-4 w-4 text-primary" />
@@ -71,7 +72,7 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
                   <Label htmlFor="systemPrompt" className="text-sm font-medium flex items-center gap-1">
                     <Settings className="h-3 w-3" /> System Prompt Override (optional)
                   </Label>
-                  <span className="text-xs text-muted-foreground">{currentSettings.systemPrompt?.length || 0} characters</span>
+                  <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.systemPrompt, 0) || 0} tokens</span>
                 </div>
                 <MarkdownTextArea
                   initialValue={currentSettings.systemPrompt}
@@ -89,7 +90,7 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
                   <Label htmlFor="requestPrompt" className="text-sm font-medium flex items-center gap-1">
                     <MessageCircle className="h-3 w-3" /> User Request Prompt
                   </Label>
-                  <span className="text-xs text-muted-foreground">{currentSettings.requestPrompt?.length || 0} characters</span>
+                  <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.requestPrompt, 0) || 0} tokens</span>
                 </div>
                 <MarkdownTextArea
                   initialValue={currentSettings.requestPrompt}
@@ -107,7 +108,7 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
                   <Label htmlFor="injectionPrompt" className="text-sm font-medium flex items-center gap-1">
                     <TextSelect className="h-3 w-3" /> History Injection Prompt
                   </Label>
-                  <span className="text-xs text-muted-foreground">{currentSettings.injectionPrompt?.length || 0} characters</span>
+                  <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.injectionPrompt, 0) || 0} tokens</span>
                 </div>
                 <MarkdownTextArea
                   initialValue={currentSettings.injectionPrompt}
@@ -121,11 +122,11 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
               </div>
             </div>
 
-            <div className="space-y-1 row-span-3">
+            <div className="space-y-1 row-span-3  overflow-y-auto max-h-[60vh] custom-scrollbar">
               <Label htmlFor="templateId" className="text-sm font-medium">
                 Chat Template
               </Label>
-              <div className="border border-input rounded-md overflow-y-auto">
+              <div className="border border-input rounded-md">
                 <WidgetConfig
                   currentChatTemplateID={currentSettings.chatTemplateID || null}
                   onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateID", chatTemplateId)}

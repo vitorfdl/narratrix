@@ -394,7 +394,7 @@ const WidgetMessages: React.FC = () => {
       // Execute the summarization process
       createSummary();
     },
-    [messages.length, currentChatId, currentChatActiveChapterID, addChatMessage, updateChatMessage, inferenceService, currentChatUserCharacterID],
+    [messages, currentChatId, currentChatActiveChapterID, addChatMessage, updateChatMessage, inferenceService, currentChatUserCharacterID],
   );
 
   // Add useEffect to handle editor focus when editing starts

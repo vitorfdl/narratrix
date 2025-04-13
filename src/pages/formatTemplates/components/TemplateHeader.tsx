@@ -2,7 +2,7 @@ import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { FormatTemplate, NewFormatTemplate, TemplateSettings } from "@/schema/template-format-schema";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -57,14 +57,14 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
     });
   }, 500);
 
-  const profile = useProfile();
+  const currentProfile = useCurrentProfile();
 
   // Fetch templates on component mount if not already loaded
   useEffect(() => {
     if (formatTemplates.length === 0) {
-      fetchFormatTemplates(profile?.currentProfile?.id || "");
+      fetchFormatTemplates(currentProfile?.id || "");
     }
-  }, [fetchFormatTemplates, formatTemplates.length, profile?.currentProfile?.id]);
+  }, [fetchFormatTemplates, formatTemplates.length, currentProfile?.id]);
 
   // Update current template when selectedTemplate changes
   useEffect(() => {
@@ -118,7 +118,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   const handleNewTemplate = async (name: string, sourceTemplateId?: string) => {
     let newTemplateObj: NewFormatTemplate = {
       name: name,
-      profile_id: profile?.currentProfile?.id || "",
+      profile_id: currentProfile?.id || "",
       config: {
         settings: {
           // Default settings for a brand new template
