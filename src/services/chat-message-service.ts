@@ -325,15 +325,24 @@ export async function deleteChatMessagesByFilter(filter: ChatMessageFilterWithCo
 }
 
 /**
- * Disable chat messages based on a flexible filter
+ * Update chat messages based on a flexible filter
  *
- * @param filter Object containing filter criteria for messages to disable
+ * @param filter Object containing filter criteria for messages to update
+ * @param updateData Object containing the fields to update
  * @returns Number of affected rows
  */
-export async function disableChatMessagesByFilter(filter: ChatMessageFilterWithComparison): Promise<number> {
-  // Ensure we have at least one filter condition to prevent disabling all messages
+export async function updateChatMessagesUsingFilter(
+  filter: ChatMessageFilterWithComparison,
+  updateData: Partial<UpdateChatMessageParams>,
+): Promise<number> {
+  // Ensure we have at least one filter condition to prevent updating all messages
   if (Object.keys(filter).length === 0) {
     throw new Error("At least one filter condition must be provided");
+  }
+
+  // Ensure we have at least one update field
+  if (Object.keys(updateData).length === 0) {
+    throw new Error("At least one update field must be provided");
   }
 
   const { conditions, params } = buildFilterConditions(filter);
@@ -341,11 +350,38 @@ export async function disableChatMessagesByFilter(filter: ChatMessageFilterWithC
   // Get current timestamp for update
   const now = formatDateTime();
 
-  // Add updated_at to params
-  params.push(now);
-  const paramIndex = params.length;
+  // Define field transformations
+  const fieldMapping = {
+    messages: (value: string[]) => JSON.stringify(value),
+    extra: (value: Record<string, any>) => JSON.stringify(value),
+  };
 
-  const query = `UPDATE chat_messages SET disabled = true, updated_at = $${paramIndex} WHERE ${conditions.join(" AND ")}`;
+  // Build set clauses for the update
+  const setClauses: string[] = [];
+  let paramIndex = params.length + 1;
+
+  // Process each update field
+  for (const [key, value] of Object.entries(updateData)) {
+    if (value !== undefined) {
+      // Apply field transformation if needed
+      const finalValue = fieldMapping[key as keyof typeof fieldMapping] ? fieldMapping[key as keyof typeof fieldMapping](value as any) : value;
+
+      setClauses.push(`${key} = $${paramIndex}`);
+      params.push(finalValue);
+      paramIndex++;
+    }
+  }
+
+  // Always update the updated_at timestamp
+  setClauses.push(`updated_at = $${paramIndex}`);
+  params.push(now);
+
+  // If there are no set clauses (only updated_at), return 0 affected rows
+  if (setClauses.length <= 1) {
+    return 0;
+  }
+
+  const query = `UPDATE chat_messages SET ${setClauses.join(", ")} WHERE ${conditions.join(" AND ")}`;
   const result = await executeDBQuery(query, params);
 
   return result.rowsAffected;
