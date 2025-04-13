@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { KeyboardEvent } from "react";
 import { useEffect, useState } from "react";
 
 export interface EditNameDialogProps {
@@ -48,6 +49,13 @@ export function EditNameDialog({
     onOpenChange(false);
   };
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && name.trim()) {
+      event.preventDefault(); // Prevent default form submission if applicable
+      handleSave();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="small">
@@ -67,6 +75,7 @@ export function EditNameDialog({
               className="flex-1"
               placeholder={placeholder}
               autoFocus
+              onKeyDown={handleKeyDown}
             />
           </div>
         </div>

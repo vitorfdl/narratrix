@@ -69,7 +69,7 @@ export function DestructiveConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel
-            onClick={() => {
+            onClick={(e) => {
               if (onCancel) {
                 onCancel();
               }
@@ -77,7 +77,13 @@ export function DestructiveConfirmDialog({
           >
             {cancelText}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
