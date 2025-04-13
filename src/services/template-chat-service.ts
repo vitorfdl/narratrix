@@ -8,6 +8,8 @@ export interface NewChatTemplateParams {
   profile_id: string;
   name: string;
   model_id?: string | null;
+
+  lorebook_list?: string[];
   custom_prompts?: ChatTemplateCustomPrompt[];
   config?: Record<string, any>;
 }
@@ -33,23 +35,27 @@ export async function createChatTemplate(templateData: NewChatTemplateParams): P
     name: templateData.name,
     model_id: templateData.model_id,
     custom_prompts: templateData.custom_prompts || [],
+    lorebook_list: templateData.lorebook_list || [],
     config: templateData.config || {},
     created_at: new Date(now),
     updated_at: new Date(now),
   });
 
   const configStr = JSON.stringify(validatedTemplate.config);
+  const customPromptsStr = JSON.stringify(validatedTemplate.custom_prompts);
+  const lorebookListStr = JSON.stringify(validatedTemplate.lorebook_list);
 
   await executeDBQuery(
-    `INSERT INTO chat_template (id, profile_id, name, model_id, format_template_id, custom_prompts, config, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    `INSERT INTO chat_template (id, profile_id, name, model_id, format_template_id, custom_prompts, lorebook_list, config, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
       validatedTemplate.id,
       validatedTemplate.profile_id,
       validatedTemplate.name,
       validatedTemplate.model_id,
       validatedTemplate.format_template_id,
-      validatedTemplate.custom_prompts,
+      customPromptsStr,
+      lorebookListStr,
       configStr,
       now,
       now,
@@ -66,17 +72,18 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
   const validId = uuidUtils.uuid().parse(id);
 
   const result = await selectDBQuery<any[]>(
-    `SELECT 
-      id, 
-      profile_id, 
-      name, 
-      model_id, 
+    `SELECT
+      id,
+      profile_id,
+      name,
+      model_id,
       format_template_id,
-      custom_prompts, 
+      custom_prompts,
+      lorebook_list,
       config,
-      created_at as created_at, 
+      created_at as created_at,
       updated_at as updated_at
-    FROM chat_template 
+    FROM chat_template
     WHERE id = $1`,
     [validId],
   );
@@ -96,6 +103,14 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
     template.custom_prompts = JSON.parse(template.custom_prompts);
   }
 
+  // Parse lorebook_list from string to array
+  if (typeof template.lorebook_list === "string") {
+    template.lorebook_list = JSON.parse(template.lorebook_list);
+  } else {
+    // Ensure it's an array even if null/undefined in DB for some reason
+    template.lorebook_list = template.lorebook_list || [];
+  }
+
   // Convert date strings to Date objects
   template.created_at = new Date(template.created_at);
   template.updated_at = new Date(template.updated_at);
@@ -107,15 +122,16 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
 // List chat templates with optional filtering
 export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<ChatTemplate[]> {
   let query = `
-    SELECT 
-      id, 
-      profile_id, 
-      name, 
-      model_id, 
+    SELECT
+      id,
+      profile_id,
+      name,
+      model_id,
       format_template_id,
-      custom_prompts, 
+      custom_prompts,
+      lorebook_list,
       config,
-      created_at, 
+      created_at,
       updated_at
     FROM chat_template
   `;
@@ -160,6 +176,13 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
       template.custom_prompts = JSON.parse(template.custom_prompts);
     }
 
+    // Parse lorebook_list from string to array if needed
+    if (typeof template.lorebook_list === "string") {
+      template.lorebook_list = JSON.parse(template.lorebook_list);
+    } else {
+      template.lorebook_list = template.lorebook_list || [];
+    }
+
     // Convert date strings to Date objects
     return chatTemplateSchema.parse({
       ...template,
@@ -186,6 +209,7 @@ export async function updateChatTemplate(
   const fieldMapping = {
     config: (value: any) => JSON.stringify(value),
     custom_prompts: (value: ChatTemplateCustomPrompt[]) => JSON.stringify(value),
+    lorebook_list: (value: string[]) => JSON.stringify(value),
   };
 
   // Build query parts using the utility function

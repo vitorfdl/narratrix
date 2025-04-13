@@ -1,18 +1,23 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Combobox } from "@/components/ui/combobox";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
 import { TemplatePicker } from "@/pages/formatTemplates/components/TemplatePicker";
 import type { SectionField } from "@/schema/template-chat-settings-types";
-import { ChevronDown, Layers, Layers2, PaperclipIcon, PlusIcon, ServerIcon } from "lucide-react";
+import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, PlusIcon, ServerIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useChatActions, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
+import { useLorebooks } from "@/hooks/lorebookStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
-import { useModels, useModelsActions } from "@/hooks/modelsStore";
+import { useModels } from "@/hooks/modelsStore";
 import { useFormatTemplateList } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
@@ -22,6 +27,13 @@ import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
 import { ConfigItem } from "./fields/ConfigItems";
 
+const bigScreenBreakpoints = "@[10rem]:flex";
+
+interface ChatTemplateConfigProps {
+  currentChatTemplateID?: string | null;
+  onChatTemplateChange?: (chatTemplateID: string) => void;
+}
+
 /**
  * WidgetConfig component
  *
@@ -29,19 +41,12 @@ import { ConfigItem } from "./fields/ConfigItems";
  * It allows you to add custom prompts, inference settings, and other configuration options.
  *
  */
-const WidgetConfig = ({
-  currentChatTemplateID,
-  onChatTemplateChange,
-}: { currentChatTemplateID?: string | null; onChatTemplateChange?: (chatTemplateID: string) => void }) => {
-  if (!currentChatTemplateID && !onChatTemplateChange) {
-    currentChatTemplateID = useCurrentChatTemplateID();
-  }
+const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTemplateConfigProps) => {
   const chatTemplateList = useChatTemplateList();
-  const currentTemplate = useChatTemplate(currentChatTemplateID || "");
   const { updateChatTemplate } = useChatTemplateActions();
   const models = useModels();
-  const { fetchModels } = useModelsActions();
   const formatTemplates = useFormatTemplateList();
+  const lorebooks = useLorebooks();
 
   const profile = useProfile();
   const profileId = profile!.currentProfile!.id;
@@ -51,19 +56,18 @@ const WidgetConfig = ({
   const [, setSelectedField] = useState<string>("");
   const [selectedModelId, setSelectedModelId] = useState<string>("none");
   const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string>("none");
+  const [selectedLorebookList, setSelectedLorebookList] = useState<string[]>([]);
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
   const [maxDepth, setMaxDepth] = useState<number>(100);
 
+  if (!currentChatTemplateID && !onChatTemplateChange) {
+    currentChatTemplateID = useCurrentChatTemplateID();
+  }
+  const currentTemplate = useChatTemplate(currentChatTemplateID || "");
+
   // Add debounce timer ref
   const saveTimeoutRef = useRef<number | null>(null);
-
-  // Fetch models on component mount
-  useEffect(() => {
-    if (profileId) {
-      fetchModels({ profile_id: profileId });
-    }
-  }, [profileId]);
 
   // Initialize state from current template
   useEffect(() => {
@@ -76,6 +80,11 @@ const WidgetConfig = ({
       // Set inference template ID if available
       if (currentTemplate.format_template_id) {
         setSelectedFormatTemplateId(currentTemplate.format_template_id);
+      }
+
+      // Set lorebooks if available
+      if (currentTemplate.lorebook_list) {
+        setSelectedLorebookList(currentTemplate.lorebook_list);
       }
 
       // Set context size and response length from config
@@ -111,6 +120,7 @@ const WidgetConfig = ({
       setResponseLength(1024);
       setMaxDepth(100);
       setCustomPrompts([]);
+      setSelectedLorebookList([]);
     }
   }, [currentTemplate?.id]);
 
@@ -118,6 +128,7 @@ const WidgetConfig = ({
   const manifestId = useMemo(() => {
     return models.find((model) => model.id === selectedModelId)?.manifest_id;
   }, [models, selectedModelId]);
+
   const selectedModelManifest = useModelManifestById(manifestId || "");
   const availableInferenceFields = useMemo(() => selectedModelManifest?.inference_fields || [], [selectedModelManifest]);
 
@@ -133,6 +144,20 @@ const WidgetConfig = ({
       name: template.name,
     }));
   }, [chatTemplateList]);
+
+  const formatTemplateOptions = useMemo(() => {
+    return formatTemplates.map((template) => ({
+      label: template.name,
+      value: template.id,
+    }));
+  }, [formatTemplates]);
+
+  const lorebookOptions = useMemo(() => {
+    return lorebooks.map((lorebook) => ({
+      label: lorebook.name,
+      value: lorebook.id,
+    }));
+  }, [lorebooks]);
 
   // Check if component should be disabled (no template selected)
   const isDisabled = !currentChatTemplateID;
@@ -160,6 +185,7 @@ const WidgetConfig = ({
       profile_id: profileId,
       name,
       model_id: null,
+      lorebook_list: [],
       config: {
         max_tokens: 4096,
         max_context: 4096 * 2,
@@ -238,21 +264,13 @@ const WidgetConfig = ({
       .sort((a, b) => (a.disabled ? 1 : 0) - (b.disabled ? 1 : 0));
   }, [activeFields, selectedModelId, availableInferenceFields, isDisabled]);
 
-  const modelOptions = useMemo(() => {
-    return models
-      .filter((model: Model) => model.type === "llm")
-      .map((model: Model) => ({
-        label: model.name,
-        value: model.id,
-      }));
-  }, [models]);
-
-  const formatTemplateOptions = useMemo(() => {
-    return formatTemplates.map((template) => ({
-      label: template.name,
-      value: template.id,
+  const modelOptions = models
+    .filter((model: Model) => model.type === "llm")
+    .map((model: Model) => ({
+      label: model.name,
+      value: model.id,
     }));
-  }, [formatTemplates]);
+
   /**
    * Handles adding a field to the active fields list.
    *
@@ -345,6 +363,7 @@ const WidgetConfig = ({
       updateChatTemplate(currentChatTemplateID, {
         model_id: selectedModelId || null,
         format_template_id: selectedFormatTemplateId || null,
+        lorebook_list: selectedLorebookList,
         config: configValues,
         custom_prompts: customPrompts,
       });
@@ -365,7 +384,17 @@ const WidgetConfig = ({
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [selectedModelId, selectedFormatTemplateId, contextSize, responseLength, maxDepth, values, customPrompts, currentChatTemplateID]);
+  }, [
+    selectedModelId,
+    selectedFormatTemplateId,
+    selectedLorebookList,
+    contextSize,
+    responseLength,
+    maxDepth,
+    values,
+    customPrompts,
+    currentChatTemplateID,
+  ]);
 
   // Custom prompts handlers
   const handleAddCustomPrompt = () => {
@@ -428,7 +457,7 @@ const WidgetConfig = ({
   };
 
   return (
-    <div className="space-y-1 p-1">
+    <div className="space-y-1 p-1 @container">
       {/* Template Picker Section */}
       <div className="space-y-1 mb-3 mx-1">
         <TemplatePicker
@@ -451,7 +480,7 @@ const WidgetConfig = ({
 
       {/* Model Selection Section */}
       <div className={`p-1 space-y-2 bg-foreground/5 rounded-lg ${isDisabled ? "opacity-50" : ""}`}>
-        <div className="flex items-center gap-2">
+        <div className={`${bigScreenBreakpoints} items-center gap-2`}>
           <div className="flex items-center gap-1">
             <ServerIcon className="!h-3 !w-3" />
             <h3 className="text-xs font-normal my-auto">Model:</h3>
@@ -479,7 +508,7 @@ const WidgetConfig = ({
         </div>
 
         {/* Format Template Selection */}
-        <div className="flex items-center gap-2">
+        <div className={`${bigScreenBreakpoints} items-center gap-2`}>
           <div className="flex items-center gap-1">
             <PaperclipIcon className="!h-3 !w-3" />
             <h3 className="text-xs font-normal my-auto">Format:</h3>
@@ -506,8 +535,74 @@ const WidgetConfig = ({
           </div>
         </div>
 
+        {/* Lorebook Selection */}
+        <div className={`${bigScreenBreakpoints} items-center gap-2`}>
+          <div className="flex items-center gap-1">
+            <BookOpenCheck className="!h-3 !w-3" />
+            <h3 className="text-xs font-normal my-auto">Lorebooks:</h3>
+          </div>
+          <div className="flex-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-xs px-2 h-auto min-h-7" disabled={isDisabled}>
+                  <div className="flex gap-1 flex-wrap items-center">
+                    {selectedLorebookList.length > 0 ? (
+                      selectedLorebookList.map((lorebookId) => {
+                        const lorebook = lorebooks.find((lb) => lb.id === lorebookId);
+                        return (
+                          <Badge
+                            variant="default"
+                            key={lorebookId}
+                            className="px-1 py-0 rounded-sm text-[10px] flex items-center gap-0.5"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent popover from closing
+                              setSelectedLorebookList((prev) => prev.filter((id) => id !== lorebookId));
+                            }}
+                          >
+                            {lorebook?.name || lorebookId}
+                            <XIcon className="h-2 w-2" />
+                          </Badge>
+                        );
+                      })
+                    ) : (
+                      <span className="text-muted-foreground">Select lorebooks...</span>
+                    )}
+                  </div>
+                  <ChevronDown className="ml-auto !h-3 !w-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search lorebooks..." className="h-8 text-xs" />
+                  <CommandList>
+                    <CommandEmpty>No lorebooks found.</CommandEmpty>
+                    <CommandGroup>
+                      {lorebookOptions.map((option) => {
+                        const isSelected = selectedLorebookList.includes(option.value);
+                        return (
+                          <CommandItem
+                            key={option.value}
+                            value={option.value}
+                            className="text-xs"
+                            onSelect={() => {
+                              setSelectedLorebookList((prev) => (isSelected ? prev.filter((id) => id !== option.value) : [...prev, option.value]));
+                            }}
+                          >
+                            <Checkbox checked={isSelected} className="mr-2 h-4 w-4" />
+                            <span>{option.label}</span>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
         {/* Context Size */}
-        <div className="space-y-2 items-center gap-2 pb-4">
+        <div className={`${bigScreenBreakpoints} items-center gap-2 pb-4`}>
           <div className="w-1/3 flex items-center gap-1 col-span-2">
             <h3 className="text-xs font-normal">Context Size:</h3>
             <HelpTooltip>Defines the total token limit for the model's input history. Excess history is truncated.</HelpTooltip>
@@ -527,7 +622,7 @@ const WidgetConfig = ({
         </div>
 
         {/* Response Length */}
-        <div className="flex items-center gap-2">
+        <div className={`${bigScreenBreakpoints} items-center gap-2`}>
           <div className="w-1/3 flex items-center gap-1">
             <h3 className="text-xs font-normal">Response Length:</h3>
             <HelpTooltip>Sets the maximum number of tokens the model is allowed to generate in a single response.</HelpTooltip>
@@ -546,7 +641,7 @@ const WidgetConfig = ({
         </div>
 
         {/* Max Depth */}
-        <div className="flex items-center gap-2">
+        <div className={`${bigScreenBreakpoints} items-center gap-2`}>
           <div className="w-1/3 flex items-center gap-1">
             <h3 className="text-xs font-normal">Max Depth:</h3>
             <HelpTooltip>Limits the number of recent messages included in the context sent to the model. Older messages are dropped.</HelpTooltip>
@@ -571,7 +666,7 @@ const WidgetConfig = ({
 
       {/* Custom Prompts Section */}
       <div className={`space-y-2 mb-4 ${isDisabled ? "opacity-50" : ""}`}>
-        <div className="flex justify-between items-center py-2">
+        <div className="flex justify-between items-center py-2 @sm:ml-2">
           <div className="flex items-center gap-1">
             <Layers className="!h-3 !w-3" />
             <h3 className="text-xs font-normal my-auto">Custom Prompts</h3>
@@ -601,7 +696,7 @@ const WidgetConfig = ({
 
       {/* Inference Settings Section */}
       <div className={`${isDisabled ? "opacity-50" : ""}`}>
-        <div className="flex justify-between items-center py-2">
+        <div className="flex justify-between items-center py-2 @sm:ml-2">
           <div className="flex items-center gap-1">
             <Layers2 className="!h-3 !w-3" />
             <h3 className="text-xs font-normal my-auto">Inference Settings</h3>

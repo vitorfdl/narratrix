@@ -116,7 +116,7 @@ export function TemplatePicker({
               <Button
                 variant="outline"
                 role="combobox"
-                className="w-full h-8 justify-between text-sm font-bold focus:border-none"
+                className="w-full h-8 justify-between text-xs text-foreground focus:border-none ring-primary/25 ring-1"
                 disabled={!hasTemplates || disabled}
               >
                 {selectedTemplate ? selectedTemplate.name : hasTemplates ? "Select Template" : "No templates available"}
@@ -134,12 +134,20 @@ export function TemplatePicker({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="text-sm">
-              <DropdownMenuItem onClick={handleNewTemplateClick}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNewTemplateClick();
+                }}
+              >
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                 New Template
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => selectedTemplateId && onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  selectedTemplateId && onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId);
+                }}
                 disabled={!selectedTemplateId}
                 className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
               >
@@ -147,19 +155,31 @@ export function TemplatePicker({
                 Duplicate
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={handleEditNameClick}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleEditNameClick();
+                }}
                 disabled={!selectedTemplateId}
                 className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
               >
                 <Edit className="h-3.5 w-3.5 mr-1.5" />
                 Edit Name
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onImport} disabled={true}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onImport();
+                }}
+                disabled={true}
+              >
                 <FileDown className="h-3.5 w-3.5 mr-1.5" />
                 Import
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={handleExport}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleExport();
+                }}
                 disabled={!selectedTemplateId || true}
                 className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
               >
@@ -167,7 +187,10 @@ export function TemplatePicker({
                 Export
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={handleDeleteClick}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDeleteClick();
+                }}
                 disabled={!selectedTemplateId}
                 className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
               >
@@ -182,7 +205,10 @@ export function TemplatePicker({
               variant="outline"
               size="sm"
               className="h-8 w-8 p-0"
-              onClick={handleEditNameClick}
+              onClick={(e) => {
+                e.preventDefault();
+                handleEditNameClick();
+              }}
               disabled={!selectedTemplateId || disabled}
               title="Edit Template Name"
             >
@@ -193,7 +219,10 @@ export function TemplatePicker({
               variant="outline"
               size="sm"
               className="h-8 w-8 p-0"
-              onClick={handleNewTemplateClick}
+              onClick={(e) => {
+                e.preventDefault();
+                handleNewTemplateClick();
+              }}
               title="Create New Template"
               disabled={disabled}
             >
@@ -209,19 +238,31 @@ export function TemplatePicker({
 
               <DropdownMenuContent align="end" className="text-sm">
                 <DropdownMenuItem
-                  onClick={() => selectedTemplateId && onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    selectedTemplateId && onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId);
+                  }}
                   disabled={!selectedTemplateId}
                   className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
                 >
                   <CopyPlus className="h-3.5 w-3.5 mr-1.5" />
                   Duplicate
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onImport} disabled={true}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onImport();
+                  }}
+                  disabled={true}
+                >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
                   Import
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={handleExport}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleExport();
+                  }}
                   disabled={!selectedTemplateId || true}
                   className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
                 >
@@ -229,7 +270,10 @@ export function TemplatePicker({
                   Export
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={handleDeleteClick}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleDeleteClick();
+                  }}
                   disabled={!selectedTemplateId}
                   className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
                 >

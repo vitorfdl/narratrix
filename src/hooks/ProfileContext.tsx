@@ -7,6 +7,7 @@ import { useTheme } from "./ThemeContext";
 import { useCharacterActions } from "./characterStore";
 import { useChatActions } from "./chatStore";
 import { useChatTemplateActions } from "./chatTemplateStore";
+import { useLorebookStoreActions } from "./lorebookStore";
 import { useModelManifestsActions } from "./manifestStore";
 import { useTemplateActions } from "./templateStore";
 import { useImageUrl } from "./useImageUrl";
@@ -110,6 +111,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const { fetchCharacters } = useCharacterActions();
   const { fetchChatList } = useChatActions();
   const { fetchChatTemplates } = useChatTemplateActions();
+  const { loadLorebooks } = useLorebookStoreActions();
   const { setTheme } = useTheme();
 
   // Use the useImageUrl hook to manage the current profile's avatar URL
@@ -156,6 +158,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         fetchChatTemplates({ profile_id: state.currentProfile.id });
         fetchCharacters(state.currentProfile.id);
         fetchChatList(state.currentProfile.id);
+        loadLorebooks(state.currentProfile.id);
       }
       setTheme(state.currentProfile.settings.appearance.theme || "system");
     } else {
