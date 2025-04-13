@@ -27,7 +27,7 @@ const RenderKey: React.FC<{ shortcutKey: ShortcutKey; kbdClass: string }> = ({ s
       // Currently only supports Command icon
       return (
         <kbd className={kbdClass}>
-          <Command className="w-3.5 h-3.5" />
+          <Command className="w-4 h-4" />
         </kbd>
       );
     case "separator":
@@ -40,7 +40,8 @@ const RenderKey: React.FC<{ shortcutKey: ShortcutKey; kbdClass: string }> = ({ s
 export const NoMessagePlaceholder: React.FC = () => {
   const { currentProfile } = useProfile();
 
-  const kbdClass = "px-2 py-1 text-xs font-sans font-semibold text-muted-foreground bg-muted border border-border rounded-md";
+  const kbdClass =
+    "px-2 py-1 text-xs font-sans font-semibold text-muted-foreground bg-muted border border-border rounded-md min-w-[2.5rem] h-[1.75rem] inline-flex items-center justify-center";
   const sendShortcut = currentProfile?.settings.chat.sendShortcut || "Ctrl+Enter"; // Default to Ctrl+Enter
   const shortcutParts = sendShortcut.split("+");
   const mainKey = shortcutParts.pop();
@@ -82,6 +83,24 @@ export const NoMessagePlaceholder: React.FC = () => {
             { type: "key", value: "W" },
           ],
         },
+        {
+          label: "Create New Tab",
+          keys: [
+            { type: "key", value: "Ctrl" },
+            { type: "separator", value: "/" },
+            { type: "icon", value: "Command" },
+            { type: "key", value: "T" },
+          ],
+        },
+        {
+          label: "Switch to Next Tab",
+          keys: [
+            { type: "key", value: "Ctrl" },
+            { type: "separator", value: "/" },
+            { type: "icon", value: "Command" },
+            { type: "key", value: "Tab" },
+          ],
+        },
       ],
     },
     {
@@ -119,7 +138,7 @@ export const NoMessagePlaceholder: React.FC = () => {
                   {" "}
                   {/* Improved key uniqueness */}
                   <span className="mr-2 whitespace-nowrap">{shortcut.label}</span>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {shortcut.keys.map((key, keyIndex) => (
                       // Use a more robust key including section, shortcut label, and key index
                       <RenderKey

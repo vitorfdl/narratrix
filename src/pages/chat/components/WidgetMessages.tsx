@@ -4,6 +4,7 @@ import {
   useCurrentChatActiveChapterID,
   useCurrentChatId,
   useCurrentChatMessages,
+  useCurrentChatParticipants,
   useCurrentChatUserCharacterID,
 } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
@@ -13,7 +14,7 @@ import { toast } from "sonner";
 
 import { useCharacters } from "@/hooks/characterStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
-import { disableChatMessagesByFilter } from "@/services/chat-message-service";
+import { ChatMessage, updateChatMessagesUsingFilter } from "@/services/chat-message-service";
 import MessageItem from "./message-controls/MessageItem";
 import MidMessageLayerWrapper from "./message-controls/MidMessageLayerWrapper";
 import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
@@ -33,8 +34,9 @@ const WidgetMessages: React.FC = () => {
   const currentChatActiveChapterID = useCurrentChatActiveChapterID();
   const characters = useCharacters();
   const messages = useCurrentChatMessages();
-  const { updateChatMessage, addChatMessage } = useChatActions();
+  const { updateChatMessage, addChatMessage, fetchChatMessages } = useChatActions();
   const setSelectedText = useExpressionStore((state) => state.setSelectedText);
+  const currentChatParticipants = useCurrentChatParticipants();
 
   const [isEditingID, setIsEditingID] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
@@ -207,14 +209,6 @@ const WidgetMessages: React.FC = () => {
     }
   }, [inferenceService, messages, streamingMessageId]);
 
-  // Check if a message has reasoning data
-  const hasReasoning = useCallback(
-    (messageId: string) => {
-      return !!messageReasonings[messageId];
-    },
-    [messageReasonings],
-  );
-
   // Update streaming state when messages change
   useEffect(() => {
     // Initial sync when messages change
@@ -265,13 +259,26 @@ const WidgetMessages: React.FC = () => {
     }
   }, []);
 
+  // Check if a message has reasoning data
+  const hasReasoning = useCallback(
+    (messageId: string) => {
+      return !!messageReasonings[messageId];
+    },
+    [messageReasonings],
+  );
+
   // Initial scroll to the bottom when component mounts
   useEffect(() => {
-    // Use 'auto' for the initial scroll to avoid animation on page load
-    setTimeout(() => {
+    // Immediate scroll first
+    scrollToBottom("auto");
+
+    // Safety check for any dynamically loaded content
+    const safetyCheck = setTimeout(() => {
       scrollToBottom("auto");
-    }, 1000);
-  }, [scrollToBottom]);
+    }, 100);
+
+    return () => clearTimeout(safetyCheck);
+  }, [scrollToBottom, currentChatId]);
 
   // Add selection handler
   const handleMessageSelection = useCallback(
@@ -295,29 +302,30 @@ const WidgetMessages: React.FC = () => {
   );
 
   const handleSummarizeMessages = useCallback(
-    (messageBefore: string, settings: SummarySettings) => {
+    async (messageBefore: string, settings: SummarySettings) => {
+      const messageUpdatedList = await fetchChatMessages();
       // Find the message with the given ID to get its position
-      const targetMessage = messages.find((m) => m.id === messageBefore);
-      if (!targetMessage) {
+      const targetIndex = messageUpdatedList.findIndex((m) => m.id === messageBefore);
+      if (targetIndex === -1) {
         toast.error("Message not found");
         return;
       }
+      const targetMessage = messageUpdatedList[targetIndex];
 
       // Find the last system message with summary script if any
-      const lastSummaryIndex = messages.findIndex(
+      const lastSummaryIndex = structuredClone(messageUpdatedList).findIndex(
         (msg) => msg.type === "system" && msg.extra?.script === "summary" && msg.position <= targetMessage.position,
       );
 
       // Determine the start position (either after the last summary or from the beginning)
       const startIndex = lastSummaryIndex !== -1 ? lastSummaryIndex + 1 : 0;
-      const targetIndex = messages.findIndex((m) => m.id === messageBefore);
       if (targetIndex <= startIndex) {
         toast.error("Cannot summarize. Target message must be after the selected range start.");
         return;
       }
 
       // Get all messages that need to be summarized
-      const messagesToSummarize = messages.slice(startIndex, targetIndex + 1);
+      const messagesToSummarize = messageUpdatedList.slice(startIndex, targetIndex + 1);
       if (messagesToSummarize.length === 0) {
         toast.error("No messages to summarize");
         return;
@@ -326,24 +334,31 @@ const WidgetMessages: React.FC = () => {
       // Create the summarization request
       const createSummary = async () => {
         try {
-          await disableChatMessagesByFilter({
-            chat_id: currentChatId,
-            chapter_id: currentChatActiveChapterID!,
-            position_lte: targetMessage.position,
-            not_type: "system",
-          });
+          await updateChatMessagesUsingFilter(
+            {
+              chat_id: currentChatId,
+              chapter_id: currentChatActiveChapterID!,
+              position_lte: targetMessage.position,
+              not_type: "system",
+            },
+            { disabled: true },
+          );
+
+          const extra: ChatMessage["extra"] = {
+            script: "summary",
+            startPosition: messageUpdatedList[startIndex].position,
+            endPosition: targetMessage.position,
+          };
+
+          const nextCharacterID = currentChatParticipants?.find((p) => p.enabled)?.id || currentChatUserCharacterID;
 
           // Create a new system message for the summary
           const summaryMessage = await addChatMessage({
-            character_id: null,
+            character_id: nextCharacterID || "",
             type: "system",
             messages: ["Generating summary..."],
             position: targetMessage.position + 1,
-            extra: {
-              script: "summary",
-              startPosition: startIndex,
-              endPosition: targetMessage.position,
-            },
+            extra,
           });
 
           // Generate a summary using the inference service
@@ -354,7 +369,7 @@ const WidgetMessages: React.FC = () => {
               messageIndex: 0,
               userMessage: settings.requestPrompt,
               chatTemplateID: settings.chatTemplateID || undefined,
-              characterId: currentChatUserCharacterID || "",
+              characterId: nextCharacterID || "",
               systemPromptOverride: settings.systemPrompt || undefined,
               quietUserMessage: true,
               extraSuggestions: {},
@@ -365,7 +380,7 @@ const WidgetMessages: React.FC = () => {
             console.error("Error generating summary:", error);
             toast.error("Failed to generate summary");
 
-            // Update the summary message to show the error
+            // Update the summary message to show the erro
             await updateChatMessage(summaryMessage.id, {
               messages: ["Failed to generate summary. Please try again."],
             });
@@ -379,7 +394,7 @@ const WidgetMessages: React.FC = () => {
       // Execute the summarization process
       createSummary();
     },
-    [messages, currentChatId, currentChatActiveChapterID, addChatMessage, updateChatMessage, inferenceService, currentChatUserCharacterID],
+    [messages.length, currentChatId, currentChatActiveChapterID, addChatMessage, updateChatMessage, inferenceService, currentChatUserCharacterID],
   );
 
   // Add useEffect to handle editor focus when editing starts

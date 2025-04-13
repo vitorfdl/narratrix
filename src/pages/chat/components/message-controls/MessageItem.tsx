@@ -72,7 +72,7 @@ const MessageItem = ({
 }: MessageItemProps) => {
   // Inside MessageItem.tsx
   const characters = useCharacters();
-  const { urlMap: avatarUrlMap } = useCharacterAvatars();
+  const { urlMap: avatarUrlMap, isLoading: isAvatarLoading } = useCharacterAvatars();
   const { currentProfileAvatarUrl } = useProfile();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const { updateChatMessage, deleteChatMessage } = useChatActions();
@@ -175,16 +175,6 @@ const MessageItem = ({
   const handleSave = async () => {
     await handleSaveEdit(message.id);
   };
-
-  // if (isAvatarLoading) {
-  //   return (
-  //     <div data-message-id={message.id} className={containerClassName}>
-  //       <div className="flex justify-center items-center h-36">
-  //         <Loader2 className="w-4 h-4 animate-spin" />
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   return (
     <>

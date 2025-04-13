@@ -6,7 +6,7 @@ import { SummaryDialog, SummarySettings } from "@/pages/chat/components/message-
 import { ChatMessage, deleteChatMessagesByFilter } from "@/services/chat-message-service";
 import { useLocalSummarySettings } from "@/utils/local-storage";
 import { BookUp2, LinkIcon, MergeIcon, ScissorsIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface MidMessageLayerControlProps {
   messageBefore: ChatMessage;
@@ -33,9 +33,14 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
     });
 
     setIsDeleteDialogOpen(false);
-    setIsHovered(false);
     fetchChatMessages();
   };
+
+  useEffect(() => {
+    setTimeout(() => {
+      setIsHovered(false);
+    }, 800); // Just a animation delay
+  }, [isMergeDialogOpen, isSummaryDialogOpen, isDeleteDialogOpen]);
 
   const handleMerge = async () => {
     try {
@@ -69,7 +74,6 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
 
       // Close dialog and reset hover state
       setIsMergeDialogOpen(false);
-      setIsHovered(false);
 
       // Refetch messages to update the UI (though store actions might already do this)
       fetchChatMessages();
@@ -88,7 +92,6 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
     if (runNow && onSummarize) {
       onSummarize(messageBefore.id, settings);
     }
-    setIsHovered(false);
   };
 
   return (

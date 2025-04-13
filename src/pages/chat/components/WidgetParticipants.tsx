@@ -9,6 +9,7 @@ import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants, use
 import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
+import { Character } from "@/schema/characters-schema";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -162,6 +163,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
 
 const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
   const characterList = useCharacters();
+  const [isEditing, setIsEditing] = useState(false);
   const { currentProfileAvatarUrl, currentProfile } = useProfile();
   const [isEditCharacterModalOpen, setIsEditCharacterModalOpen] = useState<string | null>(null);
 
@@ -358,9 +360,10 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
 
       <Dialog open={isEditCharacterModalOpen !== null} onOpenChange={(open: boolean) => setIsEditCharacterModalOpen(open ? null : null)}>
         <DialogTrigger asChild>{/* The avatar click handlers will now trigger the modal */}</DialogTrigger>
-        <DialogContent className="max-w-[90vw] xl:max-w-[70vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent size="large" onInteractOutside={(e) => isEditing && e.preventDefault()}>
           <CharacterForm
-            initialData={characterList.find((char) => char.id === isEditCharacterModalOpen)}
+            initialData={characterList.find((char) => char.id === isEditCharacterModalOpen) as Character}
+            setIsEditing={setIsEditing}
             mode="edit"
             onSuccess={() => {
               setIsEditCharacterModalOpen(null);
