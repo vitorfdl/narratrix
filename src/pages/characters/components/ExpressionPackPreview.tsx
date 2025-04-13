@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterActions, useCharacterById } from "@/hooks/characterStore";
 import { useMultipleImageUrls } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
@@ -51,7 +51,8 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
   const character = useCharacterById(character_id) as Character | undefined;
   const expressions = character?.expressions;
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
+
   // Memoize getter functions for useMultipleImageUrls
   const getExpressionPath = useCallback((expression: Expression) => expression.image_path, []);
   const getExpressionId = useCallback((expression: Expression) => expression.id, []);

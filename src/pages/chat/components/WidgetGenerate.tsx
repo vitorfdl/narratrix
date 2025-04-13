@@ -1,6 +1,6 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
@@ -29,8 +29,8 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const textAreaRef = useRef<MDXEditorMethods>(null);
   // Track history navigation
 
-  const profile = useProfile();
-  const sendCommand = profile.currentProfile?.settings.chat.sendShortcut;
+  const currentProfile = useCurrentProfile();
+  const sendCommand = currentProfile?.settings.chat.sendShortcut;
   const participants = useCurrentChatParticipants();
   const chatMessages = useCurrentChatMessages();
 

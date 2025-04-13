@@ -1,36 +1,76 @@
 import type { AppSettings } from "@/schema/profiles-schema";
-import { useLocalTheme } from "@/utils/local-storage";
-import React, { createContext, useContext, useEffect } from "react";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-type Theme = AppSettings["appearance"]["theme"];
+// Type definition for theme
+export type Theme = AppSettings["appearance"]["theme"];
 
-interface ThemeContextType {
+// Interface for the theme store
+interface ThemeState {
+  // State
   theme: Theme;
+
+  // Actions
   setTheme: (theme: Theme) => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+/**
+ * Theme store implemented with zustand
+ * Uses localStorage persistence to maintain theme preference
+ */
+export const useThemeStore = create<ThemeState>()(
+  persist(
+    (set) => ({
+      // Initial state
+      theme: "system",
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useLocalTheme();
+      // Actions
+      setTheme: (theme) => {
+        set({ theme });
 
-  useEffect(() => {
-    // Handle system theme preference
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      document.documentElement.classList.toggle("dark", systemTheme === "dark");
-    } else {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-    }
-  }, [theme]);
+        // Apply theme to document
+        if (theme === "system") {
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          document.documentElement.classList.toggle("dark", systemTheme === "dark");
+        } else {
+          document.documentElement.classList.toggle("dark", theme === "dark");
+        }
+      },
+    }),
+    {
+      name: "theme-storage",
+    },
+  ),
+);
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+/**
+ * Initialize theme on app load
+ * This function needs to be called once when the app starts
+ */
+export function initializeTheme(): void {
+  const { theme } = useThemeStore.getState();
+
+  // Apply theme to document
+  if (theme === "system") {
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.classList.toggle("dark", systemTheme === "dark");
+
+    // Setup listener for system theme changes
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+      if (useThemeStore.getState().theme === "system") {
+        document.documentElement.classList.toggle("dark", e.matches);
+      }
+    });
+  } else {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }
 }
 
+/**
+ * Legacy useTheme hook for backward compatibility
+ * @deprecated Use useThemeStore directly instead
+ */
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
+  const { theme, setTheme } = useThemeStore();
+  return { theme, setTheme };
 }

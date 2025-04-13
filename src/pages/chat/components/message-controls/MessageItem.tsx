@@ -1,5 +1,5 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
@@ -73,7 +73,8 @@ const MessageItem = ({
   // Inside MessageItem.tsx
   const characters = useCharacters();
   const { urlMap: avatarUrlMap, isLoading: isAvatarLoading } = useCharacterAvatars();
-  const { currentProfileAvatarUrl } = useProfile();
+  const currentProfile = useCurrentProfile();
+  const currentProfileAvatarUrl = currentProfile?.avatar_path;
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const { updateChatMessage, deleteChatMessage } = useChatActions();
 

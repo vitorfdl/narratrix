@@ -2,15 +2,19 @@ import React, { useEffect } from "react";
 import Content from "./components/layout/Content";
 import Sidebar from "./components/layout/Sidebar";
 import { Toaster } from "./components/ui/sonner";
-import { ProfileProvider, useProfile } from "./hooks/ProfileContext";
-import { ThemeProvider } from "./hooks/ThemeContext";
+import { useCurrentProfile, useInitializeProfiles, useIsAuthenticated, useProfileSynchronization } from "./hooks/ProfileStore";
+import { initializeTheme } from "./hooks/ThemeContext";
 import ProfilePicker from "./pages/profileLogin/ProfilePage";
 import { InferenceProvider } from "./providers/InferenceProvider";
 import { checkForUpdates } from "./services/updater";
 
 const AppContent: React.FC = () => {
-  const { currentProfile, isAuthenticated } = useProfile();
+  const currentProfile = useCurrentProfile();
+  const isAuthenticated = useIsAuthenticated();
   const [activeSection, setActiveSection] = React.useState<string>("models");
+
+  // Initialize profile synchronization
+  useProfileSynchronization();
 
   // Show Profile Picker if no profile is logged in
   if (!currentProfile || !isAuthenticated) {
@@ -27,19 +31,22 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  // Initialize profiles on app startup
+  useInitializeProfiles();
+
   useEffect(() => {
+    // Initialize theme system
+    initializeTheme();
+
+    // Check for updates
     checkForUpdates();
   }, []);
 
   return (
-    <ThemeProvider>
-      <ProfileProvider>
-        <InferenceProvider>
-          <AppContent />
-          <Toaster richColors closeButton position="bottom-right" />
-        </InferenceProvider>
-      </ProfileProvider>
-    </ThemeProvider>
+    <InferenceProvider>
+      <AppContent />
+      <Toaster richColors closeButton position="bottom-right" />
+    </InferenceProvider>
   );
 };
 

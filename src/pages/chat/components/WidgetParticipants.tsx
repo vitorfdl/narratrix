@@ -3,9 +3,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
@@ -164,7 +165,8 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
 const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
   const characterList = useCharacters();
   const [isEditing, setIsEditing] = useState(false);
-  const { currentProfileAvatarUrl, currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
+  const { url: currentProfileAvatarUrl, reload: reloadAvatarImage } = useImageUrl(currentProfile?.avatar_path);
   const [isEditCharacterModalOpen, setIsEditCharacterModalOpen] = useState<string | null>(null);
 
   const messages = useCurrentChatMessages();

@@ -1,4 +1,4 @@
-import { useTheme } from "@/hooks/ThemeContext";
+import { useThemeStore } from "@/hooks/ThemeContext";
 import { cn } from "@/lib/utils";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { CompletionContext, CompletionResult, autocompletion } from "@codemirror/autocomplete";
@@ -54,7 +54,7 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const isInitialMount = useRef(true);
     const isUserEditing = useRef(false);
-    const { theme } = useTheme();
+    const { theme } = useThemeStore();
     const [generationInputHistory] = useLocalGenerationInputHistory();
 
     // Determine if dark mode is active
@@ -226,7 +226,7 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
       <div className={className} ref={containerRef}>
         {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
         <div
-          className={cn("flex-1 relative input-fields overflow-y-auto", className, isDarkMode && "dark")}
+          className={cn("flex-1 relative input-fields bg-muted overflow-y-auto", className, isDarkMode && "dark")}
           onFocus={handleFocus}
           onBlur={handleBlur}
         >

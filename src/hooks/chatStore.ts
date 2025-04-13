@@ -52,7 +52,7 @@ interface chatState {
     // Messages
     addChatMessage: (message: AddChatMessageParams) => Promise<ChatMessage>;
     deleteChatMessage: (messageId: string) => Promise<void>;
-    updateChatMessage: (messageId: string, message: Partial<UpdateChatMessageParams>) => Promise<ChatMessage>;
+    updateChatMessage: (messageId: string, message: Partial<UpdateChatMessageParams>, forceUpdate?: boolean) => Promise<ChatMessage>;
     fetchChatMessages: (chatId?: string, chapterId?: string) => Promise<ChatMessage[]>;
 
     // Chapters
@@ -478,9 +478,7 @@ export const useChatStore = create<chatState>((set, get) => ({
           throw new Error(`Failed to update message with ID ${messageId}`);
         }
 
-        if (persist) {
-          await get().actions.fetchChatMessages();
-        }
+        await get().actions.fetchChatMessages();
         return updatedMessage;
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to update message");

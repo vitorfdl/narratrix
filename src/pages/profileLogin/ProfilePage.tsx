@@ -1,5 +1,5 @@
 import { ProfileListItem } from "@/schema/profiles-schema";
-import { LockIcon, PlusCircleIcon, TrashIcon, UserCircleIcon } from "lucide-react";
+import { Loader2, LockIcon, PlusCircleIcon, TrashIcon, UserCircleIcon } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -15,13 +15,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { Card, CardContent } from "../../components/ui/card.tsx";
-import { MAX_PROFILES, useProfile } from "../../hooks/ProfileContext.tsx";
+import { MAX_PROFILES, useProfileActions, useProfileLoading, useProfiles } from "../../hooks/ProfileStore.tsx";
 import { useMultipleImageUrls } from "../../hooks/useImageUrl";
 import NewProfileDialog from "./components/NewProfileDialog.tsx";
 import PasswordDialog from "./components/PasswordDialog.tsx";
 
 const ProfilePicker: React.FC = () => {
-  const { profiles, login, removeProfile } = useProfile();
+  const { login, removeProfile } = useProfileActions();
+  const profiles = useProfiles();
+  const isProfileLoading = useProfileLoading();
   const [showNewProfileDialog, setShowNewProfileDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -114,69 +116,76 @@ const ProfilePicker: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-full items-center justify-center bg-background select-none">
-      <div className="w-full max-w-5xl p-8 flex flex-col items-center">
-        <h1 className="text-4xl font-bold mb-10 text-foreground">Who's the Game Master?</h1>
+      {isProfileLoading ? (
+        <div className="text-foreground text-xl flex flex-col items-center">
+          <Loader2 className="w-10 h-10 animate-spin" />
+          <h1 className="text-2xl font-bold">Loading profiles...</h1>
+        </div>
+      ) : (
+        <div className="w-full max-w-5xl p-8 flex flex-col items-center">
+          <h1 className="text-4xl font-bold mb-10 text-foreground">Who's the Game Master?</h1>
 
-        <div className="flex flex-wrap justify-center gap-8 mb-12">
-          {profiles.map((profile) => (
-            <div key={profile.id} className="relative">
+          <div className="flex flex-wrap justify-center gap-8 mb-12">
+            {profiles.map((profile) => (
+              <div key={profile.id} className="relative">
+                <Card
+                  className={`w-32 border-none transition-all ${
+                    isManageMode ? "cursor-default opacity-80" : "hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"
+                  }`}
+                  onClick={() => handleProfileClick(profile.id)}
+                >
+                  <CardContent className="flex flex-col items-center p-3 pt-3">
+                    <Avatar className="w-24 h-24 mb-3 rounded-full">
+                      <AvatarImage src={urlMap[profile.id] || ""} alt={profile.name} />
+                      <AvatarFallback>
+                        <UserCircleIcon className="w-full h-full text-muted-foreground" />
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <span className="text-foreground text-center break-words w-full">{profile.name}</span>
+
+                    {profile.hasPassword && !isManageMode && (
+                      <span className="absolute -top-0 -right-2 rounded-full w-8 h-8 p-0">
+                        <LockIcon size={20} className="inline text-primary" />
+                      </span>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {isManageMode && (
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="absolute -top-2 -right-2 rounded-full w-8 h-8 p-0"
+                    onClick={(e) => initiateProfileDelete(profile.id, e)}
+                    aria-label={`Delete ${profile.name}`}
+                  >
+                    <TrashIcon size={20} />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            {profiles.length < MAX_PROFILES && isManageMode && (
               <Card
-                className={`w-32 border-none transition-all ${
-                  isManageMode ? "cursor-default opacity-80" : "hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"
-                }`}
-                onClick={() => handleProfileClick(profile.id)}
+                className={"w-32 border-none transition-all hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"}
+                onClick={() => setShowNewProfileDialog(true)}
               >
                 <CardContent className="flex flex-col items-center p-3 pt-3">
-                  <Avatar className="w-24 h-24 mb-3 rounded-full">
-                    <AvatarImage src={urlMap[profile.id] || ""} alt={profile.name} />
-                    <AvatarFallback>
-                      <UserCircleIcon className="w-full h-full text-muted-foreground" />
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <span className="text-foreground text-center break-words w-full">{profile.name}</span>
-
-                  {profile.hasPassword && !isManageMode && (
-                    <span className="absolute -top-0 -right-2 rounded-full w-8 h-8 p-0">
-                      <LockIcon size={20} className="inline text-primary" />
-                    </span>
-                  )}
+                  <div className="w-24 h-24 mb-3 rounded-full flex items-center justify-center">
+                    <PlusCircleIcon className="w-12 h-12 text-primary" />
+                  </div>
+                  <span className="text-foreground text-center break-words w-full">New Profile</span>
                 </CardContent>
               </Card>
+            )}
+          </div>
 
-              {isManageMode && (
-                <Button
-                  size="icon"
-                  variant="destructive"
-                  className="absolute -top-2 -right-2 rounded-full w-8 h-8 p-0"
-                  onClick={(e) => initiateProfileDelete(profile.id, e)}
-                  aria-label={`Delete ${profile.name}`}
-                >
-                  <TrashIcon size={20} />
-                </Button>
-              )}
-            </div>
-          ))}
-
-          {profiles.length < MAX_PROFILES && isManageMode && (
-            <Card
-              className={"w-32 border-none transition-all hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"}
-              onClick={() => setShowNewProfileDialog(true)}
-            >
-              <CardContent className="flex flex-col items-center p-3 pt-3">
-                <div className="w-24 h-24 mb-3 rounded-full flex items-center justify-center">
-                  <PlusCircleIcon className="w-12 h-12 text-primary" />
-                </div>
-                <span className="text-foreground text-center break-words w-full">New Profile</span>
-              </CardContent>
-            </Card>
-          )}
+          <Button onClick={() => setIsManageMode(!isManageMode)} variant={isManageMode ? "default" : "outline"} size="lg" className={"px-8"}>
+            {isManageMode ? "Done" : "Manage Profiles"}
+          </Button>
         </div>
-
-        <Button onClick={() => setIsManageMode(!isManageMode)} variant={isManageMode ? "default" : "outline"} size="lg" className={"px-8"}>
-          {isManageMode ? "Done" : "Manage Profiles"}
-        </Button>
-      </div>
+      )}
 
       {/* New Profile Dialog */}
       <NewProfileDialog open={showNewProfileDialog} onClose={() => setShowNewProfileDialog(false)} canClose={profiles.length > 0} />

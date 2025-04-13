@@ -3,7 +3,7 @@ import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirm
 import { EditNameDialog } from "@/components/shared/EditNameDialog";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
 import type { Chat } from "@/schema/chat-schema";
 import { ChatTab, CreateChatParams } from "@/schema/chat-schema";
@@ -17,7 +17,7 @@ import { GridLayout } from "./components/GridLayout";
 
 export default function ChatPage() {
   // Get the current profile ID - replace this with your actual method of getting the profile ID
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
   const profileId = currentProfile!.id;
 
   // Add loading state

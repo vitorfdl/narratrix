@@ -5,7 +5,7 @@ import { Checkbox } from "../../../components/ui/checkbox.tsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog.tsx";
 import { Input } from "../../../components/ui/input.tsx";
 import { Label } from "../../../components/ui/label.tsx";
-import { useProfile } from "../../../hooks/ProfileContext.tsx";
+import { useProfileActions } from "../../../hooks/ProfileStore.tsx";
 import { saveAvatarImage } from "../../../services/file-system-service.ts";
 
 interface NewProfileDialogProps {
@@ -15,7 +15,7 @@ interface NewProfileDialogProps {
 }
 
 const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canClose = true }) => {
-  const { addProfile } = useProfile();
+  const { addProfile } = useProfileActions();
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
   const [hasPassword, setHasPassword] = useState(false);

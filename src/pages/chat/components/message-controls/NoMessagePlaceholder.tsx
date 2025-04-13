@@ -1,4 +1,4 @@
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { Command } from "lucide-react";
 import React from "react";
 
@@ -38,7 +38,7 @@ const RenderKey: React.FC<{ shortcutKey: ShortcutKey; kbdClass: string }> = ({ s
 };
 
 export const NoMessagePlaceholder: React.FC = () => {
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
 
   const kbdClass =
     "px-2 py-1 text-xs font-sans font-semibold text-muted-foreground bg-muted border border-border rounded-md min-w-[2.5rem] h-[1.75rem] inline-flex items-center justify-center";

@@ -1,7 +1,7 @@
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
 import { Plus } from "lucide-react";
@@ -25,7 +25,7 @@ export default function Models() {
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
 
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
-  const profile = useProfile();
+  const currentProfile = useCurrentProfile();
   const { getModelsByProfileGroupedByType, deleteModel, updateModel } = useModelsActions();
   const { fetchManifests } = useModelManifestsActions();
   const [modelGroups, setModelGroups] = useState<ModelGroup[]>([]);
@@ -34,8 +34,8 @@ export default function Models() {
 
   useEffect(() => {
     const loadModels = async () => {
-      if (profile.currentProfile?.id) {
-        const groupedModels = await getModelsByProfileGroupedByType(profile.currentProfile.id);
+      if (currentProfile?.id) {
+        const groupedModels = await getModelsByProfileGroupedByType(currentProfile.id);
 
         // Transform the record into an array of groups for rendering
         const groups: ModelGroup[] = Object.entries(groupedModels).map(([type, models]) => ({
@@ -51,7 +51,7 @@ export default function Models() {
     // Fetch manifests as they might be needed for model details
     fetchManifests();
     loadModels();
-  }, [profile.currentProfile?.id]);
+  }, [currentProfile?.id]);
 
   const getModelTypeTitle = (type: ModelType): string => {
     const titles: Record<ModelType, string> = {
@@ -80,7 +80,7 @@ export default function Models() {
 
     try {
       const success = await deleteModel(selectedModel.id);
-      if (success && profile.currentProfile?.id) {
+      if (success && currentProfile?.id) {
         refreshModels();
       }
     } catch (error) {
@@ -91,9 +91,9 @@ export default function Models() {
   };
 
   const refreshModels = async () => {
-    if (profile.currentProfile?.id) {
+    if (currentProfile?.id) {
       // Refresh the models list
-      const groupedModels = await getModelsByProfileGroupedByType(profile.currentProfile.id);
+      const groupedModels = await getModelsByProfileGroupedByType(currentProfile.id);
       const groups: ModelGroup[] = Object.entries(groupedModels).map(([type, models]) => ({
         type: type as ModelType,
         title: getModelTypeTitle(type as ModelType),

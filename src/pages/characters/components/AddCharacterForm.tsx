@@ -10,7 +10,7 @@ import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterActions, useCharacterTagList } from "@/hooks/characterStore";
 import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
@@ -220,7 +220,7 @@ function LorebookContent({
 export function CharacterForm({ onSuccess, initialData, mode = "create", setIsEditing }: CharacterFormProps) {
   const isEditMode = mode === "edit";
   const { createCharacter, updateCharacter } = useCharacterActions();
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
   const profileId = currentProfile!.id;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const tagList = useCharacterTagList();

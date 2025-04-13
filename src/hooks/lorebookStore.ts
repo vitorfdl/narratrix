@@ -67,6 +67,7 @@ export const useLorebookStore = create<LorebookState>()(
             const lorebooks = await lorebookService.listLorebooks({ profile_id: profileId });
             set({ lorebooks, isLoadingLorebooks: false });
           } catch (err: any) {
+            console.log("err", err);
             set({ error: `Failed to load lorebooks: ${err.message}`, isLoadingLorebooks: false });
           }
         },
@@ -74,7 +75,6 @@ export const useLorebookStore = create<LorebookState>()(
           set({ error: null });
           try {
             const newLorebook = await lorebookService.createLorebook(data);
-            console.log("newLorebook", newLorebook);
             set((state) => ({
               lorebooks: [...state.lorebooks, newLorebook],
             }));

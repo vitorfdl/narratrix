@@ -4,7 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterActions, useCharacterAvatars, useCharacters, useCharactersLoading } from "@/hooks/characterStore";
 import { Character, CharacterUnion } from "@/schema/characters-schema";
 import { useLocalCharactersPagesSettings } from "@/utils/local-storage";
@@ -42,7 +42,7 @@ export default function Characters() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterUnion | null>(null);
   const [search, setSearch] = useState("");
-  const profile = useProfile();
+  const currentProfile = useCurrentProfile();
 
   // // Load characters on mount
   // useEffect(() => {
@@ -69,7 +69,7 @@ export default function Characters() {
   };
 
   const handleRefresh = () => {
-    fetchCharacters(profile.currentProfile!.id);
+    fetchCharacters(currentProfile!.id);
     // Also refresh all avatar images when refreshing characters
     reloadAvatars();
   };
@@ -202,7 +202,7 @@ export default function Characters() {
               setIsEditing={setIsEditing}
               onSuccess={() => {
                 setCreateDialogOpen(false);
-                fetchCharacters(profile.currentProfile!.id);
+                fetchCharacters(currentProfile!.id);
                 reloadAvatars();
                 setIsEditing(false);
               }}

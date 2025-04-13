@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useProfile } from "@/hooks/ProfileContext";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useModelManifests, useModelManifestsActions, useModelManifestsLoading } from "@/hooks/manifestStore";
 import { useModelsActions } from "@/hooks/modelsStore";
 import { useInference } from "@/hooks/useInference";
@@ -27,7 +27,7 @@ interface ModelFormProps {
 }
 
 export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
-  const { currentProfile } = useProfile();
+  const currentProfile = useCurrentProfile();
   const profileId = currentProfile!.id;
   const { fetchManifests } = useModelManifestsActions();
   const manifests = useModelManifests();
