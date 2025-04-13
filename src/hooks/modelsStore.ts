@@ -47,11 +47,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
         set({ isLoading: true, error: null });
         const newModel = await createModelAPI(modelData);
 
-        // Update the store with the new model
-        set((state) => ({
-          models: [...state.models, newModel],
-          isLoading: false,
-        }));
+        await get().actions.fetchModels();
 
         return newModel;
       } catch (error) {
@@ -103,11 +99,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
         const updatedModel = await updateModelAPI(id, updateData);
 
         if (updatedModel) {
-          // Update the model in our store
-          set((state) => ({
-            models: state.models.map((model) => (model.id === id ? updatedModel : model)),
-            isLoading: false,
-          }));
+          await get().actions.fetchModels();
         } else {
           set({ isLoading: false });
         }
