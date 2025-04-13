@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useProfile } from "@/hooks/ProfileContext";
 import { useCharacterActions, useCharacterAvatars, useCharacters, useCharactersLoading } from "@/hooks/characterStore";
-import { CharacterUnion } from "@/schema/characters-schema";
+import { Character, CharacterUnion } from "@/schema/characters-schema";
 import { useLocalCharactersPagesSettings } from "@/utils/local-storage";
-import { Plus, RefreshCw, SortAsc, View } from "lucide-react";
+import { Plus, RefreshCw, Search, SortAsc, View } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CharacterForm } from "./components/AddCharacterForm";
 import { CharacterCard } from "./components/CharacterCard";
@@ -31,6 +32,7 @@ export default function Characters() {
   const isLoadingCharacters = useCharactersLoading();
   const { fetchCharacters, deleteCharacter } = useCharacterActions();
   const [settings, setSettings] = useLocalCharactersPagesSettings();
+  const [isEditing, setIsEditing] = useState(false);
 
   // Use the avatar loading hook for optimized image loading
   const { urlMap: avatarUrlMap, isLoading: isLoadingAvatars, reloadAll: reloadAvatars } = useCharacterAvatars();
@@ -102,7 +104,10 @@ export default function Characters() {
 
       <div className="flex flex-1 flex-col">
         <div className="flex items-center gap-1 border-b p-4">
-          <Input autoFocus placeholder="Search characters..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full" />
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-1 h-4 w-4 text-muted-foreground" />
+            <Input autoFocus placeholder="Search characters..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+          </div>
           <Button variant="outline" size="icon" onClick={handleRefresh}>
             <RefreshCw className={`h-4 w-4 ${isLoadingCharacters || isLoadingAvatars ? "animate-spin" : ""}`} />
           </Button>
@@ -138,27 +143,25 @@ export default function Characters() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
+          <Select
+            defaultValue={`${settings.sort.field}-${settings.sort.direction}`}
+            onValueChange={(value) => {
+              const [field, direction] = value.split("-") as ["name" | "type" | "updated_at" | "created_at", "asc" | "desc"];
+              setSettings((prev) => ({ ...prev, sort: { field, direction } }));
+            }}
+          >
+            <SelectTrigger noChevron className="w-[30px] p-2">
+              <SelectValue>
                 <SortAsc className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setSettings((prev) => ({ ...prev, sort: { field: "name", direction: "asc" } }))}>
-                Name (A-Z)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSettings((prev) => ({ ...prev, sort: { field: "name", direction: "desc" } }))}>
-                Name (Z-A)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSettings((prev) => ({ ...prev, sort: { field: "type", direction: "asc" } }))}>
-                Type (A-Z)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSettings((prev) => ({ ...prev, sort: { field: "updated_at", direction: "desc" } }))}>
-                Recently Updated
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="type-asc">Type (A-Z)</SelectItem>
+              <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex-1 overflow-auto p-4">
@@ -190,16 +193,18 @@ export default function Characters() {
               Add Character / Agent
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent size="large" onInteractOutside={(e) => isEditing && e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Add New Character / Agent</DialogTitle>
             </DialogHeader>
             <CharacterForm
               mode="create"
+              setIsEditing={setIsEditing}
               onSuccess={() => {
                 setCreateDialogOpen(false);
                 fetchCharacters(profile.currentProfile!.id);
                 reloadAvatars();
+                setIsEditing(false);
               }}
             />
           </DialogContent>
@@ -207,19 +212,28 @@ export default function Characters() {
 
         {/* Edit Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="max-w-[90vw] xl:max-w-[70vw] max-h-[90vh] overflow-y-auto">
+          <DialogContent
+            size="large"
+            onInteractOutside={(e) => {
+              if (isEditing) {
+                e.preventDefault();
+              }
+            }}
+          >
             <DialogHeader>
               <DialogTitle>Edit {selectedCharacter?.type === "character" ? "Character" : "Agent"}</DialogTitle>
             </DialogHeader>
             {selectedCharacter && (
               <CharacterForm
                 mode="edit"
-                initialData={selectedCharacter}
+                initialData={selectedCharacter as Character}
+                setIsEditing={setIsEditing}
                 onSuccess={() => {
                   setEditDialogOpen(false);
                   setSelectedCharacter(null);
                   // Reload avatar images after editing
                   reloadAvatars();
+                  setIsEditing(false);
                 }}
               />
             )}
