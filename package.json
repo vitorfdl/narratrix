@@ -74,7 +74,6 @@
     "react-resizable-panels": "^2.1.7",
     "react-resizeable": "^0.2.6",
     "react-syntax-highlighter": "^15.6.1",
-    "react-textarea-autocomplete": "^0.0.4",
     "react-virtuoso": "^4.12.6",
     "recharts": "^2.15.2",
     "rehype-highlight": "^7.0.2",

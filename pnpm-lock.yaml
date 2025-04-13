@@ -200,9 +200,6 @@ importers:
       react-syntax-highlighter:
         specifier: ^15.6.1
         version: 15.6.1(react@18.3.1)
-      react-textarea-autocomplete:
-        specifier: ^0.0.4
-        version: 0.0.4(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-virtuoso:
         specifier: ^4.12.6
         version: 4.12.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -3069,13 +3066,6 @@ packages:
     peerDependencies:
       react: '>= 0.14.0'
 
-  react-textarea-autocomplete@0.0.4:
-    resolution: {integrity: sha512-QOYVr3Z+jvUVScwFdvHR8vOk+Ar0ucSbIo5EiaSjImLuJUEWVFrCnIMLgambj5d1ED0fSw1ZQIBPv3duIGdeEw==}
-    peerDependencies:
-      prop-types: ^15.6.2
-      react: ^16.5.2
-      react-dom: ^16.5.2
-
   react-transition-group@4.4.5:
     resolution: {integrity: sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==}
     peerDependencies:
@@ -3252,9 +3242,6 @@ packages:
     resolution: {integrity: sha512-w33E2aCvSDP0tW9RZuNXadXlkHXqFzSkQew/aIa2i/Sj8fThxwovwlXHSPXTbAHwEIhBFXAedUhP2tueAKP8Og==}
     engines: {node: '>=14.0.0'}
     hasBin: true
-
-  textarea-caret@3.1.0:
-    resolution: {integrity: sha512-cXAvzO9pP5CGa6NKx0WYHl+8CHKZs8byMkt3PCJBCmq2a34YA9pO1NrQET5pzeqnBjBdToF5No4rrmkDUgQC2Q==}
 
   thenify-all@1.6.0:
     resolution: {integrity: sha512-RNxQH/qI8/t3thXJDwcstUO4zeqo64+Uy/+sNVRBx4Xn2OX+OZ9oP+iJnNFqplFra2ZUVeKCSa2oVWi3T4uVmA==}
@@ -6834,13 +6821,6 @@ snapshots:
       react: 18.3.1
       refractor: 3.6.0
 
-  react-textarea-autocomplete@0.0.4(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      prop-types: 15.8.1
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      textarea-caret: 3.1.0
-
   react-transition-group@4.4.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@babel/runtime': 7.27.0
@@ -7098,8 +7078,6 @@ snapshots:
       sucrase: 3.35.0
     transitivePeerDependencies:
       - ts-node
-
-  textarea-caret@3.1.0: {}
 
   thenify-all@1.6.0:
     dependencies:
