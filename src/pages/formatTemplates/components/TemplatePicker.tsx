@@ -47,7 +47,6 @@ export function TemplatePicker({
   const [isEditTemplateDialogOpen, setIsEditTemplateDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
-  const [editedTemplateName, setEditedTemplateName] = useState("");
 
   // Handler functions
   const handleNewTemplateClick = () => {
@@ -57,7 +56,6 @@ export function TemplatePicker({
 
   const handleEditNameClick = () => {
     if (selectedTemplate) {
-      setEditedTemplateName(selectedTemplate.name);
       setIsEditTemplateDialogOpen(true);
     }
   };
@@ -80,7 +78,6 @@ export function TemplatePicker({
     if (selectedTemplateId && newName.trim()) {
       onEditName(selectedTemplateId, newName.trim());
       setIsEditTemplateDialogOpen(false);
-      setEditedTemplateName("");
     }
   };
 
