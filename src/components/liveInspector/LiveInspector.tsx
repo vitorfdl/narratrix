@@ -1,13 +1,14 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useConsoleStoreRequests } from "@/hooks/consoleStore";
+import { useConsoleStoreActions, useConsoleStoreRequests } from "@/hooks/consoleStore";
 import { useModels } from "@/hooks/modelsStore";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { Inbox, SearchX } from "lucide-react";
+import { Inbox, SearchX, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Separator } from "../ui/separator";
 import { Parameters } from "./tabs/ParametersTab";
@@ -27,6 +28,7 @@ export const markdownClass = cn("p-3 rounded text-xs font-mono w-auto max-w-[90v
 
 export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%" }) => {
   const requests = useConsoleStoreRequests();
+  const { clearHistory } = useConsoleStoreActions();
   const modelList = useModels();
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(requests.length > 0 ? requests[0].id : null);
   const [activeTab, setActiveTab] = useState("payload");
@@ -59,40 +61,54 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
       </CardHeader>
       <ResizablePanelGroup direction="horizontal" className="min-h-[70vh]" style={{ maxHeight }}>
         <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
-          <ScrollArea className="h-full custom-scrollbar">
-            <div className="p-2">
-              {requests.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground p-4 text-center">
-                  <Inbox className="w-10 h-10 mb-3" />
-                  <span className="text-sm">No requests captured yet.</span>
-                </div>
-              )}
-              {requests.map((request) => (
-                <React.Fragment key={request.id}>
-                  <Separator className="my-2" />
-                  <div
-                    className={`px-3 py-2.5 cursor-pointer transition-colors rounded-md hover:bg-accent ${
-                      selectedRequestId === request.id
-                        ? "bg-accent text-accent-foreground font-semibold border-l-2 border-primary"
-                        : "border-l-2 border-transparent"
-                    }`}
-                    onClick={() => setSelectedRequestId(request.id)}
-                  >
-                    <div className="flex justify-between items-center gap-2">
-                      <div className="text-sm font-medium truncate">{formatTimestamp(request.timestamp)}</div>
-                      <Badge className="text-xs flex-shrink-0" variant="secondary">
-                        {modelList.find((model) => model.id === request.modelSpecs.id)?.name}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{request.fullResponse}</div>
-                    <div className="text-xs text-muted-foreground/80 mt-1 italic">
-                      {formatDistanceToNow(new Date(request.timestamp), { addSuffix: true })}
-                    </div>
-                  </div>
-                </React.Fragment>
-              ))}
+          <div className="flex flex-col h-full">
+            <div className="p-2 flex justify-end border-b">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1"
+                onClick={() => clearHistory()}
+                disabled={requests.length === 0}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Clear History
+              </Button>
             </div>
-          </ScrollArea>
+            <ScrollArea className="h-full custom-scrollbar">
+              <div className="p-2">
+                {requests.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground p-4 text-center">
+                    <Inbox className="w-10 h-10 mb-3" />
+                    <span className="text-sm">No requests captured yet.</span>
+                  </div>
+                )}
+                {requests.map((request) => (
+                  <React.Fragment key={request.id}>
+                    <Separator className="my-2" />
+                    <div
+                      className={`px-3 py-2.5 cursor-pointer transition-colors rounded-md hover:bg-accent ${
+                        selectedRequestId === request.id
+                          ? "bg-accent text-accent-foreground font-semibold border-l-2 border-primary"
+                          : "border-l-2 border-transparent"
+                      }`}
+                      onClick={() => setSelectedRequestId(request.id)}
+                    >
+                      <div className="flex justify-between items-center gap-2">
+                        <div className="text-sm font-medium truncate">{formatTimestamp(request.timestamp)}</div>
+                        <Badge className="text-xs flex-shrink-0" variant="secondary">
+                          {modelList.find((model) => model.id === request.modelSpecs.id)?.name}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{request.fullResponse}</div>
+                      <div className="text-xs text-muted-foreground/80 mt-1 italic">
+                        {formatDistanceToNow(new Date(request.timestamp), { addSuffix: true })}
+                      </div>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
