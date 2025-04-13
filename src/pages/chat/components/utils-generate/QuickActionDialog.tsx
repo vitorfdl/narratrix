@@ -78,7 +78,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onOpenChange(false)}>
-      <DialogContent className="overflow-hidden custom-scrollbar p-4">
+      <DialogContent className="overflow-hidden custom-scrollbar p-4" size="window">
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-1 text-lg">
             <MessageSquarePlus className="h-4 w-4 text-primary" />
@@ -141,49 +141,49 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                     <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
                       <RadioGroupItem value="textarea" id="textarea" />
                       <Label htmlFor="textarea" className="cursor-pointer text-sm">
-                        Stream to Generation Input Field
+                        Stream to Generation Input
                       </Label>
                     </div>
                     <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
                       <RadioGroupItem value="userMessage" id="userMessage" />
                       <Label htmlFor="userMessage" className="cursor-pointer text-sm">
-                        Stream as User Message
+                        Stream as User
                       </Label>
                     </div>
                     <div className="flex items-center space-x-1 p-1 rounded-md hover:bg-secondary/50 transition-colors">
                       <RadioGroupItem value="participantMessage" id="participantMessage" />
                       <Label htmlFor="participantMessage" className="cursor-pointer text-sm">
-                        Stream as Participant Message
+                        Stream as Participant
                       </Label>
                     </div>
                   </RadioGroup>
-                </div>
 
-                {currentAction.streamOption === "participantMessage" && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="space-y-1 pl-4"
-                  >
-                    <Label htmlFor="participantMessageType" className="text-sm font-medium">
-                      Participant Message Type
-                    </Label>
-                    <Select
-                      value={currentAction.participantMessageType || "new"}
-                      onValueChange={(value: "new" | "swap") => handleFieldChange("participantMessageType", value)}
+                  {currentAction.streamOption === "participantMessage" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-1 mt-2"
                     >
-                      <SelectTrigger className="w-full h-8">
-                        <SelectValue placeholder="Select message type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">New Message</SelectItem>
-                        <SelectItem value="swap">Swap Last Message / New Message</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </motion.div>
-                )}
+                      <Label htmlFor="participantMessageType" className="text-sm font-medium">
+                        Participant Message Type
+                      </Label>
+                      <Select
+                        value={currentAction.participantMessageType || "new"}
+                        onValueChange={(value: "new" | "swap") => handleFieldChange("participantMessageType", value)}
+                      >
+                        <SelectTrigger className="w-full h-8">
+                          <SelectValue placeholder="Select message type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">New Message</SelectItem>
+                          <SelectItem value="swap">Swap Last Message / New Message</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -198,7 +198,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                 key={currentAction.id ? `userPrompt-${currentAction.id}` : "new-userPrompt"}
                 initialValue={currentAction.userPrompt || ""}
                 editable={true}
-                className="min-h-[100px] max-h-[20vh]"
+                className="max-h-[20vh]"
                 suggestions={promptReplacementSuggestionList}
                 onChange={(value) => handleFieldChange("userPrompt", value)}
                 placeholder="Enter the prompt that will be sent when this action is triggered..."
