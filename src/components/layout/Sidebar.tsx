@@ -1,13 +1,13 @@
 import {
-  Book, // for Lorebooks
-  Brain, // for Inference Templates
-  Dog, // for Models
+  Book,
+  BoxIcon, // for Models
   Heart, // for Patreon
   Menu,
   MessageCircle, // for Discord
-  MessageSquare, // for Chat/Worlds
+  MessageSquare,
+  NotebookTabs, // for Chat/Worlds
   Settings, // for Settings
-  Users, // for Character and Agents
+  Users,
 } from "lucide-react";
 // src/components/layout/Sidebar.tsx
 import { useEffect, useRef, useState } from "react";
@@ -116,11 +116,11 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) =>
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const mainNavItems: NavItem[] = [
-    { id: "models", label: "Models", icon: <Dog className="w-5 h-5" />, isMainNav: true },
+    { id: "models", label: "Models", icon: <BoxIcon className="w-5 h-5" />, isMainNav: true },
     {
       id: "inference",
       label: "Formatting Templates",
-      icon: <Brain className="w-5 h-5" />,
+      icon: <NotebookTabs className="w-5 h-5" />,
       isMainNav: true,
     },
     {
@@ -131,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) =>
     },
     {
       id: "characters",
-      label: "Character and Agents",
+      label: "Characters",
       icon: <Users className="w-5 h-5" />,
       isMainNav: true,
     },
