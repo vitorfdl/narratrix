@@ -146,11 +146,11 @@ export function createSystemPrompt(
     prompts = prompts.filter((prompt) => prompt.type !== "user-context");
   }
 
-  if (lorebookContent?.lorebook_top) {
+  if (!lorebookContent?.lorebook_top) {
     prompts = prompts.filter((prompt) => prompt.type !== "lorebook-top");
   }
 
-  if (lorebookContent?.lorebook_bottom) {
+  if (!lorebookContent?.lorebook_bottom) {
     prompts = prompts.filter((prompt) => prompt.type !== "lorebook-bottom");
   }
 
@@ -221,6 +221,15 @@ export async function formatPrompt(config: PromptFormatterConfig) {
   const lorebookContent = await getLorebookContent(LoreBookOrder, LorebookBudget, processedMessages);
   processedMessages = processLorebookMessages(processedMessages, lorebookContent.messages);
 
+  config.chatConfig = {
+    ...config.chatConfig,
+    extra: {
+      ...config.chatConfig?.extra,
+      "lorebook.top": lorebookContent.replacers.lorebook_top,
+      "lorebook.bottom": lorebookContent.replacers.lorebook_bottom,
+    },
+  };
+
   if (config.formatTemplate?.config.settings.merge_messages_on_user) {
     processedMessages = mergeMessagesOnUser(structuredClone(processedMessages));
   } else if (config.formatTemplate?.config.settings.merge_subsequent_messages) {
@@ -229,7 +238,6 @@ export async function formatPrompt(config: PromptFormatterConfig) {
 
   // Step 3: Create system prompt
   const rawSystemPrompt = config.systemOverridePrompt || createSystemPrompt(config.formatTemplate, config.chatConfig, lorebookContent.replacers);
-
   const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 
   return applyContextLimit(formattedPrompt, {
