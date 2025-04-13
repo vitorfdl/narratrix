@@ -50,7 +50,7 @@ export function EditNameDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent size="small">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">{title}</DialogTitle>
           <DialogDescription className="text-base mt-2">{description}</DialogDescription>

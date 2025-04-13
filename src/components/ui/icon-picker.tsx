@@ -295,7 +295,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
         <TooltipProvider key={icon.name}>
           <Tooltip>
             <TooltipTrigger
-              className={cn("p-2 rounded-md border hover:bg-foreground/10 transition", "flex items-center justify-center")}
+              className={cn("p-2 rounded-md border hover:bg-foreground/10 transition", "flex items-center justify-center aspect-square")}
               onClick={() => handleIconClick(icon.name as IconName)}
             >
               <IconRenderer name={icon.name as IconName} />
@@ -339,7 +339,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
 
             if (item.type === "category") {
               return (
-                <div key={virtualItem.key} style={itemStyle} className="top-0 bg-background z-10">
+                <div key={virtualItem.key} style={itemStyle} className="top-0 z-10">
                   <h3 className="font-medium text-sm capitalize">{categorizedIcons[item.categoryIndex].name}</h3>
                   <div className="h-[1px] bg-foreground/10 w-full" />
                 </div>
@@ -394,10 +394,10 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
             </Button>
           )}
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-2">
-          {searchable && <Input placeholder={searchPlaceholder} onChange={handleSearchChange} className="mb-2" />}
-          {categorized && search.trim() === "" && <div className="flex flex-row gap-1 mt-2 overflow-x-auto pb-2">{categoryButtons}</div>}
-          <div ref={parentRef} className="max-h-60 overflow-auto" style={{ scrollbarWidth: "thin" }}>
+        <PopoverContent className="w-80 p-4 bg-background">
+          {searchable && <Input placeholder={searchPlaceholder} onChange={handleSearchChange} className="mb-3" />}
+          {categorized && search.trim() === "" && <div className="flex flex-row gap-1 mt-2 mb-3 overflow-x-auto pb-2">{categoryButtons}</div>}
+          <div ref={parentRef} className="max-h-64 overflow-auto pr-2" style={{ scrollbarWidth: "auto" }}>
             {isLoading ? <IconsColumnSkeleton /> : renderVirtualContent()}
           </div>
         </PopoverContent>
