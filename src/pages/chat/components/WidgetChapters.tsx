@@ -328,10 +328,7 @@ const WidgetChapters = () => {
       <div
         ref={setNodeRef}
         style={style}
-        className={cn(
-          "flex items-center py-1 px-1 rounded-lg border mb-2",
-          chapter.id === activeChapterId ? "bg-primary/10 border-primary" : "bg-card",
-        )}
+        className={cn("flex items-center py-0 px-1 rounded-lg border", chapter.id === activeChapterId ? "bg-primary/10 border-primary" : "bg-card")}
       >
         <div {...attributes} {...listeners} className="mr-2 cursor-grab">
           <GripVertical className="!h-5 !w-5 text-muted-foreground" />
@@ -339,17 +336,17 @@ const WidgetChapters = () => {
 
         <div className="flex-1 gap-0.5 min-w-0 cursor-pointer" onClick={() => handleSwitchChapter(chapter.id)}>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-sm text-muted-foreground">#{chapter.sequence}</span>
-            <h3 className="font-semibold text-sm truncate">{chapter.title}</h3>
+            <span className="font-medium text-xs text-muted-foreground">#{chapter.sequence}</span>
+            <h3 className="font-semibold text-xs truncate">{chapter.title}</h3>
           </div>
           {chapter.scenario && (
-            <p className="text-xs italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">{chapter.scenario}</p>
+            <p className="text-[0.58rem] italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">{chapter.scenario}</p>
           )}
         </div>
 
         <div className="flex items-center gap-2 ml-4">
           {chapter.id === activeChapterId && (
-            <Badge variant="outline" className="bg-primary/20 text-primary p-0.5 border-primary">
+            <Badge variant="outline" className="bg-primary/20 text-primary p-0.5 text-[0.5rem] font-mono border-primary">
               Active
             </Badge>
           )}
@@ -455,7 +452,7 @@ const WidgetChapters = () => {
                   New Chapter
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent size="window">
                 <DialogHeader>
                   <DialogTitle>Create New Chapter</DialogTitle>
                   <DialogDescription>Add a new chapter to your narrative. You can configure additional settings after creation.</DialogDescription>
@@ -507,7 +504,7 @@ const WidgetChapters = () => {
 
       {/* Edit Chapter Dialog */}
       <Dialog open={isEditingChapter} onOpenChange={setIsEditingChapter}>
-        <DialogContent>
+        <DialogContent size="window">
           <DialogHeader>
             <DialogTitle>Edit Chapter</DialogTitle>
             <DialogDescription>Update your chapter settings and configuration.</DialogDescription>
