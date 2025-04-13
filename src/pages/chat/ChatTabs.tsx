@@ -46,6 +46,12 @@ export function ChatTabs({
         const nextIndex = (currentIndex + 1) % tabs.length;
         onTabChange(tabs[nextIndex].id);
       }
+
+      // Create Tab
+      if ((e.metaKey || e.ctrlKey) && e.key === "t") {
+        e.preventDefault();
+        onNewChat();
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
