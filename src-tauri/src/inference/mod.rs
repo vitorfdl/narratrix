@@ -160,9 +160,6 @@ impl InferenceQueueManager {
         let app_handle = self.app_handle.clone();
         let runtime = self.runtime.clone();
 
-        // Clone for the spawn task
-        let model_id_for_task = model_id.clone();
-
         // Create a channel for the queue
         let (sender, mut receiver) = mpsc::channel::<InferenceRequest>(100);
 
@@ -192,7 +189,6 @@ impl InferenceQueueManager {
                 };
 
                 let request_clone = request.clone();
-                let model_id_clone = model_id_for_task.clone();
                 let app_handle_clone = app_handle.clone();
                 let active_tasks = active_tasks_clone.clone();
                 let is_empty = is_empty_clone.clone();

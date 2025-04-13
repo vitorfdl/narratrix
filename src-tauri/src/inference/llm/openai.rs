@@ -1,17 +1,23 @@
 use crate::inference::{InferenceRequest, ModelSpecs};
 use anyhow::{anyhow, Context, Result};
 use async_openai::{
+    error::OpenAIError,
     types::{
         ChatCompletionRequestAssistantMessage, ChatCompletionRequestAssistantMessageContent,
         ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
         ChatCompletionRequestSystemMessageContent, ChatCompletionRequestUserMessage,
-        ChatCompletionRequestUserMessageContent, CreateChatCompletionRequest,
-        CreateChatCompletionRequestArgs,
+        ChatCompletionRequestUserMessageContent,
     },
     Client,
 };
 use futures::StreamExt;
-use std::collections::HashMap;
+use futures_core::Stream;
+use serde_json::{json, Value};
+use std::{collections::HashMap, pin::Pin};
+
+// Type aliases for BYOT responses
+type OpenAIValue = Value;
+type OpenAIStream = Pin<Box<dyn Stream<Item = Result<OpenAIValue, OpenAIError>> + Send>>;
 
 // Initialize OpenAI client with credentials from model specs
 pub fn initialize_openai_client(
@@ -123,131 +129,40 @@ pub fn openai_prepare_messages(
     Ok(messages)
 }
 
-// Creates a chat completion request with all parameters from the request
-fn create_chat_completion_request(
+// Creates a JSON request payload using the BYOT approach
+fn create_chat_completion_payload(
     model: &str,
     messages: Vec<ChatCompletionRequestMessage>,
     request: &InferenceRequest,
-) -> Result<CreateChatCompletionRequest> {
-    use serde_json::Value;
+) -> Result<serde_json::Value> {
+    // Serialize messages to JSON
+    let messages_json = serde_json::to_value(messages)
+        .map_err(|e| anyhow!("Failed to serialize messages: {}", e))?;
 
-    // Start with a basic request builder
-    let mut builder = CreateChatCompletionRequestArgs::default();
-    builder.model(model);
-    builder.messages(messages);
-
-    // Create a mutable copy of the parameters to handle custom parameters
-    let mut custom_params = serde_json::Map::new();
+    // Start with basic parameters
+    let mut payload = json!({
+        "model": model,
+        "messages": messages_json
+    });
 
     // Apply all parameters from the request.parameters
     if let Some(obj) = request.parameters.as_object() {
         for (key, value) in obj {
-            match key.as_str() {
-                "max_completion_tokens" => {
-                    if let Some(max_completion_tokens) = value.as_i64() {
-                        builder.max_completion_tokens(max_completion_tokens as u32);
-                    }
-                }
-                "max_tokens" => {
-                    // Only use max_tokens if max_completion_tokens is not present
-                    if !obj.contains_key("max_completion_tokens") {
-                        if let Some(max_tokens) = value.as_i64() {
-                            builder.max_tokens(max_tokens as u32);
-                        }
-                    }
-                }
-                "temperature" => {
-                    if let Some(temperature) = value.as_f64() {
-                        builder.temperature(temperature as f32);
-                    }
-                }
-                "top_p" => {
-                    if let Some(top_p) = value.as_f64() {
-                        builder.top_p(top_p as f32);
-                    }
-                }
-                "frequency_penalty" => {
-                    if let Some(penalty) = value.as_f64() {
-                        builder.frequency_penalty(penalty as f32);
-                    }
-                }
-                "presence_penalty" => {
-                    if let Some(penalty) = value.as_f64() {
-                        builder.presence_penalty(penalty as f32);
-                    }
-                }
-                "seed" => {
-                    if let Some(seed) = value.as_i64() {
-                        builder.seed(seed);
-                    }
-                }
-                "stop" => {
-                    // Handle both single string and array of strings
-                    if let Some(stop_str) = value.as_str() {
-                        builder.stop(vec![stop_str.to_string()]);
-                    } else if let Some(stop_array) = value.as_array() {
-                        let stops: Vec<String> = stop_array
-                            .iter()
-                            .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                            .collect();
-                        if !stops.is_empty() {
-                            builder.stop(stops);
-                        }
-                    }
-                }
-                // Handle non-standard OpenAI parameters and advanced sampling options
-                // These will be added directly to the request JSON
-                "top_k"
-                | "min_p"
-                | "top_a"
-                | "repetition_penalty"
-                | "smoothing_factor"
-                | "smoothing_curve"
-                | "dry_multiplier"
-                | "dry_base"
-                | "dry_allowed_length"
-                | "dry_penalty_last_n"
-                | "dry_sequence_breakers"
-                | "xtc_threshold"
-                | "xtc_probability"
-                | "thinking" // Anthropic
-                | "sampling_order" => {
-                    // Store these parameters in our custom_params map
-                    custom_params.insert(key.clone(), value.clone());
-                }
-                // For any other parameters, we'll add them directly to the request JSON
-                // TODO: May want to handle this differently.
-                _ => {
-                    custom_params.insert(key.clone(), value.clone());
-                }
+            // Rename max_completion_tokens to max_tokens if needed
+            if key == "max_completion_tokens" {
+                payload["max_tokens"] = value.clone();
+            } else {
+                payload[key] = value.clone();
             }
         }
     }
 
-    // Build the request
-    let mut request = builder
-        .build()
-        .map_err(|e| anyhow!("Failed to build chat completion request: {}", e))?;
+    // Pretty print payload for debugging if needed
+    let pretty_params = serde_json::to_string_pretty(&payload)
+        .map_err(|e| anyhow!("Failed to pretty print payload: {}", e))?;
+    println!("Chat completion payload:\n{}", pretty_params);
 
-    // Add custom parameters to the request
-    if !custom_params.is_empty() {
-        // Get the inner Value from the request
-        let request_value = serde_json::to_value(&request)
-            .map_err(|e| anyhow!("Failed to serialize request: {}", e))?;
-
-        if let Some(mut obj) = request_value.as_object().cloned() {
-            // Add all custom parameters to the request object
-            for (key, value) in custom_params {
-                obj.insert(key, value);
-            }
-
-            // Deserialize back into the request
-            request = serde_json::from_value(Value::Object(obj))
-                .map_err(|e| anyhow!("Failed to deserialize modified request: {}", e))?;
-        }
-    }
-
-    Ok(request)
+    Ok(payload)
 }
 
 /// OpenAI-compatible client for inference
@@ -260,23 +175,20 @@ pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
     // Prepare messages
     let messages = openai_prepare_messages(request)?;
 
-    // Create chat completion request
-    let chat_request = create_chat_completion_request(&model, messages, request)?;
+    // Create JSON payload
+    let payload = create_chat_completion_payload(&model, messages, request)?;
 
-    // Send the request
-    let response = client
+    // Send the request using BYOT approach
+    let response: OpenAIValue = client
         .chat()
-        .create(chat_request)
+        .create_byot(payload)
         .await
         .context("Failed to create chat completion")?;
 
     // Extract and return the response text
-    match response.choices.first() {
-        Some(choice) => match &choice.message.content {
-            Some(content) => Ok(content.clone()),
-            None => Err(anyhow!("No content in response")),
-        },
-        None => Err(anyhow!("No choices in response")),
+    match response["choices"][0]["message"]["content"].as_str() {
+        Some(content) => Ok(content.to_string()),
+        None => Err(anyhow!("No content in response")),
     }
 }
 
@@ -300,47 +212,176 @@ pub async fn converse_stream(
     // Prepare messages
     let messages = openai_prepare_messages(request)?;
 
-    // Create chat completion request
-    let mut chat_request = create_chat_completion_request(&model, messages, request)?;
+    // Create JSON payload
+    let mut payload = create_chat_completion_payload(&model, messages, request)?;
 
     // Set stream to true for streaming
-    chat_request.stream = Some(true);
+    payload["stream"] = json!(true);
 
-    // Send the streaming request
-    let mut stream = client
+    // Send the streaming request using BYOT approach
+    let mut stream: OpenAIStream = client
         .chat()
-        .create_stream(chat_request)
+        .create_stream_byot(payload)
         .await
         .context("Failed to create streaming chat completion")?;
 
-    // Process each chunk as it arrives using the async_openai API
+    // Process each chunk as it arrives
     loop {
         match tokio::time::timeout(std::time::Duration::from_secs(120), stream.next()).await {
-            Ok(Some(Ok(response))) => {
-                // Extract content from the first choice
-                if let Some(choice) = response.choices.first() {
-                    if let Some(delta) = &choice.delta.reasoning {
-                        if !delta.is_empty() {
-                            let payload = serde_json::json!({
-                                "type": "reasoning",
-                                "value": delta.clone()
-                            });
-                            callback(payload)?;
-                        }
-                    }
-
-                    // Process content if present
-                    if let Some(content) = &choice.delta.content {
-                        if !content.is_empty() {
-                            // Construct the JSON payload
-                            let payload = serde_json::json!({
-                                "type": "text",
-                                "value": content.clone()
-                            });
-                            callback(payload)?;
-                        }
+            Ok(Some(Ok(chunk))) => {
+                // Extract reasoning content if present
+                if let Some(reasoning) = chunk["choices"][0]["delta"]["reasoning"].as_str() {
+                    if !reasoning.is_empty() {
+                        let payload = json!({
+                            "type": "reasoning",
+                            "value": reasoning
+                        });
+                        callback(payload)?;
                     }
                 }
+
+                // Extract text content if present
+                if let Some(content) = chunk["choices"][0]["delta"]["content"].as_str() {
+                    if !content.is_empty() {
+                        let payload = json!({
+                            "type": "text",
+                            "value": content
+                        });
+                        callback(payload)?;
+                    }
+                }
+
+                // Add a small delay between tokens if specified
+                let delay_ms = request
+                    .parameters
+                    .get("stream_delay_ms")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(10); // Default 10ms delay
+
+                if delay_ms > 0 {
+                    tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                }
+            }
+            Ok(Some(Err(e))) => {
+                return Err(anyhow!("Error: {}", e));
+            }
+            Ok(None) => break, // Stream has ended
+            Err(_) => return Err(anyhow!("Stream timeout after 120 seconds")),
+        }
+    }
+
+    Ok(())
+}
+
+// Creates a JSON payload for completion requests
+fn create_completion_payload(
+    model: &str,
+    prompt: &str,
+    request: &InferenceRequest,
+) -> Result<serde_json::Value> {
+    // Start with basic parameters
+    let mut payload = json!({
+        "model": model,
+        "prompt": prompt
+    });
+
+    // Apply all parameters from the request.parameters
+    if let Some(obj) = request.parameters.as_object() {
+        for (key, value) in obj {
+            payload[key] = value.clone();
+        }
+    }
+
+    // Pretty print payload for debugging if needed
+    let pretty_params = serde_json::to_string_pretty(&payload)
+        .map_err(|e| anyhow!("Failed to pretty print payload: {}", e))?;
+    println!("Completion payload:\n{}", pretty_params);
+
+    Ok(payload)
+}
+
+/// OpenAI-compatible client for completions
+///
+/// This function handles non-streaming completion requests.
+pub async fn complete(request: &InferenceRequest, specs: &ModelSpecs) -> Result<String> {
+    // Initialize client
+    let (client, model) = initialize_openai_client(specs)?;
+
+    // Extract prompt from the request (Completions only use the last message)
+    let prompt = request
+        .message_list
+        .last()
+        .map(|msg| msg.text.clone())
+        .ok_or_else(|| anyhow!("No prompt found in request"))?;
+
+    // Create JSON payload
+    let payload = create_completion_payload(&model, &prompt, request)?;
+
+    // Send the request using BYOT approach
+    let response: OpenAIValue = client
+        .completions()
+        .create_byot(payload)
+        .await
+        .context("Failed to create completion")?;
+
+    // Extract and return the response text
+    match response["choices"][0]["text"].as_str() {
+        Some(content) => Ok(content.to_string()),
+        None => Err(anyhow!("No text in response")),
+    }
+}
+
+/// OpenAI-compatible client for streaming completions
+///
+/// This function handles streaming completion requests.
+/// It invokes a callback function for each chunk received.
+pub async fn complete_stream(
+    request: &InferenceRequest,
+    specs: &ModelSpecs,
+    callback: impl Fn(serde_json::Value) -> Result<()> + Send + 'static,
+) -> Result<()> {
+    println!(
+        "Starting OpenAI streaming completion with parameters: {}",
+        serde_json::to_string_pretty(&request.parameters).unwrap_or_else(|_| "{}".to_string())
+    );
+
+    // Initialize client
+    let (client, model) = initialize_openai_client(specs)?;
+
+    // Extract prompt from the request (Completions only use the last message)
+    let prompt = request
+        .message_list
+        .last()
+        .map(|msg| msg.text.clone())
+        .ok_or_else(|| anyhow!("No prompt found in request"))?;
+
+    // Create JSON payload
+    let mut payload = create_completion_payload(&model, &prompt, request)?;
+
+    // Set stream to true for streaming
+    payload["stream"] = json!(true);
+
+    // Send the streaming request using BYOT approach
+    let mut stream: OpenAIStream = client
+        .completions()
+        .create_stream_byot(payload)
+        .await
+        .context("Failed to create streaming completion")?;
+
+    // Process each chunk as it arrives
+    loop {
+        match tokio::time::timeout(std::time::Duration::from_secs(120), stream.next()).await {
+            Ok(Some(Ok(chunk))) => {
+                if let Some(text) = chunk["choices"][0]["text"].as_str() {
+                    if !text.is_empty() {
+                        let payload = json!({
+                            "type": "text",
+                            "value": text
+                        });
+                        callback(payload)?;
+                    }
+                }
+
                 // Add a small delay between tokens if specified
                 let delay_ms = request
                     .parameters

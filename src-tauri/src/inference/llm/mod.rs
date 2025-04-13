@@ -330,29 +330,62 @@ pub async fn process_inference(
             }
         }
         "anthropic" | "openai_compatible" | "openrouter" => {
-            if request.stream {
-                handle_streaming(
-                    request,
-                    &app_handle,
-                    |response_text, reasoning_text, request_id, app_handle_clone| async move {
-                        // OpenAI compatible converse_stream calls the provided closure for each chunk
-                        openai::converse_stream(request, specs, move |payload| {
-                            // Use the shared chunk processor (reasoning_text likely unused by OpenAI)
-                            process_chunk(
-                                payload,
-                                &response_text,
-                                &reasoning_text, // Pass along, even if unused by provider
-                                &request_id,
-                                &app_handle_clone,
-                            )
-                        })
+            // Check if model_type is specified as "completion" in the config
+            let model_type = &specs.model_type;
+
+            match model_type.as_str() {
+                "completion" => {
+                    if request.stream {
+                        handle_streaming(
+                            request,
+                            &app_handle,
+                            |response_text, reasoning_text, request_id, app_handle_clone| async move {
+                                // OpenAI compatible complete_stream calls the provided closure for each chunk
+                                openai::complete_stream(request, specs, move |payload| {
+                                    process_chunk(
+                                        payload,
+                                        &response_text,
+                                        &reasoning_text,
+                                        &request_id,
+                                        &app_handle_clone,
+                                    )
+                                })
+                                .await
+                            },
+                        )
                         .await
-                    },
-                )
-                .await
-            } else {
-                let result = openai::converse(request, specs).await?;
-                handle_non_streaming(request, result, &app_handle).await
+                    } else {
+                        let result = openai::complete(request, specs).await?;
+                        handle_non_streaming(request, result, &app_handle).await
+                    }
+                }
+                _ => {
+                    // Default to "chat" for any other value
+                    if request.stream {
+                        handle_streaming(
+                            request,
+                            &app_handle,
+                            |response_text, reasoning_text, request_id, app_handle_clone| async move {
+                                // OpenAI compatible converse_stream calls the provided closure for each chunk
+                                openai::converse_stream(request, specs, move |payload| {
+                                    // Use the shared chunk processor (reasoning_text likely unused by OpenAI)
+                                    process_chunk(
+                                        payload,
+                                        &response_text,
+                                        &reasoning_text, // Pass along, even if unused by provider
+                                        &request_id,
+                                        &app_handle_clone,
+                                    )
+                                })
+                                .await
+                            },
+                        )
+                        .await
+                    } else {
+                        let result = openai::converse(request, specs).await?;
+                        handle_non_streaming(request, result, &app_handle).await
+                    }
+                }
             }
         }
         "google" => {
