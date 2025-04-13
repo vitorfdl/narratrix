@@ -57,7 +57,7 @@ export interface FormattedPromptResult {
 }
 
 const addPrefix = (string: string, prefix: string) => {
-  return `${prefix}\n${string}`;
+  return `${prefix}: ${string}`;
 };
 
 const hasMoreThanOneCharacter = (messages: MessageWithCharacter[]) => {

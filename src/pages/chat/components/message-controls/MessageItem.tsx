@@ -2,6 +2,7 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "@/schema/chat-message-schema";
 import React, { memo, useCallback, useEffect, useState } from "react";
@@ -74,7 +75,7 @@ const MessageItem = ({
   const characters = useCharacters();
   const { urlMap: avatarUrlMap, isLoading: isAvatarLoading } = useCharacterAvatars();
   const currentProfile = useCurrentProfile();
-  const currentProfileAvatarUrl = currentProfile?.avatar_path;
+  const { url: currentProfileAvatarUrl, reload: reloadAvatarImage } = useImageUrl(currentProfile?.avatar_path);
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const { updateChatMessage, deleteChatMessage } = useChatActions();
 

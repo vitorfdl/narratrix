@@ -1,13 +1,5 @@
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import {
-  useChatActions,
-  useCurrentChatActiveChapterID,
-  useCurrentChatChapters,
-  useCurrentChatId,
-  useCurrentChatMessages,
-  useCurrentChatTemplateID,
-  useCurrentChatUserCharacterID,
-} from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatId, useCurrentChatMessages } from "@/hooks/chatStore";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { useInference } from "@/hooks/useInference";
 import { Character } from "@/schema/characters-schema";
@@ -18,6 +10,7 @@ import { useLocalSummarySettings } from "@/utils/local-storage";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { listCharacters } from "./character-service";
+import { getChatById } from "./chat-service";
 import { removeNestedFields } from "./inference-steps/remove-nested-fields";
 import { trimToEndSentence } from "./inference-steps/trim-incomplete-sentence";
 import { listModels } from "./model-service";
@@ -88,8 +81,8 @@ export function useInferenceService() {
 
   // Get chat store information directly
   const currentChatId = useCurrentChatId();
-  const currentChatTemplateId = useCurrentChatTemplateID();
-  const currentChatUserCharacterID = useCurrentChatUserCharacterID();
+  // const currentChatTemplateId = useCurrentChatTemplateID();
+  // const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const chatMessages = useCurrentChatMessages();
   const { addChatMessage, updateChatMessage, fetchChatMessages } = useChatActions();
 
@@ -246,10 +239,12 @@ export function useInferenceService() {
     messagesToUse?: ChatMessage[],
     extraSuggestions?: Record<string, any>,
   ) => {
+    const currentChat = await getChatById(currentChatId);
+
     const chatTemplateList = await listChatTemplates({ profile_id: currentProfile!.id });
     const chatTemplate = chatTemplateID
       ? chatTemplateList.find((template) => template.id === chatTemplateID)!
-      : chatTemplateList.find((template) => template.id === currentChatTemplateId)!;
+      : chatTemplateList.find((template) => template.id === currentChat?.chat_template_id)!;
 
     if (!chatTemplate) {
       throw new Error("Chat template not found");
@@ -275,19 +270,26 @@ export function useInferenceService() {
     const inferenceTemplate = inferenceTemplateList.find((template) => template.id === modelSettings.inference_template_id)!;
     const characterList = await listCharacters(currentProfile!.id);
 
+    // Get the user character name or the profile name
+    const userCharacter = characterList.find((character) => character.id === currentChat?.user_character_id);
+    const userCharacterOrProfileName = userCharacter?.name || currentProfile?.name;
+
+    // Add the character name to the messages, so the formatter can prefix if enabled
     const chatWithNames = (messagesToUse || chatMessages)
       ?.map((msg) => {
         return {
           ...msg,
-          character_name: msg.character_id ? characterList.find((character) => character.id === msg.character_id)?.name : undefined,
+          character_name: msg.character_id
+            ? characterList.find((character) => character.id === msg.character_id)?.name
+            : msg.type === "user"
+              ? userCharacterOrProfileName
+              : undefined,
         };
       })
       ?.filter((msg) => streamingState.current.messageId !== msg.id)
       .filter((msg) => !msg.disabled);
 
-    const userCharacter = characterList.find((character) => character.id === currentChatUserCharacterID);
-    const userCharacterOrProfileName = userCharacter?.name || currentProfile?.name;
-
+    // Format the prompt
     const prompt = await formatPromptUtil({
       messageHistory: chatWithNames || [],
       userPrompt: userMessage,
