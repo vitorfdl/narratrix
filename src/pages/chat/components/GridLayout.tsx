@@ -88,7 +88,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
 
   // Get visible and hidden widgets
   const visibleWidgets = positions.filter((pos) => !pos.hidden);
-  const hiddenWidgets = positions.filter((pos) => pos.hidden);
+  const hiddenWidgets = positions.filter((pos) => pos.hidden && !["database", "memory", "scripts"].includes(pos.id));
 
   // Convert GridPosition[] to react-grid-layout format
   const generateLayouts = useCallback(() => {
