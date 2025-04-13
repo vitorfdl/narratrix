@@ -27,7 +27,7 @@ export type WidgetId =
 
 export const widgetTitles: Record<WidgetId, string> = {
   messages: "Messages",
-  config: "Config",
+  config: "Chat Template",
   generate: "Generate",
   participants: "Participants",
   scripts: "Scripts",
