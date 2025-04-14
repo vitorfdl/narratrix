@@ -70,25 +70,20 @@ export function StepButton({ value, step = 1, min = 0, max = 100, onValueChange,
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const inputValue = e.target.value;
     // Allow empty value or minus sign for typing flexibility
-    if (value === "" || value === "-") {
-      setLocalValue(value);
+    if (inputValue === "" || inputValue === "-") {
+      setLocalValue(inputValue);
       return;
     }
 
-    // Only allow numbers and decimal point
-    if (/^-?\d*\.?\d*$/.test(value)) {
-      const numValue = Number.parseFloat(value);
-      if (!Number.isNaN(numValue)) {
-        // If the value is a valid number, check against min/max
-        if ((min === undefined || numValue >= min) && (max === undefined || numValue <= max)) {
-          setLocalValue(value);
-        }
-      } else {
-        setLocalValue(value); // Allow incomplete decimal numbers like "1."
-      }
+    // Only allow valid numeric formats (including incomplete ones like "1." or "-")
+    if (/^-?\d*\.?\d*$/.test(inputValue)) {
+      // Update local state regardless of min/max constraints here.
+      // Clamping and final validation will occur on blur.
+      setLocalValue(inputValue);
     }
+    // Implicitly ignore inputs that don't match the numeric pattern
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
