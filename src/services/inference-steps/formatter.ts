@@ -115,15 +115,18 @@ export function getChatHistory(
   return inferenceMessages;
 }
 
+interface CreateSystemPromptConfig {
+  systemPromptTemplate?: FormatTemplate | null;
+  chatConfig?: PromptFormatterConfig["chatConfig"];
+  lorebookContent?: LorebookContentResponse["replacers"];
+  systemOverridePrompt?: string | null;
+}
 /**
  * Create system prompt from template
  */
-export function createSystemPrompt(
-  systemPromptTemplate?: FormatTemplate | null,
-  chatConfig?: PromptFormatterConfig["chatConfig"],
-  lorebookContent?: LorebookContentResponse["replacers"],
-  systemOverridePrompt?: string | null,
-): string | undefined {
+export function createSystemPrompt(config: CreateSystemPromptConfig): string | undefined {
+  const { systemPromptTemplate, chatConfig, lorebookContent, systemOverridePrompt } = config;
+
   if (!systemPromptTemplate || !systemPromptTemplate.config || systemPromptTemplate.prompts.length === 0) {
     return systemOverridePrompt || undefined; // If no system prompt template is provided, return the system override prompt
   }
@@ -178,7 +181,8 @@ export function createSystemPrompt(
     return undefined;
   }
 
-  return prompts.map((section) => section.content).join("\n\n");
+  const contextSeparator = systemPromptTemplate.config.context_separator?.replaceAll("\\n", "\n") || "\n\n";
+  return prompts.map((section) => section.content).join(contextSeparator);
 }
 
 /**
@@ -238,7 +242,8 @@ export async function formatPrompt(config: PromptFormatterConfig) {
 
   const LorebookBudget = config.chatTemplate?.config?.lorebook_token_budget || 400;
 
-  const lorebookContent = await getLorebookContent(LoreBookOrder, LorebookBudget, processedMessages);
+  const lorebookSeparator = config.formatTemplate?.config.lorebook_separator?.replaceAll("\\n", "\n") || "\n---\n";
+  const lorebookContent = await getLorebookContent(LoreBookOrder, LorebookBudget, processedMessages, lorebookSeparator);
   processedMessages = processLorebookMessages(processedMessages, lorebookContent.messages);
 
   config.chatConfig = {
@@ -257,7 +262,12 @@ export async function formatPrompt(config: PromptFormatterConfig) {
   }
 
   // Step 3: Create system prompt
-  const rawSystemPrompt = createSystemPrompt(config.formatTemplate, config.chatConfig, lorebookContent.replacers, config.systemOverridePrompt);
+  const rawSystemPrompt = createSystemPrompt({
+    systemPromptTemplate: config.formatTemplate,
+    chatConfig: config.chatConfig,
+    lorebookContent: lorebookContent.replacers,
+    systemOverridePrompt: config.systemOverridePrompt,
+  });
   const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 
   return applyContextLimit(formattedPrompt, {

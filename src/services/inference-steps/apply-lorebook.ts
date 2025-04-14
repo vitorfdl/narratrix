@@ -42,6 +42,7 @@ export async function getLorebookContent(
   orderedLorebookIds: string[],
   budget: number,
   Messages: InferenceMessage[],
+  lorebookSeparator = "\n---\n",
 ): Promise<LorebookContentResponse> {
   const response: LorebookContentResponse = {
     replacers: {
@@ -142,12 +143,12 @@ export async function getLorebookContent(
         switch (entry.insertion_type) {
           case "lorebook_top":
             response.replacers.lorebook_top = response.replacers.lorebook_top
-              ? `${entry.content}\n${response.replacers.lorebook_top}` // Prepend with newline
+              ? `${entry.content}${lorebookSeparator}${response.replacers.lorebook_top}` // Prepend with newline
               : entry.content;
             break;
           case "lorebook_bottom":
             response.replacers.lorebook_bottom = response.replacers.lorebook_bottom
-              ? `${response.replacers.lorebook_bottom}\n${entry.content}` // Append with newline
+              ? `${response.replacers.lorebook_bottom}${lorebookSeparator}${entry.content}` // Append with newline
               : entry.content;
             break;
           case "user":
