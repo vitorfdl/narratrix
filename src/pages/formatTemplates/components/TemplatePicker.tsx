@@ -302,6 +302,11 @@ export function TemplatePicker({
                 className="flex-1"
                 placeholder="Template name"
                 autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newTemplateName.trim()) {
+                    handleCreateTemplate();
+                  }
+                }}
               />
             </div>
           </div>

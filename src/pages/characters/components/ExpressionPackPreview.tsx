@@ -125,7 +125,6 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
                 if (existingExpressionIndex !== -1) {
                   // Update existing expression
                   const expressionToUpdate = currentExpressions[existingExpressionIndex];
-                  console.log(`Updating existing expression: ${expressionToUpdate.name}`);
                   const savedPath = await saveExpressionImage(dataUrl, expressionToUpdate.name, character_id);
                   currentExpressions[existingExpressionIndex] = { ...expressionToUpdate, image_path: savedPath };
                   needsUpdate = true;

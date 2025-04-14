@@ -3,13 +3,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
-import { useModels } from "@/hooks/modelsStore";
 import { useMultipleImageUrls } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
+import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
 import { ChatMessage, basicPromptSuggestionList } from "@/schema/chat-message-schema";
 import { useBackgroundInference } from "@/services/background-inference-service";
@@ -21,7 +20,7 @@ import { toast } from "sonner";
 import { useThrottledCallback } from "use-debounce";
 
 export type ExpressionGenerateSettings = {
-  modelId: string;
+  chatTemplateId: string;
   autoRefresh: boolean;
   requestPrompt: string;
   systemPrompt: string;
@@ -51,22 +50,20 @@ Return only the single word for the expression.`;
 
 const WidgetExpressions = () => {
   const { generateQuietly } = useBackgroundInference();
-  const models = useModels(); // Get models list for selecting a model
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State for dialog visibility
   const [tempRequestPrompt, setTempRequestPrompt] = useState(""); // Temp state for dialog
   const [tempSystemPrompt, setTempSystemPrompt] = useState(""); // Temp state for dialog
+  const [tempChatTemplateId, setTempChatTemplateId] = useState(""); // Temp state for chat template
 
   // Use the hook for settings
   const [expressionSettings, setExpressionSettings] = useLocalExpressionGenerationSettings();
-  const { modelId: selectedModelId, autoRefresh: autoRefreshEnabled } = expressionSettings;
+
+  // Get the selected template's modelId
+  const autoRefreshEnabled = expressionSettings.autoRefresh;
 
   // Get state and actions from the expression store
   const { selectedText, selectedMessageCharacterId, clearSelection } = useExpressionStore();
 
-  // Helper functions to update specific settings
-  const setSelectedModelId = (modelId: string) => {
-    setExpressionSettings((prev) => ({ ...prev, modelId }));
-  };
   const setAutoRefreshEnabled = (enabled: boolean) => {
     setExpressionSettings((prev) => ({ ...prev, autoRefresh: enabled }));
   };
@@ -115,8 +112,9 @@ const WidgetExpressions = () => {
     if (isSettingsOpen) {
       setTempRequestPrompt(expressionSettings.requestPrompt);
       setTempSystemPrompt(expressionSettings.systemPrompt);
+      setTempChatTemplateId(expressionSettings.chatTemplateId || "");
     }
-  }, [isSettingsOpen, expressionSettings.requestPrompt, expressionSettings.systemPrompt]);
+  }, [isSettingsOpen, expressionSettings.requestPrompt, expressionSettings.systemPrompt, expressionSettings.chatTemplateId]);
 
   // --- Load Expression Images ---
   const getExpressionForUrlLoading = useCallback(
@@ -152,7 +150,9 @@ const WidgetExpressions = () => {
       const currentSpeakerId = userPickedText ? selectedMessageCharacterId : lastSpeakerIdRef.current;
       const currentLastMessage = lastMessageRef.current; // Still needed for chapter ID
 
-      if (!currentSpeakerId || !selectedModelId || selectedModelId === "none") {
+      // Get modelId from the selected chat template
+
+      if (!currentSpeakerId || !expressionSettings.chatTemplateId) {
         if (selectedText) {
           clearSelection(); // Clear selection if we skipped because of it
         }
@@ -191,6 +191,7 @@ const WidgetExpressions = () => {
 
       try {
         const expressionResult = await generateQuietly({
+          chatTemplateId: expressionSettings.chatTemplateId,
           context: {
             characterID: currentSpeakerId,
             chapterID: currentLastMessage?.chapter_id, // Use chapter ID from last message context if available
@@ -201,15 +202,7 @@ const WidgetExpressions = () => {
               "chat.message": messageContentToUse,
             },
           },
-          modelId: selectedModelId,
           prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
-          parameters: {
-            max_tokens: 50,
-            max_context: 4052,
-            min_p: 0.5,
-            temperature: 0.8,
-            stop: ["\n"],
-          },
           systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
         });
 
@@ -242,7 +235,6 @@ const WidgetExpressions = () => {
     [
       activeCharacters,
       generateQuietly,
-      selectedModelId,
       expressionSettings.requestPrompt,
       expressionSettings.systemPrompt,
       characterExpressions,
@@ -258,7 +250,7 @@ const WidgetExpressions = () => {
 
   // Effect to trigger THROTTLED generation DURING streaming
   useEffect(() => {
-    if (autoRefreshEnabled && selectedModelId && selectedModelId !== "none") {
+    if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
       if (selectedText && selectedMessageCharacterId) {
         generateExpression(selectedText);
       }
@@ -266,7 +258,7 @@ const WidgetExpressions = () => {
         throttledGenerateExpression(); // Call the throttled function directly
       }
     }
-  }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, selectedModelId, selectedText, throttledGenerateExpression]);
+  }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, throttledGenerateExpression]);
 
   // Simplified Toggle auto-refresh: just update the state
   const toggleAutoRefresh = useCallback(() => {
@@ -279,9 +271,10 @@ const WidgetExpressions = () => {
       ...prev,
       requestPrompt: tempRequestPrompt,
       systemPrompt: tempSystemPrompt,
+      chatTemplateId: tempChatTemplateId,
     }));
     setIsSettingsOpen(false);
-  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt]);
+  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt, tempChatTemplateId]);
 
   // Function to get expression for a character (stable via useCallback)
   const getCharacterExpression = useCallback(
@@ -304,29 +297,8 @@ const WidgetExpressions = () => {
     <div className="w-full h-full flex flex-col overflow-hidden" style={{ minHeight: "200px" }}>
       {/* Controls at the top */}
       <div className="bg-card border-b px-2 py-1">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">Model:</span>
-          <div className="flex-grow z-10 flex items-center gap-2">
-            <Select value={selectedModelId} onValueChange={setSelectedModelId}>
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue placeholder="Select model..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {models && models.length > 0 ? (
-                  models.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="none" disabled>
-                    No models available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-
+        <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
@@ -334,7 +306,7 @@ const WidgetExpressions = () => {
                 className="h-7 w-7 p-0"
                 onClick={() => generateExpression()}
                 // Disable if no model OR (no selected text AND no last speaker)
-                disabled={!selectedModelId || selectedModelId === "none" || (!selectedText && !lastSpeakerId)}
+                disabled={!expressionSettings.chatTemplateId || (!selectedText && !lastSpeakerId)}
                 title={selectedText ? "Generate expression from selection" : "Generate expression for current speaker"}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
@@ -343,12 +315,12 @@ const WidgetExpressions = () => {
               <Button
                 variant={autoRefreshEnabled ? "default" : "outline"}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-8 w-8 p-0"
                 onClick={toggleAutoRefresh}
-                disabled={!selectedModelId || selectedModelId === "none"}
+                disabled={!expressionSettings.chatTemplateId}
                 title={autoRefreshEnabled ? "Disable auto-refresh" : "Enable auto-refresh"}
               >
-                {autoRefreshEnabled ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                {autoRefreshEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -359,38 +331,54 @@ const WidgetExpressions = () => {
                 <Settings className="h-3.5 w-3.5" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="">
+            <DialogContent size="window">
               <DialogHeader>
                 <DialogTitle>Configure Expression Prompts</DialogTitle>
                 <DialogDescription>Customize the prompts used to generate character expressions.</DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="system-prompt">System Prompt</Label>
-                  <MarkdownTextArea
-                    initialValue={tempSystemPrompt}
-                    onChange={(value) => setTempSystemPrompt(value)}
-                    editable={true}
-                    placeholder={defaultSystemPrompt}
-                    className="min-h-[100px] max-h-[20vh] overflow-y-auto"
-                    suggestions={ExpressionSuggestionList}
-                  />
+              {/* Apply two-column grid layout */}
+              <div className="grid grid-cols-2 gap-4 py-4">
+                {/* First column for prompts */}
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="system-prompt">System Prompt</Label>
+                    <MarkdownTextArea
+                      initialValue={tempSystemPrompt}
+                      onChange={(value) => setTempSystemPrompt(value)}
+                      editable={true}
+                      placeholder={defaultSystemPrompt}
+                      className="min-h-[100px] max-h-[20vh] overflow-y-auto"
+                      suggestions={ExpressionSuggestionList}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="request-prompt">User Prompt (Request)</Label>
+                    <MarkdownTextArea
+                      initialValue={tempRequestPrompt}
+                      onChange={(value) => setTempRequestPrompt(value)}
+                      editable={true}
+                      placeholder={defaultRequestPrompt}
+                      suggestions={ExpressionSuggestionList}
+                      className="min-h-[100px] max-h-[20vh]"
+                    />
+                    <p className="text-xs italic text-muted-foreground">
+                      Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}
+                      expression.last{"}}"}, {"{{"}chat.message{"}}"}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="request-prompt">User Prompt (Request)</Label>
-                  <MarkdownTextArea
-                    initialValue={tempRequestPrompt}
-                    onChange={(value) => setTempRequestPrompt(value)}
-                    editable={true}
-                    placeholder={defaultRequestPrompt}
-                    suggestions={ExpressionSuggestionList}
-                    className="min-h-[100px] max-h-[20vh]"
-                  />
-                  <p className="text-xs italic text-muted-foreground">
-                    Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}
-                    expression.last{"}}"}, {"{{"}chat.message{"}}"}
-                  </p>
+                {/* Second column for Chat Template selection */}
+                <div className="space-y-1 overflow-y-auto max-h-[60vh]">
+                  <Label htmlFor="chat-template">Chat Template</Label>
+                  <div className="border border-input rounded-md">
+                    <WidgetConfig
+                      currentChatTemplateID={tempChatTemplateId || null}
+                      onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for expression generation.</p>
                 </div>
               </div>
               <DialogFooter>

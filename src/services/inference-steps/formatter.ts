@@ -292,5 +292,5 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
     };
   }
 
-  return limitedPrompt;
+  return { ...limitedPrompt, customStopStrings: [] };
 }

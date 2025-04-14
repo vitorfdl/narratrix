@@ -95,7 +95,7 @@ export function useLocalChatTabs(profileId: string) {
  * Local storage for expression settings
  */
 const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSettings>("expressionGenerationSettings", {
-  modelId: "none",
+  chatTemplateId: "",
   autoRefresh: false,
   requestPrompt: "",
   systemPrompt: "",

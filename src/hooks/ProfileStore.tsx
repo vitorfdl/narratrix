@@ -10,6 +10,7 @@ import { useChatActions } from "./chatStore";
 import { useChatTemplateActions } from "./chatTemplateStore";
 import { useLorebookStoreActions } from "./lorebookStore";
 import { useModelManifestsActions } from "./manifestStore";
+import { useModelsActions } from "./modelsStore";
 import { useTemplateActions } from "./templateStore";
 
 export const MAX_PROFILES = 5;
@@ -200,6 +201,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => {
 export const useProfileSynchronization = () => {
   const currentProfile = useProfileStore((state) => state.currentProfile);
   const { fetchManifests } = useModelManifestsActions();
+  const { fetchModels } = useModelsActions();
   const { fetchFormatTemplates, fetchInferenceTemplates } = useTemplateActions();
   const { fetchCharacters } = useCharacterActions();
   const { fetchChatList } = useChatActions();
@@ -216,6 +218,7 @@ export const useProfileSynchronization = () => {
       fetchCharacters(currentProfile.id);
       fetchChatList(currentProfile.id);
       loadLorebooks(currentProfile.id);
+      fetchModels({ profile_id: currentProfile.id });
       setTheme(currentProfile.settings.appearance.theme || "system");
     } else {
       console.log("No current profile or settings, skipping data synchronization.");

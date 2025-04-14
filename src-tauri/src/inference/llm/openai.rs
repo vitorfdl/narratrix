@@ -28,10 +28,7 @@ pub fn initialize_openai_client(
     let engine = &specs.engine;
 
     // Get model with fallback
-    let model = config["model"]
-        .as_str()
-        .unwrap_or("gpt-3.5-turbo")
-        .to_string();
+    let model = config["model"].as_str().unwrap_or("").to_string();
 
     // Get API key and base URL with fallbacks
     let encrypted_api_key = config["api_key"].as_str().unwrap_or("").to_string();
@@ -293,9 +290,9 @@ fn create_completion_payload(
     }
 
     // Pretty print payload for debugging if needed
-    let pretty_params = serde_json::to_string_pretty(&payload)
-        .map_err(|e| anyhow!("Failed to pretty print payload: {}", e))?;
-    println!("Completion payload:\n{}", pretty_params);
+    // let pretty_params = serde_json::to_string_pretty(&payload)
+    //     .map_err(|e| anyhow!("Failed to pretty print payload: {}", e))?;
+    // println!("Completion payload:\n{}", pretty_params);
 
     Ok(payload)
 }
@@ -307,7 +304,6 @@ pub async fn complete(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
     // Initialize client
     let (client, model) = initialize_openai_client(specs)?;
 
-    // Extract prompt from the request (Completions only use the last message)
     let prompt = request
         .message_list
         .last()
@@ -316,7 +312,10 @@ pub async fn complete(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
 
     // Create JSON payload
     let payload = create_completion_payload(&model, &prompt, request)?;
-
+    println!(
+        "Completion payload:\n{}",
+        serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_string())
+    );
     // Send the request using BYOT approach
     let response: OpenAIValue = client
         .completions()
@@ -325,7 +324,7 @@ pub async fn complete(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
         .context("Failed to create completion")?;
 
     // Extract and return the response text
-    match response["choices"][0]["text"].as_str() {
+    match response["content"].as_str() {
         Some(content) => Ok(content.to_string()),
         None => Err(anyhow!("No text in response")),
     }

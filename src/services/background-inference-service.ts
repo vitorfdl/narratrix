@@ -1,25 +1,25 @@
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
-import { useChatTemplateList } from "@/hooks/chatTemplateStore";
+import { useCurrentChatActiveChapterID } from "@/hooks/chatStore";
 import { useModelManifests } from "@/hooks/manifestStore";
-import { useModels } from "@/hooks/modelsStore";
-import { useInferenceTemplateList } from "@/hooks/templateStore";
 import { useInference } from "@/hooks/useInference";
 import { Character } from "@/schema/characters-schema";
 import { InferenceMessage, ModelSpecs } from "@/schema/inference-engine-schema";
-import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { useCallback, useRef } from "react";
 import { listCharacters } from "./character-service";
+import { getChatChapterById } from "./chat-chapter-service";
 import { ChatMessage } from "./chat-message-service";
 import { formatPrompt } from "./inference-steps/formatter";
+import { removeNestedFields } from "./inference-steps/remove-nested-fields";
+import { Model, getModelById } from "./model-service";
+import { getChatTemplateById } from "./template-chat-service";
+import { getInferenceTemplateById } from "./template-inference-service";
 
 /**
  * Options for background inference
  */
 export interface BackgroundInferenceOptions {
-  modelId: string;
-  manifestId: string;
-  templateId: string;
+  model: Model;
+  templateId?: string;
   prompt: InferenceMessage[];
   systemPrompt?: string;
   parameters?: Record<string, any>;
@@ -50,13 +50,9 @@ export interface QuickInferenceOptions {
 export function useBackgroundInference() {
   const currentProfile = useCurrentProfile();
   // Get all models, manifests, and templates at the component level
-  const models = useModels();
   const manifests = useModelManifests();
-  const inferenceTemplates = useInferenceTemplateList();
 
-  const chapterList = useCurrentChatChapters();
   const currentChapterID = useCurrentChatActiveChapterID();
-  const chatTemplates = useChatTemplateList();
   // Track ongoing requests
   const activeRequests = useRef<Record<string, boolean>>({});
 
@@ -106,33 +102,19 @@ export function useBackgroundInference() {
    */
   const executeInference = useCallback(
     async (options: BackgroundInferenceOptions): Promise<string> => {
-      const { modelId, prompt, systemPrompt = "", parameters = {} } = options;
+      const { prompt, systemPrompt = "", parameters = {}, model } = options;
 
       // Create a promise that will be resolved when inference completes
       return new Promise<string>((resolve, reject) => {
-        const model = models.find((m) => m.id === modelId);
-        if (!model) {
-          console.error(`Model with ID ${modelId} not found`);
-          reject(new Error(`Model with ID ${modelId} not found`));
-          return;
-        }
-
         const manifest = manifests.find((m) => m.id === model.manifest_id);
-        if (!manifest) {
-          console.error(`Manifest with ID ${model.manifest_id} not found`);
-          reject(new Error(`Manifest with ID ${model.manifest_id} not found`));
-          return;
-        }
-
         // Create model specs for the inference
         const modelSpecs: ModelSpecs = {
           id: model.id,
-          model_type: "chat",
+          model_type: model.inference_template_id ? "completion" : "chat",
           config: model.config,
-          max_concurrent_requests: model.max_concurrency || 1,
-          engine: manifest.engine,
+          max_concurrent_requests: model.max_concurrency,
+          engine: manifest?.engine || "",
         };
-
         // Queue the inference request
         runInference({
           messages: prompt,
@@ -176,19 +158,18 @@ export function useBackgroundInference() {
   const generateQuietly = useCallback(
     async (options: QuickInferenceOptions): Promise<string | null> => {
       try {
-        const { modelId, prompt, systemPrompt, parameters, context, chatTemplateId } = options;
+        const { prompt, systemPrompt, parameters, context, chatTemplateId } = options;
 
         // Find model, manifest, and template using the arrays we already have
-        let model = models.find((m) => m.id === modelId);
-        const chatTemplate = chatTemplates.find((t) => t.id === chatTemplateId);
-        if (!model && !chatTemplate) {
-          console.error(`Model with ID ${modelId} or template with ID ${chatTemplateId} not found`);
+        const chatTemplate = await getChatTemplateById(chatTemplateId || "").catch(() => null);
+        if (!chatTemplate) {
+          console.error(`Template with ID ${chatTemplateId} not found`);
           return null;
         }
 
-        model = chatTemplate?.model_id ? models.find((m) => m.id === chatTemplate.model_id) : model;
+        const model = chatTemplate?.model_id ? await getModelById(chatTemplate.model_id) : null;
         if (!model) {
-          console.error(`Model with ID ${modelId} or template with ID ${chatTemplateId} not found`);
+          console.error(`Model with ID ${chatTemplate?.model_id} not found`);
           return null;
         }
 
@@ -198,17 +179,18 @@ export function useBackgroundInference() {
           return null;
         }
 
-        const template = inferenceTemplates.find((t: InferenceTemplate) => t.id === model.inference_template_id);
+        const template = await getInferenceTemplateById(model.inference_template_id || "").catch(() => null);
 
         // Create inference message
         const messages: ChatMessage[] = [];
-        const activeChapter = chapterList.find((chapter) => chapter.id === currentChapterID);
+        const activeChapter = await getChatChapterById(currentChapterID || "").catch(() => null);
 
         const characterList = await listCharacters(currentProfile!.id);
-        const { inferenceMessages, systemPrompt: formattedSystemPrompt } = await formatPrompt({
+        const promptResult = await formatPrompt({
           messageHistory: messages,
           userPrompt: prompt,
           modelSettings: model,
+          inferenceTemplate: template,
           chatTemplate: {
             custom_prompts: [],
             config: {
@@ -221,29 +203,32 @@ export function useBackgroundInference() {
           chatConfig: {
             character: characterList.find((character) => character.id === context?.characterID),
             user_character: characterList.find((character) => character.id === context?.userCharacterID) as Character,
-            chapter: chapterList.find((chapter) => chapter.id === context?.chapterID) || activeChapter,
+            chapter: activeChapter || undefined,
             extra: context?.extra,
           },
         });
 
+        const { inferenceMessages, systemPrompt: formattedSystemPrompt, customStopStrings } = promptResult;
+
+        const fixedParameters = removeNestedFields(parameters || chatTemplate?.config || {});
+        if (customStopStrings) {
+          fixedParameters.stop = fixedParameters.stop ? [...fixedParameters.stop, ...customStopStrings] : customStopStrings;
+        }
+
         // Execute the inference
         return await executeInference({
-          modelId: model.id,
-          manifestId: manifest.engine,
+          model,
           templateId: template?.id || "",
           prompt: inferenceMessages,
           systemPrompt: formattedSystemPrompt,
-          parameters: {
-            ...parameters,
-            max_tokens: parameters?.max_tokens || 100,
-          },
+          parameters: fixedParameters,
         });
       } catch (error) {
         console.error("Background inference error:", error);
         return null;
       }
     },
-    [models, manifests, inferenceTemplates, executeInference],
+    [manifests, executeInference],
   );
 
   return {

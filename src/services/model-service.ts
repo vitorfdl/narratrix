@@ -121,6 +121,7 @@ export async function getModelById(id: string): Promise<Model | null> {
 
   const model = result[0];
 
+  model.config = JSON.parse(model.config || "{}");
   // Convert date strings to Date objects
   model.created_at = new Date(model.created_at);
   model.updated_at = new Date(model.updated_at);
