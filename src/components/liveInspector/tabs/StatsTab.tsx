@@ -16,11 +16,11 @@ interface StatsProps {
 const chartConfig = {
   systemTokens: {
     label: "System",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(var(--chart-7))",
   },
   historyTokens: {
     label: "History",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--chart-8))",
   },
   responseTokens: {
     label: "Response",
@@ -32,7 +32,7 @@ const chartConfig = {
   },
   responseUtilization: {
     label: "Response Limit",
-    color: "hsl(var(--chart-5))",
+    color: "hsl(var(--chart-3))",
   },
 } satisfies ChartConfig;
 
@@ -133,9 +133,9 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
     const avgTokensPerHistory = totalMessageCount > 0 ? Math.round(historyTokens / totalMessageCount) : 0;
 
     const tokenBreakdown = [
-      { name: "systemTokens", value: systemTokens, fill: "var(--color-systemTokens)" },
-      { name: "historyTokens", value: historyTokens, fill: "var(--color-historyTokens)" },
-      { name: "responseTokens", value: responseTokens, fill: "var(--color-responseTokens)" },
+      { name: "systemTokens", value: systemTokens, fill: "hsl(var(--chart-7))" },
+      { name: "historyTokens", value: historyTokens, fill: "hsl(var(--chart-8))" },
+      { name: "responseTokens", value: responseTokens, fill: "hsl(var(--chart-3))" },
     ];
 
     // Data for radial charts (needs a 'value' for the bar and potentially 'fill')
@@ -205,13 +205,13 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
               </ChartContainer>
               {/* Individual Token Counts - Kept for clarity */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[var(--color-systemTokens)]/50">
+                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[hsl(var(--chart-7))]/50">
                   <span className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartConfig.systemTokens.color }} /> System
                   </span>
                   <span className="font-mono">{tokenStats.systemTokens.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[var(--color-historyTokens)]/50">
+                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[hsl(var(--chart-8))]/50">
                   <span className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartConfig.historyTokens.color }} />
                     History
@@ -227,7 +227,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
                     <span className="text-xs text-muted-foreground">{tokenStats.historyTokenEstimation.toLocaleString()}</span>
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[var(--color-responseTokens)]/50">
+                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[hsl(var(--chart-3))]/50">
                   <span className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartConfig.responseTokens.color }} />
                     Response
