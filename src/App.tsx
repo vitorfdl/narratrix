@@ -11,7 +11,6 @@ import { checkForUpdates } from "./services/updater";
 const AppContent: React.FC = () => {
   const currentProfile = useCurrentProfile();
   const isAuthenticated = useIsAuthenticated();
-  const [activeSection, setActiveSection] = React.useState<string>("models");
 
   // Initialize profile synchronization
   useProfileSynchronization();
@@ -24,8 +23,8 @@ const AppContent: React.FC = () => {
   // Otherwise show the main app UI
   return (
     <div className="flex h-screen select-none text-base">
-      <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
-      <Content activeSection={activeSection} />
+      <Sidebar />
+      <Content />
     </div>
   );
 };

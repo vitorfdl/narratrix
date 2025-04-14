@@ -41,10 +41,13 @@ describe("applyInferenceTemplate", () => {
     const expectedOutput =
       "<sys>System instructions.</sys>\n<user>Hello there.</user>\n<asst>Hi!</asst>\n<user>How are you doing?</user>\n<asst>Assistant:";
 
-    const result = await applyInferenceTemplate(systemPrompt, inferenceTemplate, messages);
+    const result = await applyInferenceTemplate({ systemPrompt, inferenceTemplate, messages, chatConfig: {} });
 
     // Assert
-    expect(result).toBe(expectedOutput);
+    expect(result.text).toBe(expectedOutput);
+    expect(result.customStopStrings).toContain("</asst>\n");
+    expect(result.customStopStrings).toContain("</user>\n");
+    expect(result.customStopStrings).toHaveLength(2);
   });
 
   it("should allow prefilling if assistant's is the last message", async () => {
@@ -55,9 +58,9 @@ describe("applyInferenceTemplate", () => {
       { role: "assistant", text: "Hi!" },
     ];
 
-    const result = await applyInferenceTemplate(systemPrompt, inferenceTemplate, messages);
+    const result = await applyInferenceTemplate({ systemPrompt, inferenceTemplate, messages, chatConfig: {} });
 
     // Assert
-    expect(result).toBe("<sys>System instructions.</sys>\n<user>Hello there.</user>\n<asst>Hi!");
+    expect(result.text).toBe("<sys>System instructions.</sys>\n<user>Hello there.</user>\n<asst>Hi!");
   });
 });

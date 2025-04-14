@@ -114,7 +114,7 @@ const NavGroup: React.FC<NavGroupProps> = ({
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = (/* Remove props */) => {
+const Sidebar: React.FC<SidebarProps> = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   // Use the store
   const { activeSection, setActiveSection } = useUIStore();
