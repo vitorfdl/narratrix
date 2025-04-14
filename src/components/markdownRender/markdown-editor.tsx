@@ -253,6 +253,7 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
                 viewMode: "source",
               }),
             ]}
+            className="prose dark:prose-invert"
           />
         </div>
       </div>

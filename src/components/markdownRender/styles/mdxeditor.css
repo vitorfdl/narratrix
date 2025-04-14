@@ -92,4 +92,22 @@
   & ._markdownParseError_uazmk_1211 {
     display: none;
   }
+
+  & blockquote {
+    @apply text-foreground border-l-4 border-muted pl-4 italic; /* Adjust text-* and border-* as needed */
+  }
+
+  /* Target blockquote text in the editor */
+  & .cm-line .ͼ16 {
+    @apply text-foreground; /* This will override the #3b4252 color */
+  }
+
+  /* More specific selectors for the quote marker and text */
+  & .cm-line .ͼ16.ͼ1l {
+    @apply text-primary; /* Color for the > symbol */
+  }
+  
+  & .cm-line .ͼ16:not(.ͼ1l) {
+    @apply text-accent-foreground; /* Different color for the actual text */
+  }
 }
