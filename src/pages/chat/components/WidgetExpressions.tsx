@@ -214,9 +214,9 @@ const WidgetExpressions = () => {
           [currentSpeakerId]: finalExpression,
         }));
         // Clear selection after successful generation
-        if (selectedText) {
-          clearSelection();
-        }
+        // if (selectedText) {
+        //   clearSelection();
+        // }
       } catch (error) {
         toast.error(`Error generating expression for ${targetCharacter.name}:`, {
           description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -253,8 +253,7 @@ const WidgetExpressions = () => {
     if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
       if (selectedText && selectedMessageCharacterId) {
         generateExpression(selectedText);
-      }
-      if (lastSpeakerId && lastMessageContent) {
+      } else if (lastSpeakerId && lastMessageContent) {
         throttledGenerateExpression(); // Call the throttled function directly
       }
     }
@@ -322,73 +321,74 @@ const WidgetExpressions = () => {
               >
                 {autoRefreshEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </Button>
+
+              {/* Settings Button */}
+              <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-7 w-7 p-0" title="Configure Prompts">
+                    <Settings className="h-3.5 w-3.5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent size="window">
+                  <DialogHeader>
+                    <DialogTitle>Configure Expression Prompts</DialogTitle>
+                    <DialogDescription>Customize the prompts used to generate character expressions.</DialogDescription>
+                  </DialogHeader>
+                  {/* Apply two-column grid layout */}
+                  <div className="grid grid-cols-2 gap-4 py-4">
+                    {/* First column for prompts */}
+                    <div className="space-y-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="system-prompt">System Prompt</Label>
+                        <MarkdownTextArea
+                          initialValue={tempSystemPrompt}
+                          onChange={(value) => setTempSystemPrompt(value)}
+                          editable={true}
+                          placeholder={defaultSystemPrompt}
+                          className="min-h-[100px] max-h-[20vh] overflow-y-auto"
+                          suggestions={ExpressionSuggestionList}
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="request-prompt">User Prompt (Request)</Label>
+                        <MarkdownTextArea
+                          initialValue={tempRequestPrompt}
+                          onChange={(value) => setTempRequestPrompt(value)}
+                          editable={true}
+                          placeholder={defaultRequestPrompt}
+                          suggestions={ExpressionSuggestionList}
+                          className="min-h-[100px] max-h-[20vh]"
+                        />
+                        <p className="text-xs italic text-muted-foreground">
+                          Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}
+                          expression.last{"}}"}, {"{{"}chat.message{"}}"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Second column for Chat Template selection */}
+                    <div className="space-y-1 overflow-y-auto max-h-[60vh]">
+                      <Label htmlFor="chat-template">Chat Template</Label>
+                      <div className="border border-input rounded-md">
+                        <WidgetConfig
+                          currentChatTemplateID={tempChatTemplateId || null}
+                          onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for expression generation.</p>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveSettings}>Save Changes</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
-          {/* Settings Button */}
-          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 p-0" title="Configure Prompts">
-                <Settings className="h-3.5 w-3.5" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent size="window">
-              <DialogHeader>
-                <DialogTitle>Configure Expression Prompts</DialogTitle>
-                <DialogDescription>Customize the prompts used to generate character expressions.</DialogDescription>
-              </DialogHeader>
-              {/* Apply two-column grid layout */}
-              <div className="grid grid-cols-2 gap-4 py-4">
-                {/* First column for prompts */}
-                <div className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="system-prompt">System Prompt</Label>
-                    <MarkdownTextArea
-                      initialValue={tempSystemPrompt}
-                      onChange={(value) => setTempSystemPrompt(value)}
-                      editable={true}
-                      placeholder={defaultSystemPrompt}
-                      className="min-h-[100px] max-h-[20vh] overflow-y-auto"
-                      suggestions={ExpressionSuggestionList}
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="request-prompt">User Prompt (Request)</Label>
-                    <MarkdownTextArea
-                      initialValue={tempRequestPrompt}
-                      onChange={(value) => setTempRequestPrompt(value)}
-                      editable={true}
-                      placeholder={defaultRequestPrompt}
-                      suggestions={ExpressionSuggestionList}
-                      className="min-h-[100px] max-h-[20vh]"
-                    />
-                    <p className="text-xs italic text-muted-foreground">
-                      Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}
-                      expression.last{"}}"}, {"{{"}chat.message{"}}"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Second column for Chat Template selection */}
-                <div className="space-y-1 overflow-y-auto max-h-[60vh]">
-                  <Label htmlFor="chat-template">Chat Template</Label>
-                  <div className="border border-input rounded-md">
-                    <WidgetConfig
-                      currentChatTemplateID={tempChatTemplateId || null}
-                      onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for expression generation.</p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSaveSettings}>Save Changes</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 
@@ -423,11 +423,7 @@ const WidgetExpressions = () => {
                     <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-center">
                       <p className="text-sm font-medium text-primary-foreground drop-shadow-md">
                         {/* Add visual indicator for selected text */}
-                        {selectedText && autoRefreshEnabled && (
-                          <div className="bg-primary/10 border-l-4 border-primary px-2 py-1 text-sm z-10 shadow-sm">
-                            <p className="text-xs text-muted mb-0.5">Generating expression from selected text!</p>
-                          </div>
-                        )}
+
                         {displayCharacter.name}
                         {/* Show expression if it's the last speaker OR if text was selected for this character */}
                         {(displayCharacter.id === lastSpeakerId || (selectedText && displayCharacter.id === selectedMessageCharacterId)) && (
