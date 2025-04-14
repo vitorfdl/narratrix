@@ -373,6 +373,7 @@ const WidgetMessages: React.FC = () => {
               systemPromptOverride: settings.systemPrompt || undefined,
               quietUserMessage: true,
               extraSuggestions: {},
+              messageHistoryOverride: messagesToSummarize,
             });
 
             toast.success("Summary generated successfully");
