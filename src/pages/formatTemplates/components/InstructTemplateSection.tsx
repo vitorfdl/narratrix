@@ -5,6 +5,7 @@ import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
+import { useSessionCurrentInferenceTemplate } from "@/utils/session-storage";
 import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
@@ -44,13 +45,12 @@ export const CheckboxWithLabel: React.FC<CheckboxWithLabelProps> = ({ id, label,
 );
 
 export function InstructTemplateSection() {
-  const [instructTemplateID, setInstructTemplateID] = useState<string | null>(null);
+  const [instructTemplateID, setInstructTemplateID] = useSessionCurrentInferenceTemplate();
   const { updateInferenceTemplate, createInferenceTemplate, deleteInferenceTemplate } = useTemplateActions();
   const currentTemplate = useInferenceTemplate(instructTemplateID ?? "");
   const templateList = useInferenceTemplateList();
   // const error = useTemplateError();
   const currentProfile = useCurrentProfile();
-
   // Track if we're currently updating to prevent loops
   const isUpdating = useRef(false);
 
@@ -80,7 +80,7 @@ export function InstructTemplateSection() {
         useSameAsUser: false,
         useSameAsSystemPrompt: false,
       },
-      customStopStrings: [] as string[],
+      customStopStrings: ["{{char}}:", "{{user}}:"] as string[],
     }),
     [],
   );
@@ -231,7 +231,6 @@ export function InstructTemplateSection() {
         </CardHeader>
         <CardContent className="space-y-2">
           <TemplatePicker
-            disabled
             templates={templateList}
             selectedTemplateId={instructTemplateID}
             onTemplateSelect={setInstructTemplateID}

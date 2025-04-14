@@ -7,6 +7,7 @@ import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-s
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { applyContextLimit } from "./apply-context-limit";
+import { applyInferenceTemplate } from "./apply-inference-template";
 import { LorebookContentResponse, getLorebookContent, processLorebookMessages } from "./apply-lorebook";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./format-template-utils";
 import { replaceTextPlaceholders } from "./replace-text";
@@ -54,6 +55,7 @@ export interface PromptFormatterConfig {
 export interface FormattedPromptResult {
   inferenceMessages: InferenceMessage[];
   systemPrompt?: string;
+  customStopStrings?: string[];
 }
 
 const addPrefix = (string: string, prefix: string) => {
@@ -222,7 +224,7 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
 /**
  * Main format prompt function that orchestrates the prompt formatting process
  */
-export async function formatPrompt(config: PromptFormatterConfig) {
+export async function formatPrompt(config: PromptFormatterConfig): Promise<FormattedPromptResult> {
   const prefixOption = config.formatTemplate?.config.settings.prefix_messages;
   // Step 1: Get chat history with user message
   const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt, prefixOption);
@@ -270,8 +272,25 @@ export async function formatPrompt(config: PromptFormatterConfig) {
   });
   const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 
-  return applyContextLimit(formattedPrompt, {
+  const limitedPrompt = await applyContextLimit(formattedPrompt, {
     config: config.chatTemplate?.config || { max_context: 100, max_tokens: 1500, max_depth: 100 },
     custom_prompts: config.chatTemplate?.custom_prompts || [],
   });
+
+  if (config.inferenceTemplate) {
+    const inferencePrompt = await applyInferenceTemplate({
+      systemPrompt: limitedPrompt.systemPrompt,
+      inferenceTemplate: config.inferenceTemplate,
+      messages: limitedPrompt.inferenceMessages,
+      chatConfig: config.chatConfig,
+    });
+
+    return {
+      inferenceMessages: [{ role: "user", text: inferencePrompt.text }],
+      systemPrompt: undefined,
+      customStopStrings: inferencePrompt.customStopStrings,
+    };
+  }
+
+  return limitedPrompt;
 }

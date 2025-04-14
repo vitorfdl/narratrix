@@ -20,6 +20,12 @@ const currentFormatTemplateAtom = atomWithStorage<string | null>(
   createJSONStorage(() => sessionStorage),
 );
 
+const currentInferenceTemplateAtom = atomWithStorage<string | null>(
+  "currentInferenceTemplate",
+  null,
+  createJSONStorage(() => sessionStorage),
+);
+
 export function useSessionProfile() {
   return useAtom(profileAtom);
 }
@@ -30,4 +36,8 @@ export function useSessionCurrentTab() {
 
 export function useSessionCurrentFormatTemplate() {
   return useAtom(currentFormatTemplateAtom);
+}
+
+export function useSessionCurrentInferenceTemplate() {
+  return useAtom(currentInferenceTemplateAtom);
 }

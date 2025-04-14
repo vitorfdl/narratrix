@@ -5,7 +5,7 @@ import { FormattedPromptResult, PromptFormatterConfig } from "./formatter";
 /**
  * Applies placeholder replacements to a given text string based on the configuration.
  */
-function applyTextReplacements(text: string, config: PromptFormatterConfig["chatConfig"]): string {
+export function applyTextReplacements(text: string, config: PromptFormatterConfig["chatConfig"]): string {
   const { character, user_character, chapter, extra } = config || {};
   let processedText = text;
 
@@ -104,7 +104,6 @@ export function replaceTextPlaceholders(
   systemPrompt: string | undefined,
   config: PromptFormatterConfig["chatConfig"],
 ): FormattedPromptResult {
-  // console.log("⚠️ !> config", config);
   const { character, user_character, chapter, extra, censorship } = config || {};
 
   // Skip if no replacements needed

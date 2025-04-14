@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StepButton } from "@/components/ui/step-button";
+import { useModelManifests } from "@/hooks/manifestStore";
 import { useInferenceTemplateList } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { CheckCircleIcon, MessageCircleIcon, Settings2Icon } from "lucide-react";
@@ -21,6 +22,11 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
   const [maxConcurrency, setMaxConcurrency] = useState(model.max_concurrency);
   const [inferenceTemplateID, setInferenceTemplateID] = useState(model.inference_template_id || null);
   const [isSaving, setIsSaving] = useState(false);
+  const manifests = useModelManifests();
+
+  // Find the manifest for the current model
+  const modelManifest = manifests.find((m) => m.id === model.manifest_id);
+  const supportsCompletion = modelManifest?.inference_type?.includes("completion") ?? false;
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -63,38 +69,39 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
             <Label htmlFor="format" className="text-right">
               Format Template
             </Label>
-            <Select value={inferenceTemplateID || "none"} onValueChange={setInferenceTemplateID}>
+            <Select value={inferenceTemplateID || "none"} onValueChange={setInferenceTemplateID} disabled={!supportsCompletion}>
               <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select format template" />
+                <SelectValue placeholder={!supportsCompletion ? "Chat Completion Only" : "Select format template"} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] overflow-y-auto">
                 <SelectGroup>
-                  <SelectLabel className="flex items-center gap-2 text-primary">
+                  <SelectLabel className="flex items-center gap-2 text-primary font-medium py-1.5">
                     <MessageCircleIcon className="h-4 w-4" />
                     Default Mode
                   </SelectLabel>
-                  <SelectItem value="none" className="pl-8 flex items-center gap-2 font-medium">
+                  <SelectItem value="none" className="pl-6 mb-1 rounded-md">
                     <div className="flex items-center gap-2">
                       <CheckCircleIcon className="h-4 w-4 text-primary" />
-                      Use Chat Completion
+                      <span>Use Chat Completion</span>
                     </div>
                   </SelectItem>
                 </SelectGroup>
 
-                <SelectSeparator className="my-2" />
-
                 {inferenceTemplates.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel className="flex items-center gap-2 text-primary">
-                      <Settings2Icon className="h-4 w-4" />
-                      Text Completion Templates
-                    </SelectLabel>
-                    {inferenceTemplates.map((template) => (
-                      <SelectItem key={template.id} value={template.id} className="pl-8">
-                        {template.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  <>
+                    <SelectSeparator className="my-1" />
+                    <SelectGroup>
+                      <SelectLabel className="flex items-center gap-2 text-primary font-medium py-1.5">
+                        <Settings2Icon className="h-4 w-4" />
+                        Text Completion Templates
+                      </SelectLabel>
+                      {inferenceTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id} className="pl-6 flex items-center gap-2 my-0.5 rounded-md">
+                          <span>{template.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </>
                 )}
               </SelectContent>
             </Select>

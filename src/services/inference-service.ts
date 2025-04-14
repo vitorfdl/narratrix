@@ -317,7 +317,7 @@ export function useInferenceService() {
         },
       },
     });
-    return { ...prompt, manifestSettings, modelSettings, chatTemplate };
+    return { ...prompt, manifestSettings, modelSettings, chatTemplate, isChat: !!inferenceTemplate };
   };
 
   /**
@@ -368,7 +368,7 @@ export function useInferenceService() {
         throw new Error("Failed to format prompt");
       }
 
-      const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate } = promptResult;
+      const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate, isChat, customStopStrings } = promptResult;
       if (!modelSettings || !manifestSettings) {
         console.error("Model or manifest settings not available. Check chat template configuration.");
         throw new Error("Model or manifest settings not available. Check chat template configuration.");
@@ -421,7 +421,7 @@ export function useInferenceService() {
       // Create ModelSpecs using the model and manifest settings
       const modelSpecs: ModelSpecs = {
         id: modelSettings.id,
-        model_type: "chat",
+        model_type: isChat ? "chat" : "completion",
         config: modelSettings.config || {},
         max_concurrent_requests: modelSettings.max_concurrency || 1,
         engine: manifestSettings.engine,
@@ -431,12 +431,18 @@ export function useInferenceService() {
       // Set it to streaming state BEFORE making the backend call
       streamingState.current.requestId = localRequestId;
 
+      // Setup Parameters with Custom Stop Strigns.
+      const parameters = removeNestedFields(parametersOverride || chatTemplate?.config || {});
+      if (customStopStrings) {
+        parameters.stop = parameters.stop ? [...parameters.stop, ...customStopStrings] : customStopStrings;
+      }
+
       // Start the inference process
       const confirmID = await runInference({
         messages: inferenceMessages,
         modelSpecs,
         systemPrompt: systemPrompt,
-        parameters: removeNestedFields(parametersOverride || chatTemplate?.config || {}),
+        parameters,
         stream,
         requestId: localRequestId,
       });
