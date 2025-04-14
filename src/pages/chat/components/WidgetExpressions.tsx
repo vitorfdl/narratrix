@@ -253,11 +253,17 @@ const WidgetExpressions = () => {
     if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
       if (selectedText && selectedMessageCharacterId) {
         generateExpression(selectedText);
-      } else if (lastSpeakerId && lastMessageContent) {
+      }
+    }
+  }, [expressionSettings.chatTemplateId, selectedText]);
+
+  useEffect(() => {
+    if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
+      if (lastSpeakerId && lastMessageContent) {
         throttledGenerateExpression(); // Call the throttled function directly
       }
     }
-  }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, throttledGenerateExpression]);
+  }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, expressionSettings.chatTemplateId, throttledGenerateExpression]);
 
   // Simplified Toggle auto-refresh: just update the state
   const toggleAutoRefresh = useCallback(() => {
