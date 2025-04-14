@@ -11,13 +11,8 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { useState } from "react";
@@ -48,9 +43,7 @@ const SortableItem = ({ id, children }: SortableItemProps) => {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 p-1 mb-2 bg-card rounded-md border ${
-        isDragging ? "shadow-lg opacity-50" : ""
-      }`}
+      className={`flex items-center gap-2 p-1 mb-2 bg-card rounded-md border ${isDragging ? "shadow-lg opacity-50" : ""}`}
     >
       <button className="cursor-grab touch-none" {...attributes} {...listeners}>
         <GripVertical className="h-5 w-5 text-muted-foreground" />
@@ -93,6 +86,7 @@ export function DragArray({ items, onChange, className = "" }: DragArrayProps) {
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        modifiers={[restrictToVerticalAxis]}
       >
         <SortableContext items={items} strategy={verticalListSortingStrategy}>
           <div className="space-y-1">
