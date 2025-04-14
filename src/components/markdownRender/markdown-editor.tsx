@@ -234,6 +234,7 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
             }}
             markdown={content}
             onChange={handleChange}
+            contentEditableClassName="prose dark:prose-invert"
             plugins={[
               diffSourcePlugin({
                 codeMirrorExtensions: [
@@ -253,6 +254,7 @@ export const MarkdownEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
                 viewMode: "source",
               }),
             ]}
+            trim={false}
             className="prose dark:prose-invert"
           />
         </div>
