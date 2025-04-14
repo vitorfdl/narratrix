@@ -60,6 +60,8 @@ const formatTemplateSchema = baseTemplateSchema.extend({
   config: z.object({
     settings: templateSettingsSchema.default({}),
     reasoning: templateFormattingSchema.default({}),
+    context_separator: z.string().optional().default("\n---\n"),
+    lorebook_separator: z.string().optional().default("\n---\n"),
   }),
   prompts: SystempPromptConfigSchema.default([]),
 });

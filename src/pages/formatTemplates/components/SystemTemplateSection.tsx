@@ -3,6 +3,8 @@ import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-format-schema";
@@ -10,7 +12,7 @@ import { DndContext, closestCenter } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronUp, GripVertical, Paperclip, Plus, Trash } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Paperclip, Plus, SeparatorVertical, Trash } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import "../styles/shared.css";
@@ -98,6 +100,8 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
 
   // Local state for UI
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
+  const [contextSeparator, setContextSeparator] = useState("");
+  const [lorebookSeparator, setLorebookSeparator] = useState("");
 
   const isDisabled = !formatTemplateID;
 
@@ -105,8 +109,14 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
   useEffect(() => {
     if (!currentTemplate) {
       setPrompts([]);
+      setContextSeparator("\n---\n");
+      setLorebookSeparator("\n---\n");
       return;
     }
+
+    // Set separators from template
+    setContextSeparator(currentTemplate.config.context_separator);
+    setLorebookSeparator(currentTemplate.config.lorebook_separator);
 
     // Transform sections to items with UI state while preserving collapse state
     const items = currentTemplate.prompts.map((section, index) => {
@@ -141,7 +151,14 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
     }));
 
     try {
-      await updateFormatTemplate(formatTemplateID, { prompts: config });
+      await updateFormatTemplate(formatTemplateID, {
+        prompts: config,
+        config: {
+          ...currentTemplate.config,
+          context_separator: contextSeparator,
+          lorebook_separator: lorebookSeparator,
+        },
+      });
     } catch (error) {
       console.error("Failed to update template:", error);
     }
@@ -234,6 +251,23 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
     [isDisabled, debouncedUpdate],
   );
 
+  // Handle separator changes
+  const handleContextSeparatorChange = useCallback(
+    (value: string) => {
+      setContextSeparator(value);
+      debouncedUpdate();
+    },
+    [debouncedUpdate],
+  );
+
+  const handleLorebookSeparatorChange = useCallback(
+    (value: string) => {
+      setLorebookSeparator(value);
+      debouncedUpdate();
+    },
+    [debouncedUpdate],
+  );
+
   // Filter available types that are not already used
   const availableTypes = useMemo(() => SYSTEM_PROMPT_TYPES.filter((type) => !prompts.some((prompt) => prompt.type === type)), [prompts.length]);
 
@@ -256,12 +290,6 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
             </HelpTooltip>
           </div>
         </CardTitle>
-        {/* <div className="flex items-center space-x-2">
-          <Checkbox id="useGlobal" checked={useGlobal} onCheckedChange={handleGlobalCheckChange} />
-          <Label htmlFor="useGlobal" className="text-sm text-muted-foreground">
-            Use Global
-          </Label>
-        </div> */}
       </CardHeader>
       <CardContent className="space-y-2">
         <div className={`space-y-1 ${isDisabled ? "opacity-70" : ""}`}>
@@ -311,6 +339,40 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
             </DropdownMenu>
           </div>
         )}
+
+        <Card className="mt-4">
+          <CardHeader className="template-card-header">
+            <CardTitle className="template-card-title">
+              <SeparatorVertical className="h-4 w-4" /> Separators
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="context-separator">Context Separator</Label>
+                <Input
+                  value={contextSeparator}
+                  placeholder="\n\n"
+                  onChange={(e) => handleContextSeparatorChange(e.target.value)}
+                  key={`context-separator-${formatTemplateID}`}
+                  className="w-full resize-none"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Separator used between different context sections</p>
+              </div>
+              <div>
+                <Label htmlFor="lorebook-separator">Lorebook Separator</Label>
+                <Input
+                  value={lorebookSeparator}
+                  placeholder="\n---\n"
+                  onChange={(e) => handleLorebookSeparatorChange(e.target.value)}
+                  key={`lorebook-separator-${formatTemplateID}`}
+                  className="w-full resize-none"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Separator used between different lorebook entries</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </CardContent>
     </Card>
   );

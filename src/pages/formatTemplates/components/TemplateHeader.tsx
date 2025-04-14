@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
-import { FormatTemplate, NewFormatTemplate, TemplateSettings } from "@/schema/template-format-schema";
+import { FormatTemplate, NewFormatTemplate, SYSTEM_PROMPT_DEFAULT_CONTENT, TemplateSettings } from "@/schema/template-format-schema";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { TemplatePicker } from "./TemplatePicker";
@@ -122,7 +122,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
       config: {
         settings: {
           // Default settings for a brand new template
-          trim_assistant_incomplete: false,
+          trim_assistant_incomplete: true,
           trim_double_spaces: true,
           collapse_consecutive_lines: true,
           prefix_messages: "never",
@@ -131,11 +131,20 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
           merge_subsequent_messages: true,
         },
         reasoning: {
-          prefix: "",
-          suffix: "",
+          prefix: "<think>",
+          suffix: "</think>",
         },
+        context_separator: "\\n\\n",
+        lorebook_separator: "\\n---\\n",
       },
-      prompts: [],
+      prompts: [
+        { type: "context", content: SYSTEM_PROMPT_DEFAULT_CONTENT.context },
+        { type: "lorebook-top", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-top"] },
+        { type: "chapter-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["chapter-context"] },
+        { type: "character-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["character-context"] },
+        { type: "user-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["user-context"] },
+        { type: "lorebook-bottom", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-bottom"] },
+      ],
     };
 
     if (sourceTemplateId) {
