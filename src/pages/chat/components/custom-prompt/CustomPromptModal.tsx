@@ -180,7 +180,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
               <MarkdownTextArea
                 editable={true}
                 suggestions={promptReplacementSuggestionList}
-                key={initialData?.id || "new-prompt"}
+                key={`${prompt?.id || "new-prompt"}-${prompt?.role}`}
                 initialValue={prompt.prompt || ""}
                 onChange={(value) => setPrompt({ ...prompt, prompt: value })}
                 className="max-h-[40vh] md:max-h-[50vh] overflow-y-auto"
