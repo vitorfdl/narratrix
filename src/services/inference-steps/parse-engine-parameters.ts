@@ -61,20 +61,32 @@ function parseOpenAIParameters(rawParameters: Record<string, any>, { model }: Mo
 }
 
 export function parseEngineParameters(engine: Engine, modelConfig: Model["config"], parameters: Record<string, any>) {
+  let newParameters = structuredClone(parameters);
+
+  // Fix Dynamic Temperature
+  if ("dynatemp_high" in newParameters) {
+    const { dynatemp_high, dynatemp_low } = newParameters;
+
+    newParameters = {
+      ...newParameters,
+      dynatemp_range: (dynatemp_high - dynatemp_low) / 2,
+    };
+  }
+
   switch (engine) {
     case "anthropic":
-      return parseAnthropicParameters(parameters);
+      return parseAnthropicParameters(newParameters);
     // case "openai_compatible":
     //   return parameters;
     // case "google":
     //   return parameters;
     case "openrouter":
-      return parseOpenRouterParameters(parameters);
+      return parseOpenRouterParameters(newParameters);
     // case "runpod":
     //   return parameters;
     // case "aws_bedrock":
     //   return parameters;
     default:
-      return parseOpenAIParameters(parameters, modelConfig || {});
+      return parseOpenAIParameters(newParameters, modelConfig || {});
   }
 }
