@@ -696,7 +696,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
               <StepButton
                 value={lorebookTokenBudget}
                 onValueChange={setLorebookTokenBudget}
-                min={64}
+                min={0}
                 max={contextSize}
                 step={64}
                 className="h-7"
