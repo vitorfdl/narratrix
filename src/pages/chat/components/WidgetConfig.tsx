@@ -8,12 +8,14 @@ import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
 import { TemplatePicker } from "@/pages/formatTemplates/components/TemplatePicker";
 import type { SectionField } from "@/schema/template-chat-settings-types";
-import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, PlusIcon, ServerIcon, XIcon } from "lucide-react";
+import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useChatActions, useCurrentChatTemplateID } from "@/hooks/chatStore";
+import { useUIStore } from "@/hooks/UIStore";
+import { useCharacters } from "@/hooks/characterStore";
+import { useChatActions, useCurrentChatParticipants, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useLorebooks } from "@/hooks/lorebookStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
@@ -22,6 +24,7 @@ import { useFormatTemplateList } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { NewChatTemplateParams } from "@/services/template-chat-service";
+import { useSessionCurrentFormatTemplate } from "@/utils/session-storage";
 import { configFields } from "../manifests/configFields";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
@@ -47,6 +50,12 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const models = useModels();
   const formatTemplates = useFormatTemplateList();
   const lorebooks = useLorebooks();
+  const participants = useCurrentChatParticipants();
+  const characterList = useCharacters();
+
+  const participantHaveLorebook = useMemo(() => {
+    return participants?.some((participant) => characterList.find((character) => character.id === participant.id)?.lorebook_id);
+  }, [participants, characterList]);
 
   const currentProfile = useCurrentProfile();
   const profileId = currentProfile?.id;
@@ -480,6 +489,23 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     return customPrompts.find((p) => p.id === editingPromptId);
   };
 
+  // Assume setActiveSection comes from a UI store
+  const setActiveSection = useUIStore((state) => state.setActiveSection);
+  const [, setSessionFormatTemplateId] = useSessionCurrentFormatTemplate();
+
+  /**
+   * Navigates to the Format Template page to edit the selected template.
+   */
+  const handleEditFormatTemplate = () => {
+    if (!selectedFormatTemplateId || isDisabled) {
+      return;
+    }
+    // Set the template ID in session storage so the target page knows which one to load
+    setSessionFormatTemplateId(selectedFormatTemplateId);
+    // Navigate to the inference (format template) page
+    setActiveSection("inference");
+  };
+
   return (
     <div className="space-y-1 p-1 @container">
       {/* Template Picker Section */}
@@ -537,25 +563,39 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
             <PaperclipIcon className="!h-3 !w-3" />
             <h3 className="text-xs font-normal my-auto">Format:</h3>
           </div>
-          <div className="flex-1">
-            <Combobox
-              items={formatTemplateOptions}
-              onChange={setSelectedFormatTemplateId}
-              placeholder="Search a format..."
-              selectedValue={selectedFormatTemplateId}
-              trigger={
-                <Button
-                  variant={selectedFormatTemplateId ? "outline" : "destructive"}
-                  className="w-full justify-between text-xs px-2"
-                  disabled={isDisabled}
-                >
-                  {selectedFormatTemplateId
-                    ? formatTemplates.find((template) => template.id === selectedFormatTemplateId)?.name || "Select a format..."
-                    : "Select a format..."}
-                  <ChevronDown className="ml-auto !h-3 !w-3" />
-                </Button>
-              }
-            />
+          <div className="flex flex-row items-center gap-1 flex-1">
+            <div className="flex-1">
+              <Combobox
+                items={formatTemplateOptions}
+                onChange={setSelectedFormatTemplateId}
+                placeholder="Search a format..."
+                selectedValue={selectedFormatTemplateId}
+                trigger={
+                  <Button
+                    variant={selectedFormatTemplateId ? "outline" : "destructive"}
+                    className="w-full justify-between text-xs px-2"
+                    disabled={isDisabled}
+                  >
+                    {selectedFormatTemplateId
+                      ? formatTemplates.find((template) => template.id === selectedFormatTemplateId)?.name || "Select a format..."
+                      : "Select a format..."}
+                    <ChevronDown className="ml-auto !h-3 !w-3" />
+                  </Button>
+                }
+              />
+            </div>
+            {selectedFormatTemplateId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={handleEditFormatTemplate}
+                disabled={isDisabled}
+                aria-label="Edit Format Template"
+              >
+                <Pencil className="!h-3 !w-3" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -646,7 +686,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
         </div>
 
         {/* Lorebook Token Budget - Conditionally Rendered */}
-        {selectedLorebookList.length > 0 && (
+        {(selectedLorebookList.length > 0 || participantHaveLorebook) && (
           <div className={`${bigScreenBreakpoints} items-center gap-2`}>
             <div className="w-1/3 flex items-center gap-1">
               <h3 className="text-xs font-normal">Lorebook Budget:</h3>

@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/UIStore";
 import Characters from "@/pages/characters/CharactersPage";
 import ChatPage from "@/pages/chat/ChatPage";
 import InferenceTemplatePage from "@/pages/formatTemplates/FormatTemplatePage";
@@ -6,10 +7,14 @@ import Models from "@/pages/models/ModelsPage";
 import Settings from "@/pages/settings/SettingsPage";
 
 interface ContentProps {
-  activeSection: string;
+  // Remove prop: activeSection
+  // activeSection: string;
 }
 
-const Content: React.FC<ContentProps> = ({ activeSection }) => {
+const Content: React.FC<ContentProps> = (/* Remove prop */) => {
+  // Use the store
+  const activeSection = useUIStore((state) => state.activeSection);
+
   return (
     <div className="flex-1 p-0 bg-content text-foreground overflow-auto  custom-scrollbar">
       {/* {activeSection === 'models' && <Models />} */}

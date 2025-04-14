@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/UIStore"; // Import the store
 import {
   Book,
   BoxIcon, // for Models
@@ -13,8 +14,9 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 interface SidebarProps {
-  setActiveSection: (section: string) => void;
-  activeSection: string;
+  // Remove props: setActiveSection and activeSection
+  // setActiveSection: (section: string) => void;
+  // activeSection: string;
 }
 
 export interface NavItem {
@@ -112,8 +114,10 @@ const NavGroup: React.FC<NavGroupProps> = ({
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ setActiveSection, activeSection }) => {
+const Sidebar: React.FC<SidebarProps> = (/* Remove props */) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // Use the store
+  const { activeSection, setActiveSection } = useUIStore();
 
   const mainNavItems: NavItem[] = [
     { id: "models", label: "Models", icon: <BoxIcon className="w-5 h-5" />, isMainNav: true },
