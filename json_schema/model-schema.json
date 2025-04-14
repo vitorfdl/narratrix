@@ -35,7 +35,7 @@
     "engine": {
       "type": "string",
       "description": "Engine type for the model integration",
-      "enum": ["openai_compatible", "aws_bedrock", "anthropic", "google"]
+      "enum": ["openai_compatible", "aws_bedrock", "anthropic", "google", "openrouter"]
     },
     "inference_type": {
       "type": "array",
@@ -68,7 +68,9 @@
           "dry",
           "seed",
           "reasoning",
-          "prompt_cache"
+          "prompt_cache",
+          "nsigma",
+          "dynamic_temperature"
         ]
       },
       "uniqueItems": true
