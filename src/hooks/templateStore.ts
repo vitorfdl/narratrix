@@ -9,7 +9,6 @@ import { create } from "zustand";
 
 import {
   InferenceTemplateFilter,
-  NewInferenceTemplateParams,
   createInferenceTemplate as createInferenceTemplateAPI,
   deleteInferenceTemplate as deleteInferenceTemplateAPI,
   getInferenceTemplateById as getInferenceTemplateByIdAPI,
@@ -19,7 +18,7 @@ import {
 } from "@/services/template-inference-service";
 
 import { FormatTemplate, NewFormatTemplate } from "@/schema/template-format-schema";
-import { InferenceTemplate } from "@/schema/template-inferance-schema";
+import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
 
 interface TemplateState {
   // Loading and error states
@@ -42,7 +41,7 @@ interface TemplateState {
     getFormatTemplatesByProfile: (profileId: string) => Promise<FormatTemplate[]>;
 
     // Inference Template Operations
-    createInferenceTemplate: (templateData: NewInferenceTemplateParams) => Promise<InferenceTemplate>;
+    createInferenceTemplate: (templateData: CreateInferenceTemplateParams) => Promise<InferenceTemplate>;
     getInferenceTemplateById: (id: string) => Promise<InferenceTemplate | null>;
     updateInferenceTemplate: (
       id: string,
@@ -209,7 +208,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     },
 
     // Inference Template Operations
-    createInferenceTemplate: async (templateData: NewInferenceTemplateParams) => {
+    createInferenceTemplate: async (templateData) => {
       try {
         set({ isLoading: true, error: null });
         const newTemplate = await createInferenceTemplateAPI(templateData);

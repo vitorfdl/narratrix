@@ -5,9 +5,10 @@ import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
+import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
 import { useSessionCurrentInferenceTemplate } from "@/utils/session-storage";
-import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bot, MessageSquare, Settings, Settings2, StopCircle, Wrench } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { TemplatePicker } from "./TemplatePicker";
 // Helper component for labeled input to reduce nesting
@@ -18,6 +19,38 @@ interface LabeledInputProps {
   disabled?: boolean;
   onChange: (value: string) => void;
 }
+
+const defaultConfig = {
+  name: "New Template",
+  config: {
+    systemPromptFormatting: {
+      prefix: "",
+      suffix: "",
+    },
+    userMessageFormatting: {
+      prefix: "",
+      suffix: "",
+    },
+    assistantMessageFormatting: {
+      prefix: "",
+      suffix: "",
+      prefill: "",
+      prefillOnlyCharacters: false,
+    },
+    agentMessageFormatting: {
+      prefix: "",
+      suffix: "",
+      useSameAsUser: false,
+      useSameAsSystemPrompt: false,
+    },
+    customStopStrings: ["{{char}}:", "{{user}}:"] as string[],
+  },
+};
+
+const defaultTemplate: CreateInferenceTemplateParams = {
+  ...defaultConfig,
+  profile_id: "",
+};
 
 export const LabeledInput: React.FC<LabeledInputProps> = ({ label, value, placeholder, disabled, onChange }) => (
   <div>
@@ -54,50 +87,11 @@ export function InstructTemplateSection() {
   // Track if we're currently updating to prevent loops
   const isUpdating = useRef(false);
 
-  // Use a ref to track the last saved state for comparison
-  const lastSavedState = useRef<any>(null);
+  // Use a ref to track the last saved state (full template structure) for comparison
+  const lastSavedState = useRef<InferenceTemplate | CreateInferenceTemplateParams | null>(null);
 
-  // Define default template state
-  const defaultTemplateState = useMemo(
-    () => ({
-      systemPromptFormatting: {
-        prefix: "",
-        suffix: "",
-      },
-      userMessageFormatting: {
-        prefix: "",
-        suffix: "",
-      },
-      assistantMessageFormatting: {
-        prefix: "",
-        suffix: "",
-        prefill: "",
-        prefillOnlyCharacters: false,
-      },
-      agentMessageFormatting: {
-        prefix: "",
-        suffix: "",
-        useSameAsUser: false,
-        useSameAsSystemPrompt: false,
-      },
-      customStopStrings: ["{{char}}:", "{{user}}:"] as string[],
-    }),
-    [],
-  );
-
-  // Initialize template state with default values
-  const [templateState, setTemplateState] = useState(defaultTemplateState);
-
-  // Update local state when selected template changes
-  useEffect(() => {
-    if (currentTemplate) {
-      setTemplateState(currentTemplate.config);
-      lastSavedState.current = JSON.stringify(currentTemplate.config);
-    } else {
-      setTemplateState(defaultTemplateState);
-      lastSavedState.current = JSON.stringify(defaultTemplateState);
-    }
-  }, [currentTemplate, defaultTemplateState]);
+  // Initialize template state with default values, matching the expected structure
+  const [templateState, setTemplateState] = useState<CreateInferenceTemplateParams>(defaultTemplate);
 
   // Debounced update function to avoid too many API calls
   const debouncedUpdate = useDebouncedCallback(async () => {
@@ -105,16 +99,19 @@ export function InstructTemplateSection() {
       return;
     }
 
-    // Check if state has actually changed before updating
-    const currentStateStr = JSON.stringify(templateState);
-    if (currentStateStr === lastSavedState.current) {
+    // Check if config has actually changed before updating
+    const currentConfigStr = JSON.stringify(templateState.config);
+    const lastSavedConfigStr = JSON.stringify(lastSavedState.current?.config);
+
+    if (currentConfigStr === lastSavedConfigStr) {
       return;
     }
 
     try {
       isUpdating.current = true;
-      await updateInferenceTemplate(instructTemplateID, { config: templateState });
-      lastSavedState.current = currentStateStr;
+      // Only send the config part for updates triggered by config changes
+      await updateInferenceTemplate(instructTemplateID, { config: templateState.config });
+      lastSavedState.current = structuredClone(templateState);
     } catch (error) {
       console.error("Failed to update template:", error);
     } finally {
@@ -122,32 +119,33 @@ export function InstructTemplateSection() {
     }
   }, 500);
 
-  // Use effect to trigger update when state changes
+  // Use effect to trigger update when config state changes
   useEffect(() => {
-    if (instructTemplateID && !isUpdating.current) {
-      debouncedUpdate();
+    if (instructTemplateID && !isUpdating.current && lastSavedState.current) {
+      // Trigger debounce if config changed
+      if (JSON.stringify(templateState.config) !== JSON.stringify(lastSavedState.current.config)) {
+        debouncedUpdate();
+      }
     }
-  }, [templateState, instructTemplateID, debouncedUpdate]);
+  }, [templateState.config, instructTemplateID, debouncedUpdate]);
 
   // Update handler for template fields
   const handleUpdate = useCallback((path: string[], value: any) => {
     // Special handling for customStopStrings to prevent empty string entries
     if (path[0] === "customStopStrings") {
-      // Filter out empty strings to prevent infinite loops
       const filteredValues = Array.isArray(value) ? value.filter((str) => str !== "") : value;
 
       setTemplateState((prevState) => {
         const newState = structuredClone(prevState);
-        newState.customStopStrings = filteredValues;
+        newState.config.customStopStrings = filteredValues;
         return newState;
       });
       return;
     }
 
     setTemplateState((prevState) => {
-      // Create a new state with the updated value
       const newState = structuredClone(prevState);
-      let current: any = newState;
+      let current: any = newState.config;
 
       // Navigate to the correct property
       for (let i = 0; i < path.length - 1; i++) {
@@ -168,30 +166,49 @@ export function InstructTemplateSection() {
       setInstructTemplateID(null);
       await deleteInferenceTemplate(instructTemplateID);
     }
-  }, [deleteInferenceTemplate, instructTemplateID]);
+  }, [deleteInferenceTemplate, instructTemplateID, setInstructTemplateID]);
 
   const handleNewTemplate = useCallback(
-    async (name: string) => {
+    async (name: string, sourceTemplateId?: string) => {
       try {
         if (!currentProfile?.id) {
           console.error("No profile selected");
           return;
         }
 
-        const newTemplate = await createInferenceTemplate({
-          name: name,
-          config: defaultTemplateState,
-          profile_id: currentProfile.id,
-        });
+        let newTemplateData: CreateInferenceTemplateParams;
 
-        if (newTemplate) {
-          setInstructTemplateID(newTemplate.id);
+        if (sourceTemplateId) {
+          // Duplicate scenario: Find the source template from the list
+          const sourceTemplate = templateList.find((t) => t.id === sourceTemplateId);
+          if (!sourceTemplate) {
+            console.error(`Source template with ID ${sourceTemplateId} not found for duplication.`);
+            return;
+          }
+          newTemplateData = {
+            profile_id: currentProfile.id,
+            name: `${sourceTemplate.name} (Copy)`, // Use source name for copy
+            config: structuredClone(sourceTemplate.config), // Deep clone config
+          };
+        } else {
+          // New/Default scenario: Use the provided name (or default) and default config
+          newTemplateData = {
+            ...defaultTemplate, // Start with default config structure
+            name: name || "New Template", // Use provided name or fallback
+            profile_id: currentProfile.id,
+          };
+        }
+
+        const response = await createInferenceTemplate(newTemplateData);
+
+        if (response) {
+          setInstructTemplateID(response.id); // Select the newly created template
         }
       } catch (error) {
         console.error("Failed to create new template:", error);
       }
     },
-    [createInferenceTemplate, currentProfile?.id, defaultTemplateState],
+    [createInferenceTemplate, currentProfile?.id, setInstructTemplateID, templateList], // Added templateList dependency
   );
 
   const handleEditName = useCallback(
@@ -202,11 +219,16 @@ export function InstructTemplateSection() {
 
       try {
         await updateInferenceTemplate(instructTemplateID, { name: name });
+        // Optimistically update local state name and lastSavedState
+        setTemplateState((prev) => ({ ...prev, name }));
+        if (lastSavedState.current) {
+          lastSavedState.current = { ...lastSavedState.current, name };
+        }
       } catch (error) {
         console.error("Failed to update template name:", error);
       }
     },
-    [updateInferenceTemplate, instructTemplateID],
+    [updateInferenceTemplate, instructTemplateID], // setTemplateState is stable
   );
 
   const handleImportTemplate = useCallback(() => {
@@ -218,6 +240,31 @@ export function InstructTemplateSection() {
     // To be implemented
     console.log("Export template", instructTemplateID);
   }, [instructTemplateID]);
+
+  // Sync local state with the selected template from the store
+  useEffect(() => {
+    if (currentTemplate && !isUpdating.current) {
+      // Create a structure matching the state, including profile_id
+      const newState: CreateInferenceTemplateParams = {
+        profile_id: currentTemplate.profile_id,
+        name: currentTemplate.name,
+        config: currentTemplate.config,
+      };
+      const newStateStr = JSON.stringify(newState);
+      // Compare full state to avoid loops if only profile_id changed upstream
+      if (newStateStr !== JSON.stringify(templateState)) {
+        setTemplateState(newState);
+        lastSavedState.current = structuredClone(newState); // Initialize last saved state
+      }
+    } else if (!currentTemplate && instructTemplateID === null) {
+      // Reset only if ID is null
+      const defaultStateStr = JSON.stringify(defaultTemplate);
+      if (JSON.stringify(templateState) !== defaultStateStr) {
+        setTemplateState(defaultTemplate);
+        lastSavedState.current = structuredClone(defaultTemplate); // Reset last saved state
+      }
+    }
+  }, [currentTemplate, instructTemplateID]); // Removed templateState
 
   const isDisabled = !instructTemplateID;
 
@@ -248,8 +295,12 @@ export function InstructTemplateSection() {
               prefixes, suffixes, and other formatting options that will be applied to different message types in the conversation.
             </p>
             <p className="text-muted-foreground">
-              These settings are required for models using the Text Completion method, as they need specific formatting patterns to distinguish
-              between different roles in the conversation.
+              <span className="underline">To configure a Model for Text Completion</span>, you need to go to the Model Settings page and click on the
+              settings icon{" "}
+              <span className="inline-block align-middle">
+                <Settings2 className="h-4 w-4" />
+              </span>{" "}
+              to setup an Inference Template.
             </p>
           </div>
 
@@ -263,14 +314,14 @@ export function InstructTemplateSection() {
               <div className="grid grid-cols-2 gap-4">
                 <LabeledInput
                   label="Prefix"
-                  value={templateState.systemPromptFormatting.prefix}
+                  value={templateState.config.systemPromptFormatting.prefix}
                   placeholder="<s>[SYSTEM]"
                   disabled={isDisabled}
                   onChange={(val) => handleUpdate(["systemPromptFormatting", "prefix"], val)}
                 />
                 <LabeledInput
                   label="Suffix"
-                  value={templateState.systemPromptFormatting.suffix}
+                  value={templateState.config.systemPromptFormatting.suffix}
                   placeholder="[/SYSTEM]</s>"
                   disabled={isDisabled}
                   onChange={(val) => handleUpdate(["systemPromptFormatting", "suffix"], val)}
@@ -289,14 +340,14 @@ export function InstructTemplateSection() {
               <div className="grid grid-cols-2 gap-4">
                 <LabeledInput
                   label="Prefix"
-                  value={templateState.userMessageFormatting.prefix}
+                  value={templateState.config.userMessageFormatting.prefix}
                   placeholder="<|user|>"
                   disabled={isDisabled}
                   onChange={(val) => handleUpdate(["userMessageFormatting", "prefix"], val)}
                 />
                 <LabeledInput
                   label="Suffix"
-                  value={templateState.userMessageFormatting.suffix}
+                  value={templateState.config.userMessageFormatting.suffix}
                   placeholder="</|user|>"
                   disabled={isDisabled}
                   onChange={(val) => handleUpdate(["userMessageFormatting", "suffix"], val)}
@@ -316,14 +367,14 @@ export function InstructTemplateSection() {
                 <div className="grid grid-cols-2 gap-4">
                   <LabeledInput
                     label="Prefix"
-                    value={templateState.assistantMessageFormatting.prefix}
+                    value={templateState.config.assistantMessageFormatting.prefix}
                     placeholder="<|assistant|>"
                     disabled={isDisabled}
                     onChange={(val) => handleUpdate(["assistantMessageFormatting", "prefix"], val)}
                   />
                   <LabeledInput
                     label="Suffix"
-                    value={templateState.assistantMessageFormatting.suffix}
+                    value={templateState.config.assistantMessageFormatting.suffix}
                     placeholder="</|assistant|>"
                     disabled={isDisabled}
                     onChange={(val) => handleUpdate(["assistantMessageFormatting", "suffix"], val)}
@@ -332,7 +383,7 @@ export function InstructTemplateSection() {
                 <div className="grid grid-cols-2 gap-4">
                   <LabeledInput
                     label="Assistant Prefill"
-                    value={templateState.assistantMessageFormatting.prefill}
+                    value={templateState.config.assistantMessageFormatting.prefill}
                     placeholder="I'll help you with that."
                     disabled={isDisabled}
                     onChange={(val) => handleUpdate(["assistantMessageFormatting", "prefill"], val)}
@@ -340,7 +391,7 @@ export function InstructTemplateSection() {
                   <CheckboxWithLabel
                     id="prefillOnlyCharacters"
                     label="Prefill only on Characters"
-                    checked={templateState.assistantMessageFormatting.prefillOnlyCharacters}
+                    checked={templateState.config.assistantMessageFormatting.prefillOnlyCharacters}
                     disabled={isDisabled}
                     onCheckedChange={(checked) => handleUpdate(["assistantMessageFormatting", "prefillOnlyCharacters"], checked)}
                   />
@@ -361,34 +412,38 @@ export function InstructTemplateSection() {
                   <CheckboxWithLabel
                     id="useSameAsUser"
                     label="Use same as User"
-                    checked={templateState.agentMessageFormatting.useSameAsUser}
-                    disabled={isDisabled || templateState.agentMessageFormatting.useSameAsSystemPrompt}
+                    checked={templateState.config.agentMessageFormatting.useSameAsUser}
+                    disabled={isDisabled || templateState.config.agentMessageFormatting.useSameAsSystemPrompt}
                     onCheckedChange={(checked) => handleUpdate(["agentMessageFormatting", "useSameAsUser"], checked)}
                   />
                   <CheckboxWithLabel
                     id="useSameAsSystemPrompt"
                     label="Use same as System Prompt"
-                    checked={templateState.agentMessageFormatting.useSameAsSystemPrompt}
-                    disabled={isDisabled || templateState.agentMessageFormatting.useSameAsUser}
+                    checked={templateState.config.agentMessageFormatting.useSameAsSystemPrompt}
+                    disabled={isDisabled || templateState.config.agentMessageFormatting.useSameAsUser}
                     onCheckedChange={(checked) => handleUpdate(["agentMessageFormatting", "useSameAsSystemPrompt"], checked)}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <LabeledInput
                     label="Prefix"
-                    value={templateState.agentMessageFormatting.prefix}
+                    value={templateState.config.agentMessageFormatting.prefix}
                     placeholder="<|function|>"
                     disabled={
-                      isDisabled || templateState.agentMessageFormatting.useSameAsUser || templateState.agentMessageFormatting.useSameAsSystemPrompt
+                      isDisabled ||
+                      templateState.config.agentMessageFormatting.useSameAsUser ||
+                      templateState.config.agentMessageFormatting.useSameAsSystemPrompt
                     }
                     onChange={(val) => handleUpdate(["agentMessageFormatting", "prefix"], val)}
                   />
                   <LabeledInput
                     label="Suffix"
-                    value={templateState.agentMessageFormatting.suffix}
+                    value={templateState.config.agentMessageFormatting.suffix}
                     placeholder="</|function|>"
                     disabled={
-                      isDisabled || templateState.agentMessageFormatting.useSameAsUser || templateState.agentMessageFormatting.useSameAsSystemPrompt
+                      isDisabled ||
+                      templateState.config.agentMessageFormatting.useSameAsUser ||
+                      templateState.config.agentMessageFormatting.useSameAsSystemPrompt
                     }
                     onChange={(val) => handleUpdate(["agentMessageFormatting", "suffix"], val)}
                   />
@@ -405,7 +460,7 @@ export function InstructTemplateSection() {
             </CardHeader>
             <CardContent>
               <CommandTagInput
-                value={templateState.customStopStrings}
+                value={templateState.config.customStopStrings}
                 placeholder="e.g., </s>, [DONE], [END]"
                 className={isDisabled ? "opacity-60 pointer-events-none" : ""}
                 onChange={(newValues) => handleUpdate(["customStopStrings"], newValues.filter(Boolean))}

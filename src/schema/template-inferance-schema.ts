@@ -24,8 +24,18 @@ const inferenceTemplateSchema = baseTemplateSchema.extend({
   config: inferenceConfigSchema.default({}),
 });
 
+/**
+ * Request/Response Schemas for Lorebook
+ */
+export const createInferenceTemplateSchema = inferenceTemplateSchema.omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
 export { agentMessageFormattingSchema, assistantMessageFormattingSchema, inferenceTemplateSchema };
 
 export type InferenceTemplate = z.infer<typeof inferenceTemplateSchema>;
 export type AssistantMessageFormatting = z.infer<typeof assistantMessageFormattingSchema>;
 export type AgentMessageFormatting = z.infer<typeof agentMessageFormattingSchema>;
+export type CreateInferenceTemplateParams = z.infer<typeof createInferenceTemplateSchema>;

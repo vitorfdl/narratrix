@@ -401,7 +401,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       });
 
       saveTimeoutRef.current = null;
-    }, 500); // Keep debounce delay at 500ms for stability
+    }, 200); // Keep debounce delay at 500ms for stability
   };
 
   // Save changes when relevant state changes

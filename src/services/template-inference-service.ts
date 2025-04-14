@@ -1,15 +1,8 @@
 // src/services/inference-template-service.ts
 import { formatDateTime } from "@/utils/date-time.ts";
-import { InferenceTemplate, inferenceTemplateSchema } from "../schema/template-inferance-schema.ts";
+import { CreateInferenceTemplateParams, InferenceTemplate, inferenceTemplateSchema } from "../schema/template-inferance-schema.ts";
 import { uuidUtils } from "../schema/utils-schema.ts";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database.ts";
-
-// Interface for creating a new inference template
-export interface NewInferenceTemplateParams {
-  profile_id: string;
-  name: string;
-  config: Record<string, any>;
-}
 
 // Interface for filtering inference templates
 export interface InferenceTemplateFilter {
@@ -17,7 +10,7 @@ export interface InferenceTemplateFilter {
 }
 
 // Create a new inference template
-export async function createInferenceTemplate(templateData: NewInferenceTemplateParams): Promise<InferenceTemplate> {
+export async function createInferenceTemplate(templateData: CreateInferenceTemplateParams): Promise<InferenceTemplate> {
   // Validate profile_id is a valid UUID
   const profileId = uuidUtils.uuid().parse(templateData.profile_id);
 

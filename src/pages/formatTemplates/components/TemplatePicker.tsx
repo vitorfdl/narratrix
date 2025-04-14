@@ -47,6 +47,7 @@ export function TemplatePicker({
   const [isEditTemplateDialogOpen, setIsEditTemplateDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
+  const [isDropdownOpen, setisDropdownOpen] = useState(false);
 
   // Handler functions
   const handleNewTemplateClick = () => {
@@ -125,76 +126,87 @@ export function TemplatePicker({
 
         {compact ? (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="Options" disabled={disabled}>
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="text-sm">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNewTemplateClick();
-                }}
-              >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                New Template
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  selectedTemplateId && onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId);
-                }}
-                disabled={!selectedTemplateId}
-                className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
-              >
-                <CopyPlus className="h-3.5 w-3.5 mr-1.5" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleEditNameClick();
-                }}
-                disabled={!selectedTemplateId}
-                className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
-              >
-                <Edit className="h-3.5 w-3.5 mr-1.5" />
-                Edit Name
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  onImport();
-                }}
-                disabled={true}
-              >
-                <FileDown className="h-3.5 w-3.5 mr-1.5" />
-                Import
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleExport();
-                }}
-                disabled={!selectedTemplateId || true}
-                className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
-              >
-                <FileUp className="h-3.5 w-3.5 mr-1.5" />
-                Export
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDeleteClick();
-                }}
-                disabled={!selectedTemplateId}
-                className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
-              >
-                <Trash className="h-3.5 w-3.5 mr-1.5" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+            <DropdownMenu open={isDropdownOpen} onOpenChange={setisDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="Options" disabled={disabled}>
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="text-sm">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setisDropdownOpen(false);
+                    handleNewTemplateClick();
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  New Template
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+
+                    if (selectedTemplateId) {
+                      onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId);
+                      setisDropdownOpen(false);
+                    }
+                  }}
+                  disabled={!selectedTemplateId}
+                  className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
+                >
+                  <CopyPlus className="h-3.5 w-3.5 mr-1.5" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setisDropdownOpen(false);
+                    handleEditNameClick();
+                  }}
+                  disabled={!selectedTemplateId}
+                  className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
+                >
+                  <Edit className="h-3.5 w-3.5 mr-1.5" />
+                  Edit Name
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setisDropdownOpen(false);
+                    onImport();
+                  }}
+                  disabled={true}
+                >
+                  <FileDown className="h-3.5 w-3.5 mr-1.5" />
+                  Import
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setisDropdownOpen(false);
+                    handleExport();
+                  }}
+                  disabled={!selectedTemplateId || true}
+                  className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
+                >
+                  <FileUp className="h-3.5 w-3.5 mr-1.5" />
+                  Export
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setisDropdownOpen(false);
+                    handleDeleteClick();
+                  }}
+                  disabled={!selectedTemplateId}
+                  className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
+                >
+                  <Trash className="h-3.5 w-3.5 mr-1.5" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </DropdownMenu>
         ) : (
           <div className="flex items-center space-x-0.5">
@@ -204,6 +216,7 @@ export function TemplatePicker({
               className="h-8 w-8 p-0"
               onClick={(e) => {
                 e.preventDefault();
+                setisDropdownOpen(false);
                 handleEditNameClick();
               }}
               disabled={!selectedTemplateId || disabled}
@@ -218,6 +231,7 @@ export function TemplatePicker({
               className="h-8 w-8 p-0"
               onClick={(e) => {
                 e.preventDefault();
+                setisDropdownOpen(false);
                 handleNewTemplateClick();
               }}
               title="Create New Template"
@@ -226,7 +240,7 @@ export function TemplatePicker({
               <Plus className="h-3.5 w-3.5" />
             </Button>
 
-            <DropdownMenu>
+            <DropdownMenu open={isDropdownOpen} onOpenChange={setisDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="More Options">
                   <MoreHorizontal className="h-3.5 w-3.5" />
@@ -237,7 +251,10 @@ export function TemplatePicker({
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
-                    selectedTemplateId && onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId);
+                    if (selectedTemplateId) {
+                      onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId);
+                      setisDropdownOpen(false);
+                    }
                   }}
                   disabled={!selectedTemplateId}
                   className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
@@ -248,6 +265,7 @@ export function TemplatePicker({
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
+                    setisDropdownOpen(false);
                     onImport();
                   }}
                   disabled={true}
@@ -258,6 +276,7 @@ export function TemplatePicker({
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
+                    setisDropdownOpen(false);
                     handleExport();
                   }}
                   disabled={!selectedTemplateId || true}
@@ -269,6 +288,7 @@ export function TemplatePicker({
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
+                    setisDropdownOpen(false);
                     handleDeleteClick();
                   }}
                   disabled={!selectedTemplateId}
