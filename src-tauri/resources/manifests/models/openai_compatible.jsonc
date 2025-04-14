@@ -18,6 +18,9 @@
     "smoothing_sampling",
     "xtc",
     "dry",
+    "dynamic_temperature",
+    "seed",
+    "nsigma",
     "stop_sequences",
     "sampling_order",
     "reasoning"
