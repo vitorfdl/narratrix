@@ -1,7 +1,6 @@
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
@@ -164,7 +163,6 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
 
 const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
   const characterList = useCharacters();
-  const [isEditing, setIsEditing] = useState(false);
   const currentProfile = useCurrentProfile();
   const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
   const [isEditCharacterModalOpen, setIsEditCharacterModalOpen] = useState<string | null>(null);
@@ -360,20 +358,18 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         </Button>
       </div>
 
-      <Dialog open={isEditCharacterModalOpen !== null} onOpenChange={(open: boolean) => setIsEditCharacterModalOpen(open ? null : null)}>
-        <DialogTrigger asChild>{/* The avatar click handlers will now trigger the modal */}</DialogTrigger>
-        <DialogContent size="large" onInteractOutside={(e) => isEditing && e.preventDefault()}>
-          <CharacterForm
-            initialData={characterList.find((char) => char.id === isEditCharacterModalOpen) as Character}
-            setIsEditing={setIsEditing}
-            mode="edit"
-            onSuccess={() => {
-              setIsEditCharacterModalOpen(null);
-              // Optionally refresh the character data
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Edit Character Dialog */}
+      <CharacterForm
+        open={isEditCharacterModalOpen !== null}
+        onOpenChange={(open: boolean) => setIsEditCharacterModalOpen(open ? isEditCharacterModalOpen : null)}
+        mode="edit"
+        initialData={characterList.find((char) => char.id === isEditCharacterModalOpen) as Character}
+        setIsEditing={() => {}}
+        onSuccess={() => {
+          setIsEditCharacterModalOpen(null);
+          // Optionally refresh the character data
+        }}
+      />
     </div>
   );
 };

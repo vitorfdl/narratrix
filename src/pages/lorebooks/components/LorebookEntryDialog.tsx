@@ -13,6 +13,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useLorebookStoreActions } from "@/hooks/lorebookStore";
 import { basicPromptSuggestionList } from "@/schema/chat-message-schema";
 import { CreateLorebookEntryParams, LorebookEntry, UpdateLorebookEntryParams, createLorebookEntrySchema } from "@/schema/lorebook-schema";
+import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BookDown, BookUp, Bot, User } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -297,7 +298,10 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                   name="content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Content</FormLabel>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Content</FormLabel>
+                        <span className="text-xs text-muted-foreground">{estimateTokens(field.value || "", 0)} tokens</span>
+                      </div>
                       <FormControl>
                         <MarkdownTextArea
                           initialValue={field.value || ""}

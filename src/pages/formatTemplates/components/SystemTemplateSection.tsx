@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-format-schema";
+import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -73,10 +74,14 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
         {!prompt.isCollapsed && (
           <div className="space-y-4">
             <div className="mb-2 mr-1 ml-1 md:text-xs xl:text-sm">
+              <div className="flex items-center justify-between">
+                <div />
+                <span className="text-xs text-muted-foreground p-0.5">{estimateTokens(prompt.content, 0)} tokens</span>
+              </div>
               <MarkdownTextArea
                 initialValue={prompt.content}
                 onChange={(e) => onUpdate(prompt.id, { content: e })}
-                className="h-full overflow-y-auto max-h-[400px]"
+                className=" overflow-y-auto max-h-[400px]"
                 suggestions={promptReplacementSuggestionList}
                 editable={!disabled}
               />

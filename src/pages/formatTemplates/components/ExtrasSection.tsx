@@ -4,7 +4,7 @@ import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { BrainCircuitIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { LabeledInput } from "./InstructTemplateSection";
+import { LabeledInput } from "../../models/components/InferenceTemplateSection";
 
 interface ExtraSectionsProps {
   formatTemplateID: string | null;
@@ -91,7 +91,7 @@ export function ExtraSections({ formatTemplateID }: ExtraSectionsProps) {
                     main chat message and displayed in a separate reasoning section.
                   </p>
                 </HelpTooltip>
-              </CardTitle>  
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <LabeledInput

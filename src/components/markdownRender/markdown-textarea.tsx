@@ -1,7 +1,4 @@
-import { MDXEditorMethods } from "@mdxeditor/editor";
-import "@mdxeditor/editor/style.css";
-import { forwardRef, useEffect, useState } from "react";
-import { ScrollArea } from "../ui/scroll-area";
+import { useEffect, useState } from "react";
 import { MarkdownEditor } from "./markdown-editor";
 import { MarkdownViewer } from "./markdown-viewer";
 import "./styles/highlight.css";
@@ -25,61 +22,48 @@ interface MarkdownTextAreaProps {
   suggestions?: SuggestionItem[];
   sendShortcut?: "Enter" | "Ctrl+Enter" | "Shift+Enter" | "CMD+Enter";
   onSubmit?: (text: string) => void;
-  onFocus?: () => void;
-  onBlur?: () => void;
   enableHistory?: boolean;
   autofocus?: boolean;
+  key?: string;
 }
 
-export const MarkdownTextArea = forwardRef<MDXEditorMethods, MarkdownTextAreaProps>(
-  (
-    {
-      initialValue = "",
-      enableHistory = false,
-      onChange,
-      className,
-      label,
-      placeholder,
-      editable = true,
-      suggestions,
-      sendShortcut,
-      onSubmit,
-      onFocus,
-      onBlur,
-    },
-    ref,
-  ) => {
-    const [nonEditableContent, setNonEditableContent] = useState(initialValue);
+export const MarkdownTextArea = ({
+  initialValue = "",
+  enableHistory = false,
+  onChange,
+  className,
+  label,
+  placeholder,
+  editable = true,
+  suggestions,
+  sendShortcut,
+  onSubmit,
+}: MarkdownTextAreaProps) => {
+  const [nonEditableContent, setNonEditableContent] = useState(initialValue);
 
-    useEffect(() => {
-      if (!editable) {
-        setNonEditableContent(initialValue);
-      }
-    }, [initialValue, editable]);
-
+  useEffect(() => {
     if (!editable) {
-      return <MarkdownViewer content={nonEditableContent} className={className} label={label} />;
+      setNonEditableContent(initialValue);
     }
+  }, [initialValue, editable]);
 
-    return (
-      <ScrollArea className="flex-1 min-h-0 rounded rich-text-area">
-        <MarkdownEditor
-          initialValue={initialValue}
-          onChange={onChange}
-          label={label}
-          placeholder={placeholder}
-          suggestions={suggestions}
-          sendShortcut={sendShortcut}
-          className={className}
-          enableHistory={enableHistory}
-          onSubmit={onSubmit}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          ref={ref}
-        />
-      </ScrollArea>
-    );
-  },
-);
+  if (!editable) {
+    return <MarkdownViewer content={nonEditableContent} className={className} label={label} />;
+  }
+
+  return (
+    <MarkdownEditor
+      initialValue={initialValue}
+      onChange={onChange}
+      label={label}
+      placeholder={placeholder}
+      suggestions={suggestions}
+      sendShortcut={sendShortcut}
+      className={className}
+      enableHistory={enableHistory}
+      onSubmit={onSubmit}
+    />
+  );
+};
 
 MarkdownTextArea.displayName = "MarkdownTextArea";

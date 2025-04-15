@@ -6,7 +6,6 @@ import { useSessionCurrentFormatTemplate } from "@/utils/session-storage";
 import { HelpCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ExtraSections } from "./components/ExtrasSection";
-import { InstructTemplateSection } from "./components/InstructTemplateSection";
 import { SystemPromptTemplateSection } from "./components/SystemTemplateSection";
 import { TemplateHeader } from "./components/TemplateHeader";
 
@@ -54,8 +53,8 @@ export default function FormatTemplatePage() {
   }, []);
 
   return (
-    <div className="space-y-2 page-container">
-      <div className="flex gap-2 items-center">
+    <div className="space-y-2 page-container container mx-auto flex flex-col items-center">
+      <div className="flex gap-2 items-center w-full max-w-[1200px]">
         <h1 className="title">Formatting Template</h1>
         <Sheet open={isDocOpen} onOpenChange={setIsDocOpen}>
           <SheetTrigger asChild>
@@ -74,14 +73,10 @@ export default function FormatTemplatePage() {
 
       {error && <div className="text-destructive">{error}</div>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <div className="space-y-2">
-          <TemplateHeader formatTemplateID={selectedTemplateId} onTemplateChange={handleTemplateChange} />
-          <SystemPromptTemplateSection formatTemplateID={selectedTemplateId} />
-          <ExtraSections formatTemplateID={selectedTemplateId} />
-        </div>
-
-        <InstructTemplateSection />
+      <div className="w-full max-w-[1200px] space-y-2">
+        <TemplateHeader formatTemplateID={selectedTemplateId} onTemplateChange={handleTemplateChange} />
+        <SystemPromptTemplateSection formatTemplateID={selectedTemplateId} />
+        <ExtraSections formatTemplateID={selectedTemplateId} />
       </div>
     </div>
   );

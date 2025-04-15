@@ -13,6 +13,7 @@ import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters }
 import { cn } from "@/lib/utils";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
+import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -78,9 +79,12 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor={`${idPrefix}scenario`} descriptionTag={"{{chapter.scenario}}"}>
-              Scenario
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor={`${idPrefix}scenario`} descriptionTag={"{{chapter.scenario}}"}>
+                Scenario
+              </Label>
+              <span className="text-xs text-muted-foreground">{estimateTokens(chapterData.scenario || "", 0)} tokens</span>
+            </div>
             <MarkdownTextArea
               key={`${idPrefix}scenario`}
               initialValue={chapterData.scenario || ""}
@@ -93,15 +97,18 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
           </div>
 
           <div className="grid gap-2">
-            {chapterData.custom.auto_start_message ? (
-              <Label htmlFor={`${idPrefix}start-message`}>
-                Instruction to AI <span className="text-xs text-muted-foreground">(In-development)</span>
-              </Label>
-            ) : (
-              <Label htmlFor={`${idPrefix}start-message`}>
-                Chat Start Message <span className="text-xs text-muted-foreground">(Not ready yet)</span>
-              </Label>
-            )}
+            <div className="flex items-center justify-between">
+              {chapterData.custom.auto_start_message ? (
+                <Label htmlFor={`${idPrefix}start-message`}>
+                  Instruction to AI <span className="text-xs text-muted-foreground">(In-development)</span>
+                </Label>
+              ) : (
+                <Label htmlFor={`${idPrefix}start-message`}>
+                  Chat Start Message <span className="text-xs text-muted-foreground">(Not ready yet)</span>
+                </Label>
+              )}
+              <span className="text-xs text-muted-foreground">{estimateTokens(chapterData.start_message || "", 0)} tokens</span>
+            </div>
             <MarkdownTextArea
               key={`${idPrefix}start-message`}
               initialValue={chapterData.start_message || ""}

@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,17 +31,17 @@ export default function Characters() {
   const isLoadingCharacters = useCharactersLoading();
   const { fetchCharacters, deleteCharacter } = useCharacterActions();
   const [settings, setSettings] = useLocalCharactersPagesSettings();
-  const [isEditing, setIsEditing] = useState(false);
+  const [, setIsEditing] = useState(false);
 
   // Use the avatar loading hook for optimized image loading
   const { urlMap: avatarUrlMap, isLoading: isLoadingAvatars, reloadAll: reloadAvatars } = useCharacterAvatars();
 
   // Local State
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterUnion | null>(null);
   const [search, setSearch] = useState("");
   const currentProfile = useCurrentProfile();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // // Load characters on mount
   // useEffect(() => {
@@ -185,60 +184,39 @@ export default function Characters() {
           </div>
         </div>
 
+        {/* Create Dialog Trigger */}
+        <Button className="w-full rounded-none h-14" size="lg" onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="mr-2 h-5 w-5" />
+          Add Character / Agent
+        </Button>
         {/* Create Dialog */}
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full rounded-none h-14" size="lg">
-              <Plus className="mr-2 h-5 w-5" />
-              Add Character / Agent
-            </Button>
-          </DialogTrigger>
-          <DialogContent size="large" onInteractOutside={(e) => isEditing && e.preventDefault()}>
-            <DialogHeader>
-              <DialogTitle>Add New Character / Agent</DialogTitle>
-            </DialogHeader>
-            <CharacterForm
-              mode="create"
-              setIsEditing={setIsEditing}
-              onSuccess={() => {
-                setCreateDialogOpen(false);
-                fetchCharacters(currentProfile!.id);
-                reloadAvatars();
-                setIsEditing(false);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        <CharacterForm
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          mode="create"
+          setIsEditing={setIsEditing}
+          onSuccess={() => {
+            setCreateDialogOpen(false);
+            fetchCharacters(currentProfile!.id);
+            reloadAvatars();
+            setIsEditing(false);
+          }}
+        />
 
         {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent
-            size="large"
-            onInteractOutside={(e) => {
-              if (isEditing) {
-                e.preventDefault();
-              }
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>Edit {selectedCharacter?.type === "character" ? "Character" : "Agent"}</DialogTitle>
-            </DialogHeader>
-            {selectedCharacter && (
-              <CharacterForm
-                mode="edit"
-                initialData={selectedCharacter as Character}
-                setIsEditing={setIsEditing}
-                onSuccess={() => {
-                  setEditDialogOpen(false);
-                  setSelectedCharacter(null);
-                  // Reload avatar images after editing
-                  reloadAvatars();
-                  setIsEditing(false);
-                }}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        <CharacterForm
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          mode="edit"
+          initialData={selectedCharacter as Character}
+          setIsEditing={setIsEditing}
+          onSuccess={() => {
+            setEditDialogOpen(false);
+            setSelectedCharacter(null);
+            reloadAvatars();
+            setIsEditing(false);
+          }}
+        />
       </div>
     </div>
   );

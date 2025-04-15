@@ -6,52 +6,76 @@ const highlightMark = Decoration.mark({
   attributes: { class: "cm-highlightedBracket" },
 });
 
-// Theme to style the decoration, referencing theme variables
+// Decoration for quoted words
+const highlightQuoteMark = Decoration.mark({
+  attributes: { class: "cm-highlightedQuote" },
+});
+
+// Theme to style the decorations, referencing theme variables
 const highlightTheme = EditorView.baseTheme({
   ".cm-highlightedBracket": {
     // backgroundColor: "hsla(var(--primary) / 0.4)", // Adjusted opacity slightly
     borderRadius: "3px",
     color: "hsl(var(--primary))", // Use HSL format for consistency
   },
+  ".cm-highlightedQuote": {
+    backgroundColor: "hsla(var(--primary) / 0.15)",
+    borderRadius: "3px",
+    color: "hsl(var(--primary))",
+    fontWeight: "bold",
+  },
 });
 
-// Function to find and apply decorations
-function findAndHighlightBrackets(view: EditorView): DecorationSet {
+/**
+ * Finds and applies decorations for both {{brackets}} and quoted words.
+ * Highlights:
+ *   - {{ ... }} blocks (existing)
+ *   - Words between single or double quotes (e.g., 'word', "word")
+ * @param view EditorView
+ * @returns DecorationSet
+ */
+function findAndHighlightBracketsAndQuotes(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   // Regex to find {{ content }} patterns, allowing for whitespace
-  // It uses a non-greedy match for the content inside
-  const regex = /\{\{\s*([^}]+?)\s*\}\}/g;
+  const bracketRegex = /\{\{\s*([^}]+?)\s*\}\}/g;
+  // Regex to find words between single or double quotes (not spanning lines)
+  const quoteRegex = /(['"])(?:(?=(\\?))\2.)*?\1/g;
 
-  // Iterate through visible ranges for efficiency
   for (const { from, to } of view.visibleRanges) {
     const text = view.state.doc.sliceString(from, to);
     let match: RegExpExecArray | null;
+    // Highlight {{ ... }}
     // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-    while ((match = regex.exec(text))) {
-      // Calculate exact positions in the document
+    while ((match = bracketRegex.exec(text))) {
       const start = from + match.index;
       const end = start + match[0].length;
-      // Add the decoration to the builder
       builder.add(start, end, highlightMark);
+    }
+    // Highlight quoted words
+    // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
+    while ((match = quoteRegex.exec(text))) {
+      const start = from + match.index;
+      const end = start + match[0].length;
+      builder.add(start, end, highlightQuoteMark);
     }
   }
   return builder.finish();
 }
 
 // The ViewPlugin instance
-const highlightBracketsPlugin = ViewPlugin.fromClass(
+const highlightBracketsAndQuotesPlugin = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
 
     constructor(view: EditorView) {
       // Initial decoration calculation
-      this.decorations = findAndHighlightBrackets(view);
+      this.decorations = findAndHighlightBracketsAndQuotes(view);
     }
 
     update(update: ViewUpdate) {
       // Recalculate decorations if document or viewport changes
       if (update.docChanged || update.viewportChanged) {
-        this.decorations = findAndHighlightBrackets(update.view);
+        this.decorations = findAndHighlightBracketsAndQuotes(update.view);
       }
     }
   },
@@ -63,5 +87,5 @@ const highlightBracketsPlugin = ViewPlugin.fromClass(
 
 // Export the combined extension
 export function highlightBracketsExtension(): Extension {
-  return [highlightTheme, highlightBracketsPlugin];
+  return [highlightTheme, highlightBracketsAndQuotesPlugin];
 }

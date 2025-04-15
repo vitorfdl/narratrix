@@ -114,7 +114,7 @@ export function TemplatePicker({
               <Button
                 variant="outline"
                 role="combobox"
-                className="w-full h-8 justify-between text-xs text-foreground focus:border-none ring-primary/25 ring-1"
+                className="w-full h-8 justify-between bg-muted text-xs text-foreground focus:border-none ring-primary/25 ring-1"
                 disabled={!hasTemplates || disabled}
               >
                 {selectedTemplate ? selectedTemplate.name : hasTemplates ? "Select Template" : "No templates available"}

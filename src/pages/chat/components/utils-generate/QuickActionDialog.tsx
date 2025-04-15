@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
+import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { motion } from "framer-motion";
 import { MessageCircle, MessageSquarePlus, Settings, Wand2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -192,7 +193,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                 <Label htmlFor="userPrompt" className="text-sm font-medium flex items-center gap-1">
                   <Wand2 className="h-3 w-3" /> User Prompt
                 </Label>
-                <span className="text-xs text-muted-foreground">{currentAction.userPrompt?.length || 0} characters</span>
+                <span className="text-xs text-muted-foreground">{estimateTokens(currentAction.userPrompt || "", 0)} tokens</span>
               </div>
               <MarkdownTextArea
                 key={currentAction.id ? `userPrompt-${currentAction.id}` : "new-userPrompt"}
@@ -232,7 +233,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                   <Label htmlFor="systemPrompt" className="text-sm font-medium">
                     System Prompt Override
                   </Label>
-                  <span className="text-xs text-muted-foreground">{currentAction.systemPromptOverride?.length || 0} characters</span>
+                  <span className="text-xs text-muted-foreground">{estimateTokens(currentAction.systemPromptOverride || "", 0)} tokens</span>
                 </div>
                 <MarkdownTextArea
                   key={currentAction.id ? `systemPrompt-${currentAction.id}` : "new-systemPrompt"}

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
+import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { motion } from "framer-motion";
 import { MessageSquarePlus, PersonStanding, Sparkles, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -174,7 +175,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
               <Label htmlFor="prompt" className="text-sm font-medium flex items-center gap-2">
                 {getRoleIcon(prompt.role)} Prompt Content
               </Label>
-              <span className="text-xs text-muted-foreground">{prompt.prompt.length} characters</span>
+              <span className="text-xs text-muted-foreground">{estimateTokens(prompt.prompt, 0)} tokens</span>
             </div>
             <div className="border border-input rounded-md">
               <MarkdownTextArea

@@ -5,14 +5,15 @@ import { useInference } from "@/hooks/useInference";
 import { Character } from "@/schema/characters-schema";
 import { ChatMessage, ChatMessageType } from "@/schema/chat-message-schema";
 import { ModelSpecs } from "@/schema/inference-engine-schema";
+import { FormatTemplate } from "@/schema/template-format-schema";
 import { formatPrompt as formatPromptUtil } from "@/services/inference-steps/formatter";
 import { useLocalSummarySettings } from "@/utils/local-storage";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { listCharacters } from "./character-service";
 import { getChatById } from "./chat-service";
+import { formatFinalText } from "./inference-steps/format-response";
 import { removeNestedFields } from "./inference-steps/remove-nested-fields";
-import { trimToEndSentence } from "./inference-steps/trim-incomplete-sentence";
 import { listModels } from "./model-service";
 import { listChatTemplates } from "./template-chat-service";
 import { getFormatTemplateById } from "./template-format-service";
@@ -29,10 +30,10 @@ export interface StreamingState {
   characterId: string | null;
   messageIndex?: number;
   isThinking: boolean;
-  thinkingConfig?: {
-    prefix: string;
-    suffix: string;
-  };
+  /**
+   * The format template used for this streaming session. This is required for correct reasoning and message formatting.
+   */
+  formatTemplate: FormatTemplate | null;
 }
 
 /**
@@ -78,7 +79,7 @@ const INITIAL_STREAMING_STATE: StreamingState = {
   characterId: null,
   messageIndex: 0,
   isThinking: false,
-  thinkingConfig: DEFAULT_THINKING_CONFIG,
+  formatTemplate: null,
 };
 
 /**
@@ -120,14 +121,15 @@ export function useInferenceService() {
       let textToAdd = "";
       let reasoningToAdd = "";
 
+      const { prefix, suffix } = streamingState.current.formatTemplate?.config.reasoning || DEFAULT_THINKING_CONFIG;
       // Process the text chunk to separate user-facing text and <think> content
       while (currentChunk.length > 0) {
         if (streamingState.current.isThinking) {
-          const endTagIndex = currentChunk.indexOf(streamingState.current.thinkingConfig?.suffix || "</think>");
+          const endTagIndex = currentChunk.indexOf(suffix || "</think>");
           if (endTagIndex !== -1) {
             // Found the end tag in this chunk
             reasoningToAdd += currentChunk.substring(0, endTagIndex);
-            currentChunk = currentChunk.substring(endTagIndex + streamingState.current.thinkingConfig?.suffix.length || "</think>".length);
+            currentChunk = currentChunk.substring(endTagIndex + suffix.length || "</think>".length);
             streamingState.current.isThinking = false;
           } else {
             // End tag not in this chunk, the whole remaining chunk is reasoning
@@ -135,11 +137,11 @@ export function useInferenceService() {
             currentChunk = ""; // Consumed the whole chunk
           }
         } else {
-          const startTagIndex = currentChunk.indexOf(streamingState.current.thinkingConfig?.prefix || "<think>");
+          const startTagIndex = currentChunk.indexOf(prefix || "<think>");
           if (startTagIndex !== -1) {
             // Found the start tag in this chunk
             textToAdd += currentChunk.substring(0, startTagIndex);
-            currentChunk = currentChunk.substring(startTagIndex + streamingState.current.thinkingConfig?.prefix.length || "<think>".length);
+            currentChunk = currentChunk.substring(startTagIndex + prefix.length || "<think>".length);
             streamingState.current.isThinking = true;
           } else {
             // Start tag not in this chunk, the whole remaining chunk is text
@@ -149,7 +151,7 @@ export function useInferenceService() {
         }
       }
 
-      // Append processed parts to the accumulated state
+      // During streaming, just append the new chunk
       streamingState.current.accumulatedText += textToAdd;
       streamingState.current.accumulatedReasoning += reasoningToAdd;
 
@@ -169,8 +171,10 @@ export function useInferenceService() {
       }
 
       if (streamingState.current.characterId && streamingState.current.messageId) {
-        // Determine the final text, prioritizing the most complete response
-        const finalText = trimToEndSentence(response.result?.full_response || response.result?.text || streamingState.current.accumulatedText);
+        // Helper to apply conditional formatting based on FormatTemplate settings
+
+        const rawText = response.result?.full_response || response.result?.text || streamingState.current.accumulatedText;
+        const finalText = formatFinalText(rawText, streamingState.current.formatTemplate);
         // Final update to the message
         inferenceUpdateMessageID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0);
 
@@ -271,12 +275,8 @@ export function useInferenceService() {
       throw new Error("Format template not found");
     }
 
-    if (formatTemplate.config.reasoning) {
-      streamingState.current.thinkingConfig = {
-        prefix: formatTemplate.config.reasoning.prefix,
-        suffix: formatTemplate.config.reasoning.suffix,
-      };
-    }
+    // Store the format template in the streaming state for use during streaming (reasoning, etc)
+    streamingState.current.formatTemplate = formatTemplate;
 
     const inferenceTemplateList = await listInferenceTemplates({ profile_id: currentProfile!.id });
     const inferenceTemplate = inferenceTemplateList.find((template) => template.id === modelSettings.inference_template_id)!;

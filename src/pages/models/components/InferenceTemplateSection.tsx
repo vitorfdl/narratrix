@@ -7,10 +7,10 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
 import { useSessionCurrentInferenceTemplate } from "@/utils/session-storage";
-import { Bot, MessageSquare, Settings, Settings2, StopCircle, Wrench } from "lucide-react";
+import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { TemplatePicker } from "./TemplatePicker";
+import { TemplatePicker } from "../../formatTemplates/components/TemplatePicker";
 // Helper component for labeled input to reduce nesting
 interface LabeledInputProps {
   label: string;
@@ -77,12 +77,21 @@ export const CheckboxWithLabel: React.FC<CheckboxWithLabelProps> = ({ id, label,
   </div>
 );
 
-export function InstructTemplateSection() {
+interface InstructTemplateSectionProps {
+  onChange: (instructTemplateID: string | null) => void;
+  modelTemplateID: string | null;
+  disabled?: boolean;
+}
+
+export function InstructTemplateSection({ disabled, onChange, modelTemplateID }: InstructTemplateSectionProps) {
   const [instructTemplateID, setInstructTemplateID] = useSessionCurrentInferenceTemplate();
+  if (modelTemplateID) {
+    setInstructTemplateID(modelTemplateID);
+  }
   const { updateInferenceTemplate, createInferenceTemplate, deleteInferenceTemplate } = useTemplateActions();
   const currentTemplate = useInferenceTemplate(instructTemplateID ?? "");
   const templateList = useInferenceTemplateList();
-  // const error = useTemplateError();
+
   const currentProfile = useCurrentProfile();
   // Track if we're currently updating to prevent loops
   const isUpdating = useRef(false);
@@ -92,6 +101,10 @@ export function InstructTemplateSection() {
 
   // Initialize template state with default values, matching the expected structure
   const [templateState, setTemplateState] = useState<CreateInferenceTemplateParams>(defaultTemplate);
+
+  useEffect(() => {
+    onChange(instructTemplateID);
+  }, [instructTemplateID, onChange]);
 
   // Debounced update function to avoid too many API calls
   const debouncedUpdate = useDebouncedCallback(async () => {
@@ -266,19 +279,27 @@ export function InstructTemplateSection() {
     }
   }, [currentTemplate, instructTemplateID]); // Removed templateState
 
-  const isDisabled = !instructTemplateID;
+  const isDisabled = !instructTemplateID || disabled;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="inference-section-header flex items-center gap-1 pb-2 border-b">
+          <CardTitle className={`inference-section-header flex items-center gap-1 pb-2 border-b ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
             <Settings className="h-5 w-5" /> Inference Template
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
+          <div className="bg-foreground/5 p-3 rounded-md text-sm mb-4">
+            <p className="text-muted-foreground mb-2">
+              Inference templates control how messages are formatted when sent to text completion models. Each section below allows you to customize
+              prefixes, suffixes, and other formatting options that will be applied to different message types in the conversation.
+            </p>
+          </div>
+
           <TemplatePicker
             templates={templateList}
+            disabled={disabled}
             selectedTemplateId={instructTemplateID}
             onTemplateSelect={setInstructTemplateID}
             onDelete={handleDeleteTemplate}
@@ -287,26 +308,9 @@ export function InstructTemplateSection() {
             onImport={handleImportTemplate}
             onExport={handleExportTemplate}
           />
-
-          <div className="bg-foreground/5 p-3 rounded-md text-sm mb-4">
-            <h3 className="font-medium mb-1">About Inference Templates</h3>
-            <p className="text-muted-foreground mb-2">
-              Inference templates control how messages are formatted when sent to text completion models. Each section below allows you to customize
-              prefixes, suffixes, and other formatting options that will be applied to different message types in the conversation.
-            </p>
-            <p className="text-muted-foreground">
-              <span className="underline">To configure a Model for Text Completion</span>, you need to go to the Model Settings page and click on the
-              settings icon{" "}
-              <span className="inline-block align-middle">
-                <Settings2 className="h-4 w-4" />
-              </span>{" "}
-              to setup an Inference Template.
-            </p>
-          </div>
-
           <Card>
             <CardHeader className="template-card-header">
-              <CardTitle className="template-card-title">
+              <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
                 <Settings className="h-4 w-4" /> System Prompt Formatting
               </CardTitle>
             </CardHeader>
@@ -332,7 +336,7 @@ export function InstructTemplateSection() {
 
           <Card>
             <CardHeader className="template-card-header">
-              <CardTitle className="template-card-title">
+              <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
                 <MessageSquare className="h-4 w-4" /> User Message Formatting
               </CardTitle>
             </CardHeader>
@@ -358,7 +362,7 @@ export function InstructTemplateSection() {
 
           <Card>
             <CardHeader className="template-card-header">
-              <CardTitle className="template-card-title">
+              <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
                 <Bot className="h-4 w-4" /> Assistant Message Formatting
               </CardTitle>
             </CardHeader>
@@ -402,7 +406,7 @@ export function InstructTemplateSection() {
 
           <Card>
             <CardHeader className="template-card-header">
-              <CardTitle className="template-card-title">
+              <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
                 <Wrench className="h-4 w-4" /> Agent Message Formatting
               </CardTitle>
             </CardHeader>

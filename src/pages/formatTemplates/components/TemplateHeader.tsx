@@ -210,11 +210,13 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   );
 
   return (
-    <div className="space-y-4 bg-card p-4 rounded-md border border-border w-full max-w-[1200px] 2xl:justify-self-center">
-      <div className="grid xs:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5 2xl:justify-items-center">
-        <div className="lg:col-span-2 2xl:col-span-3 w-full">{templatePickerMemo}</div>
-        {/* Left Column - Checkboxes */}
-        <div className="space-y-2 2xl:justify-self-start">
+    <div className="space-y-4 bg-card p-4 rounded-md border border-border w-full max-w-[1200px] justify-self-center @container mx-auto">
+      <div className="grid grid-cols-1 @md:grid-cols-2 @xl:grid-cols-3 gap-5 ">
+        {/* Picker always on its own row */}
+        <div className="col-span-full w-full">{templatePickerMemo}</div>
+
+        {/* Text Cleanup - always starts a new row */}
+        <div className="space-y-2">
           <h3 className="text-sm font-medium text-muted-foreground">Text Cleanup</h3>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -263,7 +265,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
           </div>
         </div>
 
-        {/* Middle Column - Additional Checkboxes */}
+        {/* Message Formatting */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-muted-foreground">Message Formatting</h3>
           <div className="flex items-center space-x-2">
@@ -326,8 +328,8 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
           </div>
         </div>
 
-        {/* Right Column - Template Type and Prefix Messages */}
-        <div className="space-y-2 col-span-2 2xl:col-span-1 2xl:justify-self-end">
+        {/* Prefix Messages */}
+        <div className="space-y-2 2xl:col-span-1 2xl:justify-self-end">
           <div className="space-y-2">
             <Label className="font-medium text-muted-foreground">Prefix Messages with Character Names</Label>
             <RadioGroup
@@ -336,7 +338,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
                 (value: string) => handleSettingChange("prefix_messages", value as "never" | "always" | "characters"),
                 [handleSettingChange],
               )}
-              className="flex space-x-4"
+              className="flex flex-col space-y-0"
               disabled={!currentTemplate}
             >
               <div className="flex items-center space-x-2">
