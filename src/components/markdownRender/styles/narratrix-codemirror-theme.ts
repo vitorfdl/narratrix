@@ -80,7 +80,12 @@ export const narratrixTheme = EditorView.theme(
       backgroundColor: "hsl(var(--primary) / 0.18)",
     },
 
-    ".cm-activeLine": { backgroundColor: "hsl(var(--primary) / 0.04)" },
+    ".cm-activeLine": {
+      backgroundColor: "hsl(var(--transparent))",
+    },
+    "&.cm-focused .cm-activeLine": {
+      backgroundColor: "hsl(var(--primary) / 0.01)",
+    },
     ".cm-selectionMatch": { backgroundColor: "hsl(var(--chart-4) / 0.10)" },
 
     "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {

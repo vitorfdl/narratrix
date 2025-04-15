@@ -371,13 +371,30 @@ pub async fn complete_stream(
     loop {
         match tokio::time::timeout(std::time::Duration::from_secs(120), stream.next()).await {
             Ok(Some(Ok(chunk))) => {
-                if let Some(text) = chunk["choices"][0]["text"].as_str() {
-                    if !text.is_empty() {
+                // Try OpenAI format first
+                let text_opt = chunk
+                    .get("choices")
+                    .and_then(|choices| choices.get(0))
+                    .and_then(|choice| choice.get("text"))
+                    .and_then(|text| text.as_str());
+
+                // Fallback: try local format with 'content' field
+                let text_fallback = chunk.get("content").and_then(|v| v.as_str());
+
+                match text_opt.or(text_fallback) {
+                    Some(text) if !text.is_empty() => {
                         let payload = json!({
                             "type": "text",
                             "value": text
                         });
-                        callback(payload)?;
+                        if let Err(e) = callback(payload) {
+                            println!("[Streaming Error] Callback failed: {e}");
+                            return Err(anyhow!("Callback failed: {e}"));
+                        }
+                    }
+                    _ => {
+                        // Log unexpected chunk structure only
+                        println!("[Streaming Warning] Unexpected chunk structure: {}", chunk);
                     }
                 }
 
@@ -393,10 +410,14 @@ pub async fn complete_stream(
                 }
             }
             Ok(Some(Err(e))) => {
-                return Err(anyhow!("Error: {}", e));
+                println!("[Streaming Error] Error in stream chunk: {e}");
+                return Err(anyhow!("Error in stream chunk: {e}"));
             }
             Ok(None) => break, // Stream has ended
-            Err(_) => return Err(anyhow!("Stream timeout after 120 seconds")),
+            Err(_) => {
+                println!("[Streaming Error] Stream timeout after 120 seconds");
+                return Err(anyhow!("Stream timeout after 120 seconds"));
+            }
         }
     }
 

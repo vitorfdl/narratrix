@@ -73,6 +73,10 @@ export function parseEngineParameters(engine: Engine, modelConfig: Model["config
     };
   }
 
+  delete newParameters.max_context;
+  delete newParameters.max_depth;
+  delete newParameters.max_response;
+
   switch (engine) {
     case "anthropic":
       return parseAnthropicParameters(newParameters);

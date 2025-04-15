@@ -329,7 +329,8 @@ export function useInferenceService() {
         },
       },
     });
-    return { ...prompt, manifestSettings, modelSettings, chatTemplate, isChat: !!inferenceTemplate };
+
+    return { ...prompt, manifestSettings, modelSettings, chatTemplate, isChat: !inferenceTemplate };
   };
 
   /**

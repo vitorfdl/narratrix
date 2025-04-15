@@ -169,7 +169,7 @@ export const MarkdownEditor = ({
   const completionSource = createCompletionSource(suggestions);
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="flex flex-col h-full">
       {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
       <CodeMirror
         autoFocus={true}
@@ -194,8 +194,9 @@ export const MarkdownEditor = ({
         onCreateEditor={(editor) => {
           editorRef.current = editor;
         }}
+        height="100%"
         placeholder={placeholder}
-        className={cn("prose text-xs ring-1 ring-border rounded-md  input-fields font-mono overflow-auto", className)}
+        className={cn("prose text-xs ring-1 ring-border rounded-md input-fields font-mono overflow-auto flex-1", className)}
         theme={narratrixCodeMirror}
         // style={{ minHeight, maxHeight, overflow: "auto" }}
       />

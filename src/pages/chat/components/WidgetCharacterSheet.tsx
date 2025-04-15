@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
@@ -166,20 +165,18 @@ const WidgetCharacterSheet = () => {
         </AddParticipantPopover>
       </CardFooter>
 
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogTrigger asChild>{/* The avatar click handlers will now trigger the modal */}</DialogTrigger>
-        <DialogContent className="max-w-[90vw] xl:max-w-[70vw] max-h-[90vh] overflow-y-auto">
-          <CharacterForm
-            initialData={currentCharacter as Character}
-            mode="edit"
-            setIsEditing={() => null}
-            onSuccess={() => {
-              setIsEditModalOpen(false);
-              // Optionally refresh the character data
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Edit Character Dialog */}
+      <CharacterForm
+        open={isEditModalOpen}
+        onOpenChange={(open: boolean) => setIsEditModalOpen(open ? isEditModalOpen : false)}
+        mode="edit"
+        initialData={currentCharacter as Character}
+        setIsEditing={() => {}}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          // Optionally refresh the character data
+        }}
+      />
     </Card>
   );
 };

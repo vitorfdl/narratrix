@@ -825,6 +825,7 @@ export default function Settings() {
                       </Label>
                       <CommandTagInput
                         value={settings.censorship.customWords}
+                        maxTags={50}
                         onChange={(value) => handleSettingChange("censorship", "customWords", value)}
                       />
                     </div>

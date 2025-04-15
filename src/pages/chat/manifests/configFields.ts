@@ -6,6 +6,7 @@ export const configFields: ConfigFields = [
     type: "stepbutton_slider",
     title: "Temperature",
     description: "Controls the randomness of the output. Lower values make the output more deterministic, higher values increase randomness.",
+    default: 1,
     min: 0,
     max: 5,
     step: 0.25,

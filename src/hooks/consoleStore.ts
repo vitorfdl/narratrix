@@ -49,7 +49,9 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
           ...request,
           modelSpecs: {
             ...request.modelSpecs,
-            config: {},
+            config: {
+              model: request.modelSpecs.config?.model,
+            },
           },
           timestamp: Date.now(),
         };
