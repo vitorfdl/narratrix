@@ -198,11 +198,6 @@ pub async fn converse_stream(
     specs: &ModelSpecs,
     callback: impl Fn(serde_json::Value) -> Result<()> + Send + 'static,
 ) -> Result<()> {
-    println!(
-        "Starting OpenAI streaming chat completion with parameters: {}",
-        serde_json::to_string_pretty(&request.parameters).unwrap_or_else(|_| "{}".to_string())
-    );
-
     // Initialize client
     let (client, model) = initialize_openai_client(specs)?;
 
@@ -238,14 +233,29 @@ pub async fn converse_stream(
                 }
 
                 // Extract text content if present
-                if let Some(content) = chunk["choices"][0]["delta"]["content"].as_str() {
-                    if !content.is_empty() {
+                let text_opt = chunk
+                    .get("choices")
+                    .and_then(|choices| choices.get(0))
+                    .and_then(|choice| choice.get("text"))
+                    .and_then(|text| text.as_str());
+
+                let text_fallback = chunk.get("content").and_then(|v| v.as_str());
+
+                if let Some(text) = text_opt.or(text_fallback) {
+                    if !text.is_empty() {
                         let payload = json!({
                             "type": "text",
-                            "value": content
+                            "value": text
                         });
-                        callback(payload)?;
+                        if let Err(e) = callback(payload) {
+                            println!("[Streaming Error] Callback failed: {e}");
+                            return Err(anyhow!("Callback failed: {e}"));
+                        }
                     }
+                    // If text is empty, just skip without warning
+                } else {
+                    // Only log if neither field is present
+                    println!("[Streaming Warning] Unexpected chunk structure: {}", chunk);
                 }
 
                 // Add a small delay between tokens if specified
@@ -381,8 +391,8 @@ pub async fn complete_stream(
                 // Fallback: try local format with 'content' field
                 let text_fallback = chunk.get("content").and_then(|v| v.as_str());
 
-                match text_opt.or(text_fallback) {
-                    Some(text) if !text.is_empty() => {
+                if let Some(text) = text_opt.or(text_fallback) {
+                    if !text.is_empty() {
                         let payload = json!({
                             "type": "text",
                             "value": text
@@ -392,10 +402,10 @@ pub async fn complete_stream(
                             return Err(anyhow!("Callback failed: {e}"));
                         }
                     }
-                    _ => {
-                        // Log unexpected chunk structure only
-                        println!("[Streaming Warning] Unexpected chunk structure: {}", chunk);
-                    }
+                    // If text is empty, just skip without warning
+                } else {
+                    // Only log if neither field is present
+                    println!("[Streaming Warning] Unexpected chunk structure: {}", chunk);
                 }
 
                 // Add a small delay between tokens if specified
@@ -403,7 +413,7 @@ pub async fn complete_stream(
                     .parameters
                     .get("stream_delay_ms")
                     .and_then(|v| v.as_u64())
-                    .unwrap_or(10); // Default 10ms delay
+                    .unwrap_or(15); // Default 10ms delay
 
                 if delay_ms > 0 {
                     tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;

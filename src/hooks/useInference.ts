@@ -185,7 +185,7 @@ export function useInference(options: UseInferenceOptions = {}) {
           systemPrompt: systemPrompt || "",
           messages: messages,
           modelSpecs: modelSpecs,
-          parameters: parsedParameters,
+          parameters: { ...parameters, ...parsedParameters },
           engine: modelSpecs.engine as Engine,
         });
 

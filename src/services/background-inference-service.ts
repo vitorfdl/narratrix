@@ -87,7 +87,7 @@ export function useBackgroundInference() {
 
       // Reject the promise for this request ID
       if (promiseResolvers.current[requestId]) {
-        promiseResolvers.current[requestId].reject(new Error(error || "Unknown inference error"));
+        promiseResolvers.current[requestId].reject(new Error(error.message || "Unknown inference error"));
         delete promiseResolvers.current[requestId];
       }
     },
@@ -194,9 +194,10 @@ export function useBackgroundInference() {
           chatTemplate: {
             custom_prompts: [],
             config: {
-              max_context: parameters?.max_context || 2048,
-              max_tokens: parameters?.max_tokens || 50,
-              max_depth: parameters?.max_depth || 2,
+              ...chatTemplate?.config,
+              // max_context: parameters?.max_context || 2048,
+              // max_tokens: parameters?.max_tokens || 50,
+              // max_depth: parameters?.max_depth || 2,
             },
           },
           systemOverridePrompt: systemPrompt,
@@ -223,9 +224,9 @@ export function useBackgroundInference() {
           systemPrompt: formattedSystemPrompt,
           parameters: fixedParameters,
         });
-      } catch (error) {
-        console.error("Background inference error:", error);
-        return null;
+      } catch (error: any) {
+        console.error("Background inference error:", typeof error, error);
+        throw error.message;
       }
     },
     [manifests, executeInference],

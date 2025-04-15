@@ -77,6 +77,8 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
               response = inferenceResponse.result.full_response;
             } else if (inferenceResponse.result?.text) {
               response = inferenceResponse.result.text;
+            } else if (inferenceResponse.error) {
+              response = JSON.stringify(JSON.parse(inferenceResponse.error), null, 2);
             }
 
             return {

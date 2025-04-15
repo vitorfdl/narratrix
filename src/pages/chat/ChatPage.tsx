@@ -306,7 +306,7 @@ export default function ChatPage() {
     <Sheet open={isInspectorOpen} onOpenChange={setIsInspectorOpen}>
       <div className="flex flex-col h-screen">
         {/* Drawer Content for Live Inspector */}
-        <SheetContent side="top" className="h-[90vh]">
+        <SheetContent side="bottom" className="h-[90vh] data-[state=closed]:duration-0 data-[state=open]:duration-0">
           <div className="overflow-auto p-4">
             <LiveInspector maxHeight="calc(90vh - 80px)" />
           </div>

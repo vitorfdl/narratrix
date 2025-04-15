@@ -204,6 +204,9 @@ const WidgetExpressions = () => {
           },
           prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
           systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
+        }).catch((error) => {
+          toast.error(`Error generating expression for ${targetCharacter.name}: ${error}`);
+          return "neutral";
         });
 
         const rawExpression = expressionResult?.trim().split("\n")[0].split(" ")[0].toLowerCase() || "";
