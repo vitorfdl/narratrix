@@ -401,7 +401,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       });
 
       saveTimeoutRef.current = null;
-    }, 200); // Keep debounce delay at 500ms for stability
+    }, 100); // Keep debounce delay at 500ms for stability
   };
 
   // Save changes when relevant state changes
@@ -667,9 +667,9 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
 
         {/* Context Size */}
         <div className={`${bigScreenBreakpoints} items-center gap-2 pb-4`}>
-          <div className="w-1/3 flex items-center gap-1 col-span-2">
-            <h3 className="text-xs font-normal">Context Size:</h3>
+          <div className="flex items-center gap-1 col-span-2 min-w-0">
             <HelpTooltip>Defines the total token limit for the model's input history. Excess history is truncated.</HelpTooltip>
+            <h3 className="text-xs font-normal  truncate">Context Size:</h3>
           </div>
           <div className="flex-1">
             <StepButton
@@ -688,9 +688,9 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
         {/* Lorebook Token Budget - Conditionally Rendered */}
         {(selectedLorebookList.length > 0 || participantHaveLorebook) && (
           <div className={`${bigScreenBreakpoints} items-center gap-2`}>
-            <div className="w-1/3 flex items-center gap-1">
-              <h3 className="text-xs font-normal">Lorebook Budget:</h3>
+            <div className="flex items-center gap-1 col-span-2 min-w-0">
               <HelpTooltip>Specifies the maximum number of tokens allocated to lorebook entries within the context.</HelpTooltip>
+              <h3 className="text-xs font-norma  truncate">Lorebook Budget:</h3>
             </div>
             <div className="flex-1">
               <StepButton
@@ -708,9 +708,9 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
 
         {/* Response Length */}
         <div className={`${bigScreenBreakpoints} items-center gap-2`}>
-          <div className="w-1/3 flex items-center gap-1">
-            <h3 className="text-xs font-normal">Response Length:</h3>
+          <div className="flex items-center gap-1 col-span-2 min-w-0">
             <HelpTooltip>Sets the maximum number of tokens the model is allowed to generate in a single response.</HelpTooltip>
+            <h3 className="text-xs font-normal truncate">Response Length:</h3>
           </div>
           <div className="flex-1">
             <StepButton
@@ -727,9 +727,9 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
 
         {/* Max Depth */}
         <div className={`${bigScreenBreakpoints} items-center gap-2`}>
-          <div className="w-1/3 flex items-center gap-1">
-            <h3 className="text-xs font-normal">Max Depth:</h3>
+          <div className="flex items-center gap-1 col-span-2 min-w-0">
             <HelpTooltip>Limits the number of recent messages included in the context sent to the model. Older messages are dropped.</HelpTooltip>
+            <h3 className="text-xs font-normal">Max Depth:</h3>
           </div>
           <div className="flex-1">
             <StepButton

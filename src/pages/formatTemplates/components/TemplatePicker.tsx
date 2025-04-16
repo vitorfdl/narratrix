@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { ChevronsUpDown, CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 
@@ -114,7 +115,10 @@ export function TemplatePicker({
               <Button
                 variant="outline"
                 role="combobox"
-                className="w-full h-8 justify-between bg-muted text-xs text-foreground focus:border-none ring-primary/25 ring-1"
+                className={cn(
+                  "w-full h-8 justify-between bg-muted text-sm text-foreground focus:border-none ring-primary/25 ring-1",
+                  selectedTemplate && "bg-primary/10 text-primary",
+                )}
                 disabled={!hasTemplates || disabled}
               >
                 {selectedTemplate ? selectedTemplate.name : hasTemplates ? "Select Template" : "No templates available"}

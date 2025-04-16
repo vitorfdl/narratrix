@@ -204,7 +204,6 @@ export async function updateModel(
     // Process and encrypt any secret fields in the config
     if (manifest && updateData.config) {
       const secretFields = manifest.fields.filter((field) => field.field_type === "secret").map((field) => field.key);
-      console.log("secretFields", secretFields);
       // Create a new config object to avoid mutating the original
       const processedConfig = { ...updateData.config };
 
@@ -212,10 +211,8 @@ export async function updateModel(
       for (const key of secretFields) {
         if (processedConfig[key]) {
           try {
-            console.log("encrypting", processedConfig[key]);
             // Encrypt the secret value
             processedConfig[key] = await encryptApiKey(processedConfig[key]);
-            console.log("encrypted", processedConfig[key]);
           } catch (error) {
             console.error(`Failed to encrypt secret field ${key}:`, error);
             throw new Error(`Failed to encrypt secret field ${key}: ${error}`);

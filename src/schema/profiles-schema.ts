@@ -19,6 +19,7 @@ const NotificationSettingsSchema = z.object({
 
 const ChatSettingsSchema = z.object({
   timestampFormat: z.enum(["12h", "24h"]).default("12h"),
+  beepAtInferenceCompletion: z.boolean().default(true),
   showAvatars: z.boolean().default(true),
   sendShortcut: z.enum(["Enter", "Ctrl+Enter", "Shift+Enter", "CMD+Enter"]).default("Ctrl+Enter"),
 });
@@ -56,13 +57,26 @@ const AppSettingsSchema = z.object({
   system: SystemSettingsSchema.default({}),
 });
 
+// Define QuickAction schema for profile quick actions
+const QuickActionSchema = z.object({
+  id: z.string(),
+  icon: z.string(), // IconName type, but use string for schema
+  label: z.string(),
+  userPrompt: z.string(),
+  chatTemplateId: z.string().optional().nullable().default(null),
+  systemPromptOverride: z.string(),
+  streamOption: z.enum(["textarea", "userMessage", "participantMessage"]),
+  participantMessageType: z.enum(["new", "swap"]).optional(),
+});
+
 const ProfileSchema = z.object({
   id: uuidUtils.withDefault(),
   name: z.string(),
-  avatar_path: z.string().optional(),
+  version: z.number().optional().default(0),
+  avatar_path: z.string().optional().nullable().default(null),
   password: z.string().min(3).optional(),
   settings: AppSettingsSchema.default({}),
-  // quick_buttons: z.array(z.string()).default([]),
+  quick_actions: z.array(QuickActionSchema).nullable().default([]),
   created_at: dateUtils.withDefaultNow(),
   updated_at: dateUtils.withDefaultNow(),
 });
@@ -90,6 +104,7 @@ const UpdatePasswordSchema = z.object({
 /**
  * Types
  */
+type QuickAction = z.infer<typeof QuickActionSchema>;
 type Profile = z.infer<typeof ProfileSchema>;
 type AppSettings = z.infer<typeof AppSettingsSchema>;
 
@@ -100,12 +115,14 @@ type NewProfileParams = Omit<Profile, "settings" | "id" | "created_at" | "update
   settings?: Profile["settings"];
 };
 type LoginPasswordParams = z.infer<typeof LoginPasswordSchema>;
-type ProfileListItem = Omit<ProfileResponse, "settings">;
+type ProfileListItem = Omit<ProfileResponse, "settings" | "quick_actions">;
+type UpdateProfileParams = z.infer<typeof updateProfileSchema>;
 
 export {
   AppSettingsSchema,
   LoginPasswordSchema,
   ProfileSchema,
+  QuickActionSchema,
   UpdatePasswordSchema,
   updateProfileSchema,
   type AppSettings,
@@ -114,5 +131,7 @@ export {
   type Profile,
   type ProfileListItem,
   type ProfileResponse,
+  type QuickAction,
   type UpdatePasswordParams,
+  type UpdateProfileParams,
 };

@@ -109,7 +109,7 @@ export const MarkdownEditor = ({
     // Reset the editing flag after a short delay
     setTimeout(() => {
       isUserEditing.current = false;
-    }, 200);
+    }, 50);
   };
 
   const handleKeyDown = useCallback(

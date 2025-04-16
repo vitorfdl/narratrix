@@ -8,6 +8,7 @@ import { ModelSpecs } from "@/schema/inference-engine-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { formatPrompt as formatPromptUtil } from "@/services/inference-steps/formatter";
 import { useLocalSummarySettings } from "@/utils/local-storage";
+import { Howl } from "howler";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { listCharacters } from "./character-service";
@@ -18,6 +19,11 @@ import { listModels } from "./model-service";
 import { listChatTemplates } from "./template-chat-service";
 import { getFormatTemplateById } from "./template-format-service";
 import { listInferenceTemplates } from "./template-inference-service";
+
+const beep = new Howl({
+  src: ["/sounds/longbeep4.mp3"], // Place your beep sound in the public/sounds directory
+  volume: 0.5,
+});
 
 /**
  * StreamingState interface for tracking the streaming state of a message
@@ -180,6 +186,9 @@ export function useInferenceService() {
 
         // Reset streaming state
         resetStreamingState();
+        if (currentProfile.settings.chat.beepAtInferenceCompletion) {
+          beep.play();
+        }
       }
     },
     onError: (error: any, requestId) => {
@@ -268,11 +277,19 @@ export function useInferenceService() {
 
     const modelList = await listModels({ profile_id: currentProfile!.id });
     const modelSettings = modelList.find((model) => model.id === chatTemplate.model_id)!;
+
+    if (!modelSettings) {
+      throw new Error(`Model settings for chat template ${chatTemplate.name} not found`);
+    }
+
     const manifestSettings = modelManifestList.find((manifest) => manifest.id === modelSettings.manifest_id)!;
+    if (!manifestSettings) {
+      throw new Error(`Manifest settings for model ${modelSettings.name} not found`);
+    }
 
     const formatTemplate = await getFormatTemplateById(chatTemplate.format_template_id || "");
     if (!formatTemplate) {
-      throw new Error("Format template not found");
+      throw new Error(`Format template for chat template ${chatTemplate.name} not found`);
     }
 
     // Store the format template in the streaming state for use during streaming (reasoning, etc)
@@ -325,7 +342,7 @@ export function useInferenceService() {
         chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
         extra: extraSuggestions,
         censorship: {
-          words: currentProfile?.settings?.censorship?.customWords,
+          words: formatTemplate.config.settings.apply_censorship ? currentProfile?.settings?.censorship?.customWords : [],
         },
       },
     });
@@ -352,10 +369,6 @@ export function useInferenceService() {
       extraSuggestions = {},
       messageHistoryOverride,
     } = options;
-
-    if (!characterId) {
-      throw new Error("Character ID is required");
-    }
 
     try {
       // Reset any previous streaming state
@@ -533,7 +546,7 @@ export function useInferenceService() {
         resetStreamingState();
       }
 
-      return success;
+      return success ?? false;
     } catch (error) {
       console.error("Error canceling generation:", error);
       return false;

@@ -55,7 +55,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         settings,
       },
     });
-  }, 500);
+  }, 100);
 
   const currentProfile = useCurrentProfile();
 

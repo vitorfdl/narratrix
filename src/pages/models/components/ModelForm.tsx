@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import * as z from "zod";
 import { ModelInputFields } from "./ModelInputFields";
 
@@ -37,7 +38,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
   const [selectedManifest, setSelectedManifest] = useState<Manifest | null>(null);
   const [formSchema, setFormSchema] = useState<z.ZodObject<any>>();
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [testResult, setTestResult] = useState<{ state: "success" | "error" | "pending"; message: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ state: "success" | "error" | "pending"; message: string; errorDetails?: any } | null>(null);
   const [testRequestId, setTestRequestId] = useState<string | null>(null);
 
   const { runInference, cancelRequest, requests } = useInference({
@@ -61,11 +62,13 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
       }
     },
     onError: (error, requestId) => {
+      toast.error(`Connection failed: ${error.message}`);
       // Only process if it's our test request
       if (requestId === testRequestId) {
         setTestResult({
           state: "error",
-          message: `Connection failed: ${error.message}`,
+          message: error.message,
+          errorDetails: error, // Store the full error object
         });
         setTestRequestId(null);
       }
@@ -122,8 +125,16 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
       // Create appropriate Zod validators based on field type
       switch (field.field_type) {
         case "string":
-        case "secret":
           schemaObj[field.key] = field.required ? z.string().min(1, { message: "This field is required." }) : z.string().optional();
+          break;
+        case "secret":
+          if (mode === "edit") {
+            // In edit mode, always optional
+            schemaObj[field.key] = z.string().optional();
+          } else {
+            // In add/duplicate, follow manifest's required property
+            schemaObj[field.key] = field.required ? z.string().min(1, { message: "This field is required." }) : z.string().optional();
+          }
           break;
         case "hidden":
           schemaObj[field.key] = z.any();
@@ -174,7 +185,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     }
 
     setFormSchema(z.object(schemaObj));
-  }, [selectedManifest]);
+  }, [selectedManifest, mode]);
 
   // Initialize form with default values or existing model data
   const getInitialFormValues = () => {
@@ -234,6 +245,10 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         const existingKeys = new Set(Object.keys(config));
 
         for (const field of selectedManifest.fields) {
+          const fieldValue = form.getValues()[field.key];
+          if (mode === "edit" && field.field_type === "secret" && (!fieldValue || fieldValue === "")) {
+            continue; // Don't include this field in the configFields payload
+          }
           if (config[field.key] !== undefined) {
             form.setValue(field.key, config[field.key]);
           } else if (field.default !== undefined) {
@@ -351,7 +366,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         const fieldValue = form.getValues()[field.key];
 
         // Skip empty secret fields in edit mode to avoid overwriting with empty string
-        if (mode === "edit" && field.field_type === "secret" && !fieldValue) {
+        if (mode === "edit" && field.field_type === "secret" && (!fieldValue || fieldValue === "")) {
           continue; // Don't include this field in the configFields payload
         }
 
@@ -416,7 +431,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
         const fieldValue = values[field.key];
 
         // Skip empty secret fields in edit mode to avoid overwriting with empty string
-        if (mode === "edit" && field.field_type === "secret" && !fieldValue) {
+        if (mode === "edit" && field.field_type === "secret" && (!fieldValue || fieldValue === "")) {
           continue; // Don't include this field in the configFields payload
         }
 
@@ -611,9 +626,27 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
       {testResult && testResult.state === "error" && (
         <div className="mt-2">
-          <Badge variant="destructive" className="flex items-center gap-1">
-            <AlertCircle className="h-3 w-3" />
-            {testResult.message}
+          <Badge variant="destructive" className="flex flex-col items-start gap-1 p-2">
+            <div className="flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              <span>{testResult.message}</span>
+            </div>
+            {testResult.errorDetails && (
+              <div className="text-xs mt-1 space-y-1">
+                {testResult.errorDetails.details && (
+                  <div>
+                    <span className="font-semibold">Details:</span> {testResult.errorDetails.details}
+                  </div>
+                )}
+                {testResult.errorDetails.source && (
+                  <div>
+                    <span className="font-semibold">Source:</span> {testResult.errorDetails.source}
+                  </div>
+                )}
+                {/* Show the full error object for debugging if needed */}
+                {/* <pre className="whitespace-pre-wrap break-all">{JSON.stringify(testResult.errorDetails, null, 2)}</pre> */}
+              </div>
+            )}
           </Badge>
         </div>
       )}

@@ -46,7 +46,7 @@ interface chatState {
   error: string | null;
   actions: {
     fetchChatList: (profileId: string) => Promise<Chat[]>;
-    setSelectedChatById: (id: string) => Promise<void>;
+    setSelectedChatById: (profileId: string, id: string) => Promise<void>;
     updateSelectedChat: (chat: Partial<Chat>) => Promise<Chat>;
 
     // Messages
@@ -104,10 +104,10 @@ export const useChatStore = create<chatState>((set, get) => ({
       }
     },
 
-    setSelectedChatById: async (id: string) => {
+    setSelectedChatById: async (profileId, id) => {
       try {
         set({ isLoading: true, error: null });
-        const chat = await getChatById(id);
+        const chat = await getChatById(id, profileId);
 
         if (!chat) {
           throw new Error(`Chat with ID ${id} not found`);
@@ -143,7 +143,6 @@ export const useChatStore = create<chatState>((set, get) => ({
         }
 
         const updatedChat = await apiUpdateChat(currentChat.id, chatData);
-
         if (!updatedChat) {
           throw new Error("Failed to update chat");
         }

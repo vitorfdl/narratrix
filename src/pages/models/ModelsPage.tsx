@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Model, ModelType } from "../../schema/models-schema";
 import { ModelCard } from "./components/ModelCard";
@@ -100,6 +100,18 @@ export default function Models() {
         models,
       }));
       setModelGroups(groups);
+
+      // Update selectedModel if it exists
+      if (selectedModel) {
+        // Find the updated version of the selected model
+        for (const group of groups) {
+          const updatedModel = group.models.find((m) => m.id === selectedModel.id);
+          if (updatedModel) {
+            setSelectedModel(updatedModel);
+            break;
+          }
+        }
+      }
     }
   };
 
@@ -108,6 +120,15 @@ export default function Models() {
     try {
       await updateModel(modelId, updates);
       await refreshModels();
+
+      // Update the selected model to reflect changes
+      if (selectedModel && selectedModel.id === modelId) {
+        const updatedModel = {
+          ...selectedModel,
+          ...updates,
+        };
+        setSelectedModel(updatedModel);
+      }
     } catch (error) {
       console.error("Failed to update model configuration:", error);
     } finally {
@@ -162,8 +183,15 @@ export default function Models() {
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center h-64">
-            <p className="text-muted-foreground mb-4">No models found for this profile</p>
+          <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Search className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-semibold mb-1">No models found</h3>
+            <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">Get started by adding your first model to this profile.</p>
+            <Button variant="default" size="lg" onClick={() => setAddDialogOpen(true)}>
+              <Plus size={20} className="mr-2" /> Create Model
+            </Button>
           </div>
         )}
       </div>
@@ -171,10 +199,12 @@ export default function Models() {
       {/* Add Model Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogTrigger asChild>
-          <Button className="sticky bottom-0 w-full h-14 rounded-none border-t" size="lg">
-            <Plus className="mr-2 h-5 w-5" />
-            Add Model
-          </Button>
+          {modelGroups.length > 0 && (
+            <Button className="sticky bottom-0 w-full h-14 rounded-none border-t" size="lg">
+              <Plus className="mr-2 h-5 w-5" />
+              Add Model
+            </Button>
+          )}
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>

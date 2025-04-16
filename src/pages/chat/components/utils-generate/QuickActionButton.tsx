@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { Icon } from "@/components/ui/icon-picker";
+import { Icon, IconName } from "@/components/ui/icon-picker";
+import { QuickAction } from "@/schema/profiles-schema";
 import { Edit, Trash } from "lucide-react";
 import React from "react";
-import { QuickAction } from "./QuickActions"; // Assuming QuickAction type is exported from QuickActions.tsx
 
 interface QuickActionButtonProps {
   action: QuickAction;
@@ -16,6 +16,9 @@ interface QuickActionButtonProps {
 const iconSize = "!w-4.5 !h-4.5";
 
 export const QuickActionButton: React.FC<QuickActionButtonProps> = ({ action, onExecute, onEdit, onDelete, disabled = false }) => {
+  // Determine if button should be opaque (when no chatTemplateId)
+  const cantRun = !action.chatTemplateId;
+
   return (
     <ContextMenu key={action.id}>
       <ContextMenuTrigger>
@@ -23,12 +26,12 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({ action, on
           tabIndex={-1}
           variant="outline"
           size="sm"
-          onClick={() => onExecute(action)}
-          title={action.label}
-          className="flex items-center gap-1 px-2"
+          onClick={() => (cantRun ? onEdit(action) : onExecute(action))}
+          title={cantRun ? `${action.label} - Cannot run: Missing chat template` : action.label}
+          className={`flex items-center gap-1 px-2 ${cantRun ? "text-destructive/80 hover:text-destructive" : ""}`}
           disabled={disabled}
         >
-          <Icon name={action.icon} className={iconSize} />
+          <Icon name={action.icon as IconName} className={iconSize} />
           <span className="text-xs">{action.label}</span>
         </Button>
       </ContextMenuTrigger>

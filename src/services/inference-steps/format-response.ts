@@ -17,7 +17,7 @@ export function formatFinalText(textRaw: string, formatTemplate?: FormatTemplate
 
   // 2. Collapse consecutive newlines if enabled
   if (settings.collapse_consecutive_lines) {
-    text = text.replace(/\n{2,}/g, "\n");
+    text = text.replace(/\n{3,}/g, "\n\n");
   }
 
   // 3. Collapse double spaces if enabled

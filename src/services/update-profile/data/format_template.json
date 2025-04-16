@@ -1,0 +1,128 @@
+[
+  {
+    "id": "default-chat-template",
+    "name": "Default Chat Template",
+    "profile_id": "default",
+    "created_at": "2023-07-01T00:00:00.000Z",
+    "updated_at": "2023-07-01T00:00:00.000Z",
+    "config": {
+      "settings": {
+        "trim_assistant_incomplete": false,
+        "trim_double_spaces": true,
+        "collapse_consecutive_lines": true,
+        "prefix_messages": "never",
+        "apply_censorship": false,
+        "merge_messages_on_user": false,
+        "merge_subsequent_messages": true
+      },
+      "reasoning": {
+        "prefix": "<think>",
+        "suffix": "</think>"
+      },
+      "context_separator": "\n---\n",
+      "lorebook_separator": "\n---\n"
+    },
+    "prompts": [
+      {
+        "type": "context",
+        "content": "You are a helpful assistant that can answer questions and help with tasks."
+      }
+    ]
+  },
+  {
+    "id": "character-roleplay-template",
+    "name": "Character Roleplay Template",
+    "profile_id": "roleplay",
+    "created_at": "2023-07-02T00:00:00.000Z",
+    "updated_at": "2023-07-02T00:00:00.000Z",
+    "config": {
+      "settings": {
+        "trim_assistant_incomplete": true,
+        "trim_double_spaces": true,
+        "collapse_consecutive_lines": true,
+        "prefix_messages": "characters",
+        "apply_censorship": true,
+        "merge_messages_on_user": true,
+        "merge_subsequent_messages": false
+      },
+      "reasoning": {
+        "prefix": "<think>",
+        "suffix": "</think>"
+      },
+      "context_separator": "\n===\n",
+      "lorebook_separator": "\n+++\n"
+    },
+    "prompts": [
+      {
+        "type": "context",
+        "content": "You are roleplaying as the character described below. Maintain character voice and perspective at all times."
+      },
+      {
+        "type": "lorebook-top",
+        "content": "{{lorebook.top}}"
+      },
+      {
+        "type": "character-context",
+        "content": "# Character\n{{character.name}}: {{character.personality}}"
+      },
+      {
+        "type": "user-context",
+        "content": "# User\n{{user.name}}: {{user.personality}}"
+      },
+      {
+        "type": "character-memory",
+        "content": "# Character Past Events\n{{character.name}}: {{character.memory}}"
+      },
+      {
+        "type": "lorebook-bottom",
+        "content": "{{lorebook.bottom}}"
+      }
+    ]
+  },
+  {
+    "id": "chapter-based-template",
+    "name": "Chapter-Based Narrative",
+    "profile_id": "narrative",
+    "created_at": "2023-07-03T00:00:00.000Z",
+    "updated_at": "2023-07-03T00:00:00.000Z",
+    "config": {
+      "settings": {
+        "trim_assistant_incomplete": true,
+        "trim_double_spaces": true,
+        "collapse_consecutive_lines": false,
+        "prefix_messages": "never",
+        "apply_censorship": false,
+        "merge_messages_on_user": false,
+        "merge_subsequent_messages": true
+      },
+      "reasoning": {
+        "prefix": "<think>",
+        "suffix": "</think>"
+      },
+      "context_separator": "\n---\n",
+      "lorebook_separator": "\n---\n"
+    },
+    "prompts": [
+      {
+        "type": "context",
+        "content": "You are a narrative assistant helping to craft an interactive story based on the current chapter."
+      },
+      {
+        "type": "lorebook-top",
+        "content": "{{lorebook.top}}"
+      },
+      {
+        "type": "chapter-context",
+        "content": "# Scenario\n{{chapter.title}}: {{chapter.scenario}}\n\n# Instructions\n{{chapter.instructions}}"
+      },
+      {
+        "type": "character-context",
+        "content": "# Primary Character\n{{character.name}}: {{character.personality}}"
+      },
+      {
+        "type": "lorebook-bottom",
+        "content": "{{lorebook.bottom}}"
+      }
+    ]
+  }
+]

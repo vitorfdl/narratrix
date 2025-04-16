@@ -233,15 +233,25 @@ pub async fn converse_stream(
                 }
 
                 // Extract text content if present
+                // First check for delta.content (standard OpenAI format)
+                let delta_content = chunk
+                    .get("choices")
+                    .and_then(|choices| choices.get(0))
+                    .and_then(|choice| choice.get("delta"))
+                    .and_then(|delta| delta.get("content"))
+                    .and_then(|content| content.as_str());
+
+                // Then try text field from older API
                 let text_opt = chunk
                     .get("choices")
                     .and_then(|choices| choices.get(0))
                     .and_then(|choice| choice.get("text"))
                     .and_then(|text| text.as_str());
 
+                // Fallback: try local format with 'content' field
                 let text_fallback = chunk.get("content").and_then(|v| v.as_str());
 
-                if let Some(text) = text_opt.or(text_fallback) {
+                if let Some(text) = delta_content.or(text_opt).or(text_fallback) {
                     if !text.is_empty() {
                         let payload = json!({
                             "type": "text",
@@ -381,7 +391,14 @@ pub async fn complete_stream(
     loop {
         match tokio::time::timeout(std::time::Duration::from_secs(120), stream.next()).await {
             Ok(Some(Ok(chunk))) => {
-                // Try OpenAI format first
+                // Try OpenAI format first - check for both delta.content and text fields
+                let delta_content = chunk
+                    .get("choices")
+                    .and_then(|choices| choices.get(0))
+                    .and_then(|choice| choice.get("delta"))
+                    .and_then(|delta| delta.get("content"))
+                    .and_then(|content| content.as_str());
+
                 let text_opt = chunk
                     .get("choices")
                     .and_then(|choices| choices.get(0))
@@ -391,7 +408,7 @@ pub async fn complete_stream(
                 // Fallback: try local format with 'content' field
                 let text_fallback = chunk.get("content").and_then(|v| v.as_str());
 
-                if let Some(text) = text_opt.or(text_fallback) {
+                if let Some(text) = delta_content.or(text_opt).or(text_fallback) {
                     if !text.is_empty() {
                         let payload = json!({
                             "type": "text",

@@ -792,6 +792,14 @@ export default function Settings() {
                     </div> */}
 
                     <div className="flex items-center justify-between py-1">
+                      <Label htmlFor="beep-at-inference-completion">Beep at inference completion</Label>
+                      <Switch
+                        id="beep-at-inference-completion"
+                        checked={settings.chat.beepAtInferenceCompletion}
+                        onCheckedChange={(checked) => handleSettingChange("chat", "beepAtInferenceCompletion", !!checked)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between py-1">
                       <Label htmlFor="send-shortcut">Send Shortcut</Label>
                       <Select value={settings.chat.sendShortcut} onValueChange={(value) => handleSettingChange("chat", "sendShortcut", value)}>
                         <SelectTrigger className="w-36" id="send-shortcut">

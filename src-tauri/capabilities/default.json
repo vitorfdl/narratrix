@@ -29,6 +29,8 @@
       "identifier": "fs:scope",
       "allow": ["**/*"],
       "requireLiteralLeadingDot": false
-    }
+    },
+    "clipboard-manager:default",
+    "clipboard-manager:allow-write-text"
   ]
 }

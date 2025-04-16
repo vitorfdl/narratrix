@@ -93,8 +93,8 @@ export const narratrixTheme = EditorView.theme(
     },
 
     ".cm-gutters": {
-      backgroundColor: "hsl(var(--muted))",
-      color: "hsl(var(--muted-foreground))",
+      backgroundColor: "hsl(var(--accent))",
+      color: "hsl(var(--primary) / 0.8)",
       border: "none",
     },
 
@@ -126,6 +126,21 @@ export const narratrixTheme = EditorView.theme(
         backgroundColor: "hsl(var(--muted) / 0.25)",
         color: "hsl(var(--primary))",
       },
+    },
+    ".cm-panel.cm-search": {
+      position: "fixed",
+      top: "1rem",
+      right: "1rem",
+      zIndex: "100",
+      background: "hsl(var(--card))",
+      width: "320px",
+      maxWidth: "40vw",
+      borderRadius: "var(--radius)",
+      boxShadow: "var(--shadow-md)",
+      border: "1px solid hsl(var(--border))",
+      maxHeight: "50vh",
+      overflowY: "auto",
+      padding: "0.5rem",
     },
   },
   { dark: true },

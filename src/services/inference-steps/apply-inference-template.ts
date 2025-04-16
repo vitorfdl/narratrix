@@ -67,7 +67,7 @@ async function applyInferenceTemplate(params: ApplyInferenceTemplateConfig): Pro
   const basePrompt = formattedParts.join("");
 
   const sufixStopStrings = [userSuffix, assistantSuffix].filter((suffix) => suffix !== "");
-  const formattedStopStrings = [...config.customStopStrings, ...sufixStopStrings];
+  const formattedStopStrings = [...new Set([...config.customStopStrings, ...sufixStopStrings])];
 
   // Only add the final prefix and prefill if the last message wasn't an assistant message.
   if (lastMessage && lastMessage.role === "assistant") {

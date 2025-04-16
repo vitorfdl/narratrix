@@ -41,7 +41,6 @@ pub fn get_migrations() -> Vec<Migration> {
         Migration {
             version: 07,
 
-
             description: "create_lorebooks",
             sql: include_str!("./migrations/07_lorebooks.sql"),
             kind: MigrationKind::Up,
@@ -50,6 +49,12 @@ pub fn get_migrations() -> Vec<Migration> {
             version: 08,
             description: "message_extra",
             sql: include_str!("./migrations/08_message_extra.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 09,
+            description: "quick_actions",
+            sql: include_str!("./migrations/09_profile_quick_btn.sql"),
             kind: MigrationKind::Up,
         },
     ]

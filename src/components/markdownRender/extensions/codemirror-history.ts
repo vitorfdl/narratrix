@@ -24,7 +24,7 @@ export function createHistoryCompletionSource(historyItems: string[]) {
         return currentInput.length === 0 || item.trim().toLowerCase().startsWith(currentInput.toLowerCase());
       })
       .map((item, index) => ({
-        label: item.trim().length > 300 ? `${item.trim().substring(0, 300)}...` : item.trim(),
+        label: item,
         type: "text",
         section: "History",
         boost: Math.max(1, 100 - (historyItems.length - 1 - index) * 10), // Gradually decrease boost from newest to oldest

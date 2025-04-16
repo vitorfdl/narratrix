@@ -1,0 +1,39 @@
+[
+  {
+    "id": "20aeb088-db17-4cf2-ba17-82706f69a67f",
+    "icon": "venetian-mask",
+    "label": "Impersonate",
+    "userPrompt": "[Adopt the writing style and perspective of {{user}} for your next response.\nUse the conversation history as a reference guide for tone, vocabulary, and mannerisms.\nRespond as if you were {{user}} on:]\n\n{{input}}",
+    "chatTemplateId": null,
+    "systemPromptOverride": "",
+    "streamOption": "textarea",
+    "participantMessageType": "new"
+  },
+  {
+    "id": "cafce668-c96e-4e9c-b41f-89af24e58752",
+    "icon": "user-pen",
+    "label": "Guided Response",
+    "userPrompt": "[PRIORITY INSTRUCTION]\n\n# Task\nIncorporate the following idea into {{char}}'s next interaction:\n{{input}}",
+    "systemPromptOverride": "You serve as a grammar and punctuation editor. Your primary function is to correct errors in the user's text while preserving their intended meaning and voice.",
+    "streamOption": "participantMessage",
+    "participantMessageType": "swap"
+  },
+  {
+    "id": "51766859-87d1-4c12-9f68-96d4c12d94c9",
+    "icon": "spell-check-2",
+    "label": "Spell Check",
+    "userPrompt": " [Temporarily pause roleplay and perform editing functions only.\nCorrect grammar, punctuation, and improve flow in the following text.\nProvide only the corrected version without explanations:]\n {{input}}",
+    "systemPromptOverride": "",
+    "streamOption": "textarea",
+    "participantMessageType": "new"
+  },
+  {
+    "id": "31ea9b94-ba7a-403b-b4e3-1f95822cdd16",
+    "icon": "brain-circuit",
+    "label": "Stepped thinking",
+    "userPrompt": "<story_analysis_instructions>\nPause the current roleplay and provide a focused analysis of the immediate emotional, physical, and mental state of {{char}} based on recent events, the character's personality, current condition, and overall plot development. Respond in paragraphs addressing these aspects: \n1. Describe the current emotional state and physical reactions, highlighting vivid sensations and immediate feelings. \n2. Summarize the mental process including immediate thoughts and decision-making considerations influenced by recent incidents. \n3. Explain the character's environmental awareness and interpretation, noting potential immediate actions based on the situation.\nWrite in present tense with clear, direct observations. Resume roleplay only after further instruction.\n\nEnd the analysis after providing the numbered points. Resume roleplay only after receiving further input.\n</story_analysis_instructions>",
+    "systemPromptOverride": "Your role is to provide in-depth character analysis within roleplay scenarios, focusing on psychological and emotional states rather than advancing the narrative.",
+    "streamOption": "userMessage",
+    "participantMessageType": "new"
+  }
+]

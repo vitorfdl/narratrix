@@ -49,7 +49,7 @@ export function ExtraSections({ formatTemplateID }: ExtraSectionsProps) {
         reasoning: updatedReasoning,
       },
     });
-  }, 500);
+  }, 100);
 
   // Handler for updating reasoning fields
   const handleFieldChange = useCallback(

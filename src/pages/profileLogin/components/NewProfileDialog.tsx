@@ -57,7 +57,7 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
       }
 
       // Create profile with the avatar path
-      await addProfile(name, avatarPath, actualPassword);
+      await addProfile({ name, avatar_path: avatarPath, password: actualPassword });
       handleClose(true);
     } catch (err) {
       console.error("Error creating profile:", err);

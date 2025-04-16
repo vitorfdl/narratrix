@@ -3,7 +3,6 @@ import type { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/i
 import { Engine } from "@/schema/model-manifest-schema";
 import { parseEngineParameters } from "@/services/inference-steps/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { useConsoleStoreActions } from "./consoleStore";
 
 // Define types needed for inference
@@ -222,7 +221,7 @@ export function useInference(options: UseInferenceOptions = {}) {
       try {
         const success = await cancelInferenceRequest(request.modelId, requestId);
         if (!success) {
-          toast.error("Failed to cancel request");
+          return;
         }
 
         // Clean up tracking for this request

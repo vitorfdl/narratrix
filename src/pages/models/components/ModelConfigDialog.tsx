@@ -19,9 +19,8 @@ interface ModelConfigDialogProps {
 
 export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdating }: ModelConfigDialogProps) {
   const [maxConcurrency, setMaxConcurrency] = useState<number>(model.max_concurrency);
-  const initialCompletionType: "chat" | "text" = model.inference_template_id ? "text" : "chat";
-  const [completionType, setCompletionType] = useState<"chat" | "text">(initialCompletionType);
-  const [inferenceTemplateID, setInferenceTemplateID] = useState<string | null>(model.inference_template_id || null);
+  const [completionType, setCompletionType] = useState<"chat" | "text">("chat");
+  const [inferenceTemplateID, setInferenceTemplateID] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const manifests = useModelManifests();
 
@@ -33,17 +32,31 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
   useEffect(() => {
     if (open) {
       setMaxConcurrency(model.max_concurrency);
-      setInferenceTemplateID(model.inference_template_id || null);
-      setCompletionType(model.inference_template_id ? "text" : "chat");
+
+      // Set inference template ID and completion type based on model
+      const templateId = model.inference_template_id || null;
+      setInferenceTemplateID(templateId);
+
+      // If there's a template ID, we're in text completion mode, otherwise chat
+      setCompletionType(templateId ? "text" : "chat");
     }
   }, [open, model]);
 
-  // If user switches to chat, clear template selection
-  useEffect(() => {
-    if (completionType === "chat") {
+  // Handle template selection
+  const handleTemplateChange = (templateId: string | null) => {
+    setInferenceTemplateID(templateId);
+  };
+
+  // Handle completion type change
+  const handleCompletionTypeChange = (value: string) => {
+    const newType = value as "chat" | "text";
+    setCompletionType(newType);
+
+    // If switching to chat mode, clear the template
+    if (newType === "chat") {
       setInferenceTemplateID(null);
     }
-  }, [completionType]);
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -86,12 +99,7 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
                 <Label htmlFor="completionType" className="text-base font-medium">
                   Inference Mode
                 </Label>
-                <RadioGroup
-                  id="completionType"
-                  className="flex flex-row gap-2"
-                  value={completionType}
-                  onValueChange={(val) => setCompletionType(val as "chat" | "text")}
-                >
+                <RadioGroup id="completionType" className="flex flex-row gap-2" value={completionType} onValueChange={handleCompletionTypeChange}>
                   <RadioGroupItem value="chat" id="chat-mode" />
                   <Label htmlFor="chat-mode" className="mr-2 cursor-pointer select-none">
                     Chat Completion
@@ -103,7 +111,7 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
                 </RadioGroup>
               </div>
 
-              <InstructTemplateSection disabled={completionType !== "text"} onChange={setInferenceTemplateID} modelTemplateID={inferenceTemplateID} />
+              <InstructTemplateSection disabled={completionType !== "text"} onChange={handleTemplateChange} modelTemplateID={inferenceTemplateID} />
             </>
           )}
         </div>
@@ -114,9 +122,9 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
             <XCircleIcon className="h-4 w-4" />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving || isUpdating} className="px-6 min-w-[140px]">
+          <Button onClick={handleSave} className="px-6 min-w-[140px] ">
             <CheckCircleIcon className="h-4 w-4" />
-            {isSaving || isUpdating ? "Saving..." : "Save changes"}
+            Save changes
           </Button>
         </DialogFooter>
       </DialogContent>

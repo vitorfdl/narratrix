@@ -4,12 +4,13 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
+import { QuickAction } from "@/schema/profiles-schema";
 import { GenerationOptions, StreamingState } from "@/services/inference-service";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import QuickActions, { QuickAction } from "./utils-generate/QuickActions";
+import QuickActions from "./utils-generate/QuickActions";
 
 interface WidgetGenerateProps {
   onSubmit?: (text: string) => void;
@@ -223,8 +224,8 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     const quietResponse = action.streamOption === "textarea";
 
     const generationConfig: GenerationOptions = {
-      chatTemplateID: action.chatTemplateId,
-      characterId: nextCharacter.id,
+      chatTemplateID: action.chatTemplateId ?? undefined,
+      characterId: nextCharacter?.id ?? "",
       systemPromptOverride: action.systemPromptOverride,
       userMessage: action.userPrompt,
       stream: true,
@@ -282,14 +283,28 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       await inferenceService.generateMessage(generationConfig);
     } catch (error) {
       console.error("Error generating message:", error);
-      toast.error("Error generating message");
+      toast.error(`${error}`);
     }
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-none flex items-center gap-2 p-0.5 justify-between">
-        <div className="flex items-center gap-2">
+    <div className="flex h-full flex-col relative">
+      <MarkdownTextArea
+        key={editorKey}
+        initialValue={text}
+        onChange={(e) => setText(e)}
+        editable={!isAnyCharacterStreaming() || quietResponseRef.current}
+        placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
+        sendShortcut={sendCommand}
+        className={cn(
+          "flex-1 h-full overflow-none pb-9", // Add bottom padding to prevent overlap with absolute bar
+          isAnyCharacterStreaming() && "animate-pulse",
+        )}
+        onSubmit={handleSubmit}
+        enableHistory={true}
+      />
+      <div className="absolute bottom-0 left-0 w-full flex items-center gap-2 p-2 bg-background/95 border-t border-border justify-between z-10">
+        <div className="flex items-center gap-2 ring-none">
           <QuickActions handleExecuteAction={executeQuickAction} />
           {/* <Toggle tabIndex={-1} pressed={autoTranslate} onPressedChange={setAutoTranslate} title="Auto Translate" size="xs">
             <Languages className="!w-3.5 !h-3.5" />
@@ -302,18 +317,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           </Button>
         )}
       </div>
-
-      <MarkdownTextArea
-        key={editorKey}
-        initialValue={text}
-        onChange={(e) => setText(e)}
-        editable={!isAnyCharacterStreaming() || quietResponseRef.current}
-        placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
-        sendShortcut={sendCommand}
-        className={cn("flex-1 h-full", isAnyCharacterStreaming() && "animate-pulse")}
-        onSubmit={handleSubmit}
-        enableHistory={true}
-      />
     </div>
   );
 };

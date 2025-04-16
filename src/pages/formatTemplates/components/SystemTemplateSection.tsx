@@ -74,10 +74,6 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
         {!prompt.isCollapsed && (
           <div className="space-y-4">
             <div className="mb-2 mr-1 ml-1 md:text-xs xl:text-sm">
-              <div className="flex items-center justify-between">
-                <div />
-                <span className="text-xs text-muted-foreground p-0.5">{estimateTokens(prompt.content, 0)} tokens</span>
-              </div>
               <MarkdownTextArea
                 initialValue={prompt.content}
                 onChange={(e) => onUpdate(prompt.id, { content: e })}
@@ -85,6 +81,10 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
                 suggestions={promptReplacementSuggestionList}
                 editable={!disabled}
               />
+              <div className="flex items-center justify-between">
+                <div />
+                <span className="text-xs text-muted-foreground p-0.5">{estimateTokens(prompt.content, 0)} tokens</span>
+              </div>
             </div>
           </div>
         )}
@@ -167,7 +167,7 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
     } catch (error) {
       console.error("Failed to update template:", error);
     }
-  }, 200);
+  }, 80);
 
   // Handle adding a new prompt section
   const handleAddPrompt = useCallback(

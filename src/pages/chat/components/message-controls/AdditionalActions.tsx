@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { getChatMessageById } from "@/services/chat-message-service";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import {
   BookmarkMinus,
   BookmarkPlus,
   Check,
+  Copy,
   Flag,
   Image,
   Languages,
@@ -17,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const MessageActions = ({
   messageId,
@@ -99,6 +103,27 @@ export const MessageActions = ({
         title="Delete Message"
       >
         <Trash2 className="w-4 h-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 hover:bg-accent"
+        onClick={async () => {
+          try {
+            const message = await getChatMessageById(messageId);
+            const messageContent = message?.messages[message.message_index];
+            console.log(messageContent);
+            await writeText(messageContent || "");
+            toast.success("Content copied to clipboard");
+          } catch (error) {
+            toast.error("Failed to copy message content");
+          }
+        }}
+        title="Copy Message"
+        aria-label="Copy Message"
+        disabled={isRegenerateDisabled}
+      >
+        <Copy className="w-4 h-4" />
       </Button>
       <DropdownMenu onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>

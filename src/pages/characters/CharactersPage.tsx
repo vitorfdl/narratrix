@@ -164,41 +164,62 @@ export default function Characters() {
         </div>
 
         <div className="flex-1 overflow-auto p-4">
-          <div
-            className="grid gap-2"
-            style={{
-              gridTemplateColumns: `repeat(${settings.view.cardsPerRow}, minmax(0, 1fr))`,
-            }}
-          >
-            {filteredCharacters.map((char) => (
-              <CharacterCard
-                key={char.id}
-                model={char}
-                cardSize={settings.view.cardSize}
-                avatarUrl={avatarUrlMap[char.id]}
-                isLoadingAvatar={isLoadingAvatars}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
+          {filteredCharacters.length > 0 ? (
+            <div
+              className="grid gap-2"
+              style={{
+                gridTemplateColumns: `repeat(${settings.view.cardsPerRow}, minmax(0, 1fr))`,
+              }}
+            >
+              {filteredCharacters.map((char) => (
+                <CharacterCard
+                  key={char.id}
+                  model={char}
+                  cardSize={settings.view.cardSize}
+                  avatarUrl={avatarUrlMap[char.id]}
+                  isLoadingAvatar={isLoadingAvatars}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <Search className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-1">
+                {search || settings.selectedTags.length > 0 ? "No characters match your filters" : "No characters found"}
+              </h3>
+              <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
+                {search || settings.selectedTags.length > 0
+                  ? "Try adjusting your search or filter settings."
+                  : "Get started by creating your first character or agent!"}
+              </p>
+              <Button variant="default" size="lg" onClick={() => setCreateDialogOpen(true)}>
+                <Plus size={20} className="mr-2" /> Create Character / Agent
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Create Dialog Trigger */}
-        <Button className="w-full rounded-none h-14" size="lg" onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-5 w-5" />
-          Add Character / Agent
-        </Button>
+        {filteredCharacters.length > 0 && (
+          <Button className="w-full rounded-none h-14" size="lg" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-5 w-5" />
+            Add Character / Agent
+          </Button>
+        )}
         {/* Create Dialog */}
         <CharacterForm
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
           mode="create"
           setIsEditing={setIsEditing}
-          onSuccess={() => {
+          onSuccess={(characterId) => {
             setCreateDialogOpen(false);
             fetchCharacters(currentProfile!.id);
-            reloadAvatars();
+            reloadAvatars(characterId);
             setIsEditing(false);
           }}
         />
@@ -210,10 +231,10 @@ export default function Characters() {
           mode="edit"
           initialData={selectedCharacter as Character}
           setIsEditing={setIsEditing}
-          onSuccess={() => {
+          onSuccess={(characterId) => {
             setEditDialogOpen(false);
             setSelectedCharacter(null);
-            reloadAvatars();
+            reloadAvatars(characterId);
             setIsEditing(false);
           }}
         />

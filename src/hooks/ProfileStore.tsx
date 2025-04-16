@@ -1,9 +1,10 @@
+import { runProfileMigrations } from "@/services/update-profile";
 import { useSessionProfile } from "@/utils/session-storage";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { create } from "zustand";
-import { ProfileListItem, ProfileResponse } from "../schema/profiles-schema";
-import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile } from "../services/profile-service";
+import { ProfileListItem, ProfileResponse, UpdateProfileParams } from "../schema/profiles-schema";
+import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile, updateProfile } from "../services/profile-service";
 import { useThemeStore } from "./ThemeContext";
 import { useCharacterActions } from "./characterStore";
 import { useChatActions } from "./chatStore";
@@ -25,7 +26,8 @@ interface ProfileState {
 
 interface ProfileActions {
   fetchProfiles: () => Promise<ProfileListItem[]>;
-  addProfile: (name: string, avatar?: string, password?: string) => Promise<void>;
+  addProfile: (profile: UpdateProfileParams) => Promise<void>;
+  updateProfile: (profileChanges: UpdateProfileParams) => Promise<void>;
   removeProfile: (id: string) => Promise<void>;
   setCurrentProfile: (profile: ProfileResponse | undefined) => void;
   login: (id: string, password?: string) => Promise<ProfileResponse | null>;
@@ -67,7 +69,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => {
         }
       },
 
-      addProfile: async (name: string, avatar?: string, password?: string) => {
+      addProfile: async (profile) => {
         try {
           set({ isLoading: true, error: null });
 
@@ -75,10 +77,16 @@ export const useProfileStore = create<ProfileStore>((set, get) => {
             throw new Error(`Maximum number of profiles (${MAX_PROFILES}) reached`);
           }
 
+          if (!profile.name) {
+            throw new Error("Profile name is required");
+          }
+
           const newProfileData = {
-            name,
-            password: password,
-            avatar_path: avatar || undefined,
+            name: profile.name,
+            password: profile.password,
+            version: 0,
+            quick_actions: profile.quick_actions || [],
+            avatar_path: profile.avatar_path || null,
           };
 
           const createdProfile = await createProfile(newProfileData);
@@ -95,6 +103,34 @@ export const useProfileStore = create<ProfileStore>((set, get) => {
             isLoading: false,
           });
           throw error;
+        }
+      },
+
+      updateProfile: async (profileChanges: UpdateProfileParams) => {
+        try {
+          set({ isLoading: true, error: null });
+
+          const currentProfile = get().currentProfile;
+          if (!currentProfile) {
+            throw new Error("No profile selected");
+          }
+
+          const updatedProfile = await updateProfile(currentProfile.id, profileChanges);
+
+          if (profileChanges.name || profileChanges.avatar_path || profileChanges.avatar_path) {
+            await get().actions.fetchProfiles();
+          }
+
+          set(() => ({
+            currentProfile: updatedProfile,
+          }));
+        } catch (error) {
+          console.error("Failed to update profile:", error);
+          toast.error(error instanceof Error ? error.message : "Failed to update profile");
+          set({
+            error: error instanceof Error ? error.message : "Failed to update profile",
+            isLoading: false,
+          });
         }
       },
 
@@ -168,6 +204,18 @@ export const useProfileStore = create<ProfileStore>((set, get) => {
             set({ isLoading: false, error: loginError });
             return null;
           }
+
+          // --- MIGRATION HOOK ---
+          try {
+            const migratedProfile = await runProfileMigrations(fullProfile.id);
+            if (migratedProfile && migratedProfile.version !== fullProfile.version) {
+              fullProfile = migratedProfile;
+            }
+          } catch (migrationError) {
+            console.error("Profile migration failed:", migrationError);
+            toast.error("Profile migration failed. Some features may not work as expected.");
+          }
+          // --- END MIGRATION HOOK ---
 
           set({
             currentProfile: fullProfile,
@@ -253,7 +301,6 @@ export const useInitializeProfiles = () => {
     let isMounted = true;
 
     const initialize = async () => {
-      console.log("Initializing profiles...");
       const { fetchProfiles, login, logout } = useProfileStore.getState().actions;
       const { isAuthenticated: isAlreadyAuthenticated } = useProfileStore.getState();
 
@@ -276,11 +323,9 @@ export const useInitializeProfiles = () => {
       if (savedProfileId) {
         const currentProfileId = useProfileStore.getState().currentProfile?.id;
         if (isAlreadyAuthenticated && currentProfileId === savedProfileId) {
-          console.log(`Already authenticated with the saved profile: ${savedProfileData?.name} (${savedProfileId})`);
           return;
         }
 
-        console.log("Attempting auto-login for saved profile ID:", savedProfileId);
         const loggedInProfile = await login(savedProfileId);
 
         if (!isMounted) {
@@ -288,7 +333,6 @@ export const useInitializeProfiles = () => {
         }
 
         if (loggedInProfile) {
-          console.log("Auto-login successful for:", loggedInProfile.name);
           setSessionProfile(loggedInProfile);
         } else {
           console.warn("Auto-login failed for saved profile ID:", savedProfileId);
@@ -299,7 +343,6 @@ export const useInitializeProfiles = () => {
           }
         }
       } else {
-        console.log("No saved profile found in session.");
         const { currentProfile } = useProfileStore.getState();
         if (currentProfile) {
           logout();

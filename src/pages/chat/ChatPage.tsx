@@ -62,6 +62,10 @@ export default function ChatPage() {
   }, [profileId]);
 
   useEffect(() => {
+    if (!chatList.some((chat) => chat.id === selectedChatID)) {
+      setSelectedChatById(profileId, openTabIds[0]);
+    }
+
     // Early return if we already have a selected chat or no tabs
     if (selectedChatID || openTabIds.length === 0) {
       setIsLoading(false);
@@ -69,7 +73,7 @@ export default function ChatPage() {
     }
 
     // Otherwise, select the first tab
-    setSelectedChatById(openTabIds[0]);
+    setSelectedChatById(profileId, openTabIds[0]);
     setIsLoading(false);
   }, [selectedChatID, openTabIds]);
 
@@ -126,7 +130,7 @@ export default function ChatPage() {
       // Batch these updates together
       const updatedTabs = [...openTabIds, newChat.id];
       setOpenTabIds(updatedTabs);
-      setSelectedChatById(newChat.id);
+      setSelectedChatById(profileId, newChat.id);
 
       // Refresh the list of all chats
       const refreshedChats = await listChats({ profile_id: profileId });
@@ -146,7 +150,7 @@ export default function ChatPage() {
         setOpenTabIds([...openTabIds, tabId]);
       }
       // Set the selected chat to the requested tab
-      setSelectedChatById(tabId);
+      setSelectedChatById(profileId, tabId);
     },
     [setSelectedChatById, openTabIds, setOpenTabIds],
   );
@@ -158,7 +162,7 @@ export default function ChatPage() {
 
       // If we closed the selected tab, select the last remaining tab
       if (selectedChatID === tabId && newOpenTabIds.length > 0) {
-        setSelectedChatById(newOpenTabIds[newOpenTabIds.length - 1]);
+        setSelectedChatById(profileId, newOpenTabIds[newOpenTabIds.length - 1]);
       }
 
       setOpenTabIds(newOpenTabIds);
@@ -201,7 +205,7 @@ export default function ChatPage() {
 
         const updatedTabs = [...openTabIds, newChat.id];
         setOpenTabIds(updatedTabs);
-        setSelectedChatById(newChat.id);
+        setSelectedChatById(profileId, newChat.id);
 
         // Refresh the list of all chats
         const refreshedChats = await listChats({ profile_id: profileId });

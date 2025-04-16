@@ -65,12 +65,13 @@ export async function createChat(chatData: CreateChatParams): Promise<Chat> {
 }
 
 // Get a chat by ID
-export async function getChatById(id: string): Promise<Chat | null> {
+export async function getChatById(id: string, profileId?: string): Promise<Chat | null> {
   // Validate ID input
   const validId = uuidUtils.uuid().parse(id);
 
-  const result = await selectDBQuery<any[]>(
-    `SELECT 
+  // Build query and parameters based on whether profileId is provided
+  let query = `
+    SELECT 
       id, 
       profile_id, 
       name, 
@@ -82,9 +83,16 @@ export async function getChatById(id: string): Promise<Chat | null> {
       created_at, 
       updated_at
     FROM chats 
-    WHERE id = $1`,
-    [validId],
-  );
+    WHERE id = $1
+  `;
+  const params: any[] = [validId];
+
+  if (profileId) {
+    query += " AND profile_id = $2";
+    params.push(profileId);
+  }
+
+  const result = await selectDBQuery<any[]>(query, params);
 
   if (result.length === 0) {
     return null;

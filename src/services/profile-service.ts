@@ -27,9 +27,19 @@ export async function createProfile(profileData: NewProfileParams): Promise<Prof
   const settings = profile.settings || {};
 
   await executeDBQuery(
-    `INSERT INTO profiles (id, name, password, avatar_path, settings, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [id, profile.name, hashedPassword, profile.avatar_path, JSON.stringify(settings), profile.created_at, profile.updated_at],
+    `INSERT INTO profiles (id, name, password, avatar_path, settings, quick_actions, version, created_at, updated_at) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      id,
+      profile.name,
+      hashedPassword,
+      profile.avatar_path,
+      JSON.stringify(settings),
+      JSON.stringify(profile.quick_actions),
+      profile.version,
+      profile.created_at,
+      profile.updated_at,
+    ],
   );
 
   // Return a validated ProfileResponse
@@ -38,6 +48,8 @@ export async function createProfile(profileData: NewProfileParams): Promise<Prof
     name: profile.name,
     avatar_path: profile.avatar_path,
     settings,
+    quick_actions: profile.quick_actions,
+    version: profile.version,
     created_at: profile.created_at,
     updated_at: profile.updated_at,
     hasPassword: !!profile.password,
@@ -52,6 +64,7 @@ export async function getProfiles() {
       id, 
       name, 
       avatar_path,
+      version,
       created_at,
       (password IS NOT NULL AND trim(password) != '') as hasPassword
     FROM profiles`,
@@ -74,6 +87,8 @@ export async function getProfileById(id: string): Promise<ProfileResponse | null
         name, 
         avatar_path, 
         settings,
+        quick_actions,
+        version,
         created_at, 
         updated_at 
       FROM profiles 
@@ -88,7 +103,7 @@ export async function getProfileById(id: string): Promise<ProfileResponse | null
   // Parse settings from string to object if needed
   const profile = result[0];
   profile.settings = typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
-
+  profile.quick_actions = typeof profile.quick_actions === "string" ? JSON.parse(profile.quick_actions) : profile.quick_actions;
   // Validate with ProfileResponseSchema
   return profile;
 }
@@ -111,11 +126,11 @@ export async function updateProfile(id: string, updateData: Partial<Profile>): P
       ...update.settings,
     };
   }
-
   // Define field mappings for special transformations
   const fieldMapping: Partial<Record<keyof Profile, (value: any) => any>> = {
     password: async (pwd: string) => await hashPassword(pwd),
     settings: (settings: object) => JSON.stringify(settings),
+    quick_actions: (quick_actions: object) => JSON.stringify(quick_actions),
   };
 
   // Build update query using the utility function
@@ -154,6 +169,8 @@ export async function loginProfile(loginData: LoginPasswordParams): Promise<Prof
       password,
       avatar_path, 
       settings,
+      quick_actions,
+      version,
       created_at, 
       updated_at 
     FROM profiles 
@@ -175,7 +192,7 @@ export async function loginProfile(loginData: LoginPasswordParams): Promise<Prof
 
   // Parse settings from string to object if needed
   profile.settings = typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
-
+  profile.quick_actions = typeof profile.quick_actions === "string" ? JSON.parse(profile.quick_actions) : profile.quick_actions;
   // Remove password field from the response
   const { password, ...profileResponse } = profile;
 
@@ -184,8 +201,6 @@ export async function loginProfile(loginData: LoginPasswordParams): Promise<Prof
 
 export async function updateProfileSettings(id: string, settings: AppSettings): Promise<ProfileResponse> {
   const validId = uuidUtils.uuid().parse(id);
-
-  console.log("Updating profile settings for", validId, settings);
 
   // First get the current profile to ensure it exists
   const currentProfile = await getProfileById(validId);

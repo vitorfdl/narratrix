@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { ExpressionPackPreview } from "./ExpressionPackPreview";
 
 interface CharacterFormProps {
-  onSuccess: () => void;
+  onSuccess: (characterId?: string) => void;
   initialData?: Character;
   mode?: "create" | "edit";
   setIsEditing: (isEditing: boolean) => void;
@@ -329,16 +329,17 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(
           lorebook_id: selectedLorebookId,
         };
 
+        let characterId: string | undefined = initialData?.id;
         if (isEditMode && initialData) {
           await updateCharacter(profileId, initialData.id, formData);
           toast.success("Character updated successfully!");
         } else {
-          await createCharacter(formData as any);
+          ({ id: characterId } = await createCharacter(formData as any));
           toast.success("Character created successfully!");
         }
 
         setIsEditing(false); // Explicitly reset editing state after successful submission
-        onSuccess();
+        onSuccess(characterId);
       } catch (error) {
         toast.error(`Failed to ${isEditMode ? "update" : "create"} character: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
@@ -454,9 +455,9 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(
                 <XCircleIcon className="h-4 w-4" />
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="px-6 min-w-[140px]">
+              <Button type="submit" className="px-6 min-w-[140px]">
                 <CheckCircleIcon className="h-4 w-4" />
-                {isSubmitting ? "Saving..." : "Save"}
+                Save
               </Button>
             </DialogFooter>
           </form>

@@ -1,0 +1,152 @@
+[
+  {
+    "name": "Alpaca",
+    "description": "https://github.com/tatsu-lab/stanford_alpaca",
+    "config": {
+      "systemPromptFormatting": {
+        "prefix": "### Instruction:\\n",
+        "suffix": " \\n"
+      },
+      "userMessageFormatting": {
+        "prefix": "### Input:\\n",
+        "suffix": "\\n\\n"
+      },
+      "assistantMessageFormatting": {
+        "prefix": "### Response:\\n",
+        "suffix": "\\n\\n"
+      },
+      "agentMessageFormatting": {
+        "prefix": "",
+        "suffix": "",
+        "useSameAsUser": true,
+        "useSameAsSystemPrompt": false
+      },
+      "customStopStrings": [""]
+    }
+  },
+  {
+    "name": "Mistral V3 - Tekken",
+    "description": "https://github.com/mistralai/mistral-common/tree/main/tests/data",
+    "config": {
+      "systemPromptFormatting": {
+        "prefix": "[INST] ",
+        "suffix": "[/INST] Understood!</s>"
+      },
+      "userMessageFormatting": {
+        "prefix": "[INST] ",
+        "suffix": "[/INST]"
+      },
+      "assistantMessageFormatting": {
+        "prefix": " ",
+        "suffix": "</s>"
+      },
+      "agentMessageFormatting": {
+        "prefix": "",
+        "suffix": "",
+        "useSameAsUser": true,
+        "useSameAsSystemPrompt": false
+      },
+      "customStopStrings": [""]
+    }
+  },
+  {
+    "name": "Llama 3",
+    "description": "https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-3/",
+    "config": {
+      "systemPromptFormatting": {
+        "prefix": "<|start_header_id|>system<|end_header_id|>\\n",
+        "suffix": "<|eot_id|>\\n"
+      },
+      "userMessageFormatting": {
+        "prefix": "<|start_header_id|>user<|end_header_id|>\\n",
+        "suffix": "<|eot_id|>\\n"
+      },
+      "assistantMessageFormatting": {
+        "prefix": "<|start_header_id|>assistant<|end_header_id|>\\n",
+        "suffix": "<|eot_id|>\\n"
+      },
+      "agentMessageFormatting": {
+        "prefix": "",
+        "suffix": "",
+        "useSameAsUser": true,
+        "useSameAsSystemPrompt": false
+      },
+      "customStopStrings": [""]
+    }
+  },
+  {
+    "name": "ChatML",
+    "description": "https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/chat-markup-language",
+    "config": {
+      "systemPromptFormatting": {
+        "prefix": "<|im_start|>system\\n",
+        "suffix": "<|im_end|>\\n"
+      },
+      "userMessageFormatting": {
+        "prefix": "<|im_start|>user\\n",
+        "suffix": "<|im_end|>\\n"
+      },
+      "assistantMessageFormatting": {
+        "prefix": "<|im_start|>assistant\\n",
+        "suffix": "<|im_end|>\\n"
+      },
+      "agentMessageFormatting": {
+        "prefix": "",
+        "suffix": "",
+        "useSameAsUser": true,
+        "useSameAsSystemPrompt": false
+      },
+      "customStopStrings": [""]
+    }
+  },
+  {
+    "name": "Gemma 3",
+    "description": "https://ai.google.dev/gemma/docs/core/prompt-structure",
+    "config": {
+      "systemPromptFormatting": {
+        "prefix": "<start_of_turn>user\\n",
+        "suffix": "<end_of_turn>\\n"
+      },
+      "userMessageFormatting": {
+        "prefix": "<start_of_turn>user\n",
+        "suffix": "<end_of_turn>\\n"
+      },
+      "assistantMessageFormatting": {
+        "prefix": "<start_of_turn>model\\n",
+        "suffix": "<end_of_turn>\\n"
+      },
+      "agentMessageFormatting": {
+        "prefix": "",
+        "suffix": "",
+        "useSameAsUser": true,
+        "useSameAsSystemPrompt": false
+      },
+      "customStopStrings": ["<end_of_turn>"]
+    }
+  },
+  {
+    "name": "DeepSeekV3",
+    "description": "https://api-docs.deepseek.com/",
+    "config": {
+      "systemPromptFormatting": {
+        "prefix": "<｜begin▁of▁sentence｜>",
+        "suffix": ""
+      },
+      "userMessageFormatting": {
+        "prefix": "<｜User｜>",
+        "suffix": ""
+      },
+      "assistantMessageFormatting": {
+        "prefix": "<｜Assistant｜>",
+        "suffix": "<｜end▁of▁sentence｜>"
+      },
+      "agentMessageFormatting": {
+        "prefix": "",
+        "suffix": "",
+        "useSameAsUser": true,
+        "useSameAsSystemPrompt": false
+      },
+      "customStopStrings": [""]
+    }
+  }
+]

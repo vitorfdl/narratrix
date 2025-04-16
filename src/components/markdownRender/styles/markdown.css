@@ -194,6 +194,19 @@
   fill: currentColor;
   vertical-align: text-bottom;
 }
+.copy-code-button {
+  @apply absolute right-2 top-3 px-2 py-1 z-10 rounded-lg bg-primary text-white border border-border opacity-0 pointer-events-none transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary;
+  transform: translateX(-50px);
+}
+pre:hover .copy-code-button,
+pre:focus-within .copy-code-button {
+  @apply opacity-90 pointer-events-auto;
+  transform: translateX(0px);
+}
+.copy-code-button:hover,
+.copy-code-button:focus-visible {
+  @apply opacity-100;
+}
 
 .markdown-body h1:hover .anchor .octicon-link:before,
 .markdown-body h2:hover .anchor .octicon-link:before,

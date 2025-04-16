@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
-import { useSessionCurrentInferenceTemplate } from "@/utils/session-storage";
 import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
@@ -84,27 +83,24 @@ interface InstructTemplateSectionProps {
 }
 
 export function InstructTemplateSection({ disabled, onChange, modelTemplateID }: InstructTemplateSectionProps) {
-  const [instructTemplateID, setInstructTemplateID] = useSessionCurrentInferenceTemplate();
-  if (modelTemplateID) {
-    setInstructTemplateID(modelTemplateID);
-  }
+  const instructTemplateID = modelTemplateID;
+  const setInstructTemplateID = (id: string | null) => {
+    onChange(id);
+  };
   const { updateInferenceTemplate, createInferenceTemplate, deleteInferenceTemplate } = useTemplateActions();
-  const currentTemplate = useInferenceTemplate(instructTemplateID ?? "");
   const templateList = useInferenceTemplateList();
-
   const currentProfile = useCurrentProfile();
+
   // Track if we're currently updating to prevent loops
   const isUpdating = useRef(false);
+
+  const currentTemplate = useInferenceTemplate(instructTemplateID ?? "");
 
   // Use a ref to track the last saved state (full template structure) for comparison
   const lastSavedState = useRef<InferenceTemplate | CreateInferenceTemplateParams | null>(null);
 
   // Initialize template state with default values, matching the expected structure
   const [templateState, setTemplateState] = useState<CreateInferenceTemplateParams>(defaultTemplate);
-
-  useEffect(() => {
-    onChange(instructTemplateID);
-  }, [instructTemplateID, onChange]);
 
   // Debounced update function to avoid too many API calls
   const debouncedUpdate = useDebouncedCallback(async () => {
@@ -130,7 +126,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
     } finally {
       isUpdating.current = false;
     }
-  }, 500);
+  }, 100);
 
   // Use effect to trigger update when config state changes
   useEffect(() => {
@@ -176,10 +172,10 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
   // Template management handlers
   const handleDeleteTemplate = useCallback(async () => {
     if (instructTemplateID) {
-      setInstructTemplateID(null);
+      onChange(null);
       await deleteInferenceTemplate(instructTemplateID);
     }
-  }, [deleteInferenceTemplate, instructTemplateID, setInstructTemplateID]);
+  }, [deleteInferenceTemplate, instructTemplateID, onChange]);
 
   const handleNewTemplate = useCallback(
     async (name: string, sourceTemplateId?: string) => {
@@ -215,13 +211,13 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
         const response = await createInferenceTemplate(newTemplateData);
 
         if (response) {
-          setInstructTemplateID(response.id); // Select the newly created template
+          onChange(response.id); // Select the newly created template
         }
       } catch (error) {
         console.error("Failed to create new template:", error);
       }
     },
-    [createInferenceTemplate, currentProfile?.id, setInstructTemplateID, templateList], // Added templateList dependency
+    [createInferenceTemplate, currentProfile?.id, onChange, templateList],
   );
 
   const handleEditName = useCallback(
@@ -241,7 +237,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
         console.error("Failed to update template name:", error);
       }
     },
-    [updateInferenceTemplate, instructTemplateID], // setTemplateState is stable
+    [updateInferenceTemplate, instructTemplateID],
   );
 
   const handleImportTemplate = useCallback(() => {
@@ -277,7 +273,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
         lastSavedState.current = structuredClone(defaultTemplate); // Reset last saved state
       }
     }
-  }, [currentTemplate, instructTemplateID]); // Removed templateState
+  }, [currentTemplate, instructTemplateID]);
 
   const isDisabled = !instructTemplateID || disabled;
 
@@ -299,14 +295,15 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
 
           <TemplatePicker
             templates={templateList}
-            disabled={disabled}
             selectedTemplateId={instructTemplateID}
             onTemplateSelect={setInstructTemplateID}
             onDelete={handleDeleteTemplate}
             onNewTemplate={handleNewTemplate}
             onEditName={handleEditName}
             onImport={handleImportTemplate}
-            onExport={handleExportTemplate}
+            onExport={() => {}}
+            compact
+            disabled={disabled}
           />
           <Card>
             <CardHeader className="template-card-header">

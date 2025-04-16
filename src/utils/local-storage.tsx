@@ -1,9 +1,9 @@
 import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
 import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
 import { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
-import { QuickAction } from "@/pages/chat/components/utils-generate/QuickActions";
 import { LorebookPageSettings, defaultLorebookPageSettings } from "@/pages/lorebooks/LorebooksPage";
 import { GridPosition, defaultPositions } from "@/schema/grid";
+import { QuickAction } from "@/schema/profiles-schema";
 import { Theme } from "@tauri-apps/api/window";
 import { produce } from "immer";
 import { useAtom } from "jotai";
