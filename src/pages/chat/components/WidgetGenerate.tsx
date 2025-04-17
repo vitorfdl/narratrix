@@ -1,3 +1,4 @@
+import type { MarkdownEditorRef } from "@/components/markdownRender/markdown-editor";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
@@ -40,6 +41,28 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
 
   // Generate a unique key based on participants to force editor re-initialization
   const editorKey = participants ? `editor-${participants.length}-${enabledParticipants.length}` : "editor-default";
+
+  // Ref for focusing the MarkdownTextArea
+  const markdownRef = useRef<MarkdownEditorRef>(null);
+
+  // Global tab-to-focus handler
+  useEffect(() => {
+    const handleTabFocus = (e: KeyboardEvent) => {
+      // Only trigger if not inside an input/textarea/select/button
+      const active = document.activeElement;
+      const isInput =
+        active &&
+        (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT" || (active as HTMLElement).isContentEditable);
+
+      if (!isInput && e.key === "Tab" && !e.shiftKey) {
+        e.preventDefault();
+      }
+      markdownRef.current?.focus();
+    };
+
+    window.addEventListener("keydown", handleTabFocus, true);
+    return () => window.removeEventListener("keydown", handleTabFocus, true);
+  }, []);
 
   // Listen for streaming updates when we're in quiet response mode
   const handleStreamingStateChange = useCallback((state: StreamingState | null) => {
@@ -290,6 +313,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   return (
     <div className="flex h-full flex-col relative">
       <MarkdownTextArea
+        ref={markdownRef}
         key={editorKey}
         initialValue={text}
         onChange={(e) => setText(e)}

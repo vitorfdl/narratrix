@@ -1,3 +1,4 @@
+import { InferenceServiceProvider } from "@/providers/inferenceChatProvider";
 import React, { useEffect } from "react";
 import Content from "./components/layout/Content";
 import Sidebar from "./components/layout/Sidebar";
@@ -23,8 +24,10 @@ const AppContent: React.FC = () => {
   // Otherwise show the main app UI
   return (
     <div className="flex h-screen select-none text-base">
-      <Sidebar />
-      <Content />
+      <InferenceServiceProvider>
+        <Sidebar />
+        <Content />
+      </InferenceServiceProvider>
     </div>
   );
 };

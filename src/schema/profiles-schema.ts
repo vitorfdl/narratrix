@@ -19,7 +19,7 @@ const NotificationSettingsSchema = z.object({
 
 const ChatSettingsSchema = z.object({
   timestampFormat: z.enum(["12h", "24h"]).default("12h"),
-  beepAtInferenceCompletion: z.boolean().default(true),
+  beepSound: z.enum(["none", "longbeep4", "beep1", "beep2", "longbeep3"]).default("longbeep4"),
   showAvatars: z.boolean().default(true),
   sendShortcut: z.enum(["Enter", "Ctrl+Enter", "Shift+Enter", "CMD+Enter"]).default("Ctrl+Enter"),
 });

@@ -20,10 +20,24 @@ import { listChatTemplates } from "./template-chat-service";
 import { getFormatTemplateById } from "./template-format-service";
 import { listInferenceTemplates } from "./template-inference-service";
 
-const beep = new Howl({
-  src: ["/sounds/longbeep4.mp3"], // Place your beep sound in the public/sounds directory
-  volume: 0.5,
-});
+function playBeepSound(beepSound: string): void {
+  if (beepSound === "none" || !beepSound) {
+    return;
+  }
+
+  const soundPath = `/sounds/${beepSound}.mp3`;
+
+  try {
+    const beep = new Howl({
+      src: [soundPath],
+      volume: 0.5,
+    });
+    beep.play();
+  } catch (error) {
+    // Log error for debugging
+    console.error("Failed to play beep sound:", error);
+  }
+}
 
 /**
  * StreamingState interface for tracking the streaming state of a message
@@ -100,8 +114,6 @@ export function useInferenceService() {
 
   // Get chat store information directly
   const currentChatId = useCurrentChatId();
-  // const currentChatTemplateId = useCurrentChatTemplateID();
-  // const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const chatMessages = useCurrentChatMessages();
   const { addChatMessage, updateChatMessage, fetchChatMessages } = useChatActions();
 
@@ -186,9 +198,7 @@ export function useInferenceService() {
 
         // Reset streaming state
         resetStreamingState();
-        if (currentProfile.settings.chat.beepAtInferenceCompletion) {
-          beep.play();
-        }
+        playBeepSound(currentProfile.settings.chat.beepSound);
       }
     },
     onError: (error: any, requestId) => {

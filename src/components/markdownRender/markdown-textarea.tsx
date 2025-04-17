@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { MarkdownEditor } from "./markdown-editor";
+import { forwardRef, useEffect, useState } from "react";
+import { MarkdownEditor, MarkdownEditorRef } from "./markdown-editor";
 import { MarkdownViewer } from "./markdown-viewer";
 import "./styles/highlight.css";
 import "./styles/markdown.css";
@@ -27,43 +27,38 @@ interface MarkdownTextAreaProps {
   key?: string;
 }
 
-export const MarkdownTextArea = ({
-  initialValue = "",
-  enableHistory = false,
-  onChange,
-  className,
-  label,
-  placeholder,
-  editable = true,
-  suggestions,
-  sendShortcut,
-  onSubmit,
-}: MarkdownTextAreaProps) => {
-  const [nonEditableContent, setNonEditableContent] = useState(initialValue);
+export const MarkdownTextArea = forwardRef<MarkdownEditorRef, MarkdownTextAreaProps>(
+  (
+    { initialValue = "", enableHistory = false, onChange, className, label, placeholder, editable = true, suggestions, sendShortcut, onSubmit },
+    ref,
+  ) => {
+    const [nonEditableContent, setNonEditableContent] = useState(initialValue);
 
-  useEffect(() => {
+    useEffect(() => {
+      if (!editable) {
+        setNonEditableContent(initialValue);
+      }
+    }, [initialValue, editable]);
+
     if (!editable) {
-      setNonEditableContent(initialValue);
+      return <MarkdownViewer content={nonEditableContent} className={className} label={label} />;
     }
-  }, [initialValue, editable]);
 
-  if (!editable) {
-    return <MarkdownViewer content={nonEditableContent} className={className} label={label} />;
-  }
-
-  return (
-    <MarkdownEditor
-      initialValue={initialValue}
-      onChange={onChange}
-      label={label}
-      placeholder={placeholder}
-      suggestions={suggestions}
-      sendShortcut={sendShortcut}
-      className={className}
-      enableHistory={enableHistory}
-      onSubmit={onSubmit}
-    />
-  );
-};
+    return (
+      <MarkdownEditor
+        initialValue={initialValue}
+        onChange={onChange}
+        label={label}
+        placeholder={placeholder}
+        suggestions={suggestions}
+        sendShortcut={sendShortcut}
+        className={className}
+        enableHistory={enableHistory}
+        onSubmit={onSubmit}
+        ref={ref}
+      />
+    );
+  },
+);
 
 MarkdownTextArea.displayName = "MarkdownTextArea";

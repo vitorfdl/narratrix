@@ -1,7 +1,6 @@
 import { LiveInspector } from "@/components/liveInspector/LiveInspector";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { EditNameDialog } from "@/components/shared/EditNameDialog";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
@@ -11,9 +10,7 @@ import { getChatById, listChats } from "@/services/chat-service";
 import { useLocalChatTabs } from "@/utils/local-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChatTabs } from "./ChatTabs";
-import { ChatMenuDropdown } from "./components/ChatMenuDropdown";
-import { GridLayout } from "./components/GridLayout";
+import { Chatbox } from "./ChatBox";
 
 export default function ChatPage() {
   // Get the current profile ID - replace this with your actual method of getting the profile ID
@@ -316,46 +313,20 @@ export default function ChatPage() {
           </div>
         </SheetContent>
 
-        {/* Existing Chat Page Content */}
-        {tabs.length > 0 ? (
-          <>
-            <ChatTabs
-              tabs={tabs}
-              allChats={allChats}
-              profileId={profileId}
-              activeTab={selectedChatID || ""}
-              onTabChange={handleTabChange}
-              onNewChat={handleNewChat}
-              onCloseTab={handleCloseTab}
-              onRenameRequest={handleRenameRequest}
-              onDuplicateRequest={handleDuplicateRequest}
-              onDeleteRequest={handleDeleteRequest}
-            />
-            <div className="flex-1 overflow-hidden">{selectedChatID && <GridLayout tabId={selectedChatID} />}</div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <p className="mb-4 text-muted-foreground">No active chat. Create a new one to get started.</p>
-              {allChats.length > 0 ? (
-                <ChatMenuDropdown
-                  profileId={profileId}
-                  allChats={allChats}
-                  openChatIds={openTabIds}
-                  onSelectChat={handleTabChange}
-                  onCreateChat={handleNewChat}
-                  onRenameRequest={handleRenameRequest}
-                  onDuplicateRequest={handleDuplicateRequest}
-                  onDeleteRequest={handleDeleteRequest}
-                >
-                  <Button>Create New Chat</Button>
-                </ChatMenuDropdown>
-              ) : (
-                <Button onClick={handleNewChat}>Create New Chat</Button>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Chatbox handles all chat UI logic */}
+        <Chatbox
+          tabs={tabs}
+          allChats={allChats}
+          profileId={profileId}
+          selectedChatID={selectedChatID}
+          openTabIds={openTabIds}
+          handleTabChange={handleTabChange}
+          handleNewChat={handleNewChat}
+          handleCloseTab={handleCloseTab}
+          handleRenameRequest={handleRenameRequest}
+          handleDuplicateRequest={handleDuplicateRequest}
+          handleDeleteRequest={handleDeleteRequest}
+        />
 
         {/* Rename Dialog */}
         <EditNameDialog

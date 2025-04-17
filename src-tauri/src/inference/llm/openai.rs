@@ -280,7 +280,13 @@ pub async fn converse_stream(
                 }
             }
             Ok(Some(Err(e))) => {
-                return Err(anyhow!("Error: {}", e));
+                let err_msg = e.to_string();
+                // Treat "stream ended" as a normal end-of-stream, not an error
+                if err_msg.contains("stream failed: Stream ended") {
+                    break;
+                }
+                println!("[Streaming Error] Error in stream chunk: {err_msg}");
+                return Err(anyhow!("Error in stream chunk: {err_msg}"));
             }
             Ok(None) => break, // Stream has ended
             Err(_) => return Err(anyhow!("Stream timeout after 120 seconds")),
@@ -437,8 +443,13 @@ pub async fn complete_stream(
                 }
             }
             Ok(Some(Err(e))) => {
-                println!("[Streaming Error] Error in stream chunk: {e}");
-                return Err(anyhow!("Error in stream chunk: {e}"));
+                let err_msg = e.to_string();
+                // Treat "stream ended" as a normal end-of-stream, not an error
+                if err_msg.contains("stream failed: Stream ended") {
+                    break;
+                }
+                println!("[Streaming Error] Error in stream chunk: {err_msg}");
+                return Err(anyhow!("Error in stream chunk: {err_msg}"));
             }
             Ok(None) => break, // Stream has ended
             Err(_) => {

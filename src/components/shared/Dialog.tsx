@@ -15,7 +15,7 @@ export const DialogContent = React.forwardRef<HTMLDivElement, React.ComponentPro
   ({ className = "", size = "large", ...props }, ref) => {
     // Merge custom classes with any provided by the user
     const mergedClassName = ["flex flex-col w-full p-0 bg-background rounded-lg shadow-lg px-6 py-2", className].filter(Boolean).join(" ");
-    return <ShadDialog.DialogContent ref={ref} className={mergedClassName} size={size} {...props} />;
+    return <ShadDialog.DialogContent showCloseButton={false} ref={ref} className={mergedClassName} size={size} {...props} />;
   },
 );
 DialogContent.displayName = "DialogContent";
