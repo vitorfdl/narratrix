@@ -80,7 +80,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
         return;
       }
 
-      editorRef.current?.focus();
       // Only update if the user is NOT editing
       // Ensure editorRef.current is an EditorView instance before calling dispatch
       if (

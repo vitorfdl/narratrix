@@ -55,9 +55,9 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT" || (active as HTMLElement).isContentEditable);
 
       if (!isInput && e.key === "Tab" && !e.shiftKey) {
+        markdownRef.current?.focus();
         e.preventDefault();
       }
-      markdownRef.current?.focus();
     };
 
     window.addEventListener("keydown", handleTabFocus, true);
