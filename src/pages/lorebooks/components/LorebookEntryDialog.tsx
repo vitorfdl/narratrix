@@ -1,7 +1,7 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
@@ -15,7 +15,7 @@ import { basicPromptSuggestionList } from "@/schema/chat-message-schema";
 import { CreateLorebookEntryParams, LorebookEntry, UpdateLorebookEntryParams, createLorebookEntrySchema } from "@/schema/lorebook-schema";
 import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BookDown, BookUp, Bot, User } from "lucide-react";
+import { BookDown, BookUp, Bot, CheckCircleIcon, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -149,7 +149,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent size="large">
+      <DialogContent size="large" className="overflow-hidden">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Entry" : "Create New Entry"}</DialogTitle>
         </DialogHeader>
@@ -161,7 +161,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
               e.stopPropagation();
               form.handleSubmit(onSubmit)(e);
             }}
-            className="space-y-4"
+            className="space-y-4 overflow-hidden"
           >
             <Tabs defaultValue="basic" className="w-full">
               <TabsList className="grid grid-cols-2 mb-4">
@@ -169,365 +169,368 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                 <TabsTrigger value="advanced">Advanced</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="basic" className="space-y-4">
-                {/* Combine Title and Keywords in one row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="comment"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel>Title (Comment)</FormLabel>
-                          <HelpTooltip>
-                            <p>A short description or title for this entry, used for organization.</p>
-                          </HelpTooltip>
-                        </div>
-                        <FormControl>
-                          <Input placeholder="Entry title or comment for organization" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="keywords"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel>Keywords</FormLabel>
-                          <HelpTooltip>
-                            <p>Keywords that trigger this entry to be included. Press Enter or comma to add.</p>
-                          </HelpTooltip>
-                        </div>
-                        <FormControl>
-                          <CommandTagInput placeholder="Add keywords..." value={field.value || []} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Combine Insertion Type and Depth in one row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="insertion_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel>Insertion Type</FormLabel>
-                          <HelpTooltip>
-                            <p>Where to insert this entry in the context. 'Lorebook Top/Bottom' refers to the order within the lorebook section.</p>
-                          </HelpTooltip>
-                        </div>
-                        <Select onValueChange={field.onChange} value={field.value}>
+              <DialogBody>
+                <TabsContent value="basic" className="space-y-4">
+                  {/* Combine Title and Keywords in one row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="comment"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Title (Comment)</FormLabel>
+                            <HelpTooltip>
+                              <p>A short description or title for this entry, used for organization.</p>
+                            </HelpTooltip>
+                          </div>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select insertion type" />
-                            </SelectTrigger>
+                            <Input placeholder="Entry title or comment for organization" {...field} />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="lorebook_top">
-                              <div className="flex items-center gap-2">
-                                <BookUp className="h-4 w-4" />
-                                <span>Lorebook Top</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="lorebook_bottom">
-                              <div className="flex items-center gap-2">
-                                <BookDown className="h-4 w-4" />
-                                <span>Lorebook Bottom</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="user">
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4" />
-                                <span>User Message</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="assistant">
-                              <div className="flex items-center gap-2">
-                                <Bot className="h-4 w-4" />
-                                <span>Assistant Message</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="depth"
-                    render={({ field }) => (
-                      <FormItem className={`${!isDepthRelevant ? "opacity-50" : ""}`}>
-                        <div className="flex items-center gap-1">
-                          <FormLabel>Insertion Depth</FormLabel>
-                          <HelpTooltip>
-                            <p>
-                              How many messages back the entry should be inserted relative to the current message. Only applicable for 'User' or
-                              'Assistant' insertion types. 1 means the last message.
-                            </p>
-                          </HelpTooltip>
-                        </div>
-                        <FormControl>
-                          <StepButton
-                            min={1}
-                            max={100}
-                            step={1}
-                            value={field.value ?? 1}
-                            onValueChange={(val) => field.onChange(val)}
-                            showSlider={true}
-                            ticks={10}
-                            disabled={!isDepthRelevant}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="content"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center justify-between">
-                        <FormLabel>Content</FormLabel>
-                        <span className="text-xs text-muted-foreground">{estimateTokens(field.value || "", 0)} tokens</span>
-                      </div>
-                      <FormControl>
-                        <MarkdownTextArea
-                          initialValue={field.value || ""}
-                          onChange={field.onChange}
-                          suggestions={basicPromptSuggestionList}
-                          placeholder="Enter the content of this entry..."
-                          className=" font-mono text-sm"
-                          editable={true}
-                        />
-                      </FormControl>
-                      <FormDescription>The actual text that will be inserted into the context.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <FormField
-                    control={form.control}
-                    name="enabled"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel>Enabled</FormLabel>
-                          <FormDescription>Activate entry.</FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="constant"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="keywords"
+                      render={({ field }) => (
+                        <FormItem>
                           <div className="flex items-center gap-1">
-                            <FormLabel>Constant</FormLabel>
+                            <FormLabel>Keywords</FormLabel>
                             <HelpTooltip>
-                              <p>If enabled, this entry is always included, ignoring keywords.</p>
+                              <p>Keywords that trigger this entry to be included. Press Enter or comma to add.</p>
                             </HelpTooltip>
                           </div>
-                          <FormDescription>Always include.</FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </TabsContent>
+                          <FormControl>
+                            <CommandTagInput placeholder="Add keywords..." value={field.value || []} onChange={field.onChange} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-              <TabsContent value="advanced" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="group_key"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <div className="flex items-center gap-1">
-                          <FormLabel>Group</FormLabel>
-                          <HelpTooltip>
-                            <p>
-                              Categorize this entry into a group. Entries in the same group might have specific interaction rules (depending on
-                              implementation).
-                            </p>
-                          </HelpTooltip>
-                        </div>
-                        <FormControl>
-                          <Input
-                            placeholder="Assign group (optional)"
-                            hints={groupKeys}
-                            value={field.value ?? ""}
-                            onChange={(e) => {
-                              const value = e.target.value.trim();
-                              field.onChange(value === "" ? null : value);
-                            }}
-                          />
-                        </FormControl>
-                        <FormDescription>Type to create or select group.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="priority"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel>Priority</FormLabel>
-                          <HelpTooltip>
-                            <p>Determines the order of inclusion when multiple entries are triggered. Higher numbers are prioritized.</p>
-                          </HelpTooltip>
-                        </div>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={-1000}
-                            max={1000}
-                            step={1}
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number.parseInt(e.target.value, 10) || 0)}
-                            value={field.value ?? 0}
-                          />
-                        </FormControl>
-                        <FormDescription>Higher = more priority.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="trigger_chance"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel>Trigger Chance (%)</FormLabel>
-                          <HelpTooltip>
-                            <p>The probability (1-100%) that this entry will be included if its keywords match.</p>
-                          </HelpTooltip>
-                        </div>
-                        <FormControl>
-                          <StepButton
-                            min={1}
-                            max={100}
-                            step={1}
-                            value={field.value ?? 100}
-                            onValueChange={(val) => field.onChange(Math.floor(val))}
-                            showSlider={true}
-                            ticks={11}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="min_chat_messages"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel>Min Chat Messages</FormLabel>
-                          <HelpTooltip>
-                            <p>The minimum number of chat messages required before this entry can be triggered.</p>
-                          </HelpTooltip>
-                        </div>
-                        <FormControl>
-                          <StepButton
-                            min={1}
-                            max={100}
-                            step={1}
-                            value={field.value ?? 1}
-                            onValueChange={(val) => field.onChange(Math.floor(val))}
-                            showSlider={true}
-                            ticks={5}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <FormField
-                    control={form.control}
-                    name="case_sensitive"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
+                  {/* Combine Insertion Type and Depth in one row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="insertion_type"
+                      render={({ field }) => (
+                        <FormItem>
                           <div className="flex items-center gap-1">
-                            <FormLabel>Case Sensitive Keywords</FormLabel>
+                            <FormLabel>Insertion Type</FormLabel>
                             <HelpTooltip>
-                              <p>If enabled, keyword matching will respect case sensitivity (e.g., "Apple" won't match "apple").</p>
+                              <p>Where to insert this entry in the context. 'Lorebook Top/Bottom' refers to the order within the lorebook section.</p>
                             </HelpTooltip>
                           </div>
-                          <FormDescription>Match keyword case exactly.</FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select insertion type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="lorebook_top">
+                                <div className="flex items-center gap-2">
+                                  <BookUp className="h-4 w-4" />
+                                  <span>Lorebook Top</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="lorebook_bottom">
+                                <div className="flex items-center gap-2">
+                                  <BookDown className="h-4 w-4" />
+                                  <span>Lorebook Bottom</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="user">
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4" />
+                                  <span>User Message</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="assistant">
+                                <div className="flex items-center gap-2">
+                                  <Bot className="h-4 w-4" />
+                                  <span>Assistant Message</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="match_partial_words"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
+                    <FormField
+                      control={form.control}
+                      name="depth"
+                      render={({ field }) => (
+                        <FormItem className={`${!isDepthRelevant ? "opacity-50" : ""}`}>
                           <div className="flex items-center gap-1">
-                            <FormLabel>Match Partial Words</FormLabel>
+                            <FormLabel>Insertion Depth</FormLabel>
                             <HelpTooltip>
                               <p>
-                                If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word
-                                matches occur.
+                                How many messages back the entry should be inserted relative to the current message. Only applicable for 'User' or
+                                'Assistant' insertion types. 1 means the last message.
                               </p>
                             </HelpTooltip>
                           </div>
-                          <FormDescription>Allow keywords within larger words.</FormDescription>
+                          <FormControl>
+                            <StepButton
+                              min={1}
+                              max={100}
+                              step={1}
+                              value={field.value ?? 1}
+                              onValueChange={(val) => field.onChange(val)}
+                              showSlider={true}
+                              ticks={10}
+                              disabled={!isDepthRelevant}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="content"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Content</FormLabel>
+                          <span className="text-xs text-muted-foreground">{estimateTokens(field.value || "", 0)} tokens</span>
                         </div>
                         <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          <MarkdownTextArea
+                            initialValue={field.value || ""}
+                            onChange={field.onChange}
+                            suggestions={basicPromptSuggestionList}
+                            placeholder="Enter the content of this entry..."
+                            className=" font-mono text-sm"
+                            editable={true}
+                          />
                         </FormControl>
+                        <FormDescription>The actual text that will be inserted into the context.</FormDescription>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-              </TabsContent>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <FormField
+                      control={form.control}
+                      name="enabled"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel>Enabled</FormLabel>
+                            <FormDescription>Activate entry.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="constant"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <FormLabel>Constant</FormLabel>
+                              <HelpTooltip>
+                                <p>If enabled, this entry is always included, ignoring keywords.</p>
+                              </HelpTooltip>
+                            </div>
+                            <FormDescription>Always include.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="advanced" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="group_key"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Group</FormLabel>
+                            <HelpTooltip>
+                              <p>
+                                Categorize this entry into a group. Entries in the same group might have specific interaction rules (depending on
+                                implementation).
+                              </p>
+                            </HelpTooltip>
+                          </div>
+                          <FormControl>
+                            <Input
+                              placeholder="Assign group (optional)"
+                              hints={groupKeys}
+                              value={field.value ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value.trim();
+                                field.onChange(value === "" ? null : value);
+                              }}
+                            />
+                          </FormControl>
+                          <FormDescription>Type to create or select group.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="priority"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Priority</FormLabel>
+                            <HelpTooltip>
+                              <p>Determines the order of inclusion when multiple entries are triggered. Higher numbers are prioritized.</p>
+                            </HelpTooltip>
+                          </div>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={-1000}
+                              max={1000}
+                              step={1}
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number.parseInt(e.target.value, 10) || 0)}
+                              value={field.value ?? 0}
+                            />
+                          </FormControl>
+                          <FormDescription>Higher = more priority.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="trigger_chance"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Trigger Chance (%)</FormLabel>
+                            <HelpTooltip>
+                              <p>The probability (1-100%) that this entry will be included if its keywords match.</p>
+                            </HelpTooltip>
+                          </div>
+                          <FormControl>
+                            <StepButton
+                              min={1}
+                              max={100}
+                              step={1}
+                              value={field.value ?? 100}
+                              onValueChange={(val) => field.onChange(Math.floor(val))}
+                              showSlider={true}
+                              ticks={11}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="min_chat_messages"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Min Chat Messages</FormLabel>
+                            <HelpTooltip>
+                              <p>The minimum number of chat messages required before this entry can be triggered.</p>
+                            </HelpTooltip>
+                          </div>
+                          <FormControl>
+                            <StepButton
+                              min={1}
+                              max={100}
+                              step={1}
+                              value={field.value ?? 1}
+                              onValueChange={(val) => field.onChange(Math.floor(val))}
+                              showSlider={true}
+                              ticks={5}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <FormField
+                      control={form.control}
+                      name="case_sensitive"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <FormLabel>Case Sensitive Keywords</FormLabel>
+                              <HelpTooltip>
+                                <p>If enabled, keyword matching will respect case sensitivity (e.g., "Apple" won't match "apple").</p>
+                              </HelpTooltip>
+                            </div>
+                            <FormDescription>Match keyword case exactly.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="match_partial_words"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <FormLabel>Match Partial Words</FormLabel>
+                              <HelpTooltip>
+                                <p>
+                                  If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word
+                                  matches occur.
+                                </p>
+                              </HelpTooltip>
+                            </div>
+                            <FormDescription>Allow keywords within larger words.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+              </DialogBody>
             </Tabs>
 
-            <DialogFooter className="mt-6 gap-2 pt-4 border-t">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" size="dialog" disabled={isSubmitting}>
+                <CheckCircleIcon className="h-4 w-4" />
                 {isSubmitting ? (isEditing ? "Saving..." : "Creating...") : isEditing ? "Save Changes" : "Create Entry"}
               </Button>
             </DialogFooter>

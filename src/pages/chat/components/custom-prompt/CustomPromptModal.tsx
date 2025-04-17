@@ -9,7 +9,7 @@ import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { motion } from "framer-motion";
-import { MessageSquarePlus, PersonStanding, Sparkles, UserRound } from "lucide-react";
+import { CheckCircleIcon, MessageSquarePlus, PersonStanding, Sparkles, UserRound, XCircleIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface CustomPromptModalProps {
@@ -192,15 +192,18 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
           </div>
         </DialogBody>
         <DialogFooter className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose} className="border-input hover:bg-secondary transition-colors">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            <XCircleIcon className="h-4 w-4" />
             Cancel
           </Button>
           <Button
             type="button"
             onClick={handleSave}
             disabled={!prompt.name.trim() || !prompt.prompt.trim()}
+            size="dialog"
             className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
           >
+            <CheckCircleIcon className="h-4 w-4" />
             {initialData ? "Update" : "Save"} Prompt
           </Button>
         </DialogFooter>

@@ -1,12 +1,11 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
@@ -430,12 +429,8 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(
     const formId = `character-dialog-form-${mode}`;
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          size="large"
-          className="flex flex-col w-full p-0 bg-background rounded-lg shadow-lg"
-          onInteractOutside={(e) => isSubmitting && e.preventDefault()}
-        >
-          <DialogHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-4">
+        <DialogContent size="large">
+          <DialogHeader>
             <DialogTitle className="flex gap-2 items-center text-lg font-semibold">
               <UserRoundPenIcon className="h-5 w-5" />
               {title || (mode === "edit" ? `Edit ${initialData?.type === "character" ? "Character" : "Agent"}` : "Add New Character / Agent")}
@@ -449,13 +444,15 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(
             }}
             className="flex flex-col h-full"
           >
-            <div className="flex-1 overflow-y-auto max-h-[60vh] pr-2  p-6">{formContent}</div>
-            <DialogFooter className="sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t border-border px-6 py-4 flex gap-3">
+            <DialogBody>
+              <div className="flex-1">{formContent}</div>
+            </DialogBody>
+            <DialogFooter>
               <Button variant="ghost" type="button" onClick={() => onOpenChange?.(false)} disabled={isSubmitting}>
                 <XCircleIcon className="h-4 w-4" />
                 Cancel
               </Button>
-              <Button type="submit" className="px-6 min-w-[140px]">
+              <Button type="submit" size="dialog">
                 <CheckCircleIcon className="h-4 w-4" />
                 Save
               </Button>

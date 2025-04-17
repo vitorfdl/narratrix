@@ -1,6 +1,6 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
@@ -56,88 +56,87 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onOpenChange(false)}>
-      <DialogContent size="window" className="custom-scrollbar p-4">
-        <DialogHeader className="pb-2">
+      <DialogContent size="window">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-1 text-lg">
             <TextSelect className="h-4 w-4 text-primary" />
             Summary Settings
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 mt-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="systemPrompt" className="text-sm font-medium flex items-center gap-1">
-                    <Settings className="h-3 w-3" /> System Prompt Override (optional)
-                  </Label>
-                  <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.systemPrompt, 0) || 0} tokens</span>
+        <DialogBody>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="systemPrompt" className="text-sm font-medium flex items-center gap-1">
+                      <Settings className="h-3 w-3" /> System Prompt Override (optional)
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.systemPrompt, 0) || 0} tokens</span>
+                  </div>
+                  <MarkdownTextArea
+                    initialValue={currentSettings.systemPrompt}
+                    editable={true}
+                    suggestions={promptReplacementSuggestionList}
+                    onChange={(value) => handleFieldChange("systemPrompt", value)}
+                    placeholder="Leave empty to use the default system prompt from the selected template"
+                  />
+                  <p className="text-xs text-muted-foreground mt-0.5">System instructions for the AI when generating summaries</p>
                 </div>
-                <MarkdownTextArea
-                  initialValue={currentSettings.systemPrompt}
-                  editable={true}
-                  className="max-h-[15vh]"
-                  suggestions={promptReplacementSuggestionList}
-                  onChange={(value) => handleFieldChange("systemPrompt", value)}
-                  placeholder="Enter the system prompt for summary generation..."
-                />
-                <p className="text-xs text-muted-foreground mt-0.5">System instructions for the AI when generating summaries</p>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="requestPrompt" className="text-sm font-medium flex items-center gap-1">
+                      <MessageCircle className="h-3 w-3" /> User Request Prompt
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.requestPrompt, 0) || 0} tokens</span>
+                  </div>
+                  <MarkdownTextArea
+                    initialValue={currentSettings.requestPrompt}
+                    editable={true}
+                    suggestions={promptReplacementSuggestionList}
+                    onChange={(value) => handleFieldChange("requestPrompt", value)}
+                    placeholder="Enter the prompt that will be sent to generate the summary..."
+                  />
+                  <p className="text-xs text-muted-foreground mt-0.5">This will be used as the request sent to the AI</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="injectionPrompt" className="text-sm font-medium flex items-center gap-1">
+                      <TextSelect className="h-3 w-3" /> History Injection Prompt
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.injectionPrompt, 0) || 0} tokens</span>
+                  </div>
+                  <MarkdownTextArea
+                    initialValue={currentSettings.injectionPrompt}
+                    editable={true}
+                    suggestions={promptReplacementSuggestionList}
+                    onChange={(value) => handleFieldChange("injectionPrompt", value)}
+                    placeholder="---\n{{summary}}\n---"
+                  />
+                  <p className="text-xs text-muted-foreground mt-0.5">How the summary will be injected into the chat history</p>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="requestPrompt" className="text-sm font-medium flex items-center gap-1">
-                    <MessageCircle className="h-3 w-3" /> User Request Prompt
-                  </Label>
-                  <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.requestPrompt, 0) || 0} tokens</span>
+              <div className="space-y-1 row-span-3 overflow-y-auto ">
+                <Label htmlFor="templateId" className="text-sm font-medium">
+                  Chat Template
+                </Label>
+                <div className="border border-input rounded-md">
+                  <WidgetConfig
+                    currentChatTemplateID={currentSettings.chatTemplateID || null}
+                    onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateID", chatTemplateId)}
+                  />
                 </div>
-                <MarkdownTextArea
-                  initialValue={currentSettings.requestPrompt}
-                  editable={true}
-                  className="max-h-[15vh]"
-                  suggestions={promptReplacementSuggestionList}
-                  onChange={(value) => handleFieldChange("requestPrompt", value)}
-                  placeholder="Enter the prompt that will be sent to generate the summary..."
-                />
-                <p className="text-xs text-muted-foreground mt-0.5">This will be used as the request sent to the AI</p>
+                <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for the summary generation</p>
               </div>
-
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="injectionPrompt" className="text-sm font-medium flex items-center gap-1">
-                    <TextSelect className="h-3 w-3" /> History Injection Prompt
-                  </Label>
-                  <span className="text-xs text-muted-foreground">{estimateTokens(currentSettings.injectionPrompt, 0) || 0} tokens</span>
-                </div>
-                <MarkdownTextArea
-                  initialValue={currentSettings.injectionPrompt}
-                  editable={true}
-                  className="max-h-[15vh]"
-                  suggestions={promptReplacementSuggestionList}
-                  onChange={(value) => handleFieldChange("injectionPrompt", value)}
-                  placeholder="---\n{{summary}}\n---"
-                />
-                <p className="text-xs text-muted-foreground mt-0.5">How the summary will be injected into the chat history</p>
-              </div>
-            </div>
-
-            <div className="space-y-1 row-span-3  overflow-y-auto max-h-[60vh] custom-scrollbar">
-              <Label htmlFor="templateId" className="text-sm font-medium">
-                Chat Template
-              </Label>
-              <div className="border border-input rounded-md">
-                <WidgetConfig
-                  currentChatTemplateID={currentSettings.chatTemplateID || null}
-                  onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateID", chatTemplateId)}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for the summary generation</p>
             </div>
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="flex justify-end gap-2 mt-3">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={handleCancel} className="border-input hover:bg-secondary transition-colors h-8 px-3 py-1">
             Cancel
           </Button>

@@ -52,5 +52,5 @@ DialogFooter.displayName = "DialogFooter";
  * Use for the main content area that should scroll if content overflows.
  */
 export const DialogBody: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ className = "", children }) => (
-  <div className={["flex-1 overflow-y-auto max-h-[60vh] pr-2 p-6", className].filter(Boolean).join(" ")}>{children}</div>
+  <div className={["flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar px-2", className].filter(Boolean).join(" ")}>{children}</div>
 );

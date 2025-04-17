@@ -39,29 +39,22 @@ export const GeneralSection: React.FC<GeneralSectionProps> = ({ settings, onSett
       }
       const soundPath = `/sounds/${soundName}.mp3`;
 
-      // Create and play the sound
       const howl = new Howl({
         src: [soundPath],
         volume: 0.6,
         onend: () => {
-          // Clean up after playback
           soundRef.current = null;
         },
-        onloaderror: (id: any, err: any) => {
-          // Handle loading errors gracefully
-          // eslint-disable-next-line no-console
+        onloaderror: (_id: any, err: any) => {
           console.error(`Failed to load sound: ${soundPath}`, err);
         },
-        onplayerror: (id: any, err: any) => {
-          // Handle playback errors gracefully
-          // eslint-disable-next-line no-console
+        onplayerror: (_id: any, err: any) => {
           console.error(`Failed to play sound: ${soundPath}`, err);
         },
       });
       soundRef.current = howl;
       howl.play();
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error("Error playing beep sound preview:", error);
     }
   }, [settings.chat.beepSound]);

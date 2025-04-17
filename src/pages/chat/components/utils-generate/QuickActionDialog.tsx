@@ -87,19 +87,19 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 mb-3">
-              <TabsTrigger value="basic" className="flex items-center gap-1 py-1">
-                <Settings className="h-3 w-3" />
-                <span>Basic Settings</span>
-              </TabsTrigger>
-              <TabsTrigger value="template" className="flex items-center gap-1 py-1">
-                <MessageCircle className="h-3 w-3" />
-                <span>Chat Template</span>
-              </TabsTrigger>
-            </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-2 mb-3">
+            <TabsTrigger value="basic" className="flex items-center gap-1 py-1">
+              <Settings className="h-3 w-3" />
+              <span>Basic Settings</span>
+            </TabsTrigger>
+            <TabsTrigger value="template" className="flex items-center gap-1 py-1">
+              <MessageCircle className="h-3 w-3" />
+              <span>Chat Template</span>
+            </TabsTrigger>
+          </TabsList>
 
+          <DialogBody>
             <TabsContent value="basic" className="space-y-3 mt-2">
               <div className="grid xl:grid-cols-2 grid-cols-1 gap-3">
                 <div className="space-y-6">
@@ -246,8 +246,8 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                 </div>
               </div>
             </TabsContent>
-          </Tabs>
-        </DialogBody>
+          </DialogBody>
+        </Tabs>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={handleCancel} className="border-input hover:bg-secondary transition-colors h-8 px-3 py-1">

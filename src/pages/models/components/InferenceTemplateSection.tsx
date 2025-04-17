@@ -240,16 +240,6 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
     [updateInferenceTemplate, instructTemplateID],
   );
 
-  const handleImportTemplate = useCallback(() => {
-    // To be implemented
-    console.log("Import template");
-  }, []);
-
-  const handleExportTemplate = useCallback(() => {
-    // To be implemented
-    console.log("Export template", instructTemplateID);
-  }, [instructTemplateID]);
-
   // Sync local state with the selected template from the store
   useEffect(() => {
     if (currentTemplate && !isUpdating.current) {
@@ -300,7 +290,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
             onDelete={handleDeleteTemplate}
             onNewTemplate={handleNewTemplate}
             onEditName={handleEditName}
-            onImport={handleImportTemplate}
+            onImport={() => {}}
             onExport={() => {}}
             compact
             disabled={disabled}
