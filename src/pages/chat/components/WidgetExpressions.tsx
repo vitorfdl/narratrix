@@ -140,7 +140,7 @@ const WidgetExpressions = () => {
   const getIdForItem = useCallback((item: { id: string }) => item.id, []);
 
   // Use useMultipleImageUrls hook
-  const { urlMap: expressionUrlMap, isLoading } = useMultipleImageUrls(expressionObjectsToLoad, getPathForItem, getIdForItem);
+  const { urlMap: expressionUrlMap } = useMultipleImageUrls(expressionObjectsToLoad, getPathForItem, getIdForItem);
   // ------------------------------
 
   // Manual expression generation function (now reads from refs AND selected text)
@@ -418,13 +418,11 @@ const WidgetExpressions = () => {
                     style={{ minHeight: "200px", height: "100%" }}
                   >
                     <Avatar className="w-full h-full shadow-lg" style={{ aspectRatio: "1/1", minHeight: "100px" }}>
-                      {!isLoading && (
-                        <AvatarImage
-                          src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
-                          alt={displayCharacter.name}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
+                      <AvatarImage
+                        src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
+                        alt={displayCharacter.name}
+                        className="w-full h-full object-cover"
+                      />
                       <AvatarFallback>
                         <Loader2Icon className="w-[50%] h-[50%] animate-spin" />
                       </AvatarFallback>

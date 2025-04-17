@@ -6,7 +6,7 @@
   "website": "https://openai.com/",
   "type": "llm",
   "inference_type": ["chat"],
-  "engine": "openai_compatible",
+  "engine": "openai",
   "inference_fields": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "reasoning"],
   "fields": [
     {

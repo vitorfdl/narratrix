@@ -737,7 +737,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
               onValueChange={(value) => {
                 setMaxDepth(value);
               }}
-              min={1}
+              min={0}
               max={100}
               step={10}
               className="h-7"

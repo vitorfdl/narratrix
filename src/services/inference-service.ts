@@ -20,6 +20,9 @@ import { listChatTemplates } from "./template-chat-service";
 import { getFormatTemplateById } from "./template-format-service";
 import { listInferenceTemplates } from "./template-inference-service";
 
+// Cache Howl instances by sound name to ensure reliable playback across platforms
+const beepHowlCache: Record<string, Howl> = {};
+
 function playBeepSound(beepSound: string): void {
   if (beepSound === "none" || !beepSound) {
     return;
@@ -28,10 +31,17 @@ function playBeepSound(beepSound: string): void {
   const soundPath = `/sounds/${beepSound}.mp3`;
 
   try {
-    const beep = new Howl({
-      src: [soundPath],
-      volume: 0.5,
-    });
+    // Reuse Howl instance if available, otherwise create and cache it
+    let beep = beepHowlCache[beepSound];
+    if (!beep) {
+      beep = new Howl({
+        src: [soundPath],
+        volume: 0.5,
+      });
+      beepHowlCache[beepSound] = beep;
+    }
+    // Stop and play to ensure the sound always plays from the start
+    beep.stop();
     beep.play();
   } catch (error) {
     // Log error for debugging

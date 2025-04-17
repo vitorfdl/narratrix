@@ -1,5 +1,5 @@
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StepButton } from "@/components/ui/step-button";
@@ -73,17 +73,15 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size={!supportsCompletion ? "default" : "window"} className="flex flex-col w-full p-0 bg-background rounded-lg shadow-lg">
+      <DialogContent size={!supportsCompletion ? "default" : "window"}>
         {/* Sticky Header */}
-        <DialogHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-4">
-          <DialogTitle className="flex gap-2 items-center text-lg font-semibold">
+        <DialogHeader>
+          <DialogTitle className="flex gap-2 items-center">
             <Settings2Icon className="h-5 w-5" />
-            Model Configuration
+            Model Configuration <span className="italic text-muted-foreground">{model.name}</span>
           </DialogTitle>
         </DialogHeader>
-
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <DialogBody className="space-y-3">
           {/* Max Concurrency Field */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-muted/40 rounded-lg p-4">
             <Label htmlFor="concurrency" className="text-base font-medium">
@@ -114,10 +112,10 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave, isUpdatin
               <InstructTemplateSection disabled={completionType !== "text"} onChange={handleTemplateChange} modelTemplateID={inferenceTemplateID} />
             </>
           )}
-        </div>
+        </DialogBody>
 
         {/* Sticky Footer */}
-        <DialogFooter className="sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t border-border px-6 py-4 flex gap-3">
+        <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSaving || isUpdating}>
             <XCircleIcon className="h-4 w-4" />
             Cancel

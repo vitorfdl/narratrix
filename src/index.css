@@ -106,7 +106,7 @@ body,
   }  
 
   .template-card-header {
-    @apply bg-muted/30 h-10 mb-3 !pt-3;
+    @apply bg-primary/10 h-10 mb-3 !pt-3;
   }
 
   .template-card-title {

@@ -44,7 +44,38 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
     opacity: isDragging ? 0.5 : disabled ? 0.6 : 1,
   };
 
-  // Remove "-" and capitalize the first letter of each word
+  // Local state for the content being edited
+  const [localContent, setLocalContent] = useState(prompt.content);
+
+  // Debounce the call to the parent update function for content changes
+  const debouncedParentUpdate = useDebouncedCallback((newContent: string) => {
+    onUpdate(prompt.id, { content: newContent });
+  }, 300); // 300ms debounce, adjust as needed
+
+  // Update local state immediately, debounce parent update
+  const handleContentChange = (newContent: string) => {
+    setLocalContent(newContent);
+    debouncedParentUpdate(newContent);
+  };
+
+  // Effect to sync local state if the prop changes from outside (e.g., initial load, reset)
+  // Avoids infinite loops by checking if content actually differs
+  useEffect(() => {
+    if (prompt.content !== localContent) {
+      setLocalContent(prompt.content);
+      // Cancel any pending debounced updates if the prop changes externally
+      debouncedParentUpdate.cancel();
+    }
+    // Only run this effect if prompt.content changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prompt.content]);
+
+  // Handler for UI changes (like collapse) that should update parent immediately
+  const handleCollapseToggle = () => {
+    onUpdate(prompt.id, { isCollapsed: !prompt.isCollapsed });
+  };
+
+  // Format name helper
   const formatName = (name: string) => {
     return name
       .replace(/-/g, " ")
@@ -61,7 +92,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
             <div {...attributes} {...listeners} className={disabled ? "cursor-not-allowed" : "cursor-grab"}>
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
-            <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onUpdate(prompt.id, { isCollapsed: !prompt.isCollapsed })}>
+            <Button variant="ghost" size="sm" disabled={disabled} onClick={handleCollapseToggle}>
               {prompt.isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
             <div className="font-medium text-sm">{formatName(prompt.name)}</div>
@@ -75,15 +106,16 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
           <div className="space-y-4">
             <div className="mb-2 mr-1 ml-1 md:text-xs xl:text-sm">
               <MarkdownTextArea
-                initialValue={prompt.content}
-                onChange={(e) => onUpdate(prompt.id, { content: e })}
+                key={prompt.id}
+                initialValue={localContent}
+                onChange={handleContentChange}
                 className=" overflow-y-auto max-h-[400px]"
                 suggestions={promptReplacementSuggestionList}
                 editable={!disabled}
               />
               <div className="flex items-center justify-between">
                 <div />
-                <span className="text-xs text-muted-foreground p-0.5">{estimateTokens(prompt.content, 0)} tokens</span>
+                <span className="text-xs text-muted-foreground p-0.5">{estimateTokens(localContent, 0)} tokens</span>
               </div>
             </div>
           </div>
@@ -167,7 +199,7 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
     } catch (error) {
       console.error("Failed to update template:", error);
     }
-  }, 80);
+  }, 120);
 
   // Handle adding a new prompt section
   const handleAddPrompt = useCallback(

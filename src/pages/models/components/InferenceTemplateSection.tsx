@@ -282,19 +282,21 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
               prefixes, suffixes, and other formatting options that will be applied to different message types in the conversation.
             </p>
           </div>
-
-          <TemplatePicker
-            templates={templateList}
-            selectedTemplateId={instructTemplateID}
-            onTemplateSelect={setInstructTemplateID}
-            onDelete={handleDeleteTemplate}
-            onNewTemplate={handleNewTemplate}
-            onEditName={handleEditName}
-            onImport={() => {}}
-            onExport={() => {}}
-            compact
-            disabled={disabled}
-          />
+          <div className="flex items-center gap-4 mb-2 bg-foreground/5 p-2 rounded-md">
+            <Label className="text-base font-semibold text-foreground mb-0">Template: </Label>
+            <TemplatePicker
+              templates={templateList}
+              selectedTemplateId={instructTemplateID}
+              onTemplateSelect={setInstructTemplateID}
+              onDelete={handleDeleteTemplate}
+              onNewTemplate={handleNewTemplate}
+              onEditName={handleEditName}
+              onImport={() => {}}
+              onExport={() => {}}
+              disabled={disabled}
+              className="w-full"
+            />
+          </div>
           <Card>
             <CardHeader className="template-card-header">
               <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>

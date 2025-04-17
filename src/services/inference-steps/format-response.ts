@@ -4,7 +4,7 @@ import { trimToEndSentence } from "./trim-incomplete-sentence";
 export function formatFinalText(textRaw: string, formatTemplate?: FormatTemplate | null) {
   if (!formatTemplate) {
     // Fallback to previous behavior if no template
-    return trimToEndSentence(textRaw).replace(/\n{2,}/g, "\n");
+    return trimToEndSentence(textRaw).replace(/\n{3,}/g, "\n\n");
   }
 
   let text = textRaw;

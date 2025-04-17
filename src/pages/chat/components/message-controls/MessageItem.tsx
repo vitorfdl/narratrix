@@ -154,7 +154,8 @@ const MessageItem = ({
     return cn(
       MESSAGE_BASE_CLASSES.container,
       TYPE_CLASSES[message.type],
-      !isDisabled && (message.type === "user" || message.type === "character") && "bg-card",
+      !isDisabled && message.type === "character" && "bg-card",
+      !isDisabled && message.type === "user" && "bg-primary/5",
       isStreaming && STATE_CLASSES.streaming,
       isDisabled && STATE_CLASSES.disabled,
     );

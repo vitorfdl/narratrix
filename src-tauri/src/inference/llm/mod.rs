@@ -329,7 +329,7 @@ pub async fn process_inference(
                 handle_non_streaming(request, result, &app_handle).await
             }
         }
-        "anthropic" | "openai_compatible" | "openrouter" => {
+        "anthropic" | "openai_compatible" | "openai" | "openrouter" => {
             // Check if model_type is specified as "completion" in the config
             let model_type = &specs.model_type;
 

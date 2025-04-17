@@ -99,14 +99,14 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
 
   return (
     <div
-      className={cn("group relative flex justify-center items-center h-0 -mt-0 -mb-1 z-10", "transition-all duration-100")}
+      className={cn("group relative flex justify-center items-center h-0 -mt-0 -mb-1 z-10")}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Central dot indicator - always visible but more prominent on hover */}
       <div
         className={cn(
-          "absolute top-[-1rem] w-4 h-4 rounded-full transition-all duration-100",
+          "absolute top-[-1rem] w-5 h-5 rounded-full",
           "border border-border bg-background flex items-center justify-center",
           "hover:border-primary/50 hover:scale-110",
           // Make dot visible when widget is hovered too
@@ -121,7 +121,7 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
       <div
         className={cn(
           "absolute top-[-1.5rem] flex gap-1 bg-background border border-border rounded-md shadow-md p-1",
-          "transition-all duration-200 transform",
+          "transition-all duration-100 transform",
           isHovered ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none",
         )}
       >

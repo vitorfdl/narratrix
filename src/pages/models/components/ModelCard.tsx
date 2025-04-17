@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useInferenceTemplate } from "@/hooks/templateStore";
-import { Clock, Copy, Cpu, EditIcon, MoreVertical, Settings2Icon, Trash2, Zap } from "lucide-react";
+import { Clock, Copy, Cpu, EditIcon, MoreVertical, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Model } from "../../../schema/models-schema";
 
@@ -91,11 +91,14 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
 
   return (
     <>
-      <Card className="bg-card border-border hover:border-primary/50 transition-all overflow-hidden group h-full flex flex-col">
+      <Card
+        onClick={() => setConfigDialogOpen(model)}
+        className="bg-card border-border hover:cursor-pointer hover:border-primary/50 transition-all overflow-hidden group h-full flex flex-col"
+      >
         <CardHeader className="pb-2 flex flex-row justify-between items-start">
           <div>
             <div className="flex items-center gap-2">
-              <CardTitle className="text-foreground">{model.name}</CardTitle>
+              <CardTitle className="flex w-full justify-between items-center gap-2 text-foreground">{model.name}</CardTitle>
               {isNew && <Badge className="bg-primary hover:bg-primary/80">New</Badge>}
               {isPopular && (
                 <Badge variant="outline" className="border-accent-foreground text-accent-foreground">
@@ -107,11 +110,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
               <span className="text-muted-foreground">{manifestName || model.manifest_id}</span>
             </CardDescription>
           </div>
-
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => setConfigDialogOpen(model)}>
-              <Settings2Icon className="h-4 w-4" />
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
@@ -119,16 +118,34 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-popover border-border">
-                <DropdownMenuItem onClick={() => onEdit?.(model)} className="cursor-pointer">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit?.(model);
+                  }}
+                  className="cursor-pointer"
+                >
                   <EditIcon className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDuplicate?.(model)} className="cursor-pointer">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDuplicate?.(model);
+                  }}
+                  className="cursor-pointer"
+                >
                   <Copy className="mr-2 h-4 w-4" />
                   Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => onDelete?.(model)}>
+                <DropdownMenuItem
+                  className="text-destructive cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.(model);
+                  }}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </DropdownMenuItem>

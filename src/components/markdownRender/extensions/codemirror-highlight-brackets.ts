@@ -15,11 +15,11 @@ const highlightQuoteMark = Decoration.mark({
 const highlightTheme = EditorView.baseTheme({
   ".cm-highlightedBracket": {
     // backgroundColor: "hsla(var(--primary) / 0.4)", // Adjusted opacity slightly
+    backgroundColor: "hsla(var(--primary) / 0.15)",
     borderRadius: "3px",
     color: "hsl(var(--primary))", // Use HSL format for consistency
   },
   ".cm-highlightedQuote": {
-    backgroundColor: "hsla(var(--primary) / 0.15)",
     borderRadius: "3px",
     color: "hsl(var(--primary))",
     fontWeight: "bold",
@@ -38,8 +38,8 @@ function findAndHighlightBracketsAndQuotes(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   // Regex to find {{ content }} patterns, allowing for whitespace
   const bracketRegex = /\{\{\s*([^}]+?)\s*\}\}/g;
-  // Regex to find words between single or double quotes (not spanning lines)
-  const quoteRegex = /(['"])(?:(?=(\\?))\2.)*?\1/g;
+  // Regex to find words between single or double quotes (including escaped quotes)
+  const quoteRegex = /"([^"\\]|\\.)*"/g;
 
   for (const { from, to } of view.visibleRanges) {
     const text = view.state.doc.sliceString(from, to);

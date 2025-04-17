@@ -1,4 +1,4 @@
-import rehypeHighlightQuotes from "@/lib/rehype-highlight-quotes";
+import rehypeHighlightQuotes from "@/components/markdownRender/extensions/rehype-highlight-quotes";
 import { cn } from "@/lib/utils";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { Copy } from "lucide-react";

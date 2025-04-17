@@ -26,6 +26,7 @@ export interface TemplatePickerProps {
   onExport: (templateId: string) => void;
   compact?: boolean;
   disabled?: boolean;
+  className?: string;
 }
 
 export function TemplatePicker({
@@ -39,6 +40,7 @@ export function TemplatePicker({
   onExport,
   compact = false,
   disabled = false,
+  className,
 }: TemplatePickerProps): JSX.Element {
   const hasTemplates = templates.length > 0;
   const selectedTemplate = selectedTemplateId ? templates.find((t) => t.id === selectedTemplateId) : null;
@@ -104,7 +106,7 @@ export function TemplatePicker({
 
   return (
     <>
-      <div className="flex items-center space-x-1.5">
+      <div className={cn("flex items-center space-x-1.5", className)}>
         <div className="flex-1">
           <Combobox
             items={comboboxItems}
@@ -116,8 +118,8 @@ export function TemplatePicker({
                 variant="outline"
                 role="combobox"
                 className={cn(
-                  "w-full h-8 justify-between bg-muted text-sm text-foreground focus:border-none ring-primary/25 ring-1",
-                  selectedTemplate && "bg-primary/10 text-primary",
+                  "w-full h-8 justify-between bg-muted text-sm text-foreground ring-1 ring-primary/25 transition duration-150 ease-in-out hover:bg-accent/60 hover:ring-primary hover:scale-x-105 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1",
+                  selectedTemplate && "bg-accent/50",
                 )}
                 disabled={!hasTemplates || disabled}
               >

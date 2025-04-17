@@ -4,6 +4,7 @@ use async_openai::{
     error::OpenAIError,
     types::{
         ChatCompletionRequestAssistantMessage, ChatCompletionRequestAssistantMessageContent,
+        ChatCompletionRequestDeveloperMessage, ChatCompletionRequestDeveloperMessageContent,
         ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
         ChatCompletionRequestSystemMessageContent, ChatCompletionRequestUserMessage,
         ChatCompletionRequestUserMessageContent,
@@ -74,16 +75,30 @@ pub fn initialize_openai_client(
 // Convert messages from our format to async-openai format
 pub fn openai_prepare_messages(
     request: &InferenceRequest,
+    specs: &ModelSpecs,
 ) -> Result<Vec<ChatCompletionRequestMessage>> {
     let mut messages = Vec::new();
 
+    // Extract engine and model for conditional logic
+    let engine = &specs.engine;
+    let model = specs.config["model"].as_str().unwrap_or("");
+
     // Add system prompt if provided
     if let Some(system_prompt) = &request.system_prompt {
-        let system_message = ChatCompletionRequestSystemMessage {
-            content: ChatCompletionRequestSystemMessageContent::Text(system_prompt.clone()),
-            name: None,
-        };
-        messages.push(ChatCompletionRequestMessage::System(system_message));
+        // Use developer message if engine is "openai" and model starts with 'o'
+        if engine == "openai" && model.starts_with('o') {
+            let developer_message = ChatCompletionRequestDeveloperMessage {
+                content: ChatCompletionRequestDeveloperMessageContent::Text(system_prompt.clone()),
+                name: None,
+            };
+            messages.push(ChatCompletionRequestMessage::Developer(developer_message));
+        } else {
+            let system_message = ChatCompletionRequestSystemMessage {
+                content: ChatCompletionRequestSystemMessageContent::Text(system_prompt.clone()),
+                name: None,
+            };
+            messages.push(ChatCompletionRequestMessage::System(system_message));
+        }
     }
 
     // Add messages from request
@@ -146,11 +161,8 @@ fn create_chat_completion_payload(
     if let Some(obj) = request.parameters.as_object() {
         for (key, value) in obj {
             // Rename max_completion_tokens to max_tokens if needed
-            if key == "max_completion_tokens" {
-                payload["max_tokens"] = value.clone();
-            } else {
-                payload[key] = value.clone();
-            }
+
+            payload[key] = value.clone();
         }
     }
 
@@ -170,7 +182,7 @@ pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
     let (client, model) = initialize_openai_client(specs)?;
 
     // Prepare messages
-    let messages = openai_prepare_messages(request)?;
+    let messages = openai_prepare_messages(request, specs)?;
 
     // Create JSON payload
     let payload = create_chat_completion_payload(&model, messages, request)?;
@@ -202,7 +214,7 @@ pub async fn converse_stream(
     let (client, model) = initialize_openai_client(specs)?;
 
     // Prepare messages
-    let messages = openai_prepare_messages(request)?;
+    let messages = openai_prepare_messages(request, specs)?;
 
     // Create JSON payload
     let mut payload = create_chat_completion_payload(&model, messages, request)?;

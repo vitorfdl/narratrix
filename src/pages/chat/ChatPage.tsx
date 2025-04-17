@@ -6,7 +6,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
 import type { Chat } from "@/schema/chat-schema";
 import { ChatTab, CreateChatParams } from "@/schema/chat-schema";
-import { getChatById, listChats } from "@/services/chat-service";
+import { getChatById, listChats, updateChat } from "@/services/chat-service";
 import { useLocalChatTabs } from "@/utils/local-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -30,12 +30,11 @@ export default function ChatPage() {
   const selectedChatID = useCurrentChatId();
 
   // Get chat actions from the store
-  const { setSelectedChatById, createChat, updateSelectedChat, deleteChat } = useChatActions();
+  const { setSelectedChatById, createChat, deleteChat, fetchChatList } = useChatActions();
 
   // State for rename dialog
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [chatToRenameId, setChatToRenameId] = useState<string | null>(null);
-  const [newChatName, setNewChatName] = useState("");
 
   // State for delete confirmation dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -173,7 +172,6 @@ export default function ChatPage() {
       const chatToRename = allChats.find((chat) => chat.id === tabId);
       if (chatToRename) {
         setChatToRenameId(tabId);
-        setNewChatName(chatToRename.name);
         setIsRenameDialogOpen(true);
       }
     },
@@ -248,33 +246,31 @@ export default function ChatPage() {
   }, [chatToDeleteId, deleteChat, allChats, setOpenTabIds]);
 
   // Handle the actual renaming process
-  const handleRenameSubmit = async () => {
-    if (!chatToRenameId || !newChatName.trim()) {
+  const handleRenameSubmit = async (newName: string) => {
+    if (!chatToRenameId || !newName.trim()) {
       return;
     }
 
     try {
       // Check if the name hasn't changed
       const originalChat = allChats.find((chat) => chat.id === chatToRenameId);
-      if (originalChat && originalChat.name === newChatName.trim()) {
+      if (originalChat && originalChat.name === newName.trim()) {
         setIsRenameDialogOpen(false);
         return; // No change needed
       }
 
-      setAllChats((prev) => prev.map((chat) => (chat.id === chatToRenameId ? { ...chat, name: newChatName.trim() } : chat)));
       // Update the name in the zustand store as well if it's the selected chat
       if (selectedChatID === chatToRenameId) {
-        useChatStore.setState((state) => ({ selectedChat: { ...state.selectedChat, name: newChatName.trim() } }));
+        useChatStore.setState((state) => ({ selectedChat: { ...state.selectedChat, name: newName.trim() } }));
       }
 
       setIsRenameDialogOpen(false);
 
       // Persist the change
-      await updateSelectedChat({ name: newChatName.trim() });
-
-      // Optionally refetch the specific chat or all chats if needed after update
+      await updateChat(chatToRenameId, { name: newName.trim() });
+      await fetchChatList(profileId);
       // For now, the optimistic update + store update should suffice
-      toast.success(`Chat renamed to "${newChatName.trim()}".`);
+      toast.success(`Chat renamed to "${newName.trim()}".`);
     } catch (error) {
       console.error("Failed to rename chat:", error);
       toast.error("Failed to rename chat.");
@@ -288,7 +284,6 @@ export default function ChatPage() {
       }
     } finally {
       setChatToRenameId(null);
-      setNewChatName("");
     }
   };
 
@@ -332,7 +327,7 @@ export default function ChatPage() {
         <EditNameDialog
           open={isRenameDialogOpen}
           onOpenChange={setIsRenameDialogOpen}
-          initialName={newChatName}
+          initialName={allChats.find((c) => c.id === chatToRenameId)?.name || ""}
           onSave={handleRenameSubmit}
           title="Rename Chat"
           description="Enter a new name for your chat."

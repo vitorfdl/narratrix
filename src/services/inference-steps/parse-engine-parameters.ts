@@ -35,29 +35,54 @@ function parseOpenRouterParameters(rawParameters: Record<string, any>) {
   return parameters;
 }
 
+function parseParameters(rawParameters: Record<string, any>, { model }: Model["config"]) {
+  return rawParameters;
+}
+
 function parseOpenAIParameters(rawParameters: Record<string, any>, { model }: Model["config"]) {
-  const parameters = structuredClone(rawParameters);
-  const { reasoning_temperature } = parameters;
+  const newParameters: any = {};
 
-  if (model?.includes("o3-mini") || model?.startsWith("o1-mini") || model?.startsWith("o1-")) {
-    const { max_tokens } = parameters;
-    parameters.max_completion_tokens = max_tokens;
-  }
+  const { reasoning_temperature } = rawParameters;
 
-  // OpenAI parameters
-  if (reasoning_temperature) {
-    const temperatureLabel = reasoning_temperature === 1 ? "low" : reasoning_temperature === 2 ? "medium" : "high";
-    parameters.reasoning = {
-      effort: temperatureLabel,
-    };
-
-    const { max_tokens } = parameters;
-    if (max_tokens) {
-      parameters.max_completion_tokens = max_tokens;
+  // Reasoning Models
+  if (model?.startsWith("o3-") || model?.startsWith("o4-")) {
+    const temperatureLabel = reasoning_temperature === 3 ? "high" : reasoning_temperature === 2 ? "medium" : "low";
+    if (model?.startsWith("o3")) {
+      newParameters.reasoning = {
+        effort: temperatureLabel,
+      };
     }
+
+    if (model?.startsWith("o4")) {
+      newParameters.reasoning_effort = temperatureLabel;
+    }
+
+    const { max_tokens } = rawParameters;
+    if (max_tokens) {
+      newParameters.max_completion_tokens = max_tokens;
+    }
+
+    return newParameters;
   }
 
-  return parameters;
+  // Other Models
+  const { temperature, top_p } = rawParameters;
+  if (temperature) {
+    newParameters.temperature = temperature;
+  }
+  if (top_p) {
+    newParameters.top_p = top_p;
+  }
+
+  const { frequency_penalty, presence_penalty } = rawParameters;
+  if (frequency_penalty) {
+    newParameters.frequency_penalty = frequency_penalty;
+  }
+  if (presence_penalty) {
+    newParameters.presence_penalty = presence_penalty;
+  }
+
+  return newParameters;
 }
 
 export function parseEngineParameters(engine: Engine, modelConfig: Model["config"], parameters: Record<string, any>) {
@@ -80,8 +105,8 @@ export function parseEngineParameters(engine: Engine, modelConfig: Model["config
   switch (engine) {
     case "anthropic":
       return parseAnthropicParameters(newParameters);
-    // case "openai_compatible":
-    //   return parameters;
+    case "openai":
+      return parseOpenAIParameters(newParameters, modelConfig || {});
     // case "google":
     //   return parameters;
     case "openrouter":
@@ -91,6 +116,6 @@ export function parseEngineParameters(engine: Engine, modelConfig: Model["config
     // case "aws_bedrock":
     //   return parameters;
     default:
-      return parseOpenAIParameters(newParameters, modelConfig || {});
+      return parseParameters(newParameters, modelConfig || {});
   }
 }

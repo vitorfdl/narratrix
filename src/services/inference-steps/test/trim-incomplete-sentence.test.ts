@@ -51,9 +51,17 @@ describe("trimToEndSentence", () => {
     expect(trimToEndSentence("End with space . More text")).toBe("End with space");
   });
 
+  it("should handle incomplete sentences", () => {
+    expect(trimToEndSentence("Hello world incomplete")).toBe("Hello world incomplete");
+    expect(trimToEndSentence("Hello world incomplete.")).toBe("Hello world incomplete.");
+    expect(trimToEndSentence("Hello world incomplete. This is incomplete")).toBe("Hello world incomplete.");
+  });
+
   it("some other tests cases", () => {
     expect(
-      trimToEndSentence('Quando o navio inclinava para a esquerda, eu empurrava com toda força, sentindo a resistência da madeira ceder.\n\n"Uurrgh'),
+      trimToEndSentence(
+        'Quando o navio inclinava para a esquerda, eu empurrava com toda força, sentindo a resistência da madeira ceder.\n\n"Uurrgh ele rugia com toda força',
+      ),
     ).toBe("Quando o navio inclinava para a esquerda, eu empurrava com toda força, sentindo a resistência da madeira ceder.");
   });
 });
