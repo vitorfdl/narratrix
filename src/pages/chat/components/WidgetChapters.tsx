@@ -18,7 +18,7 @@ import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, us
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowUpDown, BookOpen, Copy, Filter, GripVertical, MoreHorizontal, Plus, Search, Settings, Trash2 } from "lucide-react";
+import { ArrowUpDown, BookOpen, Copy, GripVertical, MoreHorizontal, Plus, Search, Settings, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 // Define a type for the chapter data structure used in forms
@@ -338,7 +338,7 @@ const WidgetChapters = () => {
         style={style}
         className={cn("flex items-center py-0 px-1 rounded-lg border", chapter.id === activeChapterId ? "bg-primary/10 border-primary" : "bg-card")}
       >
-        <div {...attributes} {...listeners} className="mr-2 cursor-grab">
+        <div className="mr-2 cursor-grab" {...attributes} {...listeners} tabIndex={0} aria-label="Drag to reorder chapter">
           <GripVertical className="!h-5 !w-5 text-muted-foreground" />
         </div>
 
@@ -410,7 +410,7 @@ const WidgetChapters = () => {
               <Input
                 type="search"
                 placeholder="Search chapters..."
-                className="w-[200px] pl-8 border-x-transparent/20 border-x-2"
+                className="w-48 pl-8 border-x-transparent/20 border-x-2"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -419,7 +419,6 @@ const WidgetChapters = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1">
-                  <Filter className="h-4 w-4" />
                   Sort
                   <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
                 </Button>
