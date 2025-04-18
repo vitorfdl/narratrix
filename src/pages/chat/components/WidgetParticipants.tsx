@@ -81,9 +81,13 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
         </div>
         <Avatar
           onClick={handleAvatarClick}
-          className={cn("w-8 h-8", participant.type !== "user" && "cursor-pointer", !participant.isEnabled && "opacity-50")}
+          className={cn(
+            "w-8 h-8",
+            participant.type !== "user" && "cursor-pointer hover:scale-110 transition-all duration-300",
+            !participant.isEnabled && "opacity-50",
+          )}
         >
-          <AvatarImage className="object-cover rounded-full" src={participant.avatar} alt={participant.name} />
+          <AvatarImage className="object-cover rounded-full " src={participant.avatar} alt={participant.name} />
           <AvatarFallback className="bg-secondary">{participant.name[0]}</AvatarFallback>
         </Avatar>
       </div>

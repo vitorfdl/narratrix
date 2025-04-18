@@ -7,9 +7,10 @@ import WidgetMemory from "@/pages/chat/components/WidgetMemory";
 import WidgetMessages from "@/pages/chat/components/WidgetMessages";
 import WidgetParticipants from "@/pages/chat/components/WidgetParticipants";
 import WidgetScript from "@/pages/chat/components/WidgetScript";
-import { BookOpen, Brain, Contact, Database, FileTextIcon, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
+import { BookOpen, Brain, Contact, Database, FileTextIcon, HelpCircle, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
 import React from "react";
 import WidgetExpressions from "../components/WidgetExpressions";
+import { WidgetHelp } from "../components/WidgetHelp";
 
 // Import types for props if available
 
@@ -23,7 +24,8 @@ export type WidgetId =
   | "memory"
   | "database"
   | "chapters"
-  | "expressions";
+  | "expressions"
+  | "help";
 
 export const widgetTitles: Record<WidgetId, string> = {
   messages: "Messages",
@@ -36,6 +38,7 @@ export const widgetTitles: Record<WidgetId, string> = {
   database: "Database",
   chapters: "Chapters",
   expressions: "Expressions",
+  help: "Help",
 };
 
 interface WidgetConfiguration<T = unknown> {
@@ -117,6 +120,13 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
     component: WidgetExpressions,
     defaultProps: {},
     icon: <Smile className="w-4 h-4" />,
+  },
+  help: {
+    id: "help",
+    title: widgetTitles.help,
+    component: WidgetHelp,
+    defaultProps: {},
+    icon: <HelpCircle className="w-4 h-4" />,
   },
 };
 
