@@ -1,6 +1,9 @@
 import { getImageUrl } from "@/services/file-system-service";
 import { useCallback, useEffect, useState } from "react";
 
+// Module-level in-memory cache for image data URLs
+const imageUrlCache: Map<string, string> = new Map();
+
 /**
  * Hook for efficiently loading and caching image URLs from file paths
  *
@@ -12,7 +15,7 @@ export function useImageUrl(imagePath: string | null | undefined) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // Function to load the image URL
+  // Function to load the image URL, using cache if available
   const loadImageUrl = useCallback(async (path: string) => {
     if (!path) {
       setUrl("");
@@ -22,7 +25,13 @@ export function useImageUrl(imagePath: string | null | undefined) {
     try {
       setIsLoading(true);
       setError(null);
+      // Check cache first
+      if (imageUrlCache.has(path)) {
+        setUrl(imageUrlCache.get(path)!);
+        return;
+      }
       const imageUrl = await getImageUrl(path);
+      imageUrlCache.set(path, imageUrl);
       setUrl(imageUrl);
     } catch (err) {
       console.error("Failed to load image URL:", err);
@@ -43,9 +52,10 @@ export function useImageUrl(imagePath: string | null | undefined) {
     }
   }, [imagePath, loadImageUrl]);
 
-  // Function to reload the image URL (useful for refreshing)
+  // Function to reload the image URL (bypassing cache)
   const reload = useCallback(() => {
     if (imagePath) {
+      imageUrlCache.delete(imagePath);
       loadImageUrl(imagePath);
     }
   }, [imagePath, loadImageUrl]);
@@ -84,7 +94,12 @@ export function useMultipleImageUrls<T>(items: T[], pathGetter: (item: T) => str
 
           if (path) {
             try {
+              // Check cache first
+              if (imageUrlCache.has(path)) {
+                return { key, url: imageUrlCache.get(path)! };
+              }
               const url = await getImageUrl(path);
+              imageUrlCache.set(path, url);
               return { key, url };
             } catch (error) {
               console.error(`Failed to load image for ${key}:`, error);
@@ -112,7 +127,7 @@ export function useMultipleImageUrls<T>(items: T[], pathGetter: (item: T) => str
     loadAllImages();
   }, [items, pathGetter, keyGetter]);
 
-  // Function to reload all image URLs
+  // Function to reload all image URLs (bypassing cache)
   const reloadAll = useCallback(async () => {
     if (items.length) {
       setIsLoading(true);
@@ -125,8 +140,9 @@ export function useMultipleImageUrls<T>(items: T[], pathGetter: (item: T) => str
 
           if (path) {
             try {
-              // Get the URL (will be a data URL for local files now)
+              imageUrlCache.delete(path); // Invalidate cache for this path
               const url = await getImageUrl(path);
+              imageUrlCache.set(path, url);
               return { key, url };
             } catch (error) {
               console.error(`Failed to load image for ${key}:`, error);

@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,10 +7,14 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterActions, useCharacterAvatars, useCharacters, useCharactersLoading } from "@/hooks/characterStore";
 import { Character, CharacterUnion } from "@/schema/characters-schema";
 import { useLocalCharactersPagesSettings } from "@/utils/local-storage";
-import { Plus, RefreshCw, Search, SortAsc, View } from "lucide-react";
-import { useMemo, useState } from "react";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { Plus, RefreshCw, Search, SortAsc, Upload, View } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { CharacterForm } from "./components/AddCharacterForm";
 import { CharacterCard } from "./components/CharacterCard";
+import { CharacterImport, CharacterImportHandle } from "./components/CharacterImport";
 import { CharacterSidebar } from "./components/CharacterSidebar";
 
 export type CharacterPageSettings = {
@@ -42,11 +46,70 @@ export default function Characters() {
   const [search, setSearch] = useState("");
   const currentProfile = useCurrentProfile();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  // // Load characters on mount
-  // useEffect(() => {
-  //   fetchCharacters(profileId);
-  // }, [fetchCharacters, profileId]);
+  // Ref for CharacterImport imperative handle
+  const importComponentRef = useRef<CharacterImportHandle>(null);
+
+  // Import button handler
+  const handleImportClick = async () => {
+    try {
+      const selectedPath = await openDialog({
+        multiple: true,
+        directory: false,
+        filters: [{ name: "Character Files", extensions: ["json", "png"] }],
+      });
+      if (selectedPath && Array.isArray(selectedPath) && importComponentRef.current) {
+        importComponentRef.current.handleImport(selectedPath);
+      } else if (selectedPath && typeof selectedPath === "string" && importComponentRef.current) {
+        importComponentRef.current.handleImport(selectedPath);
+      }
+    } catch (error) {
+      console.error("Error opening file dialog:", error);
+      toast.error("Could not open file dialog", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
+  // Page-wide drag and drop listener for character import
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    // Only enable drag-and-drop if neither dialog is open
+    if (!editDialogOpen && !createDialogOpen) {
+      const setupListener = async () => {
+        const currentWindow = getCurrentWebviewWindow();
+        try {
+          unlisten = await currentWindow.onDragDropEvent(async (event) => {
+            if (event.payload.type === "drop" && Array.isArray(event.payload.paths)) {
+              setIsDraggingFile(false);
+              if (event.payload.paths.length > 0 && importComponentRef.current) {
+                importComponentRef.current.handleImport(event.payload.paths);
+              }
+            } else if (event.payload.type === "enter" || event.payload.type === "over") {
+              setIsDraggingFile(true);
+            } else if (event.payload.type === "leave") {
+              setIsDraggingFile(false);
+            }
+          });
+        } catch (e) {
+          console.error("Failed to set up page-wide drag and drop listener:", e);
+        }
+      };
+      setupListener();
+    }
+    return () => {
+      if (unlisten) {
+        try {
+          unlisten();
+        } catch (e) {
+          console.warn("Failed to unlisten page-wide drag and drop event:", e);
+        }
+      }
+      // Always reset drag state when dialogs open
+      setIsDraggingFile(false);
+    };
+  }, [editDialogOpen, createDialogOpen]);
 
   const handleEdit = (character: CharacterUnion) => {
     setSelectedCharacter(character);
@@ -68,20 +131,17 @@ export default function Characters() {
   };
 
   const handleRefresh = () => {
-    fetchCharacters(currentProfile!.id);
-    // Also refresh all avatar images when refreshing characters
-    reloadAvatars();
+    fetchCharacters(currentProfile!.id).finally(() => {
+      reloadAvatars();
+    });
   };
 
   const filteredCharacters = useMemo(() => {
     return characters
       .filter((char) => {
         const matchesSearch = search === "" || char.name.toLowerCase().includes(search.toLowerCase());
-
         const matchesTags = settings.selectedTags.length === 0 || (char.tags && settings.selectedTags.every((tag) => char.tags?.includes(tag)));
-
-        const result = matchesSearch && matchesTags;
-        return result;
+        return matchesSearch && matchesTags;
       })
       .sort((a, b) => {
         const direction = settings.sort.direction === "asc" ? 1 : -1;
@@ -98,22 +158,37 @@ export default function Characters() {
   }, [characters, search, settings.selectedTags, settings.sort]);
 
   return (
-    <div className="flex h-full">
-      <CharacterSidebar characters={characters} selectedTags={settings.selectedTags} onTagSelect={handleTagSelect} />
+    <div className={`flex h-full page-container overflow-y-auto ${isDraggingFile ? "ring-2 ring-primary ring-inset bg-primary/5" : ""}`}>
+      {/* Hidden CharacterImport for drag-and-drop and imperative import */}
+      <div className="hidden">
+        <CharacterImport
+          ref={importComponentRef}
+          onImportComplete={(importedCharacter) => {
+            // Refresh character list then reload avatar for the newly imported character
+            fetchCharacters(currentProfile!.id).then(() => {
+              reloadAvatars(importedCharacter.id);
+            });
+          }}
+        />
+      </div>
 
+      <CharacterSidebar characters={characters} selectedTags={settings.selectedTags} onTagSelect={handleTagSelect} />
       <div className="flex flex-1 flex-col">
         <div className="flex items-center gap-1 border-b p-4">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-1 h-4 w-4 text-muted-foreground" />
             <Input autoFocus placeholder="Search characters..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
           </div>
-          <Button variant="outline" size="icon" onClick={handleRefresh}>
+          <Button variant="outline" size="icon" onClick={handleRefresh} title="Refresh Characters">
             <RefreshCw className={`h-4 w-4 ${isLoadingCharacters || isLoadingAvatars ? "animate-spin" : ""}`} />
           </Button>
-
+          {/* Import Button */}
+          <Button variant="outline" size="icon" onClick={handleImportClick} title="Import Character">
+            <Upload size={16} className="mr-1" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" title="View Settings">
                 <View className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -141,7 +216,6 @@ export default function Characters() {
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
-
           <Select
             defaultValue={`${settings.sort.field}-${settings.sort.direction}`}
             onValueChange={(value) => {
@@ -149,9 +223,9 @@ export default function Characters() {
               setSettings((prev) => ({ ...prev, sort: { field, direction } }));
             }}
           >
-            <SelectTrigger noChevron className="w-[30px] p-2">
+            <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="Sort Characters">
               <SelectValue>
-                <SortAsc className="h-4 w-4" />
+                <SortAsc size={16} />
               </SelectValue>
             </SelectTrigger>
             <SelectContent align="end">
@@ -162,7 +236,6 @@ export default function Characters() {
             </SelectContent>
           </Select>
         </div>
-
         <div className="flex-1 overflow-auto p-4">
           {filteredCharacters.length > 0 ? (
             <div
@@ -202,7 +275,6 @@ export default function Characters() {
             </div>
           )}
         </div>
-
         {/* Create Dialog Trigger */}
         {filteredCharacters.length > 0 && (
           <Button className="w-full rounded-none h-14" size="lg" onClick={() => setCreateDialogOpen(true)}>
@@ -223,7 +295,6 @@ export default function Characters() {
             setIsEditing(false);
           }}
         />
-
         {/* Edit Dialog */}
         <CharacterForm
           open={editDialogOpen}

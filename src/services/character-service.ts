@@ -11,6 +11,7 @@ import {
 } from "../schema/characters-schema";
 import { uuidUtils } from "../schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database";
+import { removeDirectoryRecursive, removeFile } from "./file-system-service";
 
 // Interface for filtering characters
 export interface CharacterFilter {
@@ -202,6 +203,31 @@ export async function updateCharacter(
 // Delete a character
 export async function deleteCharacter(id: string): Promise<boolean> {
   const characterId = uuidUtils.uuid().parse(id);
+  // Fetch character details before deletion
+  const character = await getCharacterById(characterId);
+  if (!character) {
+    return false;
+  }
+  // Delete from DB first
   const result = await executeDBQuery("DELETE FROM characters WHERE id = $1", [characterId]);
-  return result.rowsAffected > 0;
+  if (result.rowsAffected > 0) {
+    // Remove avatar file if present
+    if (character.avatar_path) {
+      try {
+        await removeFile(character.avatar_path);
+      } catch (err) {
+        console.warn(`Failed to remove avatar for character ${character.id}:`, err);
+      }
+    }
+    // Remove expression folder for type 'character'
+    if (character.type === "character") {
+      try {
+        await removeDirectoryRecursive(`images/characters/${character.id}`);
+      } catch (err) {
+        console.warn(`Failed to remove expression folder for character ${character.id}:`, err);
+      }
+    }
+    return true;
+  }
+  return false;
 }

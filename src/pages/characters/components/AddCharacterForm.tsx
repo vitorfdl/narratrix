@@ -128,12 +128,12 @@ function CharacterInfoContent({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="personality" descriptionTag={"{{character.personality}}"} className="mb-0">
-            Personality
+            Personality / Description
           </Label>
           <span className="text-xs text-muted-foreground p-0.5">{estimateTokens(personality, 0)} tokens</span>
         </div>
         <MarkdownTextArea
-          className="h-full"
+          className="h-full mb-6"
           editable={true}
           key={`personality-${characterId}`}
           initialValue={personality}
