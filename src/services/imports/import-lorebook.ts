@@ -1,6 +1,6 @@
 import { CreateLorebookEntryParams, CreateLorebookParams, Lorebook } from "@/schema/lorebook-schema";
-import { LorebookSpecV2, transformLorebookSpecV2, validateLorebookSpecV2 } from "./imports/lorebook_spec_v2";
-import { createLorebook, createLorebookEntry } from "./lorebook-service";
+import { createLorebook, createLorebookEntry } from "../lorebook-service";
+import { LorebookSpecV2, transformLorebookSpecV2, validateLorebookSpecV2 } from "./formats/lorebook_spec_v2";
 
 export interface LorebookImportFile {
   name: string;
@@ -41,7 +41,7 @@ interface ValidationTransformationResult {
  * @param data - The parsed JSON data
  * @returns ValidationResult indicating if the file is valid and any error messages
  */
-function validateLorebookV1(data: any): { valid: boolean; errors: string[] } {
+function validateInternalJSON(data: any): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -97,7 +97,7 @@ function validateLorebookV1(data: any): { valid: boolean; errors: string[] } {
  */
 export function validateAndTransformLorebookData(data: any, fileName: string): ValidationTransformationResult {
   // 1. Try validating as V1
-  const v1Validation = validateLorebookV1(data);
+  const v1Validation = validateInternalJSON(data);
   if (v1Validation.valid) {
     // Assume it's V1 if basic structure matches
     return {

@@ -1,5 +1,5 @@
 import { LorebookEntry } from "@/schema/lorebook-schema";
-import { LorebookImportFile } from "../lorebook-import-service";
+import { LorebookImportFile } from "../import-lorebook";
 
 /**
  * Interface representing a single entry in the Lorebook V2 specification.

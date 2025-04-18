@@ -1,5 +1,5 @@
 import { appDataDir, join, sep } from "@tauri-apps/api/path";
-import { BaseDirectory, exists, mkdir, readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { BaseDirectory, exists, mkdir, readFile, remove, writeFile } from "@tauri-apps/plugin-fs";
 
 /**
  * Constants for file system paths and directories
@@ -273,5 +273,37 @@ export async function getImageUrl(imagePath: string): Promise<string> {
   } catch (error) {
     console.error("Error creating image URL:", error);
     return "";
+  }
+}
+
+/**
+ * Remove a file from the app data directory.
+ * @param relativePath - The relative path to the file (from app data root)
+ */
+export async function removeFile(relativePath: string): Promise<void> {
+  try {
+    const appData = await appDataDir();
+    const filePath = await join(appData, relativePath);
+    await remove(filePath);
+    console.info(`File deleted: ${filePath}`);
+  } catch (error) {
+    console.error(`Failed to delete file (${relativePath}):`, error);
+    throw new Error(`Failed to delete file: ${relativePath}`);
+  }
+}
+
+/**
+ * Remove a directory and all its contents recursively from the app data directory.
+ * @param relativeDirPath - The relative path to the directory (from app data root)
+ */
+export async function removeDirectoryRecursive(relativeDirPath: string): Promise<void> {
+  try {
+    const appData = await appDataDir();
+    const dirPath = await join(appData, relativeDirPath);
+    await remove(dirPath, { recursive: true });
+    console.info(`Directory deleted recursively: ${dirPath}`);
+  } catch (error) {
+    console.error(`Failed to delete directory (${relativeDirPath}):`, error);
+    throw new Error(`Failed to delete directory: ${relativeDirPath}`);
   }
 }
