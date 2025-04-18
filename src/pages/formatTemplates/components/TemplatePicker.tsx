@@ -118,7 +118,7 @@ export function TemplatePicker({
                 variant="outline"
                 role="combobox"
                 className={cn(
-                  "w-full h-8 justify-between bg-muted text-sm text-foreground ring-1 ring-primary/25 transition duration-150 ease-in-out hover:bg-accent/60 hover:ring-primary hover:scale-x-105 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1",
+                  "w-full h-8 justify-between bg-muted text-sm text-foreground ring-1 ring-primary/25 transition duration-150 ease-in-out hover:bg-accent/60 hover:ring-primary hover:scale-x-[1.02] shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1",
                   selectedTemplate && "bg-accent/50",
                 )}
                 disabled={!hasTemplates || disabled}

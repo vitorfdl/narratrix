@@ -32,7 +32,7 @@ export const ChatMessageTypeSchema = z.enum(["user", "character", "system"]);
 export type ChatMessageType = z.infer<typeof ChatMessageTypeSchema>;
 
 const extraSchema = z.object({
-  script: z.enum(["agent", "summary"]).optional(),
+  script: z.enum(["agent", "summary", "start_chapter"]).optional(),
   startPosition: z.number().int().optional(),
   endPosition: z.number().int().optional(),
 });

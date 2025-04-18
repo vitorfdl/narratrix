@@ -122,12 +122,13 @@ interface CreateSystemPromptConfig {
   chatConfig?: PromptFormatterConfig["chatConfig"];
   lorebookContent?: LorebookContentResponse["replacers"];
   systemOverridePrompt?: string | null;
+  contextSeparator?: string;
 }
 /**
  * Create system prompt from template
  */
 export function createSystemPrompt(config: CreateSystemPromptConfig): string | undefined {
-  const { systemPromptTemplate, chatConfig, lorebookContent, systemOverridePrompt } = config;
+  const { systemPromptTemplate, chatConfig, lorebookContent, systemOverridePrompt, contextSeparator } = config;
 
   if (!systemPromptTemplate || !systemPromptTemplate.config || systemPromptTemplate.prompts.length === 0) {
     return systemOverridePrompt || undefined; // If no system prompt template is provided, return the system override prompt
@@ -183,8 +184,7 @@ export function createSystemPrompt(config: CreateSystemPromptConfig): string | u
     return undefined;
   }
 
-  const contextSeparator = systemPromptTemplate.config.context_separator?.replaceAll("\\n", "\n") || "\n\n";
-  return prompts.map((section) => section.content).join(contextSeparator);
+  return prompts.map((section) => section.content).join(contextSeparator || "\n\n");
 }
 
 /**
@@ -226,6 +226,7 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
  */
 export async function formatPrompt(config: PromptFormatterConfig): Promise<FormattedPromptResult> {
   const prefixOption = config.formatTemplate?.config.settings.prefix_messages;
+  const contextSeparator = config.formatTemplate?.config.context_separator?.replaceAll("\\n", "\n");
   // Step 1: Get chat history with user message
   const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt, prefixOption);
   // Step 2: Process custom prompts from the chat template
@@ -244,7 +245,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
 
   const LorebookBudget = config.chatTemplate?.config?.lorebook_token_budget || 400;
 
-  const lorebookSeparator = config.formatTemplate?.config.lorebook_separator?.replaceAll("\\n", "\n") || "\n---\n";
+  const lorebookSeparator = config.formatTemplate?.config.lorebook_separator?.replaceAll("\\n", "\n");
   const lorebookContent = await getLorebookContent(LoreBookOrder, LorebookBudget, processedMessages, lorebookSeparator);
   processedMessages = processLorebookMessages(processedMessages, lorebookContent.messages);
 
@@ -260,7 +261,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
   if (config.formatTemplate?.config.settings.merge_messages_on_user) {
     processedMessages = mergeMessagesOnUser(structuredClone(processedMessages));
   } else if (config.formatTemplate?.config.settings.merge_subsequent_messages) {
-    processedMessages = mergeSubsequentMessages(structuredClone(processedMessages));
+    processedMessages = mergeSubsequentMessages(structuredClone(processedMessages), contextSeparator);
   }
 
   // Step 3: Create system prompt
@@ -269,6 +270,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
     chatConfig: config.chatConfig,
     lorebookContent: lorebookContent.replacers,
     systemOverridePrompt: config.systemOverridePrompt,
+    contextSeparator,
   });
   const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 

@@ -99,13 +99,9 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
               {chapterData.custom.auto_start_message ? (
-                <Label htmlFor={`${idPrefix}start-message`}>
-                  Instruction to AI <span className="text-xs text-muted-foreground">(In-development)</span>
-                </Label>
+                <Label htmlFor={`${idPrefix}start-message`}>Instruction to AI</Label>
               ) : (
-                <Label htmlFor={`${idPrefix}start-message`}>
-                  Chat Start Message <span className="text-xs text-muted-foreground">(Not ready yet)</span>
-                </Label>
+                <Label htmlFor={`${idPrefix}start-message`}>Chat Start Message</Label>
               )}
               <span className="text-xs text-muted-foreground">{estimateTokens(chapterData.start_message || "", 0)} tokens</span>
             </div>

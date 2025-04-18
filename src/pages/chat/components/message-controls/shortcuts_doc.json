@@ -1,0 +1,51 @@
+[
+  {
+    "title": "General",
+    "shortcuts": [
+      {
+        "label": "Toggle Live Inspector",
+        "keys": [
+          { "type": "key", "value": "Ctrl" },
+          { "type": "separator", "value": "/" },
+          { "type": "icon", "value": "Command" },
+          { "type": "key", "value": "'" }
+        ]
+      },
+      {
+        "label": "Close Current Tab",
+        "keys": [
+          { "type": "key", "value": "Ctrl" },
+          { "type": "separator", "value": "/" },
+          { "type": "icon", "value": "Command" },
+          { "type": "key", "value": "W" }
+        ]
+      },
+      {
+        "label": "Create New Tab",
+        "keys": [
+          { "type": "key", "value": "Ctrl" },
+          { "type": "separator", "value": "/" },
+          { "type": "icon", "value": "Command" },
+          { "type": "key", "value": "T" }
+        ]
+      },
+      {
+        "label": "Switch to Next Tab",
+        "keys": [
+          { "type": "key", "value": "Ctrl" },
+          { "type": "separator", "value": "/" },
+          { "type": "icon", "value": "Command" },
+          { "type": "key", "value": "Tab" }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Generation Input",
+    "shortcuts": [
+      { "label": "Focus ", "keys": [{ "type": "key", "value": "Tab" }] },
+      { "label": "Send Message", "keys": [] },
+      { "label": "Access Input History", "keys": [{ "type": "key", "value": "Up" }] }
+    ]
+  }
+]
