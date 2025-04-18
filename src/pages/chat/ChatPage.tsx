@@ -58,20 +58,29 @@ export default function ChatPage() {
   }, [profileId]);
 
   useEffect(() => {
-    if (!chatList.some((chat) => chat.id === selectedChatID)) {
-      setSelectedChatById(profileId, openTabIds[0]);
-    }
-
-    // Early return if we already have a selected chat or no tabs
-    if (selectedChatID || openTabIds.length === 0) {
+    // Only run if there are chats and open tabs
+    if (chatList.length === 0 || openTabIds.length === 0) {
       setIsLoading(false);
       return;
     }
 
-    // Otherwise, select the first tab
-    setSelectedChatById(profileId, openTabIds[0]);
+    // Filter out invalid tab IDs
+    const validTabIds = openTabIds.filter((tabId) => chatList.some((chat) => chat.id === tabId));
+    if (validTabIds.length !== openTabIds.length) {
+      setOpenTabIds(validTabIds);
+      // Don't proceed further, let the effect re-run with updated openTabIds
+      return;
+    }
+
+    // If selectedChatID is not valid, set it to the first valid tab
+    if (!selectedChatID || !validTabIds.includes(selectedChatID)) {
+      setSelectedChatById(profileId, validTabIds[0]);
+      // Don't set loading yet, let the effect re-run with updated selectedChatID
+      return;
+    }
+
     setIsLoading(false);
-  }, [selectedChatID, openTabIds]);
+  }, [openTabIds, setSelectedChatById, chatList, selectedChatID, profileId, setOpenTabIds]);
 
   // Effect for handling keyboard shortcut to toggle Live Inspector
   useEffect(() => {
