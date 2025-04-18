@@ -6,6 +6,7 @@ import { GridCard } from "./GridCard";
 import { GridSidebar } from "./GridSidebar";
 
 // Import the grid layout CSS
+import { GridPosition } from "@/schema/grid";
 import "react-grid-layout/css/styles.css";
 import "../styles/react-grid-overrides.css";
 
@@ -78,38 +79,77 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
     };
   }, [calculateMaxRows]);
 
-  // Ensure layout is only rendered after positions are loaded from localStorage
+  // Ensure layout is only rendered after positions and maxRows are ready
   useEffect(() => {
-    if (positions.length > 0) {
+    if (positions.length > 0 && maxRows > 0) {
       setLayoutReady(true);
     }
-  }, [positions]);
+  }, [positions, maxRows]);
 
   // Get visible and hidden widgets
   const visibleWidgets = positions.filter((pos) => !pos.hidden);
   const hiddenWidgets = positions.filter((pos) => pos.hidden && !["database", "memory", "scripts"].includes(pos.id));
 
+  // Utility to sanitize widget positions for all breakpoints
+  function sanitizeWidgetPositions(positions: GridPosition[], maxRows: number, columns: Record<string, number>): GridPosition[] {
+    return positions.map((pos: GridPosition) => {
+      const newPos: any = { ...pos };
+      ["lg", "md", "sm", "xs", "xxs"].forEach((breakpoint) => {
+        const colCount = columns[breakpoint];
+        if (newPos[breakpoint]) {
+          let { x = 0, y = 0, w = 2, h = 1 } = newPos[breakpoint];
+          let changed = false;
+          // Clamp width/height
+          w = Math.max(1, Math.min(w, colCount));
+          h = Math.max(1, Math.min(h, maxRows));
+          // Clamp x/y
+          if (x + w > colCount) {
+            x = Math.max(0, colCount - w);
+            changed = true;
+          }
+          if (y + h > maxRows) {
+            y = Math.max(0, maxRows - h);
+            changed = true;
+          }
+          if (x < 0) {
+            x = 0;
+            changed = true;
+          }
+          if (y < 0) {
+            y = 0;
+            changed = true;
+          }
+          if (changed) {
+            // eslint-disable-next-line no-console
+            console.warn(`Auto-corrected out-of-bounds widget position for "${pos.id}" at breakpoint ${breakpoint}`);
+          }
+          newPos[breakpoint] = { x, y, w, h };
+        }
+      });
+      return newPos;
+    });
+  }
+
   // Convert GridPosition[] to react-grid-layout format
   const generateLayouts = useCallback(() => {
+    // Sanitize positions before generating layouts
+    const safePositions = sanitizeWidgetPositions(visibleWidgets, maxRows, COLUMNS);
     // Create optimized layouts for each breakpoint
     const createBreakpointLayout = (columnSize: keyof typeof COLUMNS) => {
       const columns = COLUMNS[columnSize];
-      return visibleWidgets.map((pos) => {
+      return safePositions.map((pos: GridPosition) => {
         const basePos = pos[columnSize] || pos.sm || pos.md || pos.lg || pos.xxs || pos.xs;
         // Get base position
         let x = basePos?.x ?? 0;
         let y = basePos?.y ?? 0;
         const w = Math.min(basePos?.w ?? 2, columns); // Ensure width doesn't exceed columns
         const h = basePos?.h ?? 1;
-
         // Adjust x-position if it would overflow the grid width
         if (x + w > columns) {
           x = Math.max(0, columns - w);
         }
-
         // Ensure y-position stays within maxRows
         y = Math.min(y, Math.max(0, maxRows - h));
-
         return {
           i: pos.id,
           x,
@@ -121,7 +161,6 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
         };
       });
     };
-
     // Return optimized layouts for each breakpoint
     return {
       lg: createBreakpointLayout("lg"),

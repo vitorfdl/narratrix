@@ -7,7 +7,7 @@ import WidgetMemory from "@/pages/chat/components/WidgetMemory";
 import WidgetMessages from "@/pages/chat/components/WidgetMessages";
 import WidgetParticipants from "@/pages/chat/components/WidgetParticipants";
 import WidgetScript from "@/pages/chat/components/WidgetScript";
-import { BookOpen, Brain, Database, FileTextIcon, MessageSquare, Settings, Smile, Sparkles, User, Users } from "lucide-react";
+import { BookOpen, Brain, Contact, Database, FileTextIcon, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
 import React from "react";
 import WidgetExpressions from "../components/WidgetExpressions";
 
@@ -88,7 +88,7 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
     title: widgetTitles.character_sheet,
     component: WidgetCharacterSheet,
     defaultProps: {},
-    icon: <User className="w-4 h-4" />,
+    icon: <Contact className="w-4 h-4" />,
   },
   memory: {
     id: "memory",

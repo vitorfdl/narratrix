@@ -412,7 +412,7 @@ const WidgetExpressions = () => {
                     className={cn(
                       "w-full h-full relative transition-transform duration-150 ease-in-out",
                       animateLastSpeaker && displayCharacter.id === (selectedText ? selectedMessageCharacterId : lastSpeakerId)
-                        ? "scale-105"
+                        ? "scale-[1.03]"
                         : "scale-100",
                     )}
                     style={{ minHeight: "200px", height: "100%" }}
