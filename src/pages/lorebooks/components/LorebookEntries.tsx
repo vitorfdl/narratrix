@@ -384,7 +384,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         </DropdownMenu>
       </div>
 
-      <div className="flex-1 overflow-hidden p-4">
+      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)] p-4">
         {isLoading ? (
           <div className="space-y-2">
             {Array(5)
@@ -397,7 +397,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
           </div>
         ) : entries.length > 0 ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <div className="border rounded-md overflow-hidden">
+            <div className="border rounded-md">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-background/95 hover:bg-background/95">
