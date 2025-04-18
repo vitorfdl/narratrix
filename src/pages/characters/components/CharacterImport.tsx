@@ -13,7 +13,6 @@ import { useChatActions } from "@/hooks/chatStore";
 import { Character } from "@/schema/characters-schema";
 import { saveImage } from "@/services/file-system-service";
 import { extractCharacterSpecV2FromPng } from "@/services/imports/formats/character_spec_png";
-import { transformCharacterSpecV3, validateCharacterSpecV3 } from "@/services/imports/formats/character_spec_v3";
 import { importCharacter, parseCharacterContent, validateAndTransformCharacterData } from "@/services/imports/import-character";
 import { basename } from "@tauri-apps/api/path";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
@@ -132,19 +131,6 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
               continue;
             }
             validationResult = validateAndTransformCharacterData(parsedData, currentProfile.id);
-            if (!validationResult.valid) {
-              const v3Validation = validateCharacterSpecV3(parsedData);
-              if (v3Validation.valid) {
-                const transformed = transformCharacterSpecV3(parsedData, currentProfile.id);
-                validationResult = {
-                  valid: true,
-                  errors: [],
-                  data: transformed.character,
-                  chatFields: transformed.chatFields,
-                  format: "chara_card_v3",
-                };
-              }
-            }
             const blob = new Blob([fileContentBinary], { type: "image/png" });
             const dataUrl = await new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
@@ -160,19 +146,6 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
             const fileContentString = decoder.decode(fileContentBinary);
             const parsedData = parseCharacterContent(fileContentString);
             validationResult = validateAndTransformCharacterData(parsedData, currentProfile.id);
-            if (!validationResult.valid) {
-              const v3Validation = validateCharacterSpecV3(parsedData);
-              if (v3Validation.valid) {
-                const transformed = transformCharacterSpecV3(parsedData, currentProfile.id);
-                validationResult = {
-                  valid: true,
-                  errors: [],
-                  data: transformed.character,
-                  chatFields: transformed.chatFields,
-                  format: "chara_card_v3",
-                };
-              }
-            }
           } else {
             toast.error("Invalid file type", { description: "Please select a JSON or PNG file (.json, .png)" });
             failCount++;
