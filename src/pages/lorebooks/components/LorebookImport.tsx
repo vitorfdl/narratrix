@@ -27,7 +27,7 @@ export interface LorebookImportHandle {
   handleImport: (filePath: string) => Promise<void>;
 }
 
-export const LorebookImport = forwardRef<LorebookImportHandle, LorebookImportProps>(({ onImportComplete, className = "" }, ref) => {
+export const LorebookImport = forwardRef<LorebookImportHandle, LorebookImportProps>(({ onImportComplete }, ref) => {
   const currentProfile = useCurrentProfile();
   const { loadLorebooks } = useLorebookStoreActions();
   const lorebooks = useLorebooks();

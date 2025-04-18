@@ -1,13 +1,7 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import {
-  useChatActions,
-  useCurrentChatActiveChapterID,
-  useCurrentChatChapters,
-  useCurrentChatId,
-  useCurrentChatParticipants,
-} from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { Command, PencilLine, SendIcon } from "lucide-react";
 import React, { useState } from "react";
@@ -55,7 +49,6 @@ export const NoMessagePlaceholder: React.FC = () => {
   const inferenceService = useInferenceServiceFromContext();
   const currentChatParticipants = useCurrentChatParticipants();
   const { addChatMessage } = useChatActions();
-  const currentChatId = useCurrentChatId();
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

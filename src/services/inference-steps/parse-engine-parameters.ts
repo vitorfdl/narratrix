@@ -35,10 +35,6 @@ function parseOpenRouterParameters(rawParameters: Record<string, any>) {
   return parameters;
 }
 
-function parseParameters(rawParameters: Record<string, any>, { model }: Model["config"]) {
-  return rawParameters;
-}
-
 function parseOpenAIParameters(rawParameters: Record<string, any>, { model }: Model["config"]) {
   const newParameters: any = {};
 
@@ -116,6 +112,6 @@ export function parseEngineParameters(engine: Engine, modelConfig: Model["config
     // case "aws_bedrock":
     //   return parameters;
     default:
-      return parseParameters(newParameters, modelConfig || {});
+      return newParameters;
   }
 }

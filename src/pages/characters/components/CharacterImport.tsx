@@ -33,7 +33,6 @@ export interface CharacterImportHandle {
 export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImportProps>(({ onImportComplete, className = "" }, ref) => {
   const currentProfile = useCurrentProfile();
   const { fetchChatList } = useChatActions();
-  const [isDragging, setIsDragging] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const isImportingRef = useRef(false); // Synchronous import guard
   const importingFileRef = useRef<string | null>(null);
@@ -241,7 +240,7 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
         className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center transition-colors duration-200 min-h-[120px] ${
           isImporting ? "cursor-not-allowed opacity-60" : "cursor-pointer"
         } ${
-          isDragging
+          isImporting
             ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-background"
             : "border-border bg-card hover:bg-accent/50 hover:border-accent-foreground/50"
         }`}
@@ -255,8 +254,8 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
           }
         }}
       >
-        <Upload className={`h-8 w-8 mb-2 transition-colors duration-200 ${isDragging ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
-        <p className="font-medium text-center mb-1 text-foreground">{isDragging ? "Drop to import" : "Import Character"}</p>
+        <Upload className={`h-8 w-8 mb-2 transition-colors duration-200 ${isImporting ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
+        <p className="font-medium text-center mb-1 text-foreground">{isImporting ? "Importing..." : "Import Character"}</p>
         <p className="text-sm text-muted-foreground text-center">Drag & drop one or more character JSON/PNG files or click to browse</p>
         <p className="text-xs text-muted-foreground/80 text-center mt-1">(Supports Internal, V2, V3, PNG formats)</p>
         {importProgress && (
