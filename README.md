@@ -83,14 +83,14 @@ Narratrix is built with Tauri, providing native performance across platforms:
 - [x] Templates Management
 - [x] Chapter Creation
 - [x] Lorebooks
+- [x] Text Completion Support
+- [x] Import/Export (Chats, Templates, Characters)
 
 ### 🛠️ Features In Development
 
-- [ ] Text Completion Support
 - [ ] Agents Customization
 - [ ] Database Management
 - [ ] Scripting System
-- [ ] Import/Export (Chats, Templates, Characters)
 - [ ] Memory Management
 - [ ] Image Generation
 - [ ] Multiplayer Support
