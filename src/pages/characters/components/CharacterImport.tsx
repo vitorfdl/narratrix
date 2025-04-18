@@ -14,13 +14,13 @@ import { Character } from "@/schema/characters-schema";
 import { saveImage } from "@/services/file-system-service";
 import { extractCharacterSpecV2FromPng } from "@/services/imports/formats/character_spec_png";
 import { importCharacter, parseCharacterContent, validateAndTransformCharacterData } from "@/services/imports/import-character";
+import { fetchImageAsDataUrl } from "@/utils/image-utils";
 import { basename } from "@tauri-apps/api/path";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Upload } from "lucide-react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { toast } from "sonner";
-
 interface CharacterImportProps {
   onImportComplete?: (character: Character, chatFields?: any) => void;
   className?: string;
@@ -145,6 +145,27 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
             const fileContentString = decoder.decode(fileContentBinary);
             const parsedData = parseCharacterContent(fileContentString);
             validationResult = validateAndTransformCharacterData(parsedData, currentProfile.id);
+            // Handle avatar URL download for chara_card_v2 and similar formats
+            if (
+              validationResult.valid &&
+              validationResult.data &&
+              typeof parsedData === "object" &&
+              parsedData.data &&
+              typeof parsedData.data.avatar === "string"
+            ) {
+              const avatar = parsedData.data.avatar;
+              if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
+                try {
+                  const dataUrl = await fetchImageAsDataUrl(avatar);
+                  const avatarPath = await saveImage(dataUrl, validationResult.data.name, "characters");
+                  validationResult.data.avatar_path = avatarPath;
+                } catch (err) {
+                  toast.error("Failed to download avatar image", { description: err instanceof Error ? err.message : String(err) });
+                  // Fallback: clear avatar_path if download fails
+                  validationResult.data.avatar_path = null;
+                }
+              }
+            }
           } else {
             toast.error("Invalid file type", { description: "Please select a JSON or PNG file (.json, .png)" });
             failCount++;
