@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/UIStore";
+import AgentPage from "@/pages/agents/AgentPage";
 import Characters from "@/pages/characters/CharactersPage";
 import ChatPage from "@/pages/chat/ChatPage";
 import InferenceTemplatePage from "@/pages/formatTemplates/FormatTemplatePage";
@@ -24,6 +25,7 @@ const Content: React.FC<ContentProps> = (/* Remove prop */) => {
       {activeSection === "characters" && <Characters />}
       {activeSection === "lorebooks" && <LorebooksPage />}
       {activeSection === "settings" && <Settings />}
+      {activeSection === "agents" && <AgentPage />}
     </div>
   );
 };

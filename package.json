@@ -58,6 +58,7 @@
     "@uiw/codemirror-themes": "^4.23.10",
     "@uiw/react-codemirror": "^4.23.10",
     "@virtuoso.dev/message-list": "^1.9.15",
+    "@xyflow/react": "^12.6.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",

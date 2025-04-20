@@ -6,7 +6,8 @@ import {
   Menu,
   MessageCircle, // for Discord
   MessageSquare,
-  NotebookTabs, // for Chat/Worlds
+  NotebookTabs,
+  RabbitIcon, // for Chat/Worlds
   Settings, // for Settings
   Users,
 } from "lucide-react";
@@ -137,6 +138,12 @@ const Sidebar: React.FC<SidebarProps> = () => {
       id: "characters",
       label: "Characters",
       icon: <Users className="w-5 h-5" />,
+      isMainNav: true,
+    },
+    {
+      id: "agents",
+      label: "Agents",
+      icon: <RabbitIcon className="w-5 h-5" />,
       isMainNav: true,
     },
     { id: "lorebooks", label: "Lorebooks", icon: <Book className="w-5 h-5" />, isMainNav: true },
