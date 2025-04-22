@@ -19,13 +19,13 @@ const MESSAGE_BASE_CLASSES = {
   markdown: "select-text text-sm text-white text-sans",
   controlsContainer: "absolute bottom-0 w-full flex justify-between items-center translate-y-3",
   scriptTag:
-    "px-3 py-1 text-xs font-semibold font-mono rounded-full bg-primary/20 text-primary-foreground border border-primary/30 uppercase tracking-wider shadow-sm",
+    "px-3 py-1 text-xs font-semibold font-mono rounded-full bg-primary/20 text-primary-foreground border border-primary/30 capitalize tracking-wider shadow-sm",
 };
 
 const TYPE_CLASSES = {
   user: "flex-row-reverse",
   character: "",
-  system: "bg-muted mx-5 @md:mx-10 @lg:mx-40",
+  system: "bg-muted mx-5 @md:mx-10 @lg:mx-35",
 };
 
 const STATE_CLASSES = {
@@ -197,7 +197,7 @@ const MessageItem = ({
 
           {message.extra?.script && (
             <div className="flex justify-center items-center mb-2">
-              <div className={MESSAGE_BASE_CLASSES.scriptTag}>{message.extra.script}</div>
+              <div className={MESSAGE_BASE_CLASSES.scriptTag}>{message.extra.script.replace("_", " ")}</div>
             </div>
           )}
 

@@ -348,7 +348,7 @@ const WidgetChapters = () => {
             <h3 className="font-semibold text-xs truncate">{chapter.title}</h3>
           </div>
           {chapter.scenario && (
-            <p className="leading-tight text-[0.58rem] italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">
+            <p className="leading-tight text-xxs italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">
               {chapter.scenario.slice(0, 200)}
             </p>
           )}
@@ -356,7 +356,7 @@ const WidgetChapters = () => {
 
         <div className="flex items-center gap-2 ml-4">
           {chapter.id === activeChapterId && (
-            <Badge variant="outline" className="bg-primary/20 max-h-4 text-primary p-0.5 text-[0.5rem] font-mono border-primary">
+            <Badge variant="outline" className="bg-primary/20 max-h-4 text-primary p-0.5 text-xxs font-mono border-primary">
               Active
             </Badge>
           )}

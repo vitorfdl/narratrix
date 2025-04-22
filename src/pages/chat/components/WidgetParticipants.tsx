@@ -149,15 +149,15 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
                 <Trash2 className="!h-3 !w-3" />
               </Button>
             </div>
-            <div className="text-[0.6rem] text-muted-foreground capitalize truncate">{participant.type}</div>
+            <div className="text-xxs text-muted-foreground capitalize truncate">{participant.type}</div>
           </div>
         )}
 
         {/* Row 2: User Character if it exists */}
         {participant.type === "user" && (
           <div className="flex items-center justify-between mt-0 text-xs">
-            <div className="text-[0.6rem] text-muted-foreground capitalize truncate">You</div>
-            <div className="text-[0.6rem] capitalize truncate text-muted-foreground justify-between">{participant.type}</div>
+            <div className="text-xxs text-muted-foreground capitalize truncate">You</div>
+            <div className="text-xxs capitalize truncate text-muted-foreground justify-between">{participant.type}</div>
           </div>
         )}
       </div>
