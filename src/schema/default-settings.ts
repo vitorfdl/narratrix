@@ -27,7 +27,7 @@ export const defaultSettings = AppSettingsSchema.parse({
   },
   appearance: {
     theme: "dark",
-    fontSize: "medium",
+    fontSize: 16,
     fontFamily: "Inter",
     accentColor: "#7C3AED",
   },

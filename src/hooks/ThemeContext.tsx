@@ -9,20 +9,25 @@ export type Theme = AppSettings["appearance"]["theme"];
 interface ThemeState {
   // State
   theme: Theme;
+  fontSize: number;
+  originalFontSize: number | null;
 
   // Actions
   setTheme: (theme: Theme) => void;
+  setFontSize: (fontSize: number) => void;
 }
 
 /**
  * Theme store implemented with zustand
- * Uses localStorage persistence to maintain theme preference
+ * Uses localStorage persistence to maintain theme preference and font size
  */
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Initial state
       theme: "system",
+      fontSize: 16,
+      originalFontSize: null,
 
       // Actions
       setTheme: (theme) => {
@@ -36,6 +41,17 @@ export const useThemeStore = create<ThemeState>()(
           document.documentElement.classList.toggle("dark", theme === "dark");
         }
       },
+      setFontSize: (fontSize) => {
+        // Store the original font size if not already stored
+        const currentOriginal = get().originalFontSize;
+        if (currentOriginal === null) {
+          const computed = window.getComputedStyle(document.documentElement).fontSize;
+          const original = Number.parseInt(computed, 10) || 16;
+          set({ originalFontSize: original });
+        }
+        set({ fontSize });
+        document.documentElement.style.fontSize = `${fontSize}px`;
+      },
     }),
     {
       name: "theme-storage",
@@ -44,11 +60,11 @@ export const useThemeStore = create<ThemeState>()(
 );
 
 /**
- * Initialize theme on app load
+ * Initialize theme and font size on app load
  * This function needs to be called once when the app starts
  */
 export function initializeTheme(): void {
-  const { theme } = useThemeStore.getState();
+  const { theme, fontSize, setFontSize } = useThemeStore.getState();
 
   // Apply theme to document
   if (theme === "system") {
@@ -64,6 +80,9 @@ export function initializeTheme(): void {
   } else {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }
+
+  // Apply font size
+  setFontSize(fontSize ?? 16);
 }
 
 /**
@@ -71,6 +90,6 @@ export function initializeTheme(): void {
  * @deprecated Use useThemeStore directly instead
  */
 export function useTheme() {
-  const { theme, setTheme } = useThemeStore();
-  return { theme, setTheme };
+  const { theme, setTheme, fontSize, setFontSize, originalFontSize } = useThemeStore();
+  return { theme, setTheme, fontSize, setFontSize, originalFontSize };
 }
