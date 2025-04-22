@@ -289,21 +289,34 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
   );
 
   // Handle separator changes
-  const handleContextSeparatorChange = useCallback(
-    (value: string) => {
-      setContextSeparator(value);
-      debouncedUpdate();
-    },
-    [debouncedUpdate],
-  );
+  const handleContextSeparatorChange = useCallback((value: string) => {
+    setContextSeparator(value);
+  }, []);
 
-  const handleLorebookSeparatorChange = useCallback(
-    (value: string) => {
-      setLorebookSeparator(value);
-      debouncedUpdate();
-    },
-    [debouncedUpdate],
-  );
+  const handleLorebookSeparatorChange = useCallback((value: string) => {
+    setLorebookSeparator(value);
+  }, []);
+
+  // Debounced effect for separators
+  useEffect(() => {
+    if (isDisabled || !formatTemplateID || !currentTemplate) {
+      return;
+    }
+    const handler = setTimeout(() => {
+      updateFormatTemplate(formatTemplateID, {
+        prompts: prompts.map(({ type, content }) => ({ type, content })),
+        config: {
+          ...currentTemplate.config,
+          context_separator: contextSeparator,
+          lorebook_separator: lorebookSeparator,
+        },
+      }).catch((error) => {
+        console.error("Failed to update template:", error);
+      });
+    }, 400); // 400ms debounce
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextSeparator, lorebookSeparator]);
 
   // Filter available types that are not already used
   const availableTypes = useMemo(() => SYSTEM_PROMPT_TYPES.filter((type) => !prompts.some((prompt) => prompt.type === type)), [prompts.length]);
@@ -389,8 +402,9 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
                 <Label htmlFor="context-separator">Context Separator</Label>
                 <Input
                   value={contextSeparator}
-                  placeholder="\n\n"
+                  placeholder={"\n\n"}
                   onChange={(e) => handleContextSeparatorChange(e.target.value)}
+                  onBlur={() => debouncedUpdate()}
                   key={`context-separator-${formatTemplateID}`}
                   className="w-full resize-none"
                 />
@@ -400,8 +414,9 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
                 <Label htmlFor="lorebook-separator">Lorebook Separator</Label>
                 <Input
                   value={lorebookSeparator}
-                  placeholder="\n---\n"
+                  placeholder={"\n---\n"}
                   onChange={(e) => handleLorebookSeparatorChange(e.target.value)}
+                  onBlur={() => debouncedUpdate()}
                   key={`lorebook-separator-${formatTemplateID}`}
                   className="w-full resize-none"
                 />
