@@ -1,8 +1,9 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,13 +87,11 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
               <span className="text-xs text-muted-foreground">{estimateTokens(chapterData.scenario || "", 0)} tokens</span>
             </div>
             <MarkdownTextArea
-              key={`${idPrefix}scenario`}
               initialValue={chapterData.scenario || ""}
               editable={true}
               suggestions={promptReplacementSuggestionList}
               onChange={(value) => updateField("scenario", value)}
               placeholder="Describe the scenario of this chapter"
-              className="max-h-[20vh]"
             />
           </div>
 
@@ -116,7 +115,6 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
                   ? "Enter User instruction to generate the start message"
                   : "Enter the User's first message to begin the chapter."
               }
-              className="max-h-[20vh]"
             />
           </div>
 
@@ -519,7 +517,9 @@ const WidgetChapters = () => {
             <DialogDescription>Update your chapter settings and configuration.</DialogDescription>
           </DialogHeader>
 
-          {editingChapter && <ChapterForm chapterData={editingChapter} onChapterDataChange={setEditingChapter} isEditMode={true} />}
+          <DialogBody>
+            {editingChapter && <ChapterForm chapterData={editingChapter} onChapterDataChange={setEditingChapter} isEditMode={true} />}
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditingChapter(false)}>
