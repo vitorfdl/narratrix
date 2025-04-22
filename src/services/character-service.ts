@@ -2,6 +2,7 @@ import { formatDateTime } from "@/utils/date-time";
 import { z } from "zod";
 import {
   AgentSchema,
+  Character,
   CharacterSchema,
   CharacterUnion,
   CreateAgentSchema,
@@ -78,7 +79,7 @@ export async function createCharacter(
 }
 
 // Get a character by ID
-export async function getCharacterById(id: string): Promise<CharacterUnion | null> {
+export async function getCharacterById(id: string): Promise<Character | null> {
   const validId = uuidUtils.uuid().parse(id);
 
   const result = await selectDBQuery<any[]>("SELECT * FROM characters WHERE id = $1", [validId]);
@@ -104,7 +105,7 @@ export async function getCharacterById(id: string): Promise<CharacterUnion | nul
   character.created_at = new Date(character.created_at);
   character.updated_at = new Date(character.updated_at);
 
-  return character.type === "agent" ? AgentSchema.parse(character) : CharacterSchema.parse(character);
+  return CharacterSchema.parse(character);
 }
 
 // List characters with filtering
