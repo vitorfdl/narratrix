@@ -2,7 +2,7 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { Button } from "@/components/ui/button";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
-import { PencilLine, SendIcon } from "lucide-react";
+import { LayoutTemplateIcon, PencilLine, SendIcon, UserPlus } from "lucide-react";
 import React, { useState } from "react";
 
 export const NoMessagePlaceholder: React.FC = () => {
@@ -129,9 +129,23 @@ export const NoMessagePlaceholder: React.FC = () => {
         </div>
       )}
       {!currentChapter?.start_message && (
-        <div className="flex flex-row items-center gap-2 mt-10">
-          <PencilLine className="w-4 h-4 text-secondary-foreground" />
-          <span>Write your own first message</span>
+        <div className="flex flex-col items-center gap-4 mt-10 w-full max-w-xs">
+          {/* Step 1: Create a Chat Template */}
+          <div className="flex flex-row items-center gap-2 w-full">
+            <LayoutTemplateIcon className="w-4 h-4 text-secondary-foreground" />
+            <span className="font-medium">1. Create a Chat Template</span>
+          </div>
+          <div className="text-xs text-muted-foreground w-full pl-7 -mt-2 mb-2">Pick your model and your format</div>
+          {/* Step 2: Add a participant */}
+          <div className="flex flex-row items-center gap-2 w-full">
+            <UserPlus className="w-4 h-4 text-secondary-foreground" />
+            <span className="font-medium">2. Add a participant</span>
+          </div>
+          {/* Step 3: Write your first message */}
+          <div className="flex flex-row items-center gap-2 w-full">
+            <PencilLine className="w-4 h-4 text-secondary-foreground" />
+            <span className="font-medium">3. Write your first message</span>
+          </div>
         </div>
       )}
     </div>
