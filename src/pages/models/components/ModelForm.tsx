@@ -367,7 +367,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
         // Skip empty secret fields in edit mode to avoid overwriting with empty string
         if (mode === "edit" && field.field_type === "secret" && (!fieldValue || fieldValue === "")) {
-          continue; // Don't include this field in the configFields payload
+          configFields[field.key] = model?.config[field.key];
         }
 
         // Include other fields if they have a value
