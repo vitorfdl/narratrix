@@ -6,6 +6,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
 import type { Chat } from "@/schema/chat-schema";
 import { ChatTab, CreateChatParams } from "@/schema/chat-schema";
+import { createChatChapter, listChatChapters } from "@/services/chat-chapter-service";
 import { getChatById, listChats, updateChat } from "@/services/chat-service";
 import { useLocalChatTabs } from "@/utils/local-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -196,6 +197,8 @@ export default function ChatPage() {
           throw new Error("Original chat not found");
         }
 
+        const chapters = await listChatChapters({ chat_id: tabId });
+
         const duplicateChatData: CreateChatParams = {
           profile_id: originalChat.profile_id,
           name: `${originalChat.name} (Copy)`,
@@ -206,6 +209,12 @@ export default function ChatPage() {
         };
 
         const newChat = await createChat(duplicateChatData);
+        for (const chapter of chapters) {
+          await createChatChapter({
+            ...chapter,
+            chat_id: newChat.id,
+          });
+        }
 
         const updatedTabs = [...openTabIds, newChat.id];
         setOpenTabIds(updatedTabs);
