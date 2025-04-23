@@ -340,6 +340,7 @@ export function useInferenceService() {
 
     const characterPromptOverride = characterList.find((character) => character.id === characterId)?.system_override;
 
+    const character = characterList.find((character) => character.id === characterId);
     // Format the prompt
     const prompt = await formatPromptUtil({
       messageHistory: chatWithNames || [],
@@ -357,7 +358,7 @@ export function useInferenceService() {
         injectionPrompts: {
           summary: localSummarySettings.requestPrompt,
         },
-        character: characterList.find((character) => character.id === characterId),
+        character,
         user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
         chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
         extra: extraSuggestions,

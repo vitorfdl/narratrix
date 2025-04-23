@@ -69,12 +69,7 @@ const BaseCharacterTypeSchema = z.object({
 // Agent-specific schema
 export const AgentSchema = BaseCharacterTypeSchema.extend({
   type: z.literal("agent"),
-  custom: z
-    .object({
-      preserve_last_response: z.boolean().nullable().optional(),
-    })
-    .nullable()
-    .default({}),
+  custom: z.any().nullable().default({}),
   expressions: z.null(),
   character_manifest_id: z.null(),
 });
