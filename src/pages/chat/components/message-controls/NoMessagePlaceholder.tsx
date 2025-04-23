@@ -1,15 +1,25 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatParticipants } from "@/hooks/chatStore";
+import {
+  useChatActions,
+  useCurrentChatActiveChapterID,
+  useCurrentChatChapters,
+  useCurrentChatParticipants,
+  useCurrentChatUserCharacterID,
+} from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
+import { getCharacterById } from "@/services/character-service";
+import { replaceStringPlaceholders } from "@/services/inference-steps/replace-text";
 import { LayoutTemplateIcon, PencilLine, SendIcon, UserPlus } from "lucide-react";
 import React, { useState } from "react";
+import { toast } from "sonner";
 
 export const NoMessagePlaceholder: React.FC = () => {
   const currentChatChapters = useCurrentChatChapters();
   const activeChapterId = useCurrentChatActiveChapterID();
   const inferenceService = useInferenceServiceFromContext();
   const currentChatParticipants = useCurrentChatParticipants();
+  const userCharacterId = useCurrentChatUserCharacterID();
   const { addChatMessage } = useChatActions();
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +52,7 @@ export const NoMessagePlaceholder: React.FC = () => {
         if (!enabledParticipant) {
           throw new Error("No enabled chat participant found.");
         }
+
         // Create a system message placeholder for the intro (optional, for UI feedback)
         const systemMessage = await addChatMessage({
           character_id: enabledParticipant.id,
@@ -49,40 +60,39 @@ export const NoMessagePlaceholder: React.FC = () => {
           messages: ["Generating chapter intro..."],
           extra: { script: "start_chapter" },
         });
+
         // Start inference to generate the intro message
-        try {
-          await inferenceService.generateMessage({
-            existingMessageId: systemMessage.id,
-            messageIndex: 0,
-            userMessage: currentChapter.start_message,
-            characterId: enabledParticipant.id,
-            quietUserMessage: true,
-            extraSuggestions: {},
-          });
-        } catch (inferenceError) {
-          setError("Failed to generate chapter intro message.");
-          // Update the system message to show the error
-          await addChatMessage({
-            character_id: enabledParticipant.id,
-            type: "system",
-            messages: ["Failed to generate chapter intro. Please try again."],
-            extra: { script: "start_chapter" },
-          });
-          // Optionally log error
-          // eslint-disable-next-line no-console
-          console.error(inferenceError);
-        }
+        await inferenceService.generateMessage({
+          existingMessageId: systemMessage.id,
+          messageIndex: 0,
+          userMessage: currentChapter.start_message,
+          characterId: enabledParticipant.id,
+          quietUserMessage: true,
+          extraSuggestions: {},
+        });
       } else {
+        const characterID = currentChatParticipants?.find((p) => p.enabled)?.id!;
+        const character = await getCharacterById(characterID);
+        const userCharacter = await getCharacterById(userCharacterId || "");
+
+        const message = replaceStringPlaceholders(currentChapter!.start_message! || "", {
+          character: character || undefined,
+          chapter: currentChapter,
+          user_character: userCharacter || undefined,
+          extra: {},
+          censorship: {},
+        });
+
         // Default behavior: just add the system message with the start_message
         await addChatMessage({
           character_id: null,
           type: "system",
-          messages: [currentChapter!.start_message!],
+          messages: [message],
           extra: { script: "start_chapter" },
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to initiate chapter start message.");
+      toast.error(err instanceof Error ? err.message : "Failed to initiate chapter start message.");
       // Optionally log error
       // eslint-disable-next-line no-console
       console.error(err);
