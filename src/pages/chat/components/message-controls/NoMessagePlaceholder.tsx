@@ -70,27 +70,29 @@ export const NoMessagePlaceholder: React.FC = () => {
           quietUserMessage: true,
           extraSuggestions: {},
         });
-      } else {
-        const characterID = currentChatParticipants?.find((p) => p.enabled)?.id!;
-        const character = await getCharacterById(characterID);
-        const userCharacter = await getCharacterById(userCharacterId || "");
-
-        const message = replaceStringPlaceholders(currentChapter!.start_message! || "", {
-          character: character || undefined,
-          chapter: currentChapter,
-          user_character: userCharacter || undefined,
-          extra: {},
-          censorship: {},
-        });
-
-        // Default behavior: just add the system message with the start_message
-        await addChatMessage({
-          character_id: null,
-          type: "system",
-          messages: [message],
-          extra: { script: "start_chapter" },
-        });
+        return;
       }
+
+      // If auto-inference is not enabled, use the default behavior
+      const characterID = currentChatParticipants?.find((p) => p.enabled)?.id!;
+      const character = await getCharacterById(characterID);
+      const userCharacter = userCharacterId ? await getCharacterById(userCharacterId!) : undefined;
+
+      const message = replaceStringPlaceholders(currentChapter!.start_message! || "", {
+        character: character || undefined,
+        chapter: currentChapter,
+        user_character: userCharacter || undefined,
+        extra: {},
+        censorship: {},
+      });
+
+      // Default behavior: just add the system message with the start_message
+      await addChatMessage({
+        character_id: null,
+        type: "system",
+        messages: [message],
+        extra: { script: "start_chapter" },
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to initiate chapter start message.");
       // Optionally log error
