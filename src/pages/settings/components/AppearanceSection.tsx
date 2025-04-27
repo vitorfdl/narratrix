@@ -2,7 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StepButton } from "@/components/ui/step-button";
 import { useThemeStore } from "@/hooks/ThemeContext";
 import { AppSettings } from "@/schema/profiles-schema";
-import { Palette } from "lucide-react";
+import { ALargeSmallIcon, Palette } from "lucide-react";
 import React from "react";
 import { SettingItem, SettingSection } from "./ui/setting-section";
 
@@ -42,7 +42,7 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
         </Select>
       </SettingItem>
 
-      <SettingItem label="Font Size">
+      <SettingItem icon={<ALargeSmallIcon className="w-4 h-4" />} label="Font Size">
         <div className="flex items-center gap-3">
           <span
             className={`ml-2 px-2 py-0.5 rounded text-xxs text-muted-foreground font-medium border transition-colors
