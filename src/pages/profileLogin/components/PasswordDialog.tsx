@@ -95,7 +95,7 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({ open, onClose, onSubmit
             <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || !password.trim()}>
               {isLoading ? "Authenticating..." : "Unlock"}
             </Button>
           </DialogFooter>
