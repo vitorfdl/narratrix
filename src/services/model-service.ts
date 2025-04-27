@@ -197,34 +197,6 @@ export async function updateModel(
     return null;
   }
 
-  const manifest = await getModelManifestById(currentModel.manifest_id)!;
-
-  // If config is being updated, handle secret fields
-  if (updateData.config) {
-    // Process and encrypt any secret fields in the config
-    if (manifest && updateData.config) {
-      const secretFields = manifest.fields.filter((field) => field.field_type === "secret").map((field) => field.key);
-      // Create a new config object to avoid mutating the original
-      const processedConfig = { ...updateData.config };
-
-      // Encrypt each secret field
-      for (const key of secretFields) {
-        if (processedConfig[key]) {
-          try {
-            // Encrypt the secret value
-            processedConfig[key] = await encryptApiKey(processedConfig[key]);
-          } catch (error) {
-            console.error(`Failed to encrypt secret field ${key}:`, error);
-            throw new Error(`Failed to encrypt secret field ${key}: ${error}`);
-          }
-        }
-      }
-
-      // Replace the original config with the processed one
-      updateData.config = processedConfig;
-    }
-  }
-
   // Define field transformations
   const fieldMapping = {
     config: (value: any) => (typeof value === "string" ? value : JSON.stringify(value)),
