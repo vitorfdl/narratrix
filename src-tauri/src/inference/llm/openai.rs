@@ -188,11 +188,21 @@ pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
     let payload = create_chat_completion_payload(&model, messages, request)?;
 
     // Send the request using BYOT approach
-    let response: OpenAIValue = client
-        .chat()
-        .create_byot(payload)
-        .await
-        .context("Failed to create chat completion")?;
+    let response: OpenAIValue = match client.chat().create_byot(payload).await {
+        Ok(resp) => resp,
+        Err(e) => {
+            let err_msg = e.to_string();
+            if err_msg.contains("EOF while parsing") || err_msg.contains("unexpected end of file") {
+                return Err(anyhow!(
+                    "Failed to connect to the OpenAI endpoint: received an empty or invalid response. \
+                    The base_url may be incorrect, the endpoint may not exist, or the server is unreachable. \
+                    Please verify your base_url configuration. (Underlying error: {err_msg})"
+                ));
+            } else {
+                return Err(anyhow!("Failed to create chat completion: {err_msg}"));
+            }
+        }
+    };
 
     // Extract and return the response text
     match response["choices"][0]["message"]["content"].as_str() {
@@ -289,6 +299,15 @@ pub async fn converse_stream(
 
                 if delay_ms > 0 {
                     tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                }
+
+                if let Some(error_obj) = chunk.get("error") {
+                    let error_message = error_obj
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("Unknown error from upstream API");
+
+                    return Err(anyhow!("Upstream API error: {}", error_message));
                 }
             }
             Ok(Some(Err(e))) => {
@@ -452,6 +471,15 @@ pub async fn complete_stream(
 
                 if delay_ms > 0 {
                     tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                }
+
+                if let Some(error_obj) = chunk.get("error") {
+                    let error_message = error_obj
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("Unknown error from upstream API");
+
+                    return Err(anyhow!("Upstream API error: {}", error_message));
                 }
             }
             Ok(Some(Err(e))) => {

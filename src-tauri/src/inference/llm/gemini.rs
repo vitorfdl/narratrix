@@ -261,11 +261,25 @@ pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
     );
 
     // Send the request using create_byot
-    let response: GeminiCreateChatCompletionResponse = client
+    let response: GeminiCreateChatCompletionResponse = match client
         .chat()
         .create_byot(chat_request)
         .await
-        .context("Failed to connect with Gemini, verify your API Key, Model and Base URL")?;
+    {
+        Ok(resp) => resp,
+        Err(e) => {
+            let err_msg = e.to_string();
+            if err_msg.contains("EOF while parsing") || err_msg.contains("unexpected end of file") {
+                return Err(anyhow!(
+                    "Failed to connect to the Gemini endpoint: received an empty or invalid response. \
+                    The base_url may be incorrect, the endpoint may not exist, or the server is unreachable. \
+                    Please verify your base_url configuration. (Underlying error: {err_msg})"
+                ));
+            } else {
+                return Err(anyhow!("Failed to connect with Gemini, verify your API Key, Model and Base URL. (Underlying error: {err_msg})"));
+            }
+        }
+    };
 
     // Extract and return the response text
     match response.choices.first() {
