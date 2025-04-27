@@ -1,5 +1,12 @@
 import { cancelInferenceRequest, listenForInferenceResponses, queueInferenceRequest } from "@/commands/inference";
-import type { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
+import type {
+  InferenceCancelledResponse,
+  InferenceCompletedResponse,
+  InferenceMessage,
+  InferenceResponse,
+  InferenceStreamingResponse,
+  ModelSpecs,
+} from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
 import { parseEngineParameters } from "@/services/inference-steps/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,9 +25,9 @@ interface InferenceRequestState {
 }
 
 interface UseInferenceOptions {
-  onComplete?: (response: InferenceResponse, requestId: string) => void;
+  onComplete?: (response: InferenceCompletedResponse | InferenceCancelledResponse, requestId: string) => void;
   onError?: (error: any, requestId: string) => void;
-  onStream?: (partialResponse: InferenceResponse, requestId: string) => void;
+  onStream?: (partialResponse: InferenceStreamingResponse, requestId: string) => void;
 }
 
 interface InferenceParams {

@@ -32,15 +32,43 @@ const InferenceRequestSchema = z.object({
 
 type InferenceRequest = z.infer<typeof InferenceRequestSchema>;
 
-const InferenceResponseSchema = z.object({
-  request_id: z.string(),
-  status: z.enum(["completed", "error", "cancelled", "streaming"]),
-  result: z.any().optional(),
-  error: z.string().optional(),
+const StreamingResultSchema = z.object({
+  text: z.string().optional(),
+  reasoning: z.string().optional(),
+  full_response: z.string().optional(),
 });
 
-type InferenceResponse = z.infer<typeof InferenceResponseSchema>;
+const InferenceResponseSchema = z.discriminatedUnion("status", [
+  z.object({
+    request_id: z.string(),
+    status: z.literal("completed"),
+    result: StreamingResultSchema,
+    error: z.undefined().optional(),
+  }),
+  z.object({
+    request_id: z.string(),
+    status: z.literal("streaming"),
+    result: StreamingResultSchema,
+    error: z.undefined().optional(),
+  }),
+  z.object({
+    request_id: z.string(),
+    status: z.literal("error"),
+    result: z.undefined().optional(),
+    error: z.string(),
+  }),
+  z.object({
+    request_id: z.string(),
+    status: z.literal("cancelled"),
+    result: StreamingResultSchema.optional(),
+    error: z.string().optional(),
+  }),
+]);
 
+type InferenceResponse = z.infer<typeof InferenceResponseSchema>;
+type InferenceCompletedResponse = Extract<InferenceResponse, { status: "completed" }>;
+type InferenceCancelledResponse = Extract<InferenceResponse, { status: "cancelled" }>;
+type InferenceStreamingResponse = Extract<InferenceResponse, { status: "streaming" }>;
 // Model specifications for controlling concurrency
 const ModelSpecsSchema = z.object({
   id: z.string(),
@@ -54,4 +82,13 @@ type ModelSpecs = z.infer<typeof ModelSpecsSchema>;
 
 export { InferenceMessageSchema, InferenceRequestSchema, InferenceResponseSchema, InferenceToolCallSchema, ModelSpecsSchema };
 
-export type { InferenceMessage, InferenceRequest, InferenceResponse, InferenceToolCall, ModelSpecs };
+export type {
+  InferenceCancelledResponse,
+  InferenceCompletedResponse,
+  InferenceMessage,
+  InferenceRequest,
+  InferenceResponse,
+  InferenceStreamingResponse,
+  InferenceToolCall,
+  ModelSpecs,
+};
