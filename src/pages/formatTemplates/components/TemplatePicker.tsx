@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { sortAlphabetically } from "@/utils/sorting";
 import { ChevronsUpDown, CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 
@@ -99,10 +100,14 @@ export function TemplatePicker({
   };
 
   // Map templates to ComboboxItem format
-  const comboboxItems: ComboboxItem[] = templates.map((template) => ({
-    value: template.id,
-    label: template.name,
-  }));
+  // Map templates to ComboboxItem format and order by label (alphanumeric)
+  const comboboxItems: ComboboxItem[] = templates
+    .slice()
+    .sort((a, b) => sortAlphabetically(a.name, b.name))
+    .map((template) => ({
+      value: template.id,
+      label: template.name,
+    }));
 
   return (
     <>
