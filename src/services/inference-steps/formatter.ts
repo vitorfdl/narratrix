@@ -290,6 +290,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
       inferenceTemplate: config.inferenceTemplate,
       messages: limitedPrompt.inferenceMessages,
       chatConfig: config.chatConfig,
+      prefixOption,
     });
 
     return {

@@ -1,4 +1,5 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
+import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { PromptFormatterConfig } from "./formatter";
 import { applyTextReplacements } from "./replace-text";
@@ -8,6 +9,7 @@ interface ApplyInferenceTemplateConfig {
   inferenceTemplate: InferenceTemplate;
   messages: InferenceMessage[];
   chatConfig: PromptFormatterConfig["chatConfig"];
+  prefixOption?: FormatTemplate["config"]["settings"]["prefix_messages"];
 }
 
 // Helper function to replace literal '\\n' with actual newline characters '\n'
@@ -16,7 +18,7 @@ function processNewlines(str: string): string {
 }
 
 async function applyInferenceTemplate(params: ApplyInferenceTemplateConfig): Promise<{ text: string; customStopStrings: string[] }> {
-  const { systemPrompt, inferenceTemplate, messages, chatConfig } = params;
+  const { systemPrompt, inferenceTemplate, messages, chatConfig, prefixOption } = params;
   const { config } = inferenceTemplate;
   const formattedParts: string[] = [];
 
@@ -75,7 +77,8 @@ async function applyInferenceTemplate(params: ApplyInferenceTemplateConfig): Pro
   }
 
   const finalAssistantPrefill = processNewlines(config.assistantMessageFormatting.prefill);
-  return { text: `${basePrompt}${assistantPrefix}${finalAssistantPrefill}`, customStopStrings: formattedStopStrings };
+  const characterNamePrefix = prefixOption === "characters" || prefixOption === "always" ? `${chatConfig?.character?.name}: ` : "";
+  return { text: `${basePrompt}${assistantPrefix}${characterNamePrefix}${finalAssistantPrefill}`, customStopStrings: formattedStopStrings };
 }
 
 export { applyInferenceTemplate };
