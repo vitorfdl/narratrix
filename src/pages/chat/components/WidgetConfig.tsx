@@ -25,6 +25,7 @@ import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { NewChatTemplateParams } from "@/services/template-chat-service";
 import { useSessionCurrentFormatTemplate } from "@/utils/session-storage";
+import { sortAlphabetically } from "@/utils/sorting";
 import { configFields } from "../manifests/configFields";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
@@ -165,10 +166,12 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   }, [formatTemplates]);
 
   const lorebookOptions = useMemo(() => {
-    return lorebooks.map((lorebook) => ({
-      label: lorebook.name,
-      value: lorebook.id,
-    }));
+    return lorebooks
+      .map((lorebook) => ({
+        label: lorebook.name,
+        value: lorebook.id,
+      }))
+      .sort((a, b) => sortAlphabetically(a.label, b.label));
   }, [lorebooks]);
 
   // Check if component should be disabled (no template selected)
@@ -293,7 +296,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     .map((model: Model) => ({
       label: model.name,
       value: model.id,
-    }));
+    }))
+    .sort((a, b) => sortAlphabetically(a.label, b.label));
 
   /**
    * Handles adding a field to the active fields list.
@@ -654,7 +658,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
                         return (
                           <CommandItem
                             key={option.value}
-                            value={option.value}
+                            value={option.label}
                             className="text-xs"
                             onSelect={() => {
                               setSelectedLorebookList((prev) => (isSelected ? prev.filter((id) => id !== option.value) : [...prev, option.value]));
