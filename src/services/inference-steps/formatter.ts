@@ -198,7 +198,12 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
   const result = [...messages];
 
   // Process each custom prompt based on its position
+  // biome-ignore lint/complexity/noForEach: I want to use foreach here
   customPrompts.forEach((customPrompt) => {
+    if (!customPrompt.enabled) {
+      return;
+    }
+
     const promptMessage: InferenceMessage = {
       role: customPrompt.role === "character" ? "assistant" : customPrompt.role === "system" ? ("system" as any) : "user",
       text: customPrompt.prompt,

@@ -477,6 +477,14 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     setCustomPrompts(reorderedPrompts);
   };
 
+  const handleToggleCustomPromptEnabled = (promptId: string, enabled: boolean) => {
+    if (isDisabled) {
+      return;
+    }
+
+    setCustomPrompts((prev) => prev.map((prompt) => (prompt.id === promptId ? { ...prompt, enabled } : prompt)));
+  };
+
   /**
    * Gets the custom prompt to edit.
    *
@@ -767,6 +775,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
           onEdit={handleEditCustomPrompt}
           onDelete={handleDeleteCustomPrompt}
           onReorder={handleReorderCustomPrompts}
+          onToggleEnabled={handleToggleCustomPromptEnabled}
+          disabled={isDisabled}
         />
 
         <CustomPromptModal
