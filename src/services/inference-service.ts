@@ -202,7 +202,9 @@ export function useInferenceService() {
         // Helper to apply conditional formatting based on FormatTemplate settings
 
         const rawText = response.result?.full_response || response.result?.text || streamingState.current.accumulatedText;
-        const finalText = formatFinalText(rawText, streamingState.current.formatTemplate);
+        const { text: finalText, reasoning: finalReasoning } = formatFinalText(rawText, streamingState.current.formatTemplate);
+
+        streamingState.current.accumulatedReasoning = finalReasoning || "";
         // Final update to the message
         inferenceUpdateMessageID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0);
 
