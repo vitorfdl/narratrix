@@ -1,30 +1,20 @@
-import { CreateLorebookEntryParams, CreateLorebookParams, Lorebook } from "@/schema/lorebook-schema";
+import { CreateLorebookEntryParams, CreateLorebookParams, Lorebook, createLorebookEntrySchema, createLorebookSchema } from "@/schema/lorebook-schema";
+import { z } from "zod";
 import { createLorebook, createLorebookEntry } from "../lorebook-service";
 import { LorebookSpecV2, transformLorebookSpecV2, validateLorebookSpecV2 } from "./formats/lorebook_spec_v2";
 
-export interface LorebookImportFile {
-  name: string;
-  description?: string | null; // Allow null
-  category?: "ruleset" | "character" | "world" | null;
-  tags?: string[];
-  entries?: {
-    comment: string;
-    content: string;
-    keywords?: string[];
-    enabled?: boolean;
-    constant?: boolean;
-    case_sensitive?: boolean;
-    match_partial_words?: boolean;
-    priority?: number;
-    depth?: number;
-    group_key?: string | null;
-    // Add missing fields from CreateLorebookEntryParams needed after transformation
-    insertion_type?: "lorebook_top" | "lorebook_bottom" | "user" | "assistant";
-    trigger_chance?: number;
-    min_chat_messages?: number;
-    extra?: Record<string, any>;
-  }[];
-}
+/**
+ * Supported lorebook import formats.
+ */
+export type LorebookImportFormat = "internal_json" | "v2" | "unknown";
+
+/**
+ * Schema for internal lorebook import format (V1).
+ * This extends the base lorebook schema to include entries.
+ */
+const internalLorebookImportSchema = createLorebookSchema.extend({
+  entries: z.array(createLorebookEntrySchema.omit({ lorebook_id: true })).optional(),
+});
 
 /**
  * Result type for validation and transformation.
@@ -32,100 +22,83 @@ export interface LorebookImportFile {
 interface ValidationTransformationResult {
   valid: boolean;
   errors: string[];
-  data: LorebookImportFile | null;
-  format: "v1" | "v2" | "unknown";
+  data: z.infer<typeof internalLorebookImportSchema> | null;
+  format: LorebookImportFormat;
 }
 
 /**
- * Validates a potential V1 lorebook import file format.
+ * Validates the internal JSON lorebook format using Zod.
  * @param data - The parsed JSON data
- * @returns ValidationResult indicating if the file is valid and any error messages
+ * @returns ValidationTransformationResult
  */
-function validateInternalJSON(data: any): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    // Basic object check, differentiating from V2's root structure
-    errors.push("Data is not a valid V1 object structure.");
-    return { valid: false, errors };
+function validateInternalLorebookJSON(data: any): ValidationTransformationResult {
+  const parseResult = internalLorebookImportSchema.safeParse(data);
+  if (parseResult.success) {
+    return {
+      valid: true,
+      errors: [],
+      data: parseResult.data,
+      format: "internal_json",
+    };
   }
-
-  // Check required fields for V1
-  if (!data.name || typeof data.name !== "string") {
-    errors.push("V1 format error: Missing or invalid lorebook name");
-  }
-
-  // Optional category validation for V1
-  if (data.category && !["ruleset", "character", "world", null].includes(data.category)) {
-    errors.push("V1 format error: Invalid category value");
-  }
-
-  // Validate entries if present for V1
-  if (data.entries !== undefined) {
-    if (!Array.isArray(data.entries)) {
-      errors.push("V1 format error: 'entries' field must be an array.");
-    } else {
-      data.entries.forEach((entry: any, index: number) => {
-        if (!entry || typeof entry !== "object") {
-          errors.push(`Entry ${index + 1}: Invalid entry format.`);
-          return;
-        }
-        if (!entry.comment || typeof entry.comment !== "string") {
-          errors.push(`Entry ${index + 1}: Missing or invalid comment/title`);
-        }
-        if (!entry.content || typeof entry.content !== "string") {
-          errors.push(`Entry ${index + 1}: Missing or invalid content`);
-        }
-        // Add more specific V1 entry field validations if necessary
-      });
-    }
-  }
-
-  // If no errors were found specifically indicating V1 structure is broken, assume it might be V1.
-  // Stricter validation could check for the *absence* of V2-specific fields like top-level `entries` object key.
   return {
-    valid: errors.length === 0,
-    errors,
+    valid: false,
+    errors: parseResult.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`),
+    data: null,
+    format: "internal_json",
   };
 }
 
 /**
  * Attempts to validate and transform the parsed lorebook data, detecting its format (V1 or V2).
  * @param data - The parsed JSON data from the file.
+ * @param profileId - The profile ID to associate the lorebook with.
  * @param fileName - The name of the imported file.
  * @returns A result object containing the validation status, errors, transformed data (if valid), and detected format.
  */
-export function validateAndTransformLorebookData(data: any, fileName: string): ValidationTransformationResult {
-  // 1. Try validating as V1
-  const v1Validation = validateInternalJSON(data);
-  if (v1Validation.valid) {
-    // Assume it's V1 if basic structure matches
-    return {
-      valid: true,
-      errors: [],
-      data: data as LorebookImportFile, // Cast as it passed V1 validation
-      format: "v1",
-    };
+export function validateAndTransformLorebookData(data: any, profileId: string, fileName: string): ValidationTransformationResult {
+  // 1. Try validating as internal JSON (V1)
+  const internalResult = validateInternalLorebookJSON({ ...data, profile_id: profileId });
+  if (internalResult.valid) {
+    return internalResult;
   }
 
-  // 2. If not V1, try validating as V2
+  // 2. Try validating as V2
   const v2Validation = validateLorebookSpecV2(data);
   if (v2Validation.valid) {
-    // If V2 validation passes, transform it
     const transformedData = transformLorebookSpecV2(data as LorebookSpecV2, fileName);
+    // Transform to match our internal schema structure with proper typing
+    const internalData: z.infer<typeof internalLorebookImportSchema> = {
+      profile_id: profileId,
+      name: transformedData.name,
+      description: transformedData.description,
+      category: transformedData.category,
+      tags: transformedData.tags,
+      allow_recursion: transformedData.allow_recursion,
+      max_recursion_depth: transformedData.max_recursion_depth,
+      max_depth: transformedData.max_depth,
+      max_tokens: transformedData.max_tokens,
+      group_keys: transformedData.group_keys,
+      extra: transformedData.extra,
+      entries: transformedData.entries,
+    };
+
     return {
       valid: true,
       errors: [],
-      data: transformedData,
+      data: internalData,
       format: "v2",
     };
   }
 
-  // 3. If neither validation passes, report combined errors (prioritize V1 errors if both failed)
-  const combinedErrors = [...new Set([...v1Validation.errors, ...v2Validation.errors])]; // Simple combination
+  // 3. Unknown format
   return {
     valid: false,
-    errors: combinedErrors.length > 0 ? combinedErrors : ["Unknown file format or invalid structure."],
+    errors: [
+      ...internalResult.errors,
+      ...v2Validation.errors,
+      "Unknown or unsupported lorebook file format. Only internal JSON and V2 formats are currently supported.",
+    ],
     data: null,
     format: "unknown",
   };
@@ -134,33 +107,31 @@ export function validateAndTransformLorebookData(data: any, fileName: string): V
 /**
  * Process a lorebook file (V1 or V2) and import it into the database.
  * Assumes data has been validated and transformed by `validateAndTransformLorebookData`.
- * @param transformedData - The lorebook data in the internal `LorebookImportFile` format.
- * @param profileId - The profile ID to associate the lorebook with.
+ * @param validatedData - The lorebook data validated by Zod schemas.
  * @returns The imported lorebook.
- * @throws If `transformedData` is null or invalid.
+ * @throws If `validatedData` is null or invalid.
  */
-export async function importLorebook(transformedData: LorebookImportFile, profileId: string): Promise<Lorebook> {
-  // Create the lorebook
+export async function importLorebook(validatedData: z.infer<typeof internalLorebookImportSchema>): Promise<Lorebook> {
+  // Create the lorebook using the validated data directly
   const lorebookData: CreateLorebookParams = {
-    profile_id: profileId,
-    name: transformedData.name,
-    description: transformedData.description || null,
-    category: transformedData.category || null,
-    tags: transformedData.tags || [],
-    // Apply defaults from schema if not provided by transformed data
-    allow_recursion: false,
-    max_recursion_depth: 25,
-    max_depth: 25,
-    max_tokens: 1000,
-    group_keys: [],
-    extra: {},
+    profile_id: validatedData.profile_id,
+    name: validatedData.name,
+    description: validatedData.description,
+    category: validatedData.category,
+    tags: validatedData.tags,
+    allow_recursion: validatedData.allow_recursion,
+    max_recursion_depth: validatedData.max_recursion_depth,
+    max_depth: validatedData.max_depth,
+    max_tokens: validatedData.max_tokens,
+    group_keys: validatedData.group_keys,
+    extra: validatedData.extra,
   };
 
   const lorebook = await createLorebook(lorebookData);
 
   // Create entries if present
-  if (transformedData.entries && transformedData.entries.length > 0) {
-    for (const entry of transformedData.entries) {
+  if (validatedData.entries && validatedData.entries.length > 0) {
+    for (const entry of validatedData.entries) {
       const entryData: CreateLorebookEntryParams = {
         lorebook_id: lorebook.id,
         comment: entry.comment,

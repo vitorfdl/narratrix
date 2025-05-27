@@ -1,5 +1,16 @@
 import { LorebookEntry } from "@/schema/lorebook-schema";
-import { LorebookImportFile } from "../import-lorebook";
+import { z } from "zod";
+
+// Import the schema from the main import file
+import { createLorebookEntrySchema, createLorebookSchema } from "@/schema/lorebook-schema";
+
+// Define the entry type without lorebook_id
+type LorebookEntryImportType = Omit<z.infer<typeof createLorebookEntrySchema>, "lorebook_id">;
+
+// Define the internal import schema type locally to avoid circular imports
+type InternalLorebookImportType = z.infer<typeof createLorebookSchema> & {
+  entries?: LorebookEntryImportType[];
+};
 
 /**
  * Interface representing a single entry in the Lorebook V2 specification.
@@ -91,15 +102,15 @@ export function validateLorebookSpecV2(data: any): { valid: boolean; errors: str
 }
 
 /**
- * Transforms data from Lorebook V2 format to the internal LorebookImportFile format.
+ * Transforms data from Lorebook V2 format to the internal lorebook import format.
  * @param data - The validated Lorebook V2 data.
  * @param fileName - The original filename, used as the lorebook name.
- * @returns The transformed data in LorebookImportFile format.
+ * @returns The transformed data in internal import format.
  */
-export function transformLorebookSpecV2(data: LorebookSpecV2, fileName: string): LorebookImportFile {
+export function transformLorebookSpecV2(data: LorebookSpecV2, fileName: string): Omit<InternalLorebookImportType, "profile_id"> {
   const lorebookName = fileName.replace(/\.json$/i, ""); // Remove .json extension for the name
 
-  const transformedEntries = Object.values(data.entries).map((entry) => {
+  const transformedEntries: LorebookEntryImportType[] = Object.values(data.entries).map((entry) => {
     // --- Insertion Type Mapping ---
     let insertion_type: LorebookEntry["insertion_type"];
     switch (entry.position) {
@@ -143,14 +154,21 @@ export function transformLorebookSpecV2(data: LorebookSpecV2, fileName: string):
       // Add defaults for fields not in V2 spec
       min_chat_messages: 1,
       extra: {},
+      vector_content: null,
     };
   });
 
   return {
     name: lorebookName,
-    category: "world", // Default category for V2 imports
+    category: "world" as const, // Default category for V2 imports
     description: `Imported from ${fileName}`, // Optional: Add a default description
     tags: [], // No direct mapping for tags in V2 spec
+    allow_recursion: false,
+    max_recursion_depth: 25,
+    max_depth: 25,
+    max_tokens: 1000,
+    group_keys: [],
+    extra: {},
     entries: transformedEntries,
   };
 }
