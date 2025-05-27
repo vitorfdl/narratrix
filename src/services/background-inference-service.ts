@@ -12,6 +12,7 @@ import { formatPrompt } from "./inference-steps/formatter";
 import { removeNestedFields } from "./inference-steps/remove-nested-fields";
 import { Model, getModelById } from "./model-service";
 import { getChatTemplateById } from "./template-chat-service";
+import { getFormatTemplateById } from "./template-format-service";
 import { getInferenceTemplateById } from "./template-inference-service";
 
 /**
@@ -180,26 +181,21 @@ export function useBackgroundInference() {
         }
 
         const template = await getInferenceTemplateById(model.inference_template_id || "").catch(() => null);
+        const formatTemplate = await getFormatTemplateById(chatTemplate.format_template_id || "").catch(() => null);
 
         // Create inference message
         const messages: ChatMessage[] = [];
         const activeChapter = await getChatChapterById(currentChapterID || "").catch(() => null);
 
         const characterList = await listCharacters(currentProfile!.id);
+
         const promptResult = await formatPrompt({
           messageHistory: messages,
           userPrompt: prompt,
           modelSettings: model,
           inferenceTemplate: template,
-          chatTemplate: {
-            custom_prompts: [],
-            config: {
-              ...chatTemplate?.config,
-              // max_context: parameters?.max_context || 2048,
-              // max_tokens: parameters?.max_tokens || 50,
-              // max_depth: parameters?.max_depth || 2,
-            },
-          },
+          formatTemplate,
+          chatTemplate,
           systemOverridePrompt: systemPrompt,
           chatConfig: {
             character: characterList.find((character) => character.id === context?.characterID),
