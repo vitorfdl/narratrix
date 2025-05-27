@@ -53,7 +53,7 @@ function validateInternalCharacterJSON(data: any): ValidationTransformationResul
  */
 export function validateAndTransformCharacterData(data: any, profileId: string): ValidationTransformationResult {
   // 1. Try validating as internal JSON
-  const internalResult = validateInternalCharacterJSON(data);
+  const internalResult = validateInternalCharacterJSON({ ...data, profile_id: profileId });
   if (internalResult.valid) {
     return internalResult;
   }
