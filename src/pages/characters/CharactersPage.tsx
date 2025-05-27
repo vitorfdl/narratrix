@@ -138,10 +138,6 @@ export default function Characters() {
         return;
       }
 
-      // Check if character has lorebook or avatar (for PNG export)
-      const hasLorebook = !!character.lorebook_id;
-      const hasAvatar = !!character.avatar_path;
-
       // Always show options dialog for characters to allow format selection
       setPendingExportCharacterId(characterId);
       setIsExportOptionsDialogOpen(true);

@@ -22,15 +22,14 @@ export async function exportLorebook(lorebookId: string, fileName?: string): Pro
       throw new Error("Lorebook not found");
     }
 
-    // Prepare the lorebook for export
-    const exportedLorebook = structuredClone(lorebook);
+    const exportedLorebook: any = structuredClone(lorebook);
 
     // Clean up the lorebook data for export
     delete exportedLorebook.profile_id;
 
     // Clean up entries data for export
     if (exportedLorebook.entries) {
-      exportedLorebook.entries = exportedLorebook.entries.map((entry) => ({
+      exportedLorebook.entries = exportedLorebook.entries.map((entry: any) => ({
         ...entry,
         export_type: "lorebook_entry" as ExportType,
         profile_id: undefined,

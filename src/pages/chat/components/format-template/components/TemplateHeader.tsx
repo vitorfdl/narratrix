@@ -14,7 +14,7 @@ import { useDebouncedCallback } from "use-debounce";
 interface TemplateHeaderProps {
   formatTemplateID: string | null;
   // Tell the parent that the template has changed
-  onTemplateChange: (templateId: string) => void;
+  onTemplateChange: (templateId: string | null) => void;
 }
 
 export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateHeaderProps) {
@@ -100,7 +100,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   );
 
   // Handler for template selection
-  const handleTemplateSelect = (templateId: string) => {
+  const handleTemplateSelect = (templateId: string | null) => {
     if (templateId !== formatTemplateID) {
       onTemplateChange(templateId);
     }
