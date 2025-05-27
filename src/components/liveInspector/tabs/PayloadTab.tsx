@@ -85,15 +85,6 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
     }
   }, [activeTab, selectedRequestId, scrollToBottom, userScrolled]);
 
-  // Copy to clipboard function
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      console.error("Failed to copy text: ", err);
-    }
-  };
-
   // Toggle message collapse
   const toggleMessageCollapse = (index: number) => {
     const newCollapsed = new Set(collapsedMessages);
