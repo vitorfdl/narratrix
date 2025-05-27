@@ -5,8 +5,7 @@ import {
   Heart, // for Patreon
   Menu,
   MessageCircle, // for Discord
-  MessageSquare,
-  NotebookTabs, // for Chat/Worlds
+  MessageSquare, // for Chat/Worlds
   Settings, // for Settings
   Users,
 } from "lucide-react";
@@ -122,24 +121,18 @@ const Sidebar: React.FC<SidebarProps> = () => {
   const mainNavItems: NavItem[] = [
     { id: "models", label: "Models", icon: <BoxIcon className="w-5 h-5" />, isMainNav: true },
     {
-      id: "inference",
-      label: "Formatting Templates",
-      icon: <NotebookTabs className="w-5 h-5" />,
-      isMainNav: true,
-    },
-    {
-      id: "chat",
-      label: "Chat / Worlds",
-      icon: <MessageSquare className="w-5 h-5" />,
-      isMainNav: true,
-    },
-    {
       id: "characters",
       label: "Characters",
       icon: <Users className="w-5 h-5" />,
       isMainNav: true,
     },
     { id: "lorebooks", label: "Lorebooks", icon: <Book className="w-5 h-5" />, isMainNav: true },
+    {
+      id: "chat",
+      label: "Chat / Worlds",
+      icon: <MessageSquare className="w-5 h-5" />,
+      isMainNav: true,
+    },
   ];
 
   const bottomNavItems: NavItem[] = [
