@@ -1,3 +1,4 @@
+import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -6,10 +7,17 @@ import { Label } from "@/components/ui/label";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
+import {
+  importInferenceTemplate,
+  parseInferenceTemplateContent,
+  validateAndTransformInferenceTemplateData,
+} from "@/services/imports/import-inference-template";
+import { getInferenceTemplateById } from "@/services/template-inference-service";
+import { ExportType, exportSingleToJsonFile } from "@/utils/export-utils";
 import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useDebouncedCallback } from "use-debounce";
-import { TemplatePicker } from "../../formatTemplates/components/TemplatePicker";
 // Helper component for labeled input to reduce nesting
 interface LabeledInputProps {
   label: string;
@@ -87,7 +95,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
   const setInstructTemplateID = (id: string | null) => {
     onChange(id);
   };
-  const { updateInferenceTemplate, createInferenceTemplate, deleteInferenceTemplate } = useTemplateActions();
+  const { updateInferenceTemplate, createInferenceTemplate, deleteInferenceTemplate, fetchInferenceTemplates } = useTemplateActions();
   const templateList = useInferenceTemplateList();
   const currentProfile = useCurrentProfile();
 
@@ -240,6 +248,91 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
     [updateInferenceTemplate, instructTemplateID],
   );
 
+  const handleImport = useCallback(
+    async (fileName: string, templateData: { [key: string]: any }) => {
+      try {
+        if (!currentProfile?.id) {
+          toast.error("Import failed", {
+            description: "No profile selected. Please select a profile before importing.",
+          });
+          return;
+        }
+
+        // Parse and validate the template data
+        const parsedData = parseInferenceTemplateContent(JSON.stringify(templateData));
+        const validationResult = validateAndTransformInferenceTemplateData(parsedData, currentProfile.id);
+
+        if (!validationResult.valid || !validationResult.data) {
+          toast.error("Import failed", {
+            description: `Invalid template format: ${validationResult.errors.join(", ")}`,
+          });
+          return;
+        }
+
+        // Use the fileName as the template name if the imported data doesn't have a name
+        if (!validationResult.data.name || validationResult.data.name.trim() === "") {
+          validationResult.data.name = fileName;
+        }
+
+        // Import the template
+        const importedTemplate = await importInferenceTemplate(validationResult.data);
+
+        // Select the newly imported template
+        onChange(importedTemplate.id);
+
+        // Show success message with format info
+        const formatMessage = validationResult.format === "sillytavern" ? " (SillyTavern format)" : "";
+        toast.success("Template imported successfully", {
+          description: `"${importedTemplate.name}" has been imported${formatMessage}.`,
+        });
+      } catch (error) {
+        console.error("Failed to import template:", error);
+        toast.error("Import failed", {
+          description: error instanceof Error ? error.message : "An unexpected error occurred during import.",
+        });
+      } finally {
+        await fetchInferenceTemplates({ profile_id: currentProfile?.id || "" });
+      }
+    },
+    [currentProfile?.id, onChange, fetchInferenceTemplates],
+  );
+
+  const handleExport = useCallback(async (templateId: string) => {
+    if (!templateId) {
+      return;
+    }
+
+    try {
+      const template = await getInferenceTemplateById(templateId);
+      if (!template) {
+        toast.error("Export failed", {
+          description: "Template not found.",
+        });
+        return;
+      }
+
+      // Create a clean copy for export (remove profile_id and timestamps)
+      const exportTemplate = {
+        name: template.name,
+        config: template.config,
+        updated_at: template.updated_at,
+      };
+
+      // Use the export utility to handle the export
+      const exportType: ExportType = "instruction_template";
+      const success = await exportSingleToJsonFile(exportTemplate, exportType, `inference_template_${template.name.replace(/[^a-zA-Z0-9]/g, "_")}`);
+
+      if (!success) {
+        console.warn("Export was cancelled or failed");
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Export failed", {
+        description: error instanceof Error ? error.message : "An unexpected error occurred during export.",
+      });
+    }
+  }, []);
+
   // Sync local state with the selected template from the store
   useEffect(() => {
     if (currentTemplate && !isUpdating.current) {
@@ -291,8 +384,8 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
               onDelete={handleDeleteTemplate}
               onNewTemplate={handleNewTemplate}
               onEditName={handleEditName}
-              onImport={() => {}}
-              onExport={() => {}}
+              onImport={handleImport}
+              onExport={handleExport}
               disabled={disabled}
               className="w-full"
             />
