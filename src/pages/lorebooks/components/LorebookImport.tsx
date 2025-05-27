@@ -60,7 +60,7 @@ export const LorebookImport = forwardRef<LorebookImportHandle, LorebookImportPro
             return;
           }
         }
-        const importedLorebook = await importLorebook(validationResult.data, currentProfile.id);
+        const importedLorebook = await importLorebook(validationResult.data);
         await loadLorebooks(currentProfile.id);
         toast.success("Lorebook imported successfully", {
           description: `${importedLorebook.name} (Format: ${validationResult.format}) has been imported with ${validationResult.data.entries?.length || 0} entries.`,
@@ -113,7 +113,7 @@ export const LorebookImport = forwardRef<LorebookImportHandle, LorebookImportPro
         const decoder = new TextDecoder("utf-8");
         const fileContentString = decoder.decode(fileContentBinary);
         const parsedData = parseLorebookContent(fileContentString);
-        const validationResult = validateAndTransformLorebookData(parsedData, fileName);
+        const validationResult = validateAndTransformLorebookData(parsedData, currentProfile.id, fileName);
         if (!validationResult.valid || !validationResult.data) {
           toast.error("Invalid lorebook file", {
             description: `Format: ${validationResult.format}. Errors: ${validationResult.errors.join("; ")}`,
