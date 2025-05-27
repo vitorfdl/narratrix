@@ -123,20 +123,38 @@ interface CreateSystemPromptConfig {
   lorebookContent?: LorebookContentResponse["replacers"];
   systemOverridePrompt?: string | null;
   contextSeparator?: string;
+  customPrompts?: ChatTemplateCustomPrompt[];
 }
 /**
  * Create system prompt from template
  */
 export function createSystemPrompt(config: CreateSystemPromptConfig): string | undefined {
-  const { systemPromptTemplate, chatConfig, lorebookContent, systemOverridePrompt, contextSeparator } = config;
+  const { systemPromptTemplate, chatConfig, lorebookContent, systemOverridePrompt, contextSeparator, customPrompts } = config;
 
-  if (!systemPromptTemplate || !systemPromptTemplate.config || systemPromptTemplate.prompts.length === 0) {
-    return systemOverridePrompt || undefined; // If no system prompt template is provided, return the system override prompt
-  }
+  let prompts = structuredClone(systemPromptTemplate?.prompts || []);
 
-  let prompts = structuredClone(systemPromptTemplate.prompts || []);
-  if (prompts.length === 0 && systemOverridePrompt) {
-    return systemOverridePrompt; // If no system prompt template is provided, return the system override prompt
+  if (customPrompts && customPrompts.length > 0) {
+    for (const customPrompt of customPrompts) {
+      if (customPrompt.role === "system") {
+        const systemPrompt = {
+          type: "custom-field" as any,
+          content: customPrompt.prompt,
+        };
+
+        if (customPrompt.position === "top") {
+          prompts.unshift(systemPrompt);
+        } else if (customPrompt.position === "bottom") {
+          prompts.push(systemPrompt);
+        } else if (customPrompt.position === "depth") {
+          const depth = customPrompt.depth || 1;
+          const insertPosition = Math.max(0, prompts.length - depth);
+          prompts.splice(insertPosition, 0, systemPrompt);
+        } else {
+          // Default behavior: insert at the beginning
+          prompts.unshift(systemPrompt);
+        }
+      }
+    }
   }
 
   const hasCharacter = !!chatConfig?.character && chatConfig?.character.type === "character";
@@ -200,12 +218,12 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
   // Process each custom prompt based on its position
   // biome-ignore lint/complexity/noForEach: I want to use foreach here
   customPrompts.forEach((customPrompt) => {
-    if (!customPrompt.enabled) {
+    if (!customPrompt.enabled || customPrompt.role === "system") {
       return;
     }
 
     const promptMessage: InferenceMessage = {
-      role: customPrompt.role === "character" ? "assistant" : customPrompt.role === "system" ? ("system" as any) : "user",
+      role: customPrompt.role === "character" ? "assistant" : "user",
       text: customPrompt.prompt,
     };
 
@@ -271,6 +289,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
 
   // Step 3: Create system prompt
   const rawSystemPrompt = createSystemPrompt({
+    customPrompts: config.chatTemplate?.custom_prompts?.filter((prompt) => prompt.role === "system"),
     systemPromptTemplate: config.formatTemplate,
     chatConfig: config.chatConfig,
     lorebookContent: lorebookContent.replacers,
