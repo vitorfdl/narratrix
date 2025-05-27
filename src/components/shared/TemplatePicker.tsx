@@ -8,9 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { sortAlphabetically } from "@/utils/sorting";
+import { basename, extname } from "@tauri-apps/api/path";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { ChevronsUpDown, CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
-import { useState } from "react";
-
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 export interface Template {
   id: string;
   name: string;
@@ -19,14 +22,15 @@ export interface Template {
 export interface TemplatePickerProps {
   templates?: Template[];
   selectedTemplateId: string | null;
-  onTemplateSelect: (templateId: string) => void;
+  onTemplateSelect: (templateId: string | null) => void;
   onDelete: (templateId: string) => void;
   onNewTemplate: (name: string, sourceTemplateId?: string) => void;
   onEditName: (templateId: string, name: string) => void;
-  onImport: () => void;
-  onExport: (templateId: string) => void;
+  onImport?: (fileName: string, templateData: { [key: string]: any }) => void;
+  onExport?: (templateId: string) => void;
   compact?: boolean;
   disabled?: boolean;
+  clearable?: boolean;
   className?: string;
 }
 
@@ -39,6 +43,7 @@ export function TemplatePicker({
   onEditName,
   onImport,
   onExport,
+  clearable = false,
   compact = false,
   disabled = false,
   className,
@@ -49,9 +54,11 @@ export function TemplatePicker({
   // Modal states
   const [isNewTemplateDialogOpen, setIsNewTemplateDialogOpen] = useState(false);
   const [isEditTemplateDialogOpen, setIsEditTemplateDialogOpen] = useState(false);
+  const [isDuplicateTemplateDialogOpen, setIsDuplicateTemplateDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
   const [isDropdownOpen, setisDropdownOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Handler functions
   const handleNewTemplateClick = () => {
@@ -71,6 +78,12 @@ export function TemplatePicker({
     }
   };
 
+  const handleDuplicateClick = () => {
+    if (selectedTemplateId) {
+      setIsDuplicateTemplateDialogOpen(true);
+    }
+  };
+
   const handleCreateTemplate = () => {
     if (newTemplateName.trim()) {
       onNewTemplate(newTemplateName.trim());
@@ -86,6 +99,13 @@ export function TemplatePicker({
     }
   };
 
+  const handleCreateDuplicateTemplate = (newName: string) => {
+    if (selectedTemplateId && newName.trim()) {
+      onNewTemplate(newName.trim(), selectedTemplateId);
+      setIsDuplicateTemplateDialogOpen(false);
+    }
+  };
+
   const handleConfirmDelete = () => {
     if (selectedTemplateId) {
       onDelete(selectedTemplateId);
@@ -94,10 +114,55 @@ export function TemplatePicker({
   };
 
   const handleExport = () => {
-    if (selectedTemplateId) {
+    if (selectedTemplateId && onExport) {
       onExport(selectedTemplateId);
     }
   };
+
+  // File import functionality
+  const handleImportClick = useCallback(async () => {
+    if (isImporting || !onImport) {
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+
+      const selectedPath = await openDialog({
+        multiple: false,
+        directory: false,
+        filters: [{ name: "JSON Files", extensions: ["json"] }],
+      });
+
+      if (selectedPath && typeof selectedPath === "string") {
+        const fileContentBinary = await readFile(selectedPath);
+        const decoder = new TextDecoder("utf-8");
+        const fileContentString = decoder.decode(fileContentBinary);
+
+        try {
+          const templateData = JSON.parse(fileContentString);
+          // Use Node.js path module for robust, cross-platform file name extraction (without extension)
+          const fileBaseName = await basename(selectedPath);
+          const fileExtName = await extname(selectedPath);
+          const fileName = fileBaseName.slice(0, fileBaseName.length - fileExtName.length - 1) || "Untitled";
+          onImport(fileName, templateData);
+          toast.success("Template imported successfully");
+        } catch (parseError) {
+          console.error("JSON parse error:", parseError);
+          toast.error("Invalid JSON file", {
+            description: "The selected file does not contain valid JSON data.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error importing template:", error);
+      toast.error("Import failed", {
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  }, [onImport, isImporting]);
 
   // Map templates to ComboboxItem format
   // Map templates to ComboboxItem format and order by label (alphanumeric)
@@ -116,8 +181,9 @@ export function TemplatePicker({
           <Combobox
             items={comboboxItems}
             onChange={onTemplateSelect}
-            selectedValue={selectedTemplateId ?? undefined}
+            selectedValue={selectedTemplateId}
             placeholder="Search templates..."
+            clearable={clearable}
             trigger={
               <Button
                 variant="outline"
@@ -128,7 +194,9 @@ export function TemplatePicker({
                 )}
                 disabled={!hasTemplates || disabled}
               >
-                {selectedTemplate ? selectedTemplate.name : hasTemplates ? "Select Template" : "No templates available"}
+                <span className="truncate text-left flex-1 min-w-0 text-ellipsis">
+                  {selectedTemplate ? selectedTemplate.name : hasTemplates ? "Select Template" : "No templates available"}
+                </span>
                 <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
               </Button>
             }
@@ -157,11 +225,8 @@ export function TemplatePicker({
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
-
-                    if (selectedTemplateId) {
-                      onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId);
-                      setisDropdownOpen(false);
-                    }
+                    setisDropdownOpen(false);
+                    handleDuplicateClick();
                   }}
                   disabled={!selectedTemplateId}
                   className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
@@ -185,12 +250,12 @@ export function TemplatePicker({
                   onClick={(e) => {
                     e.preventDefault();
                     setisDropdownOpen(false);
-                    onImport();
+                    handleImportClick();
                   }}
-                  disabled={true}
+                  disabled={!onImport || isImporting}
                 >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
-                  Import
+                  {isImporting ? "Importing..." : "Import"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -198,7 +263,7 @@ export function TemplatePicker({
                     setisDropdownOpen(false);
                     handleExport();
                   }}
-                  disabled={!selectedTemplateId || true}
+                  disabled={!selectedTemplateId || !onExport}
                   className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
                 >
                   <FileUp className="h-3.5 w-3.5 mr-1.5" />
@@ -259,17 +324,17 @@ export function TemplatePicker({
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" className="text-sm">
+                {/* New Template Button */}
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
-                    if (selectedTemplateId) {
-                      onNewTemplate(selectedTemplate?.name || "Unnamed Template", selectedTemplateId);
-                      setisDropdownOpen(false);
-                    }
+                    setisDropdownOpen(false);
+                    handleDuplicateClick();
                   }}
                   disabled={!selectedTemplateId}
                   className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
                 >
+                  {/* Duplicate Button */}
                   <CopyPlus className="h-3.5 w-3.5 mr-1.5" />
                   Duplicate
                 </DropdownMenuItem>
@@ -277,12 +342,12 @@ export function TemplatePicker({
                   onClick={(e) => {
                     e.preventDefault();
                     setisDropdownOpen(false);
-                    onImport();
+                    handleImportClick();
                   }}
-                  disabled={true}
+                  disabled={!onImport || isImporting}
                 >
                   <FileDown className="h-3.5 w-3.5 mr-1.5" />
-                  Import
+                  {isImporting ? "Importing..." : "Import"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -290,12 +355,15 @@ export function TemplatePicker({
                     setisDropdownOpen(false);
                     handleExport();
                   }}
-                  disabled={!selectedTemplateId || true}
+                  disabled={!selectedTemplateId || !onExport}
                   className={!selectedTemplateId ? "opacity-50 pointer-events-none" : ""}
                 >
+                  {/* Export Button */}
                   <FileUp className="h-3.5 w-3.5 mr-1.5" />
                   Export
                 </DropdownMenuItem>
+
+                {/* Delete Button */}
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
@@ -363,6 +431,19 @@ export function TemplatePicker({
         label="Name"
         placeholder="Template name"
         saveButtonText="Update"
+      />
+
+      {/* Duplicate Template Dialog */}
+      <EditNameDialog
+        open={isDuplicateTemplateDialogOpen}
+        onOpenChange={setIsDuplicateTemplateDialogOpen}
+        initialName={selectedTemplate ? `${selectedTemplate.name} Copy` : ""}
+        onSave={handleCreateDuplicateTemplate}
+        title="Duplicate Template"
+        description="Enter a name for the duplicated template."
+        label="Name"
+        placeholder="Template name"
+        saveButtonText="Duplicate"
       />
 
       {/* Delete Confirmation Dialog */}
