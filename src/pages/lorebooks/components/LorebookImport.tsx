@@ -115,6 +115,7 @@ export const LorebookImport = forwardRef<LorebookImportHandle, LorebookImportPro
         const parsedData = parseLorebookContent(fileContentString);
         const validationResult = validateAndTransformLorebookData(parsedData, currentProfile.id, fileName);
         if (!validationResult.valid || !validationResult.data) {
+          console.log(validationResult);
           toast.error("Invalid lorebook file", {
             description: `Format: ${validationResult.format}. Errors: ${validationResult.errors.join("; ")}`,
           });

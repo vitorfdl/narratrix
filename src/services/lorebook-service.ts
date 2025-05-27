@@ -25,6 +25,7 @@ function parseLorebookJsonFields(lorebook: any): Lorebook {
     created_at: new Date(lorebook.created_at),
     updated_at: new Date(lorebook.updated_at),
     favorite: parseBoolean(lorebook.favorite),
+    allow_recursion: parseBoolean(lorebook.allow_recursion),
   };
 }
 

@@ -66,10 +66,16 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
           setIsImporting(false); // Also reset importing state here
           return true; // Indicate that chat confirm dialog was shown
         }
-        // Import the character
-        const importedCharacter = await importCharacter(validationResult.data);
+        // Import the character with embedded lorebook data if present
+        const importedCharacter = await importCharacter(validationResult.data, validationResult.chatFields, validationResult.lorebookData);
+
+        let successMessage = `${importedCharacter.name} (Format: ${validationResult.format}) has been imported.`;
+        if (validationResult.lorebookData) {
+          successMessage += " Embedded lorebook was also imported.";
+        }
+
         toast.success("Character imported successfully", {
-          description: `${importedCharacter.name} (Format: ${validationResult.format}) has been imported.`,
+          description: successMessage,
         });
         if (onImportComplete) {
           onImportComplete(importedCharacter, validationResult.chatFields);
@@ -119,6 +125,7 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
           const isPng = fileName.toLowerCase().endsWith(".png");
           const isJson = fileName.toLowerCase().endsWith(".json");
           let validationResult: any = null;
+
           if (isPng) {
             const fileContentBinary = await readFile(filePath);
             let parsedData: any;
@@ -278,7 +285,7 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
         <Upload className={`h-8 w-8 mb-2 transition-colors duration-200 ${isImporting ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
         <p className="font-medium text-center mb-1 text-foreground">{isImporting ? "Importing..." : "Import Character"}</p>
         <p className="text-sm text-muted-foreground text-center">Drag & drop one or more character JSON/PNG files or click to browse</p>
-        <p className="text-xs text-muted-foreground/80 text-center mt-1">(Supports Internal, V2, V3, PNG formats)</p>
+        <p className="text-xs text-muted-foreground/80 text-center mt-1">(Supports Internal, V2, V3, PNG formats with embedded lorebooks)</p>
         {importProgress && (
           <p className="text-xs text-primary mt-2">
             Importing {importProgress.current} of {importProgress.total}...
@@ -299,6 +306,11 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
             <AlertDialogTitle>Chat Data Detected</AlertDialogTitle>
             <AlertDialogDescription>
               This character file contains chat-related fields (greetings, scenario, etc). Do you want to create a chat for this character as well?
+              {chatConfirm.validationResult?.lorebookData && (
+                <span className="block mt-2 text-sm text-muted-foreground">
+                  Note: This file also contains an embedded lorebook that will be imported automatically.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -306,9 +318,15 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
               onClick={async () => {
                 setChatConfirm((prev) => ({ ...prev, show: false }));
                 // Proceed with import but skip chatFields
-                const importedCharacter = await importCharacter(chatConfirm.characterData);
+                const importedCharacter = await importCharacter(chatConfirm.characterData, undefined, chatConfirm.validationResult.lorebookData);
+
+                let successMessage = `${importedCharacter.name} (Format: ${chatConfirm.validationResult.format}) has been imported.`;
+                if (chatConfirm.validationResult.lorebookData) {
+                  successMessage += " Embedded lorebook was also imported.";
+                }
+
                 toast.success("Character imported successfully", {
-                  description: `${importedCharacter.name} (Format: ${chatConfirm.validationResult.format}) has been imported.`,
+                  description: successMessage,
                 });
                 if (onImportComplete) {
                   onImportComplete(importedCharacter);
@@ -323,10 +341,20 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
               onClick={async () => {
                 setChatConfirm((prev) => ({ ...prev, show: false }));
                 // Proceed with import and pass chatFields to parent
-                const importedCharacter = await importCharacter(chatConfirm.characterData, chatConfirm.chatFields);
+                const importedCharacter = await importCharacter(
+                  chatConfirm.characterData,
+                  chatConfirm.chatFields,
+                  chatConfirm.validationResult.lorebookData,
+                );
                 fetchChatList(currentProfile!.id);
+
+                let successMessage = `${importedCharacter.name} (Format: ${chatConfirm.validationResult.format}) has been imported.`;
+                if (chatConfirm.validationResult.lorebookData) {
+                  successMessage += " Embedded lorebook was also imported.";
+                }
+
                 toast.success("Character imported successfully", {
-                  description: `${importedCharacter.name} (Format: ${chatConfirm.validationResult.format}) has been imported.`,
+                  description: successMessage,
                 });
                 if (onImportComplete) {
                   onImportComplete(importedCharacter, chatConfirm.chatFields);

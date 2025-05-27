@@ -4,6 +4,7 @@ import { createCharacter } from "../character-service";
 import { createChatChapter } from "../chat-chapter-service";
 import { createChat, updateChat } from "../chat-service";
 import { CharaCardV2, CharacterSpecV2TransformResult, transformCharacterSpecV2, validateCharacterSpecV2 } from "./formats/character_spec_v2";
+import { importLorebook, validateAndTransformLorebookData } from "./import-lorebook";
 
 /**
  * Supported character import formats.
@@ -13,12 +14,14 @@ export type CharacterImportFormat = "internal_json" | "chara_card_v2" | "jpg_met
 /**
  * Result type for validation and transformation.
  * If format is chara_card_v2, chatFields will be present.
+ * If the character has an embedded lorebook, lorebookData will be present.
  */
 interface ValidationTransformationResult {
   valid: boolean;
   errors: string[];
   data: z.infer<typeof CreateCharacterSchema> | null;
   chatFields?: CharacterSpecV2TransformResult["chatFields"];
+  lorebookData?: any;
   format: CharacterImportFormat;
 }
 
@@ -55,6 +58,13 @@ export function validateAndTransformCharacterData(data: any, profileId: string):
   // 1. Try validating as internal JSON
   const internalResult = validateInternalCharacterJSON({ ...data, profile_id: profileId });
   if (internalResult.valid) {
+    // Check for embedded lorebook in internal format
+    if (data.lorebook) {
+      return {
+        ...internalResult,
+        lorebookData: data.lorebook,
+      };
+    }
     return internalResult;
   }
 
@@ -62,13 +72,20 @@ export function validateAndTransformCharacterData(data: any, profileId: string):
   const v2Validation = validateCharacterSpecV2(data);
   if (v2Validation.valid) {
     const transformed = transformCharacterSpecV2(data as CharaCardV2, profileId);
-    return {
+    const result: ValidationTransformationResult = {
       valid: true,
       errors: [],
       data: transformed.character,
       chatFields: transformed.chatFields,
       format: "chara_card_v2",
     };
+
+    // Check for embedded lorebook in v2 format
+    if (data.lorebook) {
+      result.lorebookData = data.lorebook;
+    }
+
+    return result;
   }
 
   // 3. Future: Add detection/validation for other formats (jpg_metadata, yml, other_json)
@@ -90,18 +107,45 @@ export function validateAndTransformCharacterData(data: any, profileId: string):
 /**
  * Imports a character into the database from validated and transformed data.
  * @param transformedData - The character data in the internal format.
+ * @param chatData - Optional chat data for creating initial chat.
+ * @param lorebookData - Optional embedded lorebook data to import.
  * @returns The imported character.
  * @throws If `transformedData` is null or invalid.
  */
 export async function importCharacter(
   transformedData: z.infer<typeof CreateCharacterSchema>,
   chatData?: CharacterSpecV2TransformResult["chatFields"],
+  lorebookData?: any,
 ): Promise<Character> {
   if (!transformedData) {
     throw new Error("No character data provided for import.");
   }
+
+  let importedLorebookId: string | null = null;
+
+  // Import embedded lorebook if present
+  if (lorebookData) {
+    try {
+      const lorebookValidationResult = validateAndTransformLorebookData(lorebookData, transformedData.profile_id, `${transformedData.name}_lorebook`);
+
+      if (lorebookValidationResult.valid && lorebookValidationResult.data) {
+        const importedLorebook = await importLorebook(lorebookValidationResult.data);
+        importedLorebookId = importedLorebook.id;
+      }
+    } catch (error) {
+      console.warn("Failed to import embedded lorebook:", error);
+      // Continue with character import even if lorebook import fails
+    }
+  }
+
+  // Update character data with imported lorebook ID if available
+  const characterDataToImport = {
+    ...transformedData,
+    lorebook_id: importedLorebookId || null,
+  };
+
   // Use the service to create the character
-  const character = await createCharacter(transformedData);
+  const character = await createCharacter(characterDataToImport);
   // Type assertion: createCharacter returns CharacterUnion, but we expect type 'character' only here
   if (character.type !== "character") {
     throw new Error("Imported data is not a character type.");

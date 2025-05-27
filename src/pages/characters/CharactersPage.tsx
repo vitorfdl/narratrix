@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Slider } from "@/components/ui/slider";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterActions, useCharacterAvatars, useCharacters, useCharactersLoading } from "@/hooks/characterStore";
+import { useLorebookStoreActions } from "@/hooks/lorebookStore";
 import { Character, CharacterUnion } from "@/schema/characters-schema";
 import { getCharacterById } from "@/services/character-service";
 import { exportCharacterToPng } from "@/services/exports/character-png-export";
@@ -40,6 +41,7 @@ export default function Characters() {
   const characters = useCharacters();
   const isLoadingCharacters = useCharactersLoading();
   const { fetchCharacters, deleteCharacter } = useCharacterActions();
+  const { loadLorebooks } = useLorebookStoreActions();
   const [settings, setSettings] = useLocalCharactersPagesSettings();
   const [, setIsEditing] = useState(false);
 
@@ -265,6 +267,7 @@ export default function Characters() {
           ref={importComponentRef}
           onImportComplete={(importedCharacter) => {
             // Refresh character list then reload avatar for the newly imported character
+            loadLorebooks(currentProfile!.id);
             fetchCharacters(currentProfile!.id).then(() => {
               reloadAvatars(importedCharacter.id);
             });

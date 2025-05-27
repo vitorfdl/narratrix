@@ -146,7 +146,6 @@ export function TemplatePicker({
           const fileExtName = await extname(selectedPath);
           const fileName = fileBaseName.slice(0, fileBaseName.length - fileExtName.length - 1) || "Untitled";
           onImport(fileName, templateData);
-          toast.success("Template imported successfully");
         } catch (parseError) {
           console.error("JSON parse error:", parseError);
           toast.error("Invalid JSON file", {
