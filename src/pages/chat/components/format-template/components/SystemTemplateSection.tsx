@@ -16,7 +16,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { ChevronDown, ChevronUp, GripVertical, Paperclip, Plus, SeparatorVertical, Trash } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import "../styles/shared.css";
+import "../../../../formatTemplates/styles/shared.css";
 
 // Extended interface for prompt items with UI state
 interface PromptItem extends SystemPromptSection {

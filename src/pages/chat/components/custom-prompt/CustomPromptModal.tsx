@@ -41,6 +41,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
     position: "top",
     depth: 1,
     prompt: "",
+    enabled: true,
   });
 
   // Reset form when modal opens or initialData changes
@@ -60,6 +61,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
           position: "top",
           depth: 1,
           prompt: "",
+          enabled: true,
         });
       }
     }

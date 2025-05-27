@@ -1,10 +1,10 @@
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
+import { LabeledInput } from "@/pages/models/components/InferenceTemplateSection";
 import { BrainCircuitIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { LabeledInput } from "../../models/components/InferenceTemplateSection";
 
 interface ExtraSectionsProps {
   formatTemplateID: string | null;

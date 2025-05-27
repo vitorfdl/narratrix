@@ -1,13 +1,15 @@
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
+import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { FormatTemplate, NewFormatTemplate, SYSTEM_PROMPT_DEFAULT_CONTENT, TemplateSettings } from "@/schema/template-format-schema";
+import { exportSingleToJsonFile } from "@/utils/export-utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useDebouncedCallback } from "use-debounce";
-import { TemplatePicker } from "./TemplatePicker";
 
 interface TemplateHeaderProps {
   formatTemplateID: string | null;
@@ -182,14 +184,62 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
     await updateFormatTemplate(templateId, { name: name });
   };
 
-  const handleImport = () => {
-    // To be implemented
-    console.log("Import template");
+  const handleExport = async (templateId: string) => {
+    if (!templateId) {
+      return;
+    }
+
+    try {
+      const template: Partial<FormatTemplate> | null = formatTemplates.find((t) => t.id === templateId) || null;
+      if (!template) {
+        toast.error("Export failed", {
+          description: "Template not found.",
+        });
+        return;
+      }
+
+      delete template.profile_id;
+
+      const success = await exportSingleToJsonFile(template, "format_template", `format_template_${template.name!.replace(/[^a-zA-Z0-9]/g, "_")}`);
+
+      if (!success) {
+        console.log("Export was cancelled or failed");
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Export failed", {
+        description: error instanceof Error ? error.message : "An unexpected error occurred during export.",
+      });
+    }
   };
 
-  const handleExport = (templateId: string) => {
-    // To be implemented
-    console.log("Export template", templateId);
+  // Handler for import from TemplatePicker
+  const handleImportFromPicker = async (fileName: string, templateData: { [key: string]: any }) => {
+    try {
+      // Import the format template
+      const { validateAndTransformFormatTemplateData } = await import("@/services/imports/import-format-template");
+
+      // Parse and validate the content
+      const result = validateAndTransformFormatTemplateData(templateData, currentProfile?.id || "", fileName);
+
+      if (!result.valid || !result.data) {
+        console.error("Import validation failed:", result.errors);
+        throw new Error(`Import validation failed:\n${result.errors.join("\n")}`);
+      }
+
+      // Create the new template
+      const newTemplate = await createFormatTemplate(result.data);
+
+      // Switch to the newly imported template
+      onTemplateChange(newTemplate.id);
+
+      console.log(`Successfully imported ${result.format} format template:`, newTemplate.name);
+    } catch (error) {
+      console.error("Import error:", error);
+      throw error; // Re-throw to let TemplatePicker handle the error display
+    } finally {
+      await fetchFormatTemplates(currentProfile?.id || "");
+    }
   };
 
   // Memoize complex components to prevent re-rendering
@@ -202,11 +252,20 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         onDelete={() => formatTemplateID && handleDeleteTemplate(formatTemplateID)}
         onNewTemplate={handleNewTemplate}
         onEditName={handleEditName}
-        onImport={handleImport}
+        onImport={handleImportFromPicker}
         onExport={handleExport}
       />
     ),
-    [formatTemplateID, formatTemplates, handleTemplateSelect, handleDeleteTemplate, handleNewTemplate, handleEditName, handleImport, handleExport],
+    [
+      formatTemplateID,
+      formatTemplates,
+      handleTemplateSelect,
+      handleDeleteTemplate,
+      handleNewTemplate,
+      handleEditName,
+      handleImportFromPicker,
+      handleExport,
+    ],
   );
 
   return (
