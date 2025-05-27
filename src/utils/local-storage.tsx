@@ -2,6 +2,7 @@ import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
 import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
 import { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
 import { LorebookPageSettings, defaultLorebookPageSettings } from "@/pages/lorebooks/LorebooksPage";
+import { ModelsPageSettings } from "@/pages/models/ModelsPage";
 import { GridPosition, defaultPositions } from "@/schema/grid";
 import { QuickAction } from "@/schema/profiles-schema";
 import { Theme } from "@tauri-apps/api/window";
@@ -15,6 +16,7 @@ import { useMemo } from "react";
  */
 const charactersPagesSettingsAtom = atomWithStorage<CharacterPageSettings>("charactersPagesSettings", {
   view: {
+    mode: "grid",
     cardsPerRow: 6,
     cardSize: "medium",
   },
@@ -144,4 +146,25 @@ const summarySettingsAtom = atomWithStorage<SummarySettings>("summarySettings", 
 
 export function useLocalSummarySettings() {
   return useAtom(summarySettingsAtom);
+}
+
+/**
+ * Local storage for models page settings
+ */
+const modelsPageSettingsAtom = atomWithStorage<ModelsPageSettings>("modelsPageSettings", {
+  view: {
+    mode: "grid",
+    gridColumns: 4,
+  },
+  sort: {
+    field: "name",
+    direction: "asc",
+  },
+  filter: {
+    type: "all",
+  },
+});
+
+export function useLocalModelsPageSettings() {
+  return useAtom(modelsPageSettingsAtom);
 }
