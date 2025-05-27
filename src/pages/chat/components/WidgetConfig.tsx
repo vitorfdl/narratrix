@@ -17,7 +17,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatParticipants, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
-import { useLorebooks } from "@/hooks/lorebookStore";
+import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
 import { useModels } from "@/hooks/modelsStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
@@ -38,6 +38,7 @@ import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
 import { ConfigItem } from "./fields/ConfigItems";
 import FormatTemplateModal from "./format-template/FormatTemplateModal";
+
 const bigScreenBreakpoints = "@[10rem]:flex";
 
 interface ChatTemplateConfigProps {
@@ -61,6 +62,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const lorebooks = useLorebooks();
   const participants = useCurrentChatParticipants();
   const characterList = useCharacters();
+
+  const { loadLorebooks } = useLorebookStoreActions();
 
   const participantHaveLorebook = useMemo(() => {
     return participants?.some((participant) => characterList.find((character) => character.id === participant.id)?.lorebook_id);
@@ -789,6 +792,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       });
     } finally {
       await fetchFormatTemplates(profileId);
+      await loadLorebooks(profileId);
     }
   };
 
