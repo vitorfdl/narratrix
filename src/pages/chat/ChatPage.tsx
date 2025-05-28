@@ -238,6 +238,14 @@ export default function ChatPage() {
     setIsDeleteDialogOpen(true);
   }, []);
 
+  // Handle tab reordering from drag and drop
+  const handleTabReorder = useCallback(
+    (newTabOrder: string[]) => {
+      setOpenTabIds(newTabOrder);
+    },
+    [setOpenTabIds],
+  );
+
   // Handle the actual deletion process after confirmation
   const handleDeleteConfirm = useCallback(async () => {
     if (!chatToDeleteId) {
@@ -339,6 +347,7 @@ export default function ChatPage() {
           handleRenameRequest={handleRenameRequest}
           handleDuplicateRequest={handleDuplicateRequest}
           handleDeleteRequest={handleDeleteRequest}
+          handleTabReorder={handleTabReorder}
         />
 
         {/* Rename Dialog */}
