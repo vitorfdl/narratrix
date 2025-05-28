@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Bot, ChevronDown, ChevronUp, Settings, User } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bot, ChevronDown, ChevronUp, Merge, Settings, Split, User } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { formatMarkdownValue } from "../LiveInspector";
+import {} from "../LiveInspector";
 
 interface PayloadProps {
   selectedRequest: any;
@@ -21,6 +22,9 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
   const [userScrolled, setUserScrolled] = useState(false);
   const [collapsedMessages, setCollapsedMessages] = useState<Set<number>>(new Set());
   const [systemPromptCollapsed, setSystemPromptCollapsed] = useState(true);
+  const [viewMode, setViewMode] = useState<"split" | "concatenated">("split");
+
+  const isCompletion = selectedRequest.modelSpecs.model_type === "completion";
 
   // Handle scroll events to detect when user scrolls up or down
   const handleScroll = useCallback(() => {
@@ -110,123 +114,293 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
     setCollapsedMessages(allMessageIndices);
   }, [selectedRequestId, selectedRequest.messages]);
 
+  // Generate concatenated content for completion requests
+  const getConcatenatedContent = () => {
+    const systemPrompt = selectedRequest.systemPrompt || "";
+    const messagesText = selectedRequest.messages.map((message: any) => message.text || "").join("\n\n");
+    return systemPrompt ? `${systemPrompt}\n\n${messagesText}` : messagesText;
+  };
+
   return (
     <div className="h-full p-0 m-0 relative bg-background">
       <ScrollArea ref={payloadScrollRef} className="h-full custom-scrollbar">
         <div className="p-6 space-y-6">
-          {/* System Prompt Section */}
-          <Card className="border border-border bg-card shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-base">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <Settings className="h-4 w-4" />
-                  </div>
-                  <span>System Prompt</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)}
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                  >
-                    {systemPromptCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {!systemPromptCollapsed ? (
-                <MarkdownTextArea
-                  editable={false}
-                  className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
-                  initialValue={formatMarkdownValue(selectedRequest.systemPrompt || "No system prompt provided")}
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground italic">
-                  {getMessagePreview(selectedRequest.systemPrompt || "No system prompt provided", 150)}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Completion View Mode Tabs */}
+          {isCompletion ? (
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "split" | "concatenated")} className="w-full">
+              <div className="flex justify-center mb-4">
+                <TabsList className="grid w-auto grid-cols-2">
+                  <TabsTrigger value="split" className="flex items-center gap-2">
+                    <Split className="h-4 w-4" />
+                    Split View
+                  </TabsTrigger>
+                  <TabsTrigger value="concatenated" className="flex items-center gap-2">
+                    <Merge className="h-4 w-4" />
+                    Concatenated
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-          {/* Messages Section */}
-          <Card className="border border-border bg-card shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-base">
-                <div className="flex items-center gap-3">
-                  <span>Conversation Messages</span>
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    {selectedRequest.messages.length} messages
-                  </Badge>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-4">
-              {selectedRequest.messages.map((message: any, index: number) => {
-                const isUser = message.role === "user";
-                const isCollapsed = collapsedMessages.has(index);
-                const messageText = message.text || "";
-                const shouldShowCollapse = messageText.length > 200;
+              <TabsContent value="concatenated" className="mt-0">
+                <Card className="border border-border bg-card shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-3 text-base">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                        <Merge className="h-4 w-4" />
+                      </div>
+                      <span>Concatenated Content</span>
+                      <Badge variant="secondary" className="text-xs font-normal">
+                        System + Messages
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <MarkdownTextArea
+                      useEditorOnly={true}
+                      editable={false}
+                      className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
+                      initialValue={getConcatenatedContent()}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                return (
-                  <div key={index} className="space-y-2">
-                    {index > 0 && <Separator className="my-4" />}
-
-                    {/* Message Header */}
-                    <div className="flex items-center justify-between">
+              <TabsContent value="split" className="mt-0 space-y-6">
+                {/* System Prompt Section */}
+                <Card className="border border-border bg-card shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center justify-between text-base">
                       <div className="flex items-center gap-3">
-                        <div className={`p-1.5 rounded-lg ${!isUser ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}>
-                          {isUser ? <User className="h-4 w-4 text-muted-foreground" /> : <Bot className="h-4 w-4" />}
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                          <Settings className="h-4 w-4" />
                         </div>
-                        <Badge variant={isUser ? "secondary" : "default"} className="text-xs font-medium capitalize">
-                          {message.role}
+                        <span>System Prompt</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)}
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          {systemPromptCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {!systemPromptCollapsed ? (
+                      <MarkdownTextArea
+                        editable={false}
+                        className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
+                        initialValue={selectedRequest.systemPrompt || "No system prompt provided"}
+                      />
+                    ) : (
+                      <div className="text-sm text-muted-foreground italic">
+                        {getMessagePreview(selectedRequest.systemPrompt || "No system prompt provided", 150)}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Messages Section */}
+                <Card className="border border-border bg-card shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center justify-between text-base">
+                      <div className="flex items-center gap-3">
+                        <span>Conversation Messages</span>
+                        <Badge variant="secondary" className="text-xs font-normal">
+                          {selectedRequest.messages.length} messages
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {shouldShowCollapse && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleMessageCollapse(index)}
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                          >
-                            {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-4">
+                    {selectedRequest.messages.map((message: any, index: number) => {
+                      const isUser = message.role === "user";
+                      const isCollapsed = collapsedMessages.has(index);
+                      const messageText = message.text || "";
+                      const shouldShowCollapse = messageText.length > 200;
 
-                    {/* Message Content */}
-                    <div
-                      className={`rounded-lg border ${isCollapsed ? "p-4" : "p-0"} ${isUser ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"}`}
-                    >
-                      {!isCollapsed ? (
-                        <MarkdownTextArea
-                          editable={false}
-                          className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
-                          initialValue={formatMarkdownValue(messageText)}
-                        />
-                      ) : (
-                        <div className="text-sm text-muted-foreground">
-                          {getMessagePreview(messageText, 200)}
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => toggleMessageCollapse(index)}
-                            className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                      return (
+                        <div key={index} className="space-y-2">
+                          {index > 0 && <Separator className="my-4" />}
+
+                          {/* Message Header */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-1.5 rounded-lg ${!isUser ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}>
+                                {isUser ? <User className="h-4 w-4 text-muted-foreground" /> : <Bot className="h-4 w-4" />}
+                              </div>
+                              <Badge variant={isUser ? "secondary" : "default"} className="text-xs font-medium capitalize">
+                                {message.role}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {shouldShowCollapse && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleMessageCollapse(index)}
+                                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                >
+                                  {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Message Content */}
+                          <div
+                            className={`rounded-lg border ${isCollapsed ? "p-4" : "p-0"} ${isUser ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"}`}
                           >
-                            Show more
-                          </Button>
+                            {!isCollapsed ? (
+                              <MarkdownTextArea
+                                editable={false}
+                                useEditorOnly={true}
+                                className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
+                                initialValue={messageText}
+                              />
+                            ) : (
+                              <div className="text-sm text-muted-foreground">
+                                {getMessagePreview(messageText, 200)}
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  onClick={() => toggleMessageCollapse(index)}
+                                  className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                                >
+                                  Show more
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <>
+              {/* Non-completion requests - original layout */}
+              {/* System Prompt Section */}
+              <Card className="border border-border bg-card shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                        <Settings className="h-4 w-4" />
+                      </div>
+                      <span>System Prompt</span>
                     </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                      >
+                        {systemPromptCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {!systemPromptCollapsed ? (
+                    <MarkdownTextArea
+                      editable={false}
+                      className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
+                      initialValue={selectedRequest.systemPrompt || "No system prompt provided"}
+                    />
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic">
+                      {getMessagePreview(selectedRequest.systemPrompt || "No system prompt provided", 150)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Messages Section */}
+              <Card className="border border-border bg-card shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-3">
+                      <span>Conversation Messages</span>
+                      <Badge variant="secondary" className="text-xs font-normal">
+                        {selectedRequest.messages.length} messages
+                      </Badge>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-4">
+                  {selectedRequest.messages.map((message: any, index: number) => {
+                    const isUser = message.role === "user";
+                    const isCollapsed = collapsedMessages.has(index);
+                    const messageText = message.text || "";
+                    const shouldShowCollapse = messageText.length > 200;
+
+                    return (
+                      <div key={index} className="space-y-2">
+                        {index > 0 && <Separator className="my-4" />}
+
+                        {/* Message Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-1.5 rounded-lg ${!isUser ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}>
+                              {isUser ? <User className="h-4 w-4 text-muted-foreground" /> : <Bot className="h-4 w-4" />}
+                            </div>
+                            <Badge variant={isUser ? "secondary" : "default"} className="text-xs font-medium capitalize">
+                              {message.role}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {shouldShowCollapse && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleMessageCollapse(index)}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              >
+                                {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Message Content */}
+                        <div
+                          className={`rounded-lg border ${isCollapsed ? "p-4" : "p-0"} ${isUser ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"}`}
+                        >
+                          {!isCollapsed ? (
+                            <MarkdownTextArea
+                              editable={false}
+                              useEditorOnly={true}
+                              className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
+                              initialValue={messageText}
+                            />
+                          ) : (
+                            <div className="text-sm text-muted-foreground">
+                              {getMessagePreview(messageText, 200)}
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => toggleMessageCollapse(index)}
+                                className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                              >
+                                Show more
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       </ScrollArea>
 
