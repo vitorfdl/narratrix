@@ -20,7 +20,8 @@ import * as z from "zod";
 import { ModelInputFields } from "./ModelInputFields";
 
 // Define model types
-const MODEL_TYPES: ModelType[] = ["llm", "audio", "image", "database"];
+// const MODEL_TYPES: ModelType[] = ["llm", "audio", "image", "database"];
+const MODEL_TYPES: ModelType[] = ["llm"];
 
 interface ModelFormProps {
   onSuccess: () => void;
