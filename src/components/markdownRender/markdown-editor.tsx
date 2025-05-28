@@ -23,6 +23,7 @@ export interface MDXEditorProps {
   onSubmit?: (text: string) => void;
   suggestions?: SuggestionItem[];
   enableHistory?: boolean;
+  editable?: boolean;
 }
 
 export interface MarkdownEditorRef {
@@ -33,7 +34,10 @@ export interface MarkdownEditorRef {
  * I probably should have integrated CodeMirror directly.
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
-  ({ initialValue = "", enableHistory = false, onChange, className, label, placeholder, sendShortcut, onSubmit, suggestions = [] }, ref) => {
+  (
+    { initialValue = "", enableHistory = false, onChange, className, label, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true },
+    ref,
+  ) => {
     const editorRef = useRef<EditorView | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const isInitialMount = useRef(true);
@@ -177,6 +181,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
         <CodeMirror
           autoFocus={true}
           value={initialValue}
+          editable={editable}
           extensions={[
             markdownFormatKeymap,
             tooltips({ parent: document.body }),
