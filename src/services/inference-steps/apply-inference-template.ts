@@ -17,17 +17,19 @@ function processNewlines(str: string): string {
   return str.replace(/\\n/g, "\n");
 }
 
-async function applyInferenceTemplate(params: ApplyInferenceTemplateConfig): Promise<{ text: string; customStopStrings: string[] }> {
+async function applyInferenceTemplate(
+  params: ApplyInferenceTemplateConfig,
+): Promise<{ messages: InferenceMessage[]; customStopStrings: string[]; systemPrompt: string }> {
   const { systemPrompt, inferenceTemplate, messages, chatConfig, prefixOption } = params;
   const { config } = inferenceTemplate;
-  const formattedParts: string[] = [];
 
+  let newSystemPrompt = "";
   // 1. Format System Prompt
   if (systemPrompt) {
     const systemPromptPrefix = applyTextReplacements(processNewlines(config.systemPromptFormatting.prefix), chatConfig);
     const systemPromptSuffix = applyTextReplacements(processNewlines(config.systemPromptFormatting.suffix), chatConfig);
 
-    formattedParts.push(`${systemPromptPrefix}${systemPrompt}${systemPromptSuffix}`);
+    newSystemPrompt = `${systemPromptPrefix}${systemPrompt}${systemPromptSuffix}`;
   }
 
   const assistantPrefix = applyTextReplacements(processNewlines(config.assistantMessageFormatting.prefix), chatConfig);
@@ -62,23 +64,28 @@ async function applyInferenceTemplate(params: ApplyInferenceTemplateConfig): Pro
         formattedText = message.text; // Default to raw text
         break;
     }
-    formattedParts.push(formattedText);
+    message.text = formattedText;
   }
 
   // 3. Combine parts and conditionally append final assistant prefill
-  const basePrompt = formattedParts.join("");
 
   const sufixStopStrings = [userSuffix, assistantSuffix].filter((suffix) => suffix !== "");
   const formattedStopStrings = [...new Set([...config.customStopStrings, ...sufixStopStrings])];
 
-  // Only add the final prefix and prefill if the last message wasn't an assistant message.
-  if (lastMessage && lastMessage.role === "assistant") {
-    return { text: basePrompt, customStopStrings: formattedStopStrings };
+  // Only add the final prefix and prefill if the last message isnt an assistant message.
+  if (!lastMessage || lastMessage.role !== "assistant") {
+    const finalAssistantPrefill = processNewlines(config.assistantMessageFormatting.prefill);
+    const characterNamePrefix = prefixOption === "characters" || prefixOption === "always" ? `${chatConfig?.character?.name}: ` : "";
+    const finalMessage = `${assistantPrefix}${characterNamePrefix}${finalAssistantPrefill}`;
+
+    messages.push({ role: "assistant", text: finalMessage });
   }
 
-  const finalAssistantPrefill = processNewlines(config.assistantMessageFormatting.prefill);
-  const characterNamePrefix = prefixOption === "characters" || prefixOption === "always" ? `${chatConfig?.character?.name}: ` : "";
-  return { text: `${basePrompt}${assistantPrefix}${characterNamePrefix}${finalAssistantPrefill}`, customStopStrings: formattedStopStrings };
+  return {
+    messages,
+    systemPrompt: newSystemPrompt,
+    customStopStrings: formattedStopStrings,
+  };
 }
 
 export { applyInferenceTemplate };

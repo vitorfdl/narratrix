@@ -354,6 +354,28 @@ fn create_completion_payload(
     Ok(payload)
 }
 
+// Helper function to build a complete prompt from system message and all messages
+fn build_completion_prompt(request: &InferenceRequest) -> Result<String> {
+    let mut prompt_parts = Vec::new();
+
+    // Add system prompt if provided
+    if let Some(system_prompt) = &request.system_prompt {
+        prompt_parts.push(system_prompt.clone());
+    }
+
+    // Add all message texts
+    for msg in &request.message_list {
+        prompt_parts.push(msg.text.clone());
+    }
+
+    if prompt_parts.is_empty() {
+        return Err(anyhow!("No prompt content found in request"));
+    }
+
+    // Join all parts with newlines
+    Ok(prompt_parts.join("\n"))
+}
+
 /// OpenAI-compatible client for completions
 ///
 /// This function handles non-streaming completion requests.
@@ -361,11 +383,8 @@ pub async fn complete(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
     // Initialize client
     let (client, model) = initialize_openai_client(specs)?;
 
-    let prompt = request
-        .message_list
-        .last()
-        .map(|msg| msg.text.clone())
-        .ok_or_else(|| anyhow!("No prompt found in request"))?;
+    // Build complete prompt from system message and all messages
+    let prompt = build_completion_prompt(request)?;
 
     // Create JSON payload
     let payload = create_completion_payload(&model, &prompt, request)?;
@@ -404,12 +423,8 @@ pub async fn complete_stream(
     // Initialize client
     let (client, model) = initialize_openai_client(specs)?;
 
-    // Extract prompt from the request (Completions only use the last message)
-    let prompt = request
-        .message_list
-        .last()
-        .map(|msg| msg.text.clone())
-        .ok_or_else(|| anyhow!("No prompt found in request"))?;
+    // Build complete prompt from system message and all messages
+    let prompt = build_completion_prompt(request)?;
 
     // Create JSON payload
     let mut payload = create_completion_payload(&model, &prompt, request)?;

@@ -131,28 +131,31 @@ interface CreateSystemPromptConfig {
 export function createSystemPrompt(config: CreateSystemPromptConfig): string | undefined {
   const { systemPromptTemplate, chatConfig, lorebookContent, systemOverridePrompt, contextSeparator, customPrompts } = config;
 
-  let prompts = structuredClone(systemPromptTemplate?.prompts || []);
+  let prompts = structuredClone(systemPromptTemplate?.prompts?.filter((prompt) => prompt.enabled) || []);
 
   if (customPrompts && customPrompts.length > 0) {
     for (const customPrompt of customPrompts) {
-      if (customPrompt.role === "system") {
-        const systemPrompt = {
-          type: "custom-field" as any,
-          content: customPrompt.prompt,
-        };
+      if (customPrompt.role !== "system" || !customPrompt.enabled) {
+        continue;
+      }
 
-        if (customPrompt.position === "top") {
-          prompts.unshift(systemPrompt);
-        } else if (customPrompt.position === "bottom") {
-          prompts.push(systemPrompt);
-        } else if (customPrompt.position === "depth") {
-          const depth = customPrompt.depth || 1;
-          const insertPosition = Math.max(0, prompts.length - depth);
-          prompts.splice(insertPosition, 0, systemPrompt);
-        } else {
-          // Default behavior: insert at the beginning
-          prompts.unshift(systemPrompt);
-        }
+      const systemPrompt = {
+        type: "custom-field" as any,
+        content: customPrompt.prompt,
+        enabled: true,
+      };
+
+      if (customPrompt.position === "top") {
+        prompts.unshift(systemPrompt);
+      } else if (customPrompt.position === "bottom") {
+        prompts.push(systemPrompt);
+      } else if (customPrompt.position === "depth") {
+        const depth = customPrompt.depth || 1;
+        const insertPosition = Math.max(0, prompts.length - depth);
+        prompts.splice(insertPosition, 0, systemPrompt);
+      } else {
+        // Default behavior: insert at the beginning
+        prompts.unshift(systemPrompt);
       }
     }
   }
@@ -168,11 +171,13 @@ export function createSystemPrompt(config: CreateSystemPromptConfig): string | u
       prompts[contextIndex] = {
         type: "context",
         content: systemOverridePrompt,
+        enabled: true,
       };
     } else {
       prompts.unshift({
         type: "context",
         content: systemOverridePrompt,
+        enabled: true,
       });
     }
   }
@@ -289,7 +294,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
 
   // Step 3: Create system prompt
   const rawSystemPrompt = createSystemPrompt({
-    customPrompts: config.chatTemplate?.custom_prompts?.filter((prompt) => prompt.role === "system"),
+    customPrompts: config.chatTemplate?.custom_prompts,
     systemPromptTemplate: config.formatTemplate,
     chatConfig: config.chatConfig,
     lorebookContent: lorebookContent.replacers,
@@ -303,6 +308,10 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
     custom_prompts: config.chatTemplate?.custom_prompts || [],
   });
 
+  if (!limitedPrompt.inferenceMessages.length) {
+    throw new Error("After cutting off the context, no inference messages were left. Please adjust the context limit in the chat template.");
+  }
+
   if (config.inferenceTemplate) {
     const inferencePrompt = await applyInferenceTemplate({
       systemPrompt: limitedPrompt.systemPrompt,
@@ -313,8 +322,8 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
     });
 
     return {
-      inferenceMessages: [{ role: "user", text: inferencePrompt.text }],
-      systemPrompt: undefined,
+      inferenceMessages: inferencePrompt.messages,
+      systemPrompt: inferencePrompt.systemPrompt,
       customStopStrings: inferencePrompt.customStopStrings,
     };
   }
