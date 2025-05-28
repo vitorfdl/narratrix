@@ -16,7 +16,8 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { GripVertical, PlayCircleIcon, Settings, StopCircleIcon, Trash2, UserPlus } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import AddParticipantPopover from "./AddParticipantPopover";
 
 // Types
@@ -178,10 +179,26 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
   const inferenceService = useInferenceServiceFromContext();
+
+  // State to track current streaming state
+  const [streamingState, setStreamingState] = useState(() => inferenceService.getStreamingState());
+
   // Get user character if it exists
   const userCharacter = currentChatUserCharacterID ? characterList.find((char) => char.id === currentChatUserCharacterID) : null;
 
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
+
+  // Subscribe to streaming state changes
+  useEffect(() => {
+    const unsubscribe = inferenceService.subscribeToStateChanges((newState) => {
+      setStreamingState(newState);
+    });
+
+    // Initial sync
+    setStreamingState(inferenceService.getStreamingState());
+
+    return unsubscribe;
+  }, [inferenceService]);
 
   // Map chat participants to the Participant interface for this component
   const mappedParticipants: Participant[] = participants.map((p) => {
@@ -291,7 +308,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         return;
       }
 
-      if (inferenceService.getStreamingState().characterId === participantId) {
+      if (streamingState.characterId === participantId) {
         inferenceService.cancelGeneration();
         return;
       }
@@ -310,13 +327,13 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         });
       } catch (error) {
         console.error("Error triggering message:", error);
+        toast.error(error instanceof Error ? error.message : "An unknown error occurred");
         // Remove from triggering list if there was an error
       }
     },
-    [characterList, messages, inferenceService],
+    [characterList, messages, inferenceService, streamingState.characterId],
   );
 
-  const streamingState = inferenceService.getStreamingState();
   const isInQueue = (participantId: string) =>
     (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") ||
     (participantId === "user" && streamingState.messageId === "generate-input-area");

@@ -5,7 +5,7 @@ import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "@/schema/chat-message-schema";
-import React, { memo, useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ContextCutDivider, EditControls, MessageActions, StreamingIndicator } from "./AdditionalActions";
 import { MessageAvatar } from "./MessageAvatar";
@@ -85,11 +85,26 @@ const MessageItem = ({
   // This helps with smoother streaming updates
   const [displayContent, setDisplayContent] = useState<string>("");
 
-  // Update the displayed content when the message content changes
+  // Add a ref to track if we're currently streaming this message
+  const isStreamingThisMessage = useRef(false);
+
+  // Update the displayed content with debouncing for streaming messages
   useEffect(() => {
     const content = message.messages[message.message_index] || "...";
-    setDisplayContent(content);
-  }, [message.messages, message.message_index]);
+
+    if (isStreaming && message.id === isEditingID) {
+      // For actively streaming messages, update immediately
+      isStreamingThisMessage.current = true;
+      setDisplayContent(content);
+    } else if (!isStreamingThisMessage.current) {
+      // For non-streaming updates, update normally
+      setDisplayContent(content);
+    } else {
+      // This was a streaming message that just finished
+      isStreamingThisMessage.current = false;
+      setDisplayContent(content);
+    }
+  }, [message.messages, message.message_index, isStreaming, message.id, isEditingID]);
 
   // When entering edit mode, initialize edited content with the current message
   useEffect(() => {

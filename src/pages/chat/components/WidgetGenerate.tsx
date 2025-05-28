@@ -8,7 +8,7 @@ import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvide
 import { QuickAction } from "@/schema/profiles-schema";
 import { GenerationOptions, StreamingState } from "@/services/inference-service";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
-import { StopCircle } from "lucide-react";
+import { Loader2, StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QuickActions from "./utils-generate/QuickActions";
@@ -24,7 +24,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const [generationInputHistory, setGenerationInputHistory] = useLocalGenerationInputHistory();
   // const [autoTranslate, setAutoTranslate] = React.useState(false);
   const [streamingCharacters, setStreamingCharacters] = useState<Record<string, boolean>>({});
-  const streamingCheckRef = useRef<number | null>(null);
   const quietResponseRef = useRef<boolean>(false);
   const [inputStreamingText, setInputStreamingText] = useState<string>("");
   // Track history navigation
@@ -44,6 +43,42 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
 
   // Ref for focusing the MarkdownTextArea
   const markdownRef = useRef<MarkdownEditorRef>(null);
+
+  // Subscribe to streaming state changes
+  useEffect(() => {
+    const unsubscribe = inferenceService.subscribeToStateChanges((streamingState) => {
+      // Check for quiet response mode
+      if (streamingState.messageId === "generate-input-area") {
+        quietResponseRef.current = true;
+        setInputStreamingText(streamingState.accumulatedText);
+      } else if (quietResponseRef.current && !streamingState.characterId) {
+        // Reset quiet response mode when streaming ends
+        quietResponseRef.current = false;
+        setInputStreamingText("");
+      }
+
+      if (streamingState.characterId) {
+        setStreamingCharacters((prev) => {
+          // If already tracked, no need to update
+          if (prev[streamingState.characterId as string]) {
+            return prev;
+          }
+
+          // Add the new streaming character
+          return {
+            ...prev,
+            [streamingState.characterId as string]: true,
+          };
+        });
+      } else {
+        // If no character is currently streaming according to the service,
+        // clear all streaming characters
+        setStreamingCharacters({});
+      }
+    });
+
+    return unsubscribe;
+  }, [inferenceService]);
 
   // Global tab-to-focus handler
   useEffect(() => {
@@ -176,64 +211,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     }
   }, [inferenceService]);
 
-  // Sync streaming state with the inference service
-  const syncStreamingState = useCallback(() => {
-    const streamingState = inferenceService.getStreamingState();
-
-    // Check for quiet response mode
-    if (streamingState.messageId === "generate-input-area") {
-      quietResponseRef.current = true;
-      setInputStreamingText(streamingState.accumulatedText);
-    }
-
-    if (streamingState.characterId) {
-      setStreamingCharacters((prev) => {
-        // If already tracked, no need to update
-        if (prev[streamingState.characterId as string]) {
-          return prev;
-        }
-
-        // Add the new streaming character
-        return {
-          ...prev,
-          [streamingState.characterId as string]: true,
-        };
-      });
-    } else {
-      // If no character is currently streaming according to the service,
-      // but we have tracked streaming characters, clear them
-      if (Object.keys(streamingCharacters).length > 0) {
-        setStreamingCharacters({});
-      }
-
-      // Also reset quiet response mode if needed
-      if (quietResponseRef.current) {
-        quietResponseRef.current = false;
-      }
-    }
-  }, [inferenceService, streamingCharacters]);
-
-  // This effect needs to run whenever participants change
-  useEffect(() => {
-    syncStreamingState();
-
-    // Set up interval to periodically check streaming state
-    if (streamingCheckRef.current) {
-      window.clearInterval(streamingCheckRef.current);
-    }
-
-    streamingCheckRef.current = window.setInterval(() => {
-      syncStreamingState();
-    }, 500);
-
-    return () => {
-      if (streamingCheckRef.current) {
-        window.clearInterval(streamingCheckRef.current);
-        streamingCheckRef.current = null;
-      }
-    };
-  }, [syncStreamingState, participants]);
-
   useEffect(() => {
     if (text.length > 0) {
       setText(text);
@@ -306,27 +283,36 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       await inferenceService.generateMessage(generationConfig);
     } catch (error) {
       console.error("Error generating message:", error);
-      toast.error(`${error}`);
+      toast.error(error instanceof Error ? error.message : "An unknown error occurred");
     }
   };
 
   return (
     <div className="flex h-full flex-col relative">
-      <MarkdownTextArea
-        ref={markdownRef}
-        key={editorKey}
-        initialValue={text}
-        onChange={(e) => setText(e)}
-        editable={!isAnyCharacterStreaming() || quietResponseRef.current}
-        placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
-        sendShortcut={sendCommand}
-        className={cn(
-          "flex-1 h-full overflow-none pb-9", // Add bottom padding to prevent overlap with absolute bar
-          isAnyCharacterStreaming() && "animate-pulse",
-        )}
-        onSubmit={handleSubmit}
-        enableHistory={true}
-      />
+      {!isAnyCharacterStreaming() || quietResponseRef.current ? (
+        <MarkdownTextArea
+          ref={markdownRef}
+          key={editorKey}
+          initialValue={text}
+          onChange={(e) => setText(e)}
+          editable={true}
+          // editable={!isAnyCharacterStreaming() || quietResponseRef.current}
+          placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
+          sendShortcut={sendCommand}
+          className={cn(
+            "flex-1 h-full overflow-none pb-9", // Add bottom padding to prevent overlap with absolute bar
+            isAnyCharacterStreaming() && "animate-pulse",
+          )}
+          onSubmit={handleSubmit}
+          enableHistory={true}
+        />
+      ) : (
+        <div className="flex-1 h-full overflow-none pb-9">
+          <div className="h-full w-full flex items-center justify-center">
+            <Loader2 className="w-4! h-4! animate-spin" />
+          </div>
+        </div>
+      )}
       <div className="absolute bottom-0 left-0 w-full flex items-center gap-2 p-2 bg-background/95 border-t border-border justify-between z-10">
         <div className="flex items-center gap-2 ring-none">
           <QuickActions handleExecuteAction={executeQuickAction} />
