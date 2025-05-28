@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
+import { NewModelParams } from "@/services/model-service";
 import { useLocalModelsPageSettings } from "@/utils/local-storage";
 import { Brain, Database, Grid2X2, Grid3X3, Image, List, Music, Plus, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -42,11 +43,10 @@ export default function Models() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
-  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
 
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const currentProfile = useCurrentProfile();
-  const { getModelsByProfileGroupedByType, deleteModel, updateModel } = useModelsActions();
+  const { getModelsByProfileGroupedByType, deleteModel, updateModel, createModel } = useModelsActions();
   const { fetchManifests } = useModelManifestsActions();
   const [modelGroups, setModelGroups] = useState<ModelGroup[]>([]);
   const [allModels, setAllModels] = useState<Model[]>([]);
@@ -252,18 +252,39 @@ export default function Models() {
   };
 
   const handleDuplicate = async (model: Model) => {
-    // Remove the id property to ensure a new one is generated
-    const { id, ...duplicateWithoutId } = model;
+    if (!currentProfile?.id) {
+      console.error("No current profile available for duplication");
+      return;
+    }
 
-    // Create a duplicate model with the correct types
-    setSelectedModel({
-      ...duplicateWithoutId,
-      id: "",
-      name: `${model.name} (Copy)`,
-      // Let the backend handle timestamps
-    } as Model);
+    try {
+      setIsUpdating(true);
 
-    setDuplicateDialogOpen(true);
+      // Prepare the model data for duplication
+      const duplicateModelData: NewModelParams = {
+        profile_id: currentProfile.id,
+        name: `${model.name} (Copy)`,
+        type: model.type,
+        config: { ...model.config }, // Deep copy the config
+        manifest_id: model.manifest_id,
+        inference_template_id: model.inference_template_id!,
+      };
+
+      // Create the duplicate model in the database
+      const isDuplicate = true;
+      const duplicatedModel = await createModel(duplicateModelData, isDuplicate);
+
+      // Refresh the models list to show the new duplicate
+      await refreshModels();
+
+      // Set the newly created model as selected and open edit dialog
+      setSelectedModel(duplicatedModel);
+      setEditDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to duplicate model:", error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -530,25 +551,6 @@ export default function Models() {
         }
         onConfirm={confirmDelete}
       />
-
-      {/* Duplicate Model Dialog */}
-      <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Duplicate Model</DialogTitle>
-          </DialogHeader>
-          {selectedModel && (
-            <ModelForm
-              mode="duplicate"
-              model={selectedModel}
-              onSuccess={() => {
-                setDuplicateDialogOpen(false);
-                refreshModels();
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {selectedModel && (
         <ModelConfigDialog
