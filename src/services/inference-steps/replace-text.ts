@@ -7,7 +7,7 @@ import { FormattedPromptResult, PromptFormatterConfig } from "./formatter";
  */
 export function applyTextReplacements(text: string, config: PromptFormatterConfig["chatConfig"]): string {
   const { character, user_character, chapter, extra } = config || {};
-  let processedText = text;
+  let processedText = structuredClone(text);
 
   if (character?.name) {
     processedText = processedText.replace(/\{\{char\}\}/g, character.name);
@@ -25,9 +25,6 @@ export function applyTextReplacements(text: string, config: PromptFormatterConfi
   }
   if (user_character?.custom?.personality) {
     processedText = processedText.replace(/\{\{user\.personality\}\}/g, user_character.custom.personality);
-  }
-  if (chapter?.instructions) {
-    processedText = processedText.replace(/\{\{chapter\.instructions\}\}/g, chapter.instructions);
   }
   if (chapter?.scenario) {
     processedText = processedText.replace(/\{\{chapter\.scenario\}\}/g, chapter.scenario);
@@ -49,6 +46,31 @@ export function applyTextReplacements(text: string, config: PromptFormatterConfi
   }
 
   return processedText;
+}
+
+function normalizeConfig(config: PromptFormatterConfig["chatConfig"]): PromptFormatterConfig["chatConfig"] {
+  if (!config) {
+    return config;
+  }
+  const newconfig = structuredClone(config);
+
+  if (newconfig.character?.custom?.personality) {
+    newconfig.character.custom.personality = applyTextReplacements(newconfig.character.custom.personality, newconfig);
+  }
+
+  if (newconfig.user_character?.custom?.personality) {
+    newconfig.user_character.custom.personality = applyTextReplacements(newconfig.user_character.custom.personality, newconfig);
+  }
+
+  if (newconfig.chapter?.scenario) {
+    newconfig.chapter.scenario = applyTextReplacements(newconfig.chapter.scenario, newconfig);
+  }
+
+  if (newconfig.chapter?.title) {
+    newconfig.chapter.title = applyTextReplacements(newconfig.chapter.title, newconfig);
+  }
+
+  return newconfig;
 }
 
 /**
@@ -97,6 +119,18 @@ export function replaceRandomPattern(text: string): string {
 }
 
 /**
+ * Replace placeholder text in a string
+ * Alternative to replaceTextPlaceholders for strings
+ */
+export function replaceStringPlaceholders(text: string, config: PromptFormatterConfig["chatConfig"]) {
+  const infereceMessageFormatted: InferenceMessage[] = [{ role: "user", text }];
+
+  const response = replaceTextPlaceholders(infereceMessageFormatted, undefined, config);
+
+  return response.inferenceMessages[0].text;
+}
+
+/**
  * Replace placeholder text in messages and system prompt
  */
 export function replaceTextPlaceholders(
@@ -111,8 +145,10 @@ export function replaceTextPlaceholders(
     return { inferenceMessages: messages, systemPrompt };
   }
 
+  const normalizedConfig = normalizeConfig(config);
+
   const processText = (text: string): string => {
-    const withReplacements = applyTextReplacements(text, config);
+    const withReplacements = applyTextReplacements(text, normalizedConfig);
     const withRandomPattern = replaceRandomPattern(withReplacements);
     return applyCensorship(withRandomPattern, censorship?.words || []);
   };

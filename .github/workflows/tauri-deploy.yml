@@ -68,3 +68,24 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  discord-notification:
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Send GitHub Release to Discord
+        uses: SethCohen/github-releases-to-discord@v1.16.2
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          color: "2105893"
+          username: "Release Notification v${{ github.event.release.tag_name }}"
+          avatar_url: "" # Optional: URL to custom avatar image
+          content: "" # Optional: Additional text content (e.g., "@everyone")
+          footer_title: "Changelog"
+          footer_icon_url: "" # Optional: URL to footer icon
+          footer_timestamp: true
+          max_description: "4096"
+          reduce_headings: true

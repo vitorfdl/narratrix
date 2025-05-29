@@ -5,6 +5,7 @@ import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
@@ -15,7 +16,6 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterActions, useCharacterTagList } from "@/hooks/characterStore";
 import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
-import { TemplatePicker } from "@/pages/formatTemplates/components/TemplatePicker";
 import { LorebookEntries } from "@/pages/lorebooks/components/LorebookEntries";
 import { Character } from "@/schema/characters-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
@@ -206,20 +206,16 @@ function LorebookContent({
 
   const lorebookTemplates = allLorebooks.map((lb) => ({ id: lb.id, name: lb.name }));
 
-  // Add a "None" option to allow deselection
-  const templatesWithNone = [{ id: "None", name: "None (No Lorebook)" }, ...lorebookTemplates];
-
   return (
     <div className="flex flex-col space-y-4 min-h-[200px]">
       <TemplatePicker
-        templates={templatesWithNone}
+        templates={lorebookTemplates}
         selectedTemplateId={selectedLorebookId}
-        onTemplateSelect={(id) => onLorebookSelect(id === "None" ? null : id)}
+        onTemplateSelect={(id) => onLorebookSelect(id)}
         onNewTemplate={handleNewLorebook}
         onDelete={handleDeleteLorebook}
         onEditName={handleEditLorebookName}
-        onImport={() => toast.info("Import functionality not yet implemented.")}
-        onExport={() => toast.info("Export functionality not yet implemented.")}
+        clearable={true}
       />
 
       {selectedLorebookId ? (

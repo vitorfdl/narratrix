@@ -42,7 +42,6 @@ const WidgetMessages: React.FC = () => {
   const [editedContent, setEditedContent] = useState<string>("");
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [messageReasonings, setMessageReasonings] = useState<Record<string, string>>({});
-  const streamingCheckRef = useRef<number | null>(null);
   const [streamingTimestamp, setStreamingTimestamp] = useState<number>(0); // Track streaming updates
 
   // Refs for scroll management
@@ -143,6 +142,7 @@ const WidgetMessages: React.FC = () => {
       });
     } catch (error) {
       console.error("Failed to regenerate message:", error);
+      toast.error(error instanceof Error ? error.message : "An unknown error occurred");
       // Clear streaming message ID if there was an error
       setStreamingMessageId(null);
     }
@@ -184,52 +184,32 @@ const WidgetMessages: React.FC = () => {
     [messages, streamingMessageId, updateChatMessage, onRegenerateMessage],
   );
 
-  // Sync streaming state with the inference service and capture reasoning
-  const syncStreamingState = useCallback(() => {
-    const streamingState = inferenceService.getStreamingState();
-
-    if (streamingState.messageId) {
-      // If we have a message ID in the streaming state
-      setStreamingMessageId(streamingState.messageId as string);
-
-      // If there's new accumulated reasoning, update the reasonings state
-      if (streamingState.accumulatedReasoning && streamingState.accumulatedReasoning.trim() !== "") {
-        setMessageReasonings((prev) => ({
-          ...prev,
-          [streamingState.messageId as string]: streamingState.accumulatedReasoning,
-        }));
-      }
-
-      // Update timestamp to trigger re-renders during streaming
-      if (streamingState.accumulatedText !== "") {
-        setStreamingTimestamp(Date.now());
-      }
-    } else if (streamingMessageId) {
-      setStreamingMessageId(null);
-    }
-  }, [inferenceService, messages, streamingMessageId]);
-
-  // Update streaming state when messages change
+  // Subscribe to streaming state changes
   useEffect(() => {
-    // Initial sync when messages change
-    syncStreamingState();
+    const unsubscribe = inferenceService.subscribeToStateChanges((streamingState) => {
+      if (streamingState.messageId) {
+        // If we have a message ID in the streaming state
+        setStreamingMessageId(streamingState.messageId as string);
 
-    // Set up interval to periodically check streaming state
-    if (streamingCheckRef.current) {
-      window.clearInterval(streamingCheckRef.current);
-    }
+        // If there's new accumulated reasoning, update the reasonings state
+        if (streamingState.accumulatedReasoning && streamingState.accumulatedReasoning.trim() !== "") {
+          setMessageReasonings((prev) => ({
+            ...prev,
+            [streamingState.messageId as string]: streamingState.accumulatedReasoning,
+          }));
+        }
 
-    streamingCheckRef.current = window.setInterval(() => {
-      syncStreamingState();
-    }, 100); // Check more frequently for smoother updates v
-
-    return () => {
-      if (streamingCheckRef.current) {
-        window.clearInterval(streamingCheckRef.current);
-        streamingCheckRef.current = null;
+        // Update timestamp to trigger re-renders during streaming
+        if (streamingState.accumulatedText !== "") {
+          setStreamingTimestamp(Date.now());
+        }
+      } else if (streamingMessageId) {
+        setStreamingMessageId(null);
       }
-    };
-  }, [messages, syncStreamingState]);
+    });
+
+    return unsubscribe;
+  }, [inferenceService, streamingMessageId]);
 
   // Auto-scroll to bottom during streaming
   useEffect(() => {

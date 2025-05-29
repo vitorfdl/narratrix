@@ -188,11 +188,21 @@ pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
     let payload = create_chat_completion_payload(&model, messages, request)?;
 
     // Send the request using BYOT approach
-    let response: OpenAIValue = client
-        .chat()
-        .create_byot(payload)
-        .await
-        .context("Failed to create chat completion")?;
+    let response: OpenAIValue = match client.chat().create_byot(payload).await {
+        Ok(resp) => resp,
+        Err(e) => {
+            let err_msg = e.to_string();
+            if err_msg.contains("EOF while parsing") || err_msg.contains("unexpected end of file") {
+                return Err(anyhow!(
+                    "Failed to connect to the OpenAI endpoint: received an empty or invalid response. \
+                    The base_url may be incorrect, the endpoint may not exist, or the server is unreachable. \
+                    Please verify your base_url configuration. (Underlying error: {err_msg})"
+                ));
+            } else {
+                return Err(anyhow!("Failed to create chat completion: {err_msg}"));
+            }
+        }
+    };
 
     // Extract and return the response text
     match response["choices"][0]["message"]["content"].as_str() {
@@ -290,6 +300,15 @@ pub async fn converse_stream(
                 if delay_ms > 0 {
                     tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
                 }
+
+                if let Some(error_obj) = chunk.get("error") {
+                    let error_message = error_obj
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("Unknown error from upstream API");
+
+                    return Err(anyhow!("Upstream API error: {}", error_message));
+                }
             }
             Ok(Some(Err(e))) => {
                 let err_msg = e.to_string();
@@ -335,6 +354,28 @@ fn create_completion_payload(
     Ok(payload)
 }
 
+// Helper function to build a complete prompt from system message and all messages
+fn build_completion_prompt(request: &InferenceRequest) -> Result<String> {
+    let mut prompt_parts = Vec::new();
+
+    // Add system prompt if provided
+    if let Some(system_prompt) = &request.system_prompt {
+        prompt_parts.push(system_prompt.clone());
+    }
+
+    // Add all message texts
+    for msg in &request.message_list {
+        prompt_parts.push(msg.text.clone());
+    }
+
+    if prompt_parts.is_empty() {
+        return Err(anyhow!("No prompt content found in request"));
+    }
+
+    // Join all parts with newlines
+    Ok(prompt_parts.join("\n"))
+}
+
 /// OpenAI-compatible client for completions
 ///
 /// This function handles non-streaming completion requests.
@@ -342,11 +383,8 @@ pub async fn complete(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
     // Initialize client
     let (client, model) = initialize_openai_client(specs)?;
 
-    let prompt = request
-        .message_list
-        .last()
-        .map(|msg| msg.text.clone())
-        .ok_or_else(|| anyhow!("No prompt found in request"))?;
+    // Build complete prompt from system message and all messages
+    let prompt = build_completion_prompt(request)?;
 
     // Create JSON payload
     let payload = create_completion_payload(&model, &prompt, request)?;
@@ -385,12 +423,8 @@ pub async fn complete_stream(
     // Initialize client
     let (client, model) = initialize_openai_client(specs)?;
 
-    // Extract prompt from the request (Completions only use the last message)
-    let prompt = request
-        .message_list
-        .last()
-        .map(|msg| msg.text.clone())
-        .ok_or_else(|| anyhow!("No prompt found in request"))?;
+    // Build complete prompt from system message and all messages
+    let prompt = build_completion_prompt(request)?;
 
     // Create JSON payload
     let mut payload = create_completion_payload(&model, &prompt, request)?;
@@ -452,6 +486,15 @@ pub async fn complete_stream(
 
                 if delay_ms > 0 {
                     tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                }
+
+                if let Some(error_obj) = chunk.get("error") {
+                    let error_message = error_obj
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("Unknown error from upstream API");
+
+                    return Err(anyhow!("Upstream API error: {}", error_message));
                 }
             }
             Ok(Some(Err(e))) => {

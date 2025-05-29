@@ -29,6 +29,8 @@ const systemPromptTypeEnum = z.enum(SYSTEM_PROMPT_TYPES);
 const systemPromptSectionSchema = z.object({
   type: systemPromptTypeEnum,
   content: z.string(),
+  enabled: z.boolean().optional().default(true),
+  label: z.string().optional().nullable(),
 });
 
 const SystempPromptConfigSchema = z

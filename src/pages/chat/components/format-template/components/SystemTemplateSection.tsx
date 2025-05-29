@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-format-schema";
@@ -16,7 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { ChevronDown, ChevronUp, GripVertical, Paperclip, Plus, SeparatorVertical, Trash } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import "../styles/shared.css";
+import "../../../../formatTemplates/styles/shared.css";
 
 // Extended interface for prompt items with UI state
 interface PromptItem extends SystemPromptSection {
@@ -75,6 +76,11 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
     onUpdate(prompt.id, { isCollapsed: !prompt.isCollapsed });
   };
 
+  // Handler for enabled toggle that should update parent immediately
+  const handleEnabledToggle = (enabled: boolean) => {
+    onUpdate(prompt.id, { enabled });
+  };
+
   // Format name helper
   const formatName = (name: string) => {
     return name
@@ -85,7 +91,15 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
   };
 
   return (
-    <Card ref={setNodeRef} style={{ ...style, backgroundColor: "rgba(255, 255, 255, 0.05)" }}>
+    <Card
+      ref={setNodeRef}
+      style={{
+        ...style,
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+        opacity: (prompt.enabled ?? true) ? 1 : 0.6,
+      }}
+      className={`${!(prompt.enabled ?? true) ? "border-dashed" : ""}`}
+    >
       <CardContent className="px-1 py-0 space-y-1 select-none">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -95,11 +109,17 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
             <Button variant="ghost" size="sm" disabled={disabled} onClick={handleCollapseToggle}>
               {prompt.isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
-            <div className="font-medium text-sm">{formatName(prompt.name)}</div>
+            <div className="font-medium text-sm">{prompt.label ?? formatName(prompt.name)}</div>
           </div>
-          <Button variant="ghost" size="icon" disabled={disabled} onClick={() => onDelete(prompt.id)}>
-            <Trash className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              <Switch checked={prompt.enabled ?? true} onCheckedChange={handleEnabledToggle} disabled={disabled} size="sm" />
+              <span className="text-xs text-muted-foreground">{(prompt.enabled ?? true) ? "Enabled" : "Disabled"}</span>
+            </div>
+            <Button variant="ghost" size="icon" disabled={disabled} onClick={() => onDelete(prompt.id)}>
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {!prompt.isCollapsed && (
@@ -165,6 +185,8 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
         id: `${section.type}-${index}`,
         // Preserve collapse state if it exists, otherwise default to true
         isCollapsed: existingPrompt ? existingPrompt.isCollapsed : true,
+        // Ensure enabled field has a default value if not set
+        enabled: section.enabled ?? true,
         name: section.type
           .replace(/([A-Z])/g, " $1")
           .toLowerCase()
@@ -182,9 +204,11 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
     }
 
     // Convert UI items back to the schema format
-    const config = prompts.map(({ type, content }) => ({
+    const config = prompts.map(({ type, content, enabled, label }) => ({
       type,
       content,
+      enabled: enabled ?? true,
+      label,
     }));
 
     try {
@@ -208,15 +232,28 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
         return;
       }
 
+      const name = type
+        .replace(/([A-Z])/g, " $1")
+        .toLowerCase()
+        .replace(/^./, (str: string) => str.toUpperCase());
+
+      // Generate unique name for custom-field items
+      let label = null;
+      if (type === "custom-field") {
+        const existingCustomFields = prompts.filter((p) => p.type === "custom-field");
+        if (existingCustomFields.length > 0) {
+          label = `${name} ${existingCustomFields.length + 1}`;
+        }
+      }
+
       const newPrompt: PromptItem = {
         id: crypto.randomUUID(),
         type,
         content: SYSTEM_PROMPT_DEFAULT_CONTENT[type],
+        enabled: true,
         isCollapsed: false,
-        name: type
-          .replace(/([A-Z])/g, " $1")
-          .toLowerCase()
-          .replace(/^./, (str: string) => str.toUpperCase()),
+        label,
+        name,
       };
 
       // Update local state without triggering template update immediately
@@ -229,7 +266,7 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
         return updatedPrompts;
       });
     },
-    [isDisabled, debouncedUpdate],
+    [isDisabled, debouncedUpdate, prompts],
   );
 
   // Handle updating a prompt section
@@ -242,8 +279,8 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
       setPrompts((prevPrompts) => {
         const updatedPrompts = prevPrompts.map((prompt) => (prompt.id === id ? { ...prompt, ...updates } : prompt));
 
-        // Only trigger update if content changed, not for UI state changes
-        if (updates.content !== undefined) {
+        // Trigger update if content or enabled state changed, not for UI state changes like collapse
+        if (updates.content !== undefined || updates.enabled !== undefined) {
           // Use the debouncedUpdate directly without setTimeout to prevent race conditions
           debouncedUpdate();
         }
@@ -289,24 +326,48 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
   );
 
   // Handle separator changes
-  const handleContextSeparatorChange = useCallback(
-    (value: string) => {
-      setContextSeparator(value);
-      debouncedUpdate();
-    },
-    [debouncedUpdate],
-  );
+  const handleContextSeparatorChange = useCallback((value: string) => {
+    setContextSeparator(value);
+  }, []);
 
-  const handleLorebookSeparatorChange = useCallback(
-    (value: string) => {
-      setLorebookSeparator(value);
-      debouncedUpdate();
-    },
-    [debouncedUpdate],
-  );
+  const handleLorebookSeparatorChange = useCallback((value: string) => {
+    setLorebookSeparator(value);
+  }, []);
 
-  // Filter available types that are not already used
-  const availableTypes = useMemo(() => SYSTEM_PROMPT_TYPES.filter((type) => !prompts.some((prompt) => prompt.type === type)), [prompts.length]);
+  // Debounced effect for separators
+  useEffect(() => {
+    if (isDisabled || !formatTemplateID || !currentTemplate) {
+      return;
+    }
+    const handler = setTimeout(() => {
+      updateFormatTemplate(formatTemplateID, {
+        prompts: prompts.map(({ type, content, enabled, label }) => ({ type, content, enabled: enabled ?? true, label })),
+        config: {
+          ...currentTemplate.config,
+          context_separator: contextSeparator,
+          lorebook_separator: lorebookSeparator,
+        },
+      }).catch((error) => {
+        console.error("Failed to update template:", error);
+      });
+    }, 400); // 400ms debounce
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextSeparator, lorebookSeparator]);
+
+  // Filter available types that are not already used (except custom-field which can be added multiple times)
+  const availableTypes = useMemo(
+    () =>
+      SYSTEM_PROMPT_TYPES.filter((type) => {
+        // Allow custom-field to be added multiple times
+        if (type === "custom-field") {
+          return true;
+        }
+        // For other types, only allow if not already used
+        return !prompts.some((prompt) => prompt.type === type);
+      }),
+    [prompts.length],
+  );
 
   return (
     <Card>
@@ -364,8 +425,8 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-56">
-                {availableTypes.map((type) => (
-                  <DropdownMenuItem key={type} onClick={() => handleAddPrompt(type as SystemPromptType)}>
+                {availableTypes.map((type, index) => (
+                  <DropdownMenuItem key={`${type}-${index}`} onClick={() => handleAddPrompt(type as SystemPromptType)}>
                     {type
                       .replace(/([A-Z])/g, " $1")
                       .toLowerCase()
@@ -389,8 +450,9 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
                 <Label htmlFor="context-separator">Context Separator</Label>
                 <Input
                   value={contextSeparator}
-                  placeholder="\n\n"
+                  placeholder={"\n\n"}
                   onChange={(e) => handleContextSeparatorChange(e.target.value)}
+                  onBlur={() => debouncedUpdate()}
                   key={`context-separator-${formatTemplateID}`}
                   className="w-full resize-none"
                 />
@@ -400,8 +462,9 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
                 <Label htmlFor="lorebook-separator">Lorebook Separator</Label>
                 <Input
                   value={lorebookSeparator}
-                  placeholder="\n---\n"
+                  placeholder={"\n---\n"}
                   onChange={(e) => handleLorebookSeparatorChange(e.target.value)}
+                  onBlur={() => debouncedUpdate()}
                   key={`lorebook-separator-${formatTemplateID}`}
                   className="w-full resize-none"
                 />

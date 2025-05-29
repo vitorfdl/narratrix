@@ -15,7 +15,7 @@ import "./styles/settings.css";
 
 export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const { setTheme } = useThemeStore();
+  const { setTheme, setFontSize } = useThemeStore();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
 
   const currentProfile = useCurrentProfile();
@@ -101,6 +101,10 @@ export default function Settings() {
       if (section === "appearance" && key === "theme") {
         setTheme(value);
       }
+      // Sync fontSize changes with ThemeStore immediately for preview
+      if (section === "appearance" && key === "fontSize") {
+        setFontSize(value);
+      }
 
       // Clear any existing timeout
       if (saveTimeoutRef.current) {
@@ -112,7 +116,7 @@ export default function Settings() {
         debouncedSave(updatedSettings);
       }, 800) as unknown as number;
     },
-    [settings, setTheme, debouncedSave],
+    [settings, setTheme, setFontSize, debouncedSave],
   );
 
   // const selectDirectory = useCallback(async () => {

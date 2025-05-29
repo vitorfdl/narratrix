@@ -64,7 +64,13 @@ export interface StreamingState {
    * The format template used for this streaming session. This is required for correct reasoning and message formatting.
    */
   formatTemplate: FormatTemplate | null;
+  chunkBuffer: string;
 }
+
+/**
+ * Callback type for streaming state changes
+ */
+export type StreamingStateChangeCallback = (state: StreamingState) => void;
 
 /**
  * Simplified options interface that requires less parameters
@@ -110,6 +116,112 @@ const INITIAL_STREAMING_STATE: StreamingState = {
   messageIndex: 0,
   isThinking: false,
   formatTemplate: null,
+  chunkBuffer: "",
+};
+
+// Add a debounced update function
+const createDebouncedUpdate = () => {
+  let timeoutId: number | null = null;
+  let pendingUpdate: (() => void) | null = null;
+
+  return (updateFn: () => void, delay = 50) => {
+    pendingUpdate = updateFn;
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    timeoutId = setTimeout(() => {
+      if (pendingUpdate) {
+        pendingUpdate();
+        pendingUpdate = null;
+      }
+      timeoutId = null;
+    }, delay);
+  };
+};
+
+// Create debounced updater instance
+const debouncedMessageUpdate = createDebouncedUpdate();
+
+// Enhanced chunk processor with buffer
+const processStreamChunk = (
+  chunk: string,
+  streamingState: StreamingState,
+  formatTemplate: FormatTemplate | null,
+): { textToAdd: string; reasoningToAdd: string } => {
+  const { prefix = "<think>", suffix = "</think>" } = formatTemplate?.config.reasoning || DEFAULT_THINKING_CONFIG;
+
+  // Combine buffer with new chunk
+  let workingText = streamingState.chunkBuffer + chunk;
+  let textToAdd = "";
+  let reasoningToAdd = "";
+
+  // Process the working text
+  while (workingText.length > 0) {
+    if (streamingState.isThinking) {
+      // Look for end tag
+      const endTagIndex = workingText.indexOf(suffix);
+
+      if (endTagIndex !== -1) {
+        // Found complete end tag
+        reasoningToAdd += workingText.substring(0, endTagIndex);
+        workingText = workingText.substring(endTagIndex + suffix.length);
+        streamingState.isThinking = false;
+      } else {
+        // Check if we have a partial end tag at the end
+        const partialMatch = findPartialTagMatch(workingText, suffix);
+        if (partialMatch > -1) {
+          // Save partial match in buffer
+          reasoningToAdd += workingText.substring(0, partialMatch);
+          streamingState.chunkBuffer = workingText.substring(partialMatch);
+          workingText = "";
+        } else {
+          // No partial match, consume all as reasoning
+          reasoningToAdd += workingText;
+          streamingState.chunkBuffer = "";
+          workingText = "";
+        }
+      }
+    } else {
+      // Look for start tag
+      const startTagIndex = workingText.indexOf(prefix);
+
+      if (startTagIndex !== -1) {
+        // Found complete start tag
+        textToAdd += workingText.substring(0, startTagIndex);
+        workingText = workingText.substring(startTagIndex + prefix.length);
+        streamingState.isThinking = true;
+      } else {
+        // Check if we have a partial start tag at the end
+        const partialMatch = findPartialTagMatch(workingText, prefix);
+        if (partialMatch > -1) {
+          // Save partial match in buffer
+          textToAdd += workingText.substring(0, partialMatch);
+          streamingState.chunkBuffer = workingText.substring(partialMatch);
+          workingText = "";
+        } else {
+          // No partial match, consume all as text
+          textToAdd += workingText;
+          streamingState.chunkBuffer = "";
+          workingText = "";
+        }
+      }
+    }
+  }
+
+  return { textToAdd, reasoningToAdd };
+};
+
+// Helper function to find partial tag matches
+const findPartialTagMatch = (text: string, tag: string): number => {
+  // Check if the end of text could be the beginning of the tag
+  for (let i = 1; i < tag.length && i <= text.length; i++) {
+    if (text.endsWith(tag.substring(0, i))) {
+      return text.length - i;
+    }
+  }
+  return -1;
 };
 
 /**
@@ -117,6 +229,7 @@ const INITIAL_STREAMING_STATE: StreamingState = {
  */
 export function useInferenceService() {
   const streamingState = useRef<StreamingState>({ ...INITIAL_STREAMING_STATE });
+  const stateChangeCallbacks = useRef<Set<StreamingStateChangeCallback>>(new Set());
   const currentProfile = useCurrentProfile();
   if (!currentProfile) {
     throw new Error("Current profile not found");
@@ -134,62 +247,63 @@ export function useInferenceService() {
 
   const [localSummarySettings] = useLocalSummarySettings();
 
+  /**
+   * Notify all registered callbacks about streaming state changes
+   */
+  const notifyStateChange = useCallback(() => {
+    const currentState = { ...streamingState.current };
+    stateChangeCallbacks.current.forEach((callback) => {
+      try {
+        callback(currentState);
+      } catch (error) {
+        console.error("Error in streaming state change callback:", error);
+      }
+    });
+  }, []);
+
+  /**
+   * Subscribe to streaming state changes
+   */
+  const subscribeToStateChanges = useCallback((callback: StreamingStateChangeCallback) => {
+    stateChangeCallbacks.current.add(callback);
+
+    // Return unsubscribe function
+    return () => {
+      stateChangeCallbacks.current.delete(callback);
+    };
+  }, []);
+
   // Set up inference with callbacks
   const { runInference, cancelRequest } = useInference({
     onStream: (response, requestId) => {
-      // Skip if this is for a different request
       if (requestId !== streamingState.current.requestId) {
         return;
       }
 
-      // Directly append any explicit reasoning provided
+      // Process explicit reasoning if provided
       streamingState.current.accumulatedReasoning += response.result.reasoning || "";
 
-      let currentChunk = response.result.text || response.result.full_response || "";
-      let textToAdd = "";
-      let reasoningToAdd = "";
+      const currentChunk = response.result.text || response.result.full_response || "";
 
-      const { prefix, suffix } = streamingState.current.formatTemplate?.config.reasoning || DEFAULT_THINKING_CONFIG;
-      // Process the text chunk to separate user-facing text and <think> content
-      while (currentChunk.length > 0) {
-        if (streamingState.current.isThinking) {
-          const endTagIndex = currentChunk.indexOf(suffix || "</think>");
-          if (endTagIndex !== -1) {
-            // Found the end tag in this chunk
-            reasoningToAdd += currentChunk.substring(0, endTagIndex);
-            currentChunk = currentChunk.substring(endTagIndex + suffix.length || "</think>".length);
-            streamingState.current.isThinking = false;
-          } else {
-            // End tag not in this chunk, the whole remaining chunk is reasoning
-            reasoningToAdd += currentChunk;
-            currentChunk = ""; // Consumed the whole chunk
-          }
-        } else {
-          const startTagIndex = currentChunk.indexOf(prefix || "<think>");
-          if (startTagIndex !== -1) {
-            // Found the start tag in this chunk
-            textToAdd += currentChunk.substring(0, startTagIndex);
-            currentChunk = currentChunk.substring(startTagIndex + prefix.length || "<think>".length);
-            streamingState.current.isThinking = true;
-          } else {
-            // Start tag not in this chunk, the whole remaining chunk is text
-            textToAdd += currentChunk;
-            currentChunk = ""; // Consumed the whole chunk
-          }
-        }
-      }
+      // Process chunk with buffer
+      const { textToAdd, reasoningToAdd } = processStreamChunk(currentChunk, streamingState.current, streamingState.current.formatTemplate);
 
-      // During streaming, just append the new chunk
+      // Accumulate the processed text and reasoning
       streamingState.current.accumulatedText += textToAdd;
       streamingState.current.accumulatedReasoning += reasoningToAdd;
 
+      // Notify subscribers about the state change
+      notifyStateChange();
+
+      // Debounce UI updates to prevent overwhelming the frontend
       if (streamingState.current.characterId && streamingState.current.messageId) {
-        // Update the message in the UI with the accumulated *user-facing text* only
-        inferenceUpdateMessageID(
-          streamingState.current.messageId,
-          streamingState.current.accumulatedText, // Only show user-facing text
-          streamingState.current.messageIndex || 0,
-        );
+        debouncedMessageUpdate(() => {
+          inferenceUpdateMessageID(
+            streamingState.current.messageId!,
+            streamingState.current.accumulatedText,
+            streamingState.current.messageIndex || 0,
+          );
+        });
       }
     },
     onComplete: (response, requestId) => {
@@ -202,11 +316,13 @@ export function useInferenceService() {
         // Helper to apply conditional formatting based on FormatTemplate settings
 
         const rawText = response.result?.full_response || response.result?.text || streamingState.current.accumulatedText;
-        const finalText = formatFinalText(rawText, streamingState.current.formatTemplate);
+        const { text: finalText, reasoning: finalReasoning } = formatFinalText(rawText, streamingState.current.formatTemplate);
+
+        streamingState.current.accumulatedReasoning = finalReasoning || "";
         // Final update to the message
         inferenceUpdateMessageID(streamingState.current.messageId, finalText, streamingState.current.messageIndex || 0);
 
-        // Reset streaming state
+        // Reset streaming state (this will notify subscribers)
         resetStreamingState();
         playBeepSound(currentProfile.settings.chat.beepSound);
       }
@@ -222,7 +338,7 @@ export function useInferenceService() {
       });
       console.error("Inference error:", error);
 
-      // Reset streaming state
+      // Reset streaming state (this will notify subscribers)
       resetStreamingState();
     },
   });
@@ -270,8 +386,12 @@ export function useInferenceService() {
   const resetStreamingState = useCallback(() => {
     const previousState = { ...streamingState.current };
     streamingState.current = { ...INITIAL_STREAMING_STATE };
+
+    // Notify all subscribers about the state change
+    notifyStateChange();
+
     return previousState;
-  }, []);
+  }, [notifyStateChange]);
 
   /**
    * Format prompts for the inference engine
@@ -340,6 +460,7 @@ export function useInferenceService() {
 
     const characterPromptOverride = characterList.find((character) => character.id === characterId)?.system_override;
 
+    const character = characterList.find((character) => character.id === characterId);
     // Format the prompt
     const prompt = await formatPromptUtil({
       messageHistory: chatWithNames || [],
@@ -357,7 +478,7 @@ export function useInferenceService() {
         injectionPrompts: {
           summary: localSummarySettings.requestPrompt,
         },
-        character: characterList.find((character) => character.id === characterId),
+        character,
         user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
         chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
         extra: extraSuggestions,
@@ -402,9 +523,14 @@ export function useInferenceService() {
         onStreamingStateChange(streamingState.current);
       }
 
+      // Notify all subscribers about the state change
+      notifyStateChange();
+
       if (existingMessageId) {
         streamingState.current.messageId = existingMessageId;
         streamingState.current.messageIndex = messageIndex;
+        // Notify subscribers about the updated message ID
+        notifyStateChange();
       }
 
       const freshMessages = messageHistoryOverride || (await fetchChatMessages(currentChatId, currentChapterID));
@@ -465,6 +591,9 @@ export function useInferenceService() {
       streamingState.current.messageId = messageId;
       streamingState.current.messageIndex = messageIndex;
 
+      // Notify subscribers about the updated message ID
+      notifyStateChange();
+
       // Create ModelSpecs using the model and manifest settings
       const modelSpecs: ModelSpecs = {
         id: modelSettings.id,
@@ -477,6 +606,9 @@ export function useInferenceService() {
       const localRequestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       // Set it to streaming state BEFORE making the backend call
       streamingState.current.requestId = localRequestId;
+
+      // Notify subscribers about the updated request ID
+      notifyStateChange();
 
       // Setup Parameters with Custom Stop Strigns.
       const parameters = removeNestedFields(parametersOverride || chatTemplate?.config || {});
@@ -509,7 +641,7 @@ export function useInferenceService() {
     } catch (error) {
       console.error("Error generating message:", error);
 
-      // Reset streaming state
+      // Reset streaming state (this will notify subscribers)
       resetStreamingState();
 
       // Notify about streaming state change if callback provided
@@ -563,7 +695,7 @@ export function useInferenceService() {
       const success = await cancelRequest(streamingState.current.requestId);
 
       if (success) {
-        resetStreamingState();
+        resetStreamingState(); // This will notify subscribers
       }
 
       return success ?? false;
@@ -587,5 +719,6 @@ export function useInferenceService() {
     cancelGeneration,
     getStreamingState,
     resetStreamingState,
+    subscribeToStateChanges,
   };
 }

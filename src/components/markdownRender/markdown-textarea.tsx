@@ -23,13 +23,26 @@ interface MarkdownTextAreaProps {
   sendShortcut?: "Enter" | "Ctrl+Enter" | "Shift+Enter" | "CMD+Enter";
   onSubmit?: (text: string) => void;
   enableHistory?: boolean;
+  useEditorOnly?: boolean; // If true, the editor will be used exclusively and the viewer will be hidden.
   autofocus?: boolean;
   key?: string;
 }
 
 export const MarkdownTextArea = forwardRef<MarkdownEditorRef, MarkdownTextAreaProps>(
   (
-    { initialValue = "", enableHistory = false, onChange, className, label, placeholder, editable = true, suggestions, sendShortcut, onSubmit },
+    {
+      initialValue = "",
+      enableHistory = false,
+      onChange,
+      className,
+      label,
+      placeholder,
+      editable = true,
+      suggestions,
+      sendShortcut,
+      onSubmit,
+      useEditorOnly = false,
+    },
     ref,
   ) => {
     const [nonEditableContent, setNonEditableContent] = useState(initialValue);
@@ -40,12 +53,13 @@ export const MarkdownTextArea = forwardRef<MarkdownEditorRef, MarkdownTextAreaPr
       }
     }, [initialValue, editable]);
 
-    if (!editable) {
+    if (!editable && !useEditorOnly) {
       return <MarkdownViewer content={nonEditableContent} className={className} label={label} />;
     }
 
     return (
       <MarkdownEditor
+        editable={editable}
         initialValue={initialValue}
         onChange={onChange}
         label={label}

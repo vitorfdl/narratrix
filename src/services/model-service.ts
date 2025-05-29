@@ -22,7 +22,7 @@ export interface ModelFilter {
 }
 
 // Create a new model
-export async function createModel(modelData: NewModelParams): Promise<Model> {
+export async function createModel(modelData: NewModelParams, disableEncryption?: boolean): Promise<Model> {
   // Validate profile_id is a valid UUID
   const profileId = uuidUtils.uuid().parse(modelData.profile_id);
 
@@ -39,14 +39,16 @@ export async function createModel(modelData: NewModelParams): Promise<Model> {
     const processedConfig = { ...modelData.config };
 
     // Encrypt each secret field
-    for (const key of secretFields) {
-      if (processedConfig[key]) {
-        try {
-          // Encrypt the secret value
-          processedConfig[key] = await encryptApiKey(processedConfig[key]);
-        } catch (error) {
-          console.error(`Failed to encrypt secret field ${key}:`, error);
-          throw new Error(`Failed to encrypt secret field ${key}: ${error}`);
+    if (!disableEncryption) {
+      for (const key of secretFields) {
+        if (processedConfig[key]) {
+          try {
+            // Encrypt the secret value
+            processedConfig[key] = await encryptApiKey(processedConfig[key]);
+          } catch (error) {
+            console.error(`Failed to encrypt secret field ${key}:`, error);
+            throw new Error(`Failed to encrypt secret field ${key}: ${error}`);
+          }
         }
       }
     }
@@ -195,34 +197,6 @@ export async function updateModel(
   const currentModel = await getModelById(modelId);
   if (!currentModel) {
     return null;
-  }
-
-  const manifest = await getModelManifestById(currentModel.manifest_id)!;
-
-  // If config is being updated, handle secret fields
-  if (updateData.config) {
-    // Process and encrypt any secret fields in the config
-    if (manifest && updateData.config) {
-      const secretFields = manifest.fields.filter((field) => field.field_type === "secret").map((field) => field.key);
-      // Create a new config object to avoid mutating the original
-      const processedConfig = { ...updateData.config };
-
-      // Encrypt each secret field
-      for (const key of secretFields) {
-        if (processedConfig[key]) {
-          try {
-            // Encrypt the secret value
-            processedConfig[key] = await encryptApiKey(processedConfig[key]);
-          } catch (error) {
-            console.error(`Failed to encrypt secret field ${key}:`, error);
-            throw new Error(`Failed to encrypt secret field ${key}: ${error}`);
-          }
-        }
-      }
-
-      // Replace the original config with the processed one
-      updateData.config = processedConfig;
-    }
   }
 
   // Define field transformations

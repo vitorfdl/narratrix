@@ -1,3 +1,4 @@
+import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -6,29 +7,37 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
-import { TemplatePicker } from "@/pages/formatTemplates/components/TemplatePicker";
 import type { SectionField } from "@/schema/template-chat-settings-types";
 import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useUIStore } from "@/hooks/UIStore";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatParticipants, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
-import { useLorebooks } from "@/hooks/lorebookStore";
+import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
 import { useModels } from "@/hooks/modelsStore";
-import { useFormatTemplateList } from "@/hooks/templateStore";
+import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
-import { NewChatTemplateParams } from "@/services/template-chat-service";
-import { useSessionCurrentFormatTemplate } from "@/utils/session-storage";
+import { parseChatTemplateContent, validateAndTransformChatTemplateData } from "@/services/imports/import-chat-template";
+import { validateAndTransformFormatTemplateData } from "@/services/imports/import-format-template";
+import { importLorebook, validateAndTransformLorebookData } from "@/services/imports/import-lorebook";
+import { prepareLorebooksForEmbedding } from "@/services/imports/shared/lorebook-export";
+import { NewChatTemplateParams, getChatTemplateById } from "@/services/template-chat-service";
+import { createFormatTemplate, getFormatTemplateById } from "@/services/template-format-service";
+import { ExportType, exportSingleToJsonFile } from "@/utils/export-utils";
+import { sortAlphabetically } from "@/utils/sorting";
 import { configFields } from "../manifests/configFields";
+import { ExportOptions, ExportOptionsDialog } from "./ExportOptionsDialog";
+import { ImportOptions, ImportOptionsDialog } from "./ImportOptionsDialog";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
 import { ConfigItem } from "./fields/ConfigItems";
+import FormatTemplateModal from "./format-template/FormatTemplateModal";
 
 const bigScreenBreakpoints = "@[10rem]:flex";
 
@@ -47,11 +56,14 @@ interface ChatTemplateConfigProps {
 const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTemplateConfigProps) => {
   const chatTemplateList = useChatTemplateList();
   const { updateChatTemplate } = useChatTemplateActions();
+  const { fetchFormatTemplates } = useTemplateActions();
   const models = useModels();
   const formatTemplates = useFormatTemplateList();
   const lorebooks = useLorebooks();
   const participants = useCurrentChatParticipants();
   const characterList = useCharacters();
+
+  const { loadLorebooks } = useLorebookStoreActions();
 
   const participantHaveLorebook = useMemo(() => {
     return participants?.some((participant) => characterList.find((character) => character.id === participant.id)?.lorebook_id);
@@ -62,14 +74,26 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
 
   const [activeFields, setActiveFields] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, any>>({});
-  const [, setSelectedField] = useState<string>("");
-  const [selectedModelId, setSelectedModelId] = useState<string>("none");
-  const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string>("none");
+  const [, setSelectedField] = useState<string | null>("");
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string | null>(null);
   const [selectedLorebookList, setSelectedLorebookList] = useState<string[]>([]);
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
   const [maxDepth, setMaxDepth] = useState<number>(100);
   const [lorebookTokenBudget, setLorebookTokenBudget] = useState<number>(2048);
+  const [isFormatTemplateModalOpen, setIsFormatTemplateModalOpen] = useState(false);
+  const [isExportOptionsDialogOpen, setIsExportOptionsDialogOpen] = useState(false);
+  const [pendingExportTemplateId, setPendingExportTemplateId] = useState<string | null>(null);
+  const [isImportOptionsDialogOpen, setIsImportOptionsDialogOpen] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState<{
+    fileName: string;
+    templateData: any;
+    parsedData: any;
+    hasFormatTemplate: boolean;
+    hasLorebooks: boolean;
+    lorebookCount: number;
+  } | null>(null);
 
   if (!currentChatTemplateID && !onChatTemplateChange) {
     currentChatTemplateID = useCurrentChatTemplateID();
@@ -165,10 +189,12 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   }, [formatTemplates]);
 
   const lorebookOptions = useMemo(() => {
-    return lorebooks.map((lorebook) => ({
-      label: lorebook.name,
-      value: lorebook.id,
-    }));
+    return lorebooks
+      .map((lorebook) => ({
+        label: lorebook.name,
+        value: lorebook.id,
+      }))
+      .sort((a, b) => sortAlphabetically(a.label, b.label));
   }, [lorebooks]);
 
   // Check if component should be disabled (no template selected)
@@ -178,7 +204,11 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const { createChatTemplate, deleteChatTemplate, updateChatTemplate: chatTemplateUpdate } = useChatTemplateActions();
   const { updateSelectedChat } = useChatActions();
 
-  const handleTemplateSelect = (templateId: string) => {
+  const handleTemplateSelect = (templateId: string | null) => {
+    if (templateId === null) {
+      return;
+    }
+
     if (currentChatTemplateID === templateId) {
       return;
     }
@@ -293,15 +323,20 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     .map((model: Model) => ({
       label: model.name,
       value: model.id,
-    }));
+    }))
+    .sort((a, b) => sortAlphabetically(a.label, b.label));
 
   /**
    * Handles adding a field to the active fields list.
    *
    * @param fieldName - The name of the field to add.
    */
-  const handleAddField = (fieldName: string) => {
+  const handleAddField = (fieldName: string | null) => {
     if (isDisabled) {
+      return;
+    }
+
+    if (!fieldName) {
       return;
     }
 
@@ -477,6 +512,14 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     setCustomPrompts(reorderedPrompts);
   };
 
+  const handleToggleCustomPromptEnabled = (promptId: string, enabled: boolean) => {
+    if (isDisabled) {
+      return;
+    }
+
+    setCustomPrompts((prev) => prev.map((prompt) => (prompt.id === promptId ? { ...prompt, enabled } : prompt)));
+  };
+
   /**
    * Gets the custom prompt to edit.
    *
@@ -489,21 +532,268 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     return customPrompts.find((p) => p.id === editingPromptId);
   };
 
-  // Assume setActiveSection comes from a UI store
-  const setActiveSection = useUIStore((state) => state.setActiveSection);
-  const [, setSessionFormatTemplateId] = useSessionCurrentFormatTemplate();
-
-  /**
-   * Navigates to the Format Template page to edit the selected template.
-   */
-  const handleEditFormatTemplate = () => {
-    if (!selectedFormatTemplateId || isDisabled) {
+  const handleExportTemplate = async (templateId: string) => {
+    if (!templateId) {
       return;
     }
-    // Set the template ID in session storage so the target page knows which one to load
-    setSessionFormatTemplateId(selectedFormatTemplateId);
-    // Navigate to the inference (format template) page
-    setActiveSection("inference");
+
+    try {
+      const template: any = await getChatTemplateById(templateId);
+      if (!template) {
+        toast.error("Export failed", {
+          description: "Template not found.",
+        });
+        return;
+      }
+
+      // Check if template has format template or lorebooks
+      const hasFormatTemplate = !!template.format_template_id;
+      const hasLorebooks = template.lorebook_list && template.lorebook_list.length > 0;
+
+      // If template has additional resources, show options dialog
+      if (hasFormatTemplate || hasLorebooks) {
+        setPendingExportTemplateId(templateId);
+        setIsExportOptionsDialogOpen(true);
+      } else {
+        // Export directly if no additional resources
+        await performExport(template, { includeFormatTemplate: false, includeLorebooks: false, exportFormat: "json" });
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Export failed", {
+        description: error instanceof Error ? error.message : "An unexpected error occurred during export.",
+      });
+    }
+  };
+
+  const handleExportOptionsConfirm = async (options: ExportOptions) => {
+    if (!pendingExportTemplateId) {
+      return;
+    }
+
+    try {
+      const template: any = await getChatTemplateById(pendingExportTemplateId);
+      if (!template) {
+        toast.error("Export failed", {
+          description: "Template not found.",
+        });
+        return;
+      }
+
+      await performExport(template, options);
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Export failed", {
+        description: error instanceof Error ? error.message : "An unexpected error occurred during export.",
+      });
+    } finally {
+      setPendingExportTemplateId(null);
+    }
+  };
+
+  const performExport = async (template: any, options: ExportOptions) => {
+    const exportedTemplates: any = structuredClone(template);
+
+    // Include format template if requested
+    if (options.includeFormatTemplate && template.format_template_id) {
+      const formatTemplate = await getFormatTemplateById(template.format_template_id).catch(() => null);
+      if (formatTemplate) {
+        const exportType: ExportType = "format_template";
+        exportedTemplates.format_template = { ...formatTemplate, export_type: exportType };
+      }
+    }
+
+    // Include lorebooks if requested
+    if (options.includeLorebooks && template.lorebook_list && template.lorebook_list.length > 0) {
+      const lorebooks = await prepareLorebooksForEmbedding(template.lorebook_list);
+      exportedTemplates.lorebooks = lorebooks;
+    } else {
+      delete exportedTemplates.lorebook_list;
+    }
+
+    // Remove unused fields
+    delete exportedTemplates.model_id;
+    delete exportedTemplates.format_template_id;
+
+    // Use the export utility to handle the export
+    const success = await exportSingleToJsonFile(exportedTemplates, "chat_template", `chat_template_${template.name.replace(/[^a-zA-Z0-9]/g, "_")}`);
+
+    if (!success) {
+      console.warn("Export was cancelled or failed");
+    }
+  };
+
+  const handleImportTemplate = async (fileName: string, templateData: any) => {
+    if (!profileId) {
+      toast.error("No profile selected", {
+        description: "Please select a profile before importing templates.",
+      });
+      return;
+    }
+
+    try {
+      // Parse the template content if it's a string
+      let parsedData = templateData;
+      if (typeof templateData === "string") {
+        parsedData = parseChatTemplateContent(templateData);
+      }
+
+      // Check if the template contains embedded resources
+      const hasFormatTemplate = !!parsedData.format_template;
+      const hasLorebooks = !!parsedData.lorebooks;
+      const lorebookCount = parsedData.lorebooks?.length || 0;
+
+      // If template has additional resources, show options dialog
+      if (hasFormatTemplate || hasLorebooks) {
+        setPendingImportData({
+          fileName,
+          templateData,
+          parsedData,
+          hasFormatTemplate,
+          hasLorebooks,
+          lorebookCount,
+        });
+        setIsImportOptionsDialogOpen(true);
+      } else {
+        // Import directly if no additional resources
+        await performImport(fileName, templateData, parsedData, { includeFormatTemplate: false, includeLorebooks: false });
+      }
+    } catch (error) {
+      console.error("Template import error:", error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred during import.";
+      toast.error("Import failed", {
+        description: message,
+      });
+    }
+  };
+
+  const handleImportOptionsConfirm = async (options: ImportOptions) => {
+    if (!pendingImportData) {
+      return;
+    }
+
+    try {
+      await performImport(pendingImportData.fileName, pendingImportData.templateData, pendingImportData.parsedData, options);
+    } catch (error) {
+      console.error("Template import error:", error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred during import.";
+      toast.error("Import failed", {
+        description: message,
+      });
+    } finally {
+      setPendingImportData(null);
+    }
+  };
+
+  const performImport = async (fileName: string, _templateData: any, parsedData: any, options: ImportOptions) => {
+    if (!profileId) {
+      return;
+    }
+
+    let formatTemplateId: string | null = null;
+    const importedLorebookIds: string[] = [];
+
+    try {
+      // Import format template if requested and available
+      if (options.includeFormatTemplate) {
+        const formatTemplateData = parsedData.format_template;
+        if (formatTemplateData) {
+          try {
+            const formatValidationResult = validateAndTransformFormatTemplateData(formatTemplateData, profileId, `${fileName}_format`);
+            if (formatValidationResult.valid && formatValidationResult.data) {
+              const importedFormatTemplate = await createFormatTemplate(formatValidationResult.data);
+              formatTemplateId = importedFormatTemplate.id;
+              toast.success("Format template imported", {
+                description: `Format template "${importedFormatTemplate.name}" has been imported.`,
+              });
+            }
+          } catch (error) {
+            console.warn("Failed to import format template:", error);
+            toast.error("Format template import failed", {
+              description: "The format template could not be imported, but the chat template will still be imported.",
+            });
+          }
+        }
+      }
+
+      // Import lorebooks if requested and available
+      if (options.includeLorebooks) {
+        const lorebooksData = parsedData.lorebooks;
+        if (lorebooksData && Array.isArray(lorebooksData)) {
+          for (const lorebookData of lorebooksData) {
+            try {
+              const lorebookValidationResult = validateAndTransformLorebookData(
+                lorebookData,
+                profileId,
+                `${fileName}_${lorebookData.name || "unnamed"}`,
+              );
+              if (lorebookValidationResult.valid && lorebookValidationResult.data) {
+                const importedLorebook = await importLorebook(lorebookValidationResult.data);
+                importedLorebookIds.push(importedLorebook.id);
+              }
+            } catch (error) {
+              console.warn("Failed to import lorebook:", error);
+            }
+          }
+          if (importedLorebookIds.length > 0) {
+            toast.success("Lorebooks imported", {
+              description: `${importedLorebookIds.length} lorebook(s) have been imported.`,
+            });
+          }
+        }
+      }
+
+      // Validate and transform the chat template data
+      const validationResult = validateAndTransformChatTemplateData(parsedData, profileId, fileName);
+
+      if (!validationResult.valid) {
+        toast.error("Invalid template format", {
+          description: `Import failed: ${validationResult.errors.join(", ")}`,
+        });
+        return;
+      }
+
+      if (!validationResult.data) {
+        toast.error("No template data found", {
+          description: "The imported file does not contain valid template data.",
+        });
+        return;
+      }
+
+      // Update the template data with imported resources
+      const templateToImport = { ...validationResult.data };
+      if (formatTemplateId) {
+        templateToImport.format_template_id = formatTemplateId;
+      }
+      if (importedLorebookIds.length > 0) {
+        templateToImport.lorebook_list = [...(templateToImport.lorebook_list || []), ...importedLorebookIds];
+      } else {
+        templateToImport.lorebook_list = [];
+      }
+
+      // Import the template
+      const importedTemplate = await createChatTemplate(templateToImport);
+
+      toast.success("Template imported successfully", {
+        description: `${importedTemplate.name} (Format: ${validationResult.format}) has been imported.`,
+      });
+
+      // Switch to the newly imported template
+      if (onChatTemplateChange) {
+        onChatTemplateChange(importedTemplate.id);
+      } else {
+        updateSelectedChat({ chat_template_id: importedTemplate.id });
+      }
+    } catch (error) {
+      console.error("Template import error:", error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred during import.";
+      toast.error("Import failed", {
+        description: message,
+      });
+    } finally {
+      await fetchFormatTemplates(profileId);
+      await loadLorebooks(profileId);
+    }
   };
 
   return (
@@ -518,12 +808,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
           onDelete={handleDeleteTemplate}
           onNewTemplate={handleCreateTemplate}
           onEditName={handleEditTemplateName}
-          onImport={() => {
-            /* To be implemented later */
-          }}
-          onExport={() => {
-            /* To be implemented later */
-          }}
+          onImport={handleImportTemplate}
+          onExport={handleExportTemplate}
         />
       </div>
       <Separator className="my-2" />
@@ -589,7 +875,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 shrink-0"
-                onClick={handleEditFormatTemplate}
+                onClick={() => setIsFormatTemplateModalOpen(true)}
                 disabled={isDisabled}
                 aria-label="Edit Format Template"
               >
@@ -646,7 +932,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
                         return (
                           <CommandItem
                             key={option.value}
-                            value={option.value}
+                            value={option.label}
                             className="text-xs"
                             onSelect={() => {
                               setSelectedLorebookList((prev) => (isSelected ? prev.filter((id) => id !== option.value) : [...prev, option.value]));
@@ -767,6 +1053,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
           onEdit={handleEditCustomPrompt}
           onDelete={handleDeleteCustomPrompt}
           onReorder={handleReorderCustomPrompts}
+          onToggleEnabled={handleToggleCustomPromptEnabled}
+          disabled={isDisabled}
         />
 
         <CustomPromptModal
@@ -824,6 +1112,32 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
           })}
         </div>
       </div>
+
+      <FormatTemplateModal
+        open={isFormatTemplateModalOpen}
+        onOpenChange={setIsFormatTemplateModalOpen}
+        selectedTemplateId={selectedFormatTemplateId || null}
+        onTemplateChange={(templateId) => setSelectedFormatTemplateId(templateId || "none")}
+      />
+
+      <ExportOptionsDialog
+        open={isExportOptionsDialogOpen}
+        onOpenChange={setIsExportOptionsDialogOpen}
+        onConfirm={handleExportOptionsConfirm}
+        templateName={currentTemplate?.name || ""}
+        hasFormatTemplate={!!currentTemplate?.format_template_id}
+        hasLorebooks={!!(currentTemplate?.lorebook_list && currentTemplate.lorebook_list.length > 0)}
+      />
+
+      <ImportOptionsDialog
+        open={isImportOptionsDialogOpen}
+        onOpenChange={setIsImportOptionsDialogOpen}
+        onConfirm={handleImportOptionsConfirm}
+        templateName={pendingImportData?.fileName || ""}
+        hasFormatTemplate={pendingImportData?.hasFormatTemplate || false}
+        hasLorebooks={pendingImportData?.hasLorebooks || false}
+        lorebookCount={pendingImportData?.lorebookCount || 0}
+      />
     </div>
   );
 };

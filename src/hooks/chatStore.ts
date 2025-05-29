@@ -414,6 +414,9 @@ export const useChatStore = create<chatState>((set, get) => ({
           disabled: message.disabled ?? false,
         });
 
+        // Update the chat's updated_at timestamp
+        await get().actions.updateSelectedChat({});
+
         // Fetch all messages again to ensure correct positioning
         const updatedMessages = await getChatMessagesByChatId(currentChat.id, currentChat.active_chapter_id!);
 

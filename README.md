@@ -84,11 +84,11 @@ Narratrix is built with Tauri, providing native performance across platforms:
 - [x] Chapter Creation
 - [x] Lorebooks
 - [x] Text Completion Support
-- [x] Import/Export (Chats, Templates, Characters)
+- [x] Import/Export (Chats, Templates, Characters, Lorebooks)
 
 ### 🛠️ Features In Development
 
-- [ ] Agents Customization
+- [ ] Agents Customization (Tool-calling, JSON Response, etc)
 - [ ] Database Management
 - [ ] Scripting System
 - [ ] Memory Management
@@ -108,9 +108,12 @@ Narratrix is built with Tauri, providing native performance across platforms:
 
 Narratrix uses a flexible manifest system to support various AI providers:
 
-- **Cloud-based**: OpenAI GPT models, Anthropic Claude, Azure OpenAI
-- **Local**: LlamaCPP, KoboldCPP, Ollama, RunPod
-- **Specialized**: Image generation models, embedding models
+- **Cloud-based**: OpenAI GPT models, Anthropic Claude, Azure OpenAI, Google
+  Gemini, OpenRouter...
+- **Local**: LlamaCPP, KoboldCPP, Ollama, RunPod, Mistralrs
+- **OpenAI Compatible API**: Any OpenAI compatible provider
+- **Specialized**: ~~Image generation models, embedding models~~
+  (In-Development)
 
 Each model can be configured through JSON manifests that specify parameters,
 endpoints, and behaviors—no coding required!

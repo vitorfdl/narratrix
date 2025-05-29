@@ -1,15 +1,25 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatParticipants } from "@/hooks/chatStore";
+import {
+  useChatActions,
+  useCurrentChatActiveChapterID,
+  useCurrentChatChapters,
+  useCurrentChatParticipants,
+  useCurrentChatUserCharacterID,
+} from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
-import { PencilLine, SendIcon } from "lucide-react";
+import { getCharacterById } from "@/services/character-service";
+import { replaceStringPlaceholders } from "@/services/inference-steps/replace-text";
+import { LayoutTemplateIcon, PencilLine, SendIcon, UserPlus } from "lucide-react";
 import React, { useState } from "react";
+import { toast } from "sonner";
 
 export const NoMessagePlaceholder: React.FC = () => {
   const currentChatChapters = useCurrentChatChapters();
   const activeChapterId = useCurrentChatActiveChapterID();
   const inferenceService = useInferenceServiceFromContext();
   const currentChatParticipants = useCurrentChatParticipants();
+  const userCharacterId = useCurrentChatUserCharacterID();
   const { addChatMessage } = useChatActions();
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +52,7 @@ export const NoMessagePlaceholder: React.FC = () => {
         if (!enabledParticipant) {
           throw new Error("No enabled chat participant found.");
         }
+
         // Create a system message placeholder for the intro (optional, for UI feedback)
         const systemMessage = await addChatMessage({
           character_id: enabledParticipant.id,
@@ -49,40 +60,41 @@ export const NoMessagePlaceholder: React.FC = () => {
           messages: ["Generating chapter intro..."],
           extra: { script: "start_chapter" },
         });
+
         // Start inference to generate the intro message
-        try {
-          await inferenceService.generateMessage({
-            existingMessageId: systemMessage.id,
-            messageIndex: 0,
-            userMessage: currentChapter.start_message,
-            characterId: enabledParticipant.id,
-            quietUserMessage: true,
-            extraSuggestions: {},
-          });
-        } catch (inferenceError) {
-          setError("Failed to generate chapter intro message.");
-          // Update the system message to show the error
-          await addChatMessage({
-            character_id: enabledParticipant.id,
-            type: "system",
-            messages: ["Failed to generate chapter intro. Please try again."],
-            extra: { script: "start_chapter" },
-          });
-          // Optionally log error
-          // eslint-disable-next-line no-console
-          console.error(inferenceError);
-        }
-      } else {
-        // Default behavior: just add the system message with the start_message
-        await addChatMessage({
-          character_id: null,
-          type: "system",
-          messages: [currentChapter!.start_message!],
-          extra: { script: "start_chapter" },
+        await inferenceService.generateMessage({
+          existingMessageId: systemMessage.id,
+          messageIndex: 0,
+          userMessage: currentChapter.start_message,
+          characterId: enabledParticipant.id,
+          quietUserMessage: true,
+          extraSuggestions: {},
         });
+        return;
       }
+
+      // If auto-inference is not enabled, use the default behavior
+      const characterID = currentChatParticipants?.find((p) => p.enabled)?.id!;
+      const character = await getCharacterById(characterID);
+      const userCharacter = userCharacterId ? await getCharacterById(userCharacterId!) : undefined;
+
+      const message = replaceStringPlaceholders(currentChapter!.start_message! || "", {
+        character: character || undefined,
+        chapter: currentChapter,
+        user_character: userCharacter || undefined,
+        extra: {},
+        censorship: {},
+      });
+
+      // Default behavior: just add the system message with the start_message
+      await addChatMessage({
+        character_id: null,
+        type: "system",
+        messages: [message],
+        extra: { script: "start_chapter" },
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to initiate chapter start message.");
+      toast.error(err instanceof Error ? err.message : "Failed to initiate chapter start message.");
       // Optionally log error
       // eslint-disable-next-line no-console
       console.error(err);
@@ -129,9 +141,23 @@ export const NoMessagePlaceholder: React.FC = () => {
         </div>
       )}
       {!currentChapter?.start_message && (
-        <div className="flex flex-row items-center gap-2 mt-10">
-          <PencilLine className="w-4 h-4 text-secondary-foreground" />
-          <span>Write your own first message</span>
+        <div className="flex flex-col items-center gap-4 mt-10 w-full max-w-xs">
+          {/* Step 1: Create a Chat Template */}
+          <div className="flex flex-row items-center gap-2 w-full">
+            <LayoutTemplateIcon className="w-4 h-4 text-secondary-foreground" />
+            <span className="font-medium">1. Create a Chat Template</span>
+          </div>
+          <div className="text-xs text-muted-foreground w-full pl-7 -mt-2 mb-2">Pick your model and your format</div>
+          {/* Step 2: Add a participant */}
+          <div className="flex flex-row items-center gap-2 w-full">
+            <UserPlus className="w-4 h-4 text-secondary-foreground" />
+            <span className="font-medium">2. Add a participant</span>
+          </div>
+          {/* Step 3: Write your first message */}
+          <div className="flex flex-row items-center gap-2 w-full">
+            <PencilLine className="w-4 h-4 text-secondary-foreground" />
+            <span className="font-medium">3. Write your first message</span>
+          </div>
         </div>
       )}
     </div>

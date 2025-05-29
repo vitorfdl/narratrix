@@ -22,7 +22,7 @@ const buttonVariants = cva(
         sm: "h-6 rounded-md px-2 text-xs",
         lg: "h-10 rounded-md px-8",
         icon: "h-9 w-9",
-        dialog: "px-6 min-w-[140px]",
+        dialog: "px-6 h-8 min-w-[140px]",
       },
     },
     defaultVariants: {

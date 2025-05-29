@@ -38,25 +38,39 @@ function findAndHighlightBracketsAndQuotes(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   // Regex to find {{ content }} patterns, allowing for whitespace
   const bracketRegex = /\{\{\s*([^}]+?)\s*\}\}/g;
-  // Regex to find words between single or double quotes (including escaped quotes)
+  // Regex to find words between double quotes (including escaped quotes)
   const quoteRegex = /"([^"\\]|\\.)*"/g;
 
   for (const { from, to } of view.visibleRanges) {
     const text = view.state.doc.sliceString(from, to);
-    let match: RegExpExecArray | null;
-    // Highlight {{ ... }}
-    // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-    while ((match = bracketRegex.exec(text))) {
-      const start = from + match.index;
-      const end = start + match[0].length;
-      builder.add(start, end, highlightMark);
+    // Collect all matches for both patterns
+    const matches: { start: number; end: number; type: "bracket" | "quote" }[] = [];
+
+    // Find all {{ ... }} matches
+    for (const match of text.matchAll(bracketRegex)) {
+      if (match.index !== undefined) {
+        const start = from + match.index;
+        const end = start + match[0].length;
+        matches.push({ start, end, type: "bracket" });
+      }
     }
-    // Highlight quoted words
-    // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-    while ((match = quoteRegex.exec(text))) {
-      const start = from + match.index;
-      const end = start + match[0].length;
-      builder.add(start, end, highlightQuoteMark);
+    // Find all quoted string matches
+    for (const match of text.matchAll(quoteRegex)) {
+      if (match.index !== undefined) {
+        const start = from + match.index;
+        const end = start + match[0].length;
+        matches.push({ start, end, type: "quote" });
+      }
+    }
+    // Sort matches by start index to avoid overlap issues
+    matches.sort((a, b) => a.start - b.start);
+    // Apply decorations
+    for (const match of matches) {
+      if (match.type === "bracket") {
+        builder.add(match.start, match.end, highlightMark);
+      } else {
+        builder.add(match.start, match.end, highlightQuoteMark);
+      }
     }
   }
   return builder.finish();

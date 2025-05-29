@@ -180,68 +180,75 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
                 <PieChartIcon className="w-5 h-5 text-primary" />
                 Token Breakdown
               </h3>
-              <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
-                <PieChart>
-                  <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                  <Pie data={tokenBreakdown} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
-                    <Label
-                      content={({ viewBox }) => {
-                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                          return (
-                            <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                              <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">
-                                {totalTokens.toLocaleString()}
-                              </tspan>
-                              <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 24} className="fill-muted-foreground text-sm">
-                                Tokens
-                              </tspan>
-                            </text>
-                          );
-                        }
-                      }}
-                    />
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
-              {/* Individual Token Counts - Kept for clarity */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[hsl(var(--chart-7))]/50">
-                  <span className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartConfig.systemTokens.color }} /> System
-                  </span>
-                  <span className="font-mono">{tokenStats.systemTokens.toLocaleString()}</span>
+              <div className="flex items-center gap-8 max-w-[600px] mx-auto">
+                {/* Pie Chart */}
+                <div className="flex-shrink-0 w-[250px]">
+                  <ChartContainer config={chartConfig} className="aspect-square max-h-[250px]">
+                    <PieChart>
+                      <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                      <Pie data={tokenBreakdown} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
+                        <Label
+                          content={({ viewBox }) => {
+                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                              return (
+                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                  <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">
+                                    {totalTokens.toLocaleString()}
+                                  </tspan>
+                                  <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 24} className="fill-muted-foreground text-sm">
+                                    Tokens
+                                  </tspan>
+                                </text>
+                              );
+                            }
+                          }}
+                        />
+                      </Pie>
+                    </PieChart>
+                  </ChartContainer>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[hsl(var(--chart-8))]/50">
-                  <span className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartConfig.historyTokens.color }} />
-                    History
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger>
-                        <Info className="w-3 h-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>Actual / Estimated (Internal)</TooltipContent>
-                    </Tooltip>
-                  </span>
-                  <span className="font-mono">
-                    {tokenStats.historyTokens.toLocaleString()} /{" "}
-                    <span className="text-xs text-muted-foreground">{tokenStats.historyTokenEstimation.toLocaleString()}</span>
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-md bg-muted/20 border border-[hsl(var(--chart-3))]/50">
-                  <span className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartConfig.responseTokens.color }} />
-                    Response
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger>
-                        <Info className="w-3 h-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>Actual / Reserved Maximum</TooltipContent>
-                    </Tooltip>
-                  </span>
-                  <span className="font-mono">
-                    {tokenStats.responseTokens.toLocaleString()} /{" "}
-                    <span className="text-xs text-muted-foreground">{maxResponseTokens.toLocaleString()}</span>
-                  </span>
+
+                {/* Individual Token Counts - Side Layout */}
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-md bg-muted/20 border border-[hsl(var(--chart-7))]/50">
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: chartConfig.systemTokens.color }} />
+                      <span className="text-sm font-medium">System</span>
+                    </span>
+                    <span className="font-mono text-sm">{tokenStats.systemTokens.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-md bg-muted/20 border border-[hsl(var(--chart-8))]/50">
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: chartConfig.historyTokens.color }} />
+                      <span className="text-sm font-medium">History</span>
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger>
+                          <Info className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>Actual / Estimated (Internal)</TooltipContent>
+                      </Tooltip>
+                    </span>
+                    <span className="font-mono text-sm">
+                      {tokenStats.historyTokens.toLocaleString()} /{" "}
+                      <span className="text-xs text-muted-foreground">{tokenStats.historyTokenEstimation.toLocaleString()}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-md bg-muted/20 border border-[hsl(var(--chart-3))]/50">
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: chartConfig.responseTokens.color }} />
+                      <span className="text-sm font-medium">Response</span>
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger>
+                          <Info className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>Actual / Reserved Maximum</TooltipContent>
+                      </Tooltip>
+                    </span>
+                    <span className="font-mono text-sm">
+                      {tokenStats.responseTokens.toLocaleString()} /{" "}
+                      <span className="text-xs text-muted-foreground">{maxResponseTokens.toLocaleString()}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

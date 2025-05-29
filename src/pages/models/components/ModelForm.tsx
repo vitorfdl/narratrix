@@ -1,3 +1,4 @@
+import { encryptApiKey } from "@/commands/security";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -19,7 +20,8 @@ import * as z from "zod";
 import { ModelInputFields } from "./ModelInputFields";
 
 // Define model types
-const MODEL_TYPES: ModelType[] = ["llm", "audio", "image", "database"];
+// const MODEL_TYPES: ModelType[] = ["llm", "audio", "image", "database"];
+const MODEL_TYPES: ModelType[] = ["llm"];
 
 interface ModelFormProps {
   onSuccess: () => void;
@@ -46,16 +48,18 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
     onComplete: (response, requestId) => {
       // Only process if it's our test request
       if (requestId === testRequestId) {
+        const result = response.result?.text || response.result?.full_response;
         // Only process once and immediately clear the request ID
-        if (response.result?.text) {
+        if (result) {
           setTestResult({
             state: "success",
-            message: "Connection successful",
+            message: "Connection successful. The model is ready to use.",
           });
         } else {
           setTestResult({
-            state: "error",
-            message: "Connection test returned empty response",
+            state: "success",
+            message:
+              "The API responded, but did not return any text. This may indicate a configuration issue, or that the model expects a different prompt format (e.g., text completion instead of chat) and is good to go.",
           });
         }
         setTestRequestId(null);
@@ -367,7 +371,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
         // Skip empty secret fields in edit mode to avoid overwriting with empty string
         if (mode === "edit" && field.field_type === "secret" && (!fieldValue || fieldValue === "")) {
-          continue; // Don't include this field in the configFields payload
+          configFields[field.key] = model?.config[field.key];
         }
 
         // Include other fields if they have a value
@@ -375,6 +379,8 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
           // Format URL fields with proper prefix
           if (field.field_type === "url" && fieldValue) {
             configFields[field.key] = formatUrl(String(fieldValue).trim());
+          } else if (field.field_type === "secret" && fieldValue) {
+            configFields[field.key] = await encryptApiKey(fieldValue);
           } else {
             configFields[field.key] = fieldValue;
           }
@@ -432,7 +438,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
         // Skip empty secret fields in edit mode to avoid overwriting with empty string
         if (mode === "edit" && field.field_type === "secret" && (!fieldValue || fieldValue === "")) {
-          continue; // Don't include this field in the configFields payload
+          configFields[field.key] = model?.config[field.key];
         }
 
         // Include other fields if they have a value
@@ -445,6 +451,8 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
           }
         }
       }
+
+      console.log(configFields);
 
       if (mode === "edit" && model) {
         // Update existing model
@@ -629,23 +637,10 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
           <Badge variant="destructive" className="flex flex-col items-start gap-1 p-2">
             <div className="flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              <span>{testResult.message}</span>
+              <span>Error verifying connection</span>
             </div>
             {testResult.errorDetails && (
-              <div className="text-xs mt-1 space-y-1">
-                {testResult.errorDetails.details && (
-                  <div>
-                    <span className="font-semibold">Details:</span> {testResult.errorDetails.details}
-                  </div>
-                )}
-                {testResult.errorDetails.source && (
-                  <div>
-                    <span className="font-semibold">Source:</span> {testResult.errorDetails.source}
-                  </div>
-                )}
-                {/* Show the full error object for debugging if needed */}
-                {/* <pre className="whitespace-pre-wrap break-all">{JSON.stringify(testResult.errorDetails, null, 2)}</pre> */}
-              </div>
+              <div className="text-xs mt-1 space-y-1">{testResult.errorDetails.details && <div>{testResult.errorDetails.details}</div>}</div>
             )}
           </Badge>
         </div>

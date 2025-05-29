@@ -56,8 +56,29 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
           timestamp: Date.now(),
         };
 
-        // Add new request at the beginning and limit array to MAX_HISTORY_LENGTH
-        const updatedRequests = [newRequest, ...state.requests].slice(0, MAX_HISTORY_LENGTH);
+        // Add new request at the beginning
+        const requestsWithNew = [newRequest, ...state.requests];
+
+        // Group by model id and keep only 5 most recent per model
+        const requestsByModel: Record<string, ConsoleRequest[]> = {};
+        for (const req of requestsWithNew) {
+          const modelId = req.modelSpecs.id;
+          if (!modelId) {
+            continue;
+          }
+          if (!requestsByModel[modelId]) {
+            requestsByModel[modelId] = [];
+          }
+          if (requestsByModel[modelId].length < 5) {
+            requestsByModel[modelId].push(req);
+          }
+        }
+
+        // Flatten and preserve order (most recent first)
+        const limitedRequests = Object.values(requestsByModel).flat();
+
+        // Apply global MAX_HISTORY_LENGTH
+        const updatedRequests = limitedRequests.slice(0, MAX_HISTORY_LENGTH);
 
         return {
           requests: updatedRequests,

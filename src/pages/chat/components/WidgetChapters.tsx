@@ -1,25 +1,28 @@
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatId } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
+import { deleteChatMessagesByFilter } from "@/services/chat-message-service";
 import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowUpDown, BookOpen, Copy, GripVertical, MoreHorizontal, Plus, Search, Settings, Trash2 } from "lucide-react";
+import { ArrowUpDown, BookOpen, Copy, GripVertical, MessageSquareX, MoreHorizontal, Plus, Search, Settings, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 // Define a type for the chapter data structure used in forms
 type ChapterFormData = {
@@ -86,13 +89,11 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
               <span className="text-xs text-muted-foreground">{estimateTokens(chapterData.scenario || "", 0)} tokens</span>
             </div>
             <MarkdownTextArea
-              key={`${idPrefix}scenario`}
               initialValue={chapterData.scenario || ""}
               editable={true}
               suggestions={promptReplacementSuggestionList}
               onChange={(value) => updateField("scenario", value)}
               placeholder="Describe the scenario of this chapter"
-              className="max-h-[20vh]"
             />
           </div>
 
@@ -116,7 +117,6 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
                   ? "Enter User instruction to generate the start message"
                   : "Enter the User's first message to begin the chapter."
               }
-              className="max-h-[20vh]"
             />
           </div>
 
@@ -182,7 +182,8 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
 const WidgetChapters = () => {
   const chapters = useCurrentChatChapters();
   const activeChapterId = useCurrentChatActiveChapterID();
-  const { switchChatChapter, addChatChapter, deleteChatChapter, updateChatChapter } = useChatActions();
+  const currentChatId = useCurrentChatId();
+  const { switchChatChapter, addChatChapter, deleteChatChapter, updateChatChapter, fetchChatMessages } = useChatActions();
 
   const [isCreatingChapter, setIsCreatingChapter] = useState(false);
   const [isEditingChapter, setIsEditingChapter] = useState(false);
@@ -304,6 +305,33 @@ const WidgetChapters = () => {
     deleteChatChapter(chapterId);
   };
 
+  const handleClearMessages = async (chapterId: string, chapterTitle: string) => {
+    if (!currentChatId) {
+      toast.error("No chat selected");
+      return;
+    }
+
+    try {
+      const deletedCount = await deleteChatMessagesByFilter({
+        chat_id: currentChatId,
+        chapter_id: chapterId,
+      });
+
+      if (deletedCount > 0) {
+        toast.success(`Cleared ${deletedCount} message${deletedCount === 1 ? "" : "s"} from "${chapterTitle}"`);
+        // Refresh messages if this is the active chapter
+        if (chapterId === activeChapterId) {
+          await fetchChatMessages();
+        }
+      } else {
+        toast.info(`No messages to clear in "${chapterTitle}"`);
+      }
+    } catch (error) {
+      console.error("Failed to clear messages:", error);
+      toast.error(`Failed to clear messages from "${chapterTitle}"`);
+    }
+  };
+
   const startEditChapter = (chapter: ChatChapter) => {
     setEditingChapter({
       id: chapter.id,
@@ -348,7 +376,7 @@ const WidgetChapters = () => {
             <h3 className="font-semibold text-xs truncate">{chapter.title}</h3>
           </div>
           {chapter.scenario && (
-            <p className="leading-tight text-[0.58rem] italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">
+            <p className="leading-tight text-xxs italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">
               {chapter.scenario.slice(0, 200)}
             </p>
           )}
@@ -356,7 +384,7 @@ const WidgetChapters = () => {
 
         <div className="flex items-center gap-2 ml-4">
           {chapter.id === activeChapterId && (
-            <Badge variant="outline" className="bg-primary/20 max-h-4 text-primary p-0.5 text-[0.5rem] font-mono border-primary">
+            <Badge variant="outline" className="bg-primary/20 max-h-4 text-primary p-0.5 text-xxs font-mono border-primary">
               Active
             </Badge>
           )}
@@ -387,7 +415,13 @@ const WidgetChapters = () => {
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicate
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => handleClearMessages(chapter.id, chapter.title)}
+                className="text-orange-600 focus:text-orange-600 dark:text-orange-400 dark:focus:text-orange-400"
+              >
+                <MessageSquareX className="h-4 w-4 mr-2" />
+                Clear Messages
+              </DropdownMenuItem>
               <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteChapter(chapter.id)}>
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -519,7 +553,9 @@ const WidgetChapters = () => {
             <DialogDescription>Update your chapter settings and configuration.</DialogDescription>
           </DialogHeader>
 
-          {editingChapter && <ChapterForm chapterData={editingChapter} onChapterDataChange={setEditingChapter} isEditMode={true} />}
+          <DialogBody>
+            {editingChapter && <ChapterForm chapterData={editingChapter} onChapterDataChange={setEditingChapter} isEditMode={true} />}
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditingChapter(false)}>

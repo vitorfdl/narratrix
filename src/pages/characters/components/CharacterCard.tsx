@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { CharacterUnion } from "@/schema/characters-schema";
-import { Edit, LoaderIcon, Palette, Trash2 } from "lucide-react";
+import { Download, Edit, LoaderIcon, Palette, Trash2 } from "lucide-react";
 
 interface CharacterCardProps {
   model: CharacterUnion;
@@ -11,9 +11,10 @@ interface CharacterCardProps {
   cardSize: "small" | "medium" | "large";
   onEdit: (model: CharacterUnion) => void;
   onDelete: (model: CharacterUnion) => void;
+  onExport?: (characterId: string) => void;
 }
 
-export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDelete }: CharacterCardProps) {
+export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDelete, onExport }: CharacterCardProps) {
   // Default avatar fallback
   const defaultAvatar = "/avatars/default.jpg";
 
@@ -41,7 +42,7 @@ export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDel
           />
         )}
         <div className="absolute left-2 top-2 flex flex-col gap-1">
-          <Badge variant={model.type === "character" ? "default" : "highlight"}>{model.type}</Badge>
+          {/* <Badge variant={model.type === "character" ? "default" : "highlight"}>{model.type}</Badge> */}
           {hasExpressions && (
             <Badge variant="outline" className="bg-accent text-accent-foreground flex items-center gap-1">
               <Palette className="h-3 w-3" />
@@ -55,19 +56,25 @@ export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDel
         <h3 className="text-sm font-semibold">{model.name}</h3>
         <p className="text-xs text-muted-foreground">by {author}</p>
         <div className="mt-2 flex flex-wrap gap-1">
-          {tags.map((tag: string) => (
-            <Badge key={tag} variant="outline" className="text-xs">
+          {tags.slice(0, 6).map((tag: string) => (
+            <Badge key={tag} variant="default" className="!text-xxs text-foreground py-0.5 px-1">
               {tag}
             </Badge>
           ))}
+          {tags.length > 5 && <span className="text-xs text-muted-foreground font-semibold px-2">...</span>}
         </div>
       </CardContent>
 
       <div className="absolute right-2 top-2 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-        <Button variant="secondary" size="icon" onClick={() => onEdit(model)}>
+        {onExport && (
+          <Button variant="secondary" size="icon" onClick={() => onExport(model.id)} title="Export Character">
+            <Download className="h-4 w-4" />
+          </Button>
+        )}
+        <Button variant="secondary" size="icon" onClick={() => onEdit(model)} title="Edit Character">
           <Edit className="h-4 w-4" />
         </Button>
-        <Button variant="destructive" size="icon" onClick={() => onDelete(model)}>
+        <Button variant="destructive" size="icon" onClick={() => onDelete(model)} title="Delete Character">
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>

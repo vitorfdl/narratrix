@@ -19,7 +19,7 @@ interface ModelsState {
 
   actions: {
     // CRUD Operations
-    createModel: (modelData: NewModelParams) => Promise<Model>;
+    createModel: (modelData: NewModelParams, isDuplicate?: boolean) => Promise<Model>;
     getModelById: (id: string) => Promise<Model | null>;
     updateModel: (id: string, updateData: Partial<Omit<Model, "id" | "profile_id" | "created_at" | "updated_at">>) => Promise<Model | null>;
     deleteModel: (id: string) => Promise<boolean>;
@@ -42,10 +42,10 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
 
   actions: {
     // CRUD Operations
-    createModel: async (modelData: NewModelParams) => {
+    createModel: async (modelData: NewModelParams, isDuplicate?: boolean) => {
       try {
         set({ isLoading: true, error: null });
-        const newModel = await createModelAPI(modelData);
+        const newModel = await createModelAPI(modelData, isDuplicate);
 
         await get().actions.fetchModels();
 

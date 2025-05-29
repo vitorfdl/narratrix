@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Chat } from "@/schema/chat-schema";
 import { formatRelativeTime } from "@/utils/date-format";
-import { PlusIcon, Trash2, UsersRound } from "lucide-react";
+import { Clock, PlusIcon, Trash2, UsersRound } from "lucide-react";
 import { useState } from "react";
 
 interface ChatListItemProps {
@@ -45,12 +45,19 @@ function ChatListItem({ chat, showTimestamp, onSelectChat, onRenameRequest, onDu
             <div className="flex items-center gap-2">
               <span className="font-medium">{chat.name}</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <UsersRound className="h-3 w-3" />
-              <span>{chat.participants?.length || 0} participants</span>
-            </div>
           </div>
-          {showTimestamp && <span className="text-xs text-muted-foreground mr-2">{formatRelativeTime(new Date(chat.updated_at))}</span>}
+
+          <div className="flex items-center gap-2 text-xxs text-muted-foreground">
+            <UsersRound className="!h-3 !w-3" />
+            <span className="m-0 p-0">{chat.participants?.length || 0}</span>
+          </div>
+
+          {showTimestamp && (
+            <div className="flex items-center gap-2 text-xxs text-muted-foreground mr-2">
+              <Clock className="!h-3 !w-3" />
+              <span className="m-0 p-0">{formatRelativeTime(new Date(chat.updated_at))}</span>
+            </div>
+          )}
           <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={handleDelete}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>

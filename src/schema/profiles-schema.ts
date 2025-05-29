@@ -34,7 +34,7 @@ const CensorshipSettingsSchema = z.object({
 
 const AppearanceSettingsSchema = z.object({
   theme: z.enum(["light", "dark", "system"]).default("system"),
-  fontSize: z.enum(["small", "medium", "large"]).default("medium"),
+  fontSize: z.number().min(12).max(24).nullable().default(null),
   fontFamily: z.string().default("Inter"),
   accentColor: z.string().default("#7C3AED"),
 });

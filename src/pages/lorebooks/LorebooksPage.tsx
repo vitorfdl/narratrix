@@ -1,18 +1,35 @@
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useIsLoadingLorebooks, useLorebookStoreActions, useLorebooks, useSelectedLorebookId } from "@/hooks/lorebookStore";
 import { Lorebook } from "@/schema/lorebook-schema";
+import { exportLorebook } from "@/services/imports/shared/lorebook-export";
 import { useLocalLorebookPageSettings } from "@/utils/local-storage";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, Edit, Filter, Globe, HeartIcon, Plus, RefreshCw, ScrollText, Search, SortAsc, Trash2, Upload, User, View } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  Edit,
+  Filter,
+  Globe,
+  HeartIcon,
+  Plus,
+  RefreshCw,
+  ScrollText,
+  Search,
+  SortAsc,
+  Trash2,
+  Upload,
+  User,
+  View,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { LorebookEntries } from "./components/LorebookEntries";
@@ -172,6 +189,23 @@ export default function LorebooksPage() {
     }
   };
 
+  // Handle lorebook export
+  const handleExportLorebook = async (lorebook: Lorebook) => {
+    try {
+      const success = await exportLorebook(lorebook.id);
+      if (success) {
+        toast.success("Lorebook exported successfully", {
+          description: `${lorebook.name} has been exported.`,
+        });
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Export failed", {
+        description: error instanceof Error ? error.message : "An unexpected error occurred during export.",
+      });
+    }
+  };
+
   const selectedLorebook = lorebooks.find((lb) => lb.id === selectedLorebookId);
 
   // Create a ref to access the import component's methods
@@ -245,164 +279,149 @@ export default function LorebooksPage() {
   }[settings.listWidth];
 
   return (
-    <div
-      className={`flex flex-col h-full page-container overflow-y-auto ${widthClasses}  ${isDraggingFile ? "ring-2 ring-primary ring-inset bg-primary/5" : ""}`}
-    >
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold title">
-          {selectedLorebookId && selectedLorebook ? (
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleGoBackToList}>
-                <ArrowLeft size={16} />
+    <div className={`flex flex-col h-full ${widthClasses} ${isDraggingFile ? "ring-2 ring-primary ring-inset bg-primary/5" : ""}`}>
+      {!selectedLorebookId ? (
+        <>
+          {/* Header with filters and controls */}
+          <div className="sticky top-0 z-10 bg-background border-b">
+            <div className="flex items-center gap-1 p-4">
+              <h1 className="font-bold mr-auto title">Lorebooks</h1>
+
+              {/* Search */}
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search lorebooks..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+              </div>
+
+              {/* Refresh */}
+              <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoading} title="Refresh Lorebooks">
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
               </Button>
-              <span className="font-medium">
-                Lorebook: <span className="italic text-primary">{selectedLorebook.name}</span>
-              </span>
-            </div>
-          ) : (
-            "Lorebooks"
-          )}
-        </h2>
-        <div className="flex gap-2 ">
-          {!selectedLorebookId && (
-            <>
-              <Button variant="secondary" size="sm" onClick={handleImportClick}>
-                <Upload size={16} className="mr-1" /> Import
+
+              {/* Import Button */}
+              <Button variant="outline" size="icon" onClick={handleImportClick} title="Import Lorebook">
+                <Upload className="h-4 w-4" />
               </Button>
+
+              {/* List Width Settings */}
+              <Select
+                value={settings.listWidth}
+                onValueChange={(value) => setSettings((prev) => ({ ...prev, listWidth: value as LorebookPageSettings["listWidth"] }))}
+              >
+                <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="List Width">
+                  <View className="h-5 w-5 mr-1" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="full">Full Width</SelectItem>
+                  <SelectItem value="wide">Wide</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="narrow">Narrow</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Sort */}
+              <Select
+                value={`${settings.sort.field}-${settings.sort.direction}`}
+                onValueChange={(value) => {
+                  const [field, direction] = value.split("-") as ["name" | "category" | "created_at" | "updated_at", "asc" | "desc"];
+                  setSettings((prev) => ({ ...prev, sort: { field, direction } }));
+                }}
+              >
+                <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="Sort Lorebooks">
+                  <SortAsc className="h-4 w-4" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="category-asc">Category (A-Z)</SelectItem>
+                  <SelectItem value="category-desc">Category (Z-A)</SelectItem>
+                  <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
+                  <SelectItem value="created_at-desc">Recently Created</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className={`relative ${showFavoritesOnly || selectedCategory ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
+                    title="Filter Lorebooks"
+                  >
+                    <Filter className="h-4 w-4" />
+                    {(showFavoritesOnly || selectedCategory) && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-primary/80" />
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Filter Lorebooks</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
+                  <div className="p-2">
+                    <label className="flex items-center space-x-2 mb-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showFavoritesOnly}
+                        onChange={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                        className="rounded border-input text-primary focus:ring-primary focus:ring-offset-0 focus:ring-1"
+                      />
+                      <span>Favorites only</span>
+                    </label>
+
+                    <div className="mb-2">
+                      <p className="text-sm font-medium mb-1">Category</p>
+                      <select
+                        value={selectedCategory || ""}
+                        onChange={(e) => setSelectedCategory(e.target.value || null)}
+                        className="w-full rounded border border-input bg-background p-1.5 text-sm focus:ring-ring focus:ring-1 focus:outline-none"
+                      >
+                        <option value="">All Categories</option>
+                        {categories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={resetFilters}>
+                      Reset Filters
+                    </Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Add Lorebook Button */}
               <Button
-                variant="default"
-                size="sm"
                 onClick={() => {
                   setLorebookToEdit(null);
                   setIsFormDialogOpen(true);
                 }}
               >
-                <Plus size={16} className="mr-1" /> New Lorebook
+                <Plus className="h-4 w-4 mr-2" />
+                Add Lorebook
               </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {!selectedLorebookId ? (
-        <div className="bg-card/50 rounded-t-lg rounded-b-sm mt-4 transition-all duration-300 ease-in-out">
-          <div className="hidden">
-            <LorebookImport
-              ref={importComponentRef}
-              onImportComplete={() => {
-                if (currentProfile?.id) {
-                  loadLorebooks(currentProfile.id);
-                }
-              }}
-            />
+            </div>
           </div>
 
-          <div className="p-4 flex items-center gap-3 border-b rounded-lg mt-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search lorebooks..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
+          {/* Main content area */}
+          <div className="flex-1 overflow-y-auto page-container">
+            <div className="hidden">
+              <LorebookImport
+                ref={importComponentRef}
+                onImportComplete={() => {
+                  if (currentProfile?.id) {
+                    loadLorebooks(currentProfile.id);
+                  }
+                }}
+              />
             </div>
 
-            <Button variant="outline" size="icon" onClick={handleRefresh}>
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            </Button>
-
-            <Select
-              value={settings.listWidth}
-              onValueChange={(value) => setSettings((prev) => ({ ...prev, listWidth: value as LorebookPageSettings["listWidth"] }))}
-            >
-              <SelectTrigger noChevron className="w-[30px] p-2" title="List Width">
-                <SelectValue>
-                  <View className="h-4 w-4" />
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent align="end">
-                <SelectItem value="full">Full Width</SelectItem>
-                <SelectItem value="wide">Wide</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="narrow">Narrow</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={`${settings.sort.field}-${settings.sort.direction}`}
-              onValueChange={(value) => {
-                const [field, direction] = value.split("-") as ["name" | "category" | "created_at" | "updated_at", "asc" | "desc"];
-                setSettings((prev) => ({ ...prev, sort: { field, direction } }));
-              }}
-            >
-              <SelectTrigger noChevron className="w-[30px] p-2" title="Sort By">
-                <SelectValue>
-                  <SortAsc className="h-4 w-4" />
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent align="end">
-                <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                <SelectItem value="category-asc">Category (A-Z)</SelectItem>
-                <SelectItem value="category-desc">Category (Z-A)</SelectItem>
-                <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
-                <SelectItem value="created_at-desc">Recently Created</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className={`relative h-9 w-8 p-0 ${showFavoritesOnly || selectedCategory ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
-                  title="Filter Lorebooks"
-                >
-                  <Filter size={16} />
-                  {(showFavoritesOnly || selectedCategory) && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary/80" />
-                    </span>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Filter Lorebooks</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                <div className="p-2">
-                  <label className="flex items-center space-x-2 mb-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showFavoritesOnly}
-                      onChange={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                      className="rounded border-input text-primary focus:ring-primary focus:ring-offset-0 focus:ring-1"
-                    />
-                    <span>Favorites only</span>
-                  </label>
-
-                  <div className="mb-2">
-                    <p className="text-sm font-medium mb-1">Category</p>
-                    <select
-                      value={selectedCategory || ""}
-                      onChange={(e) => setSelectedCategory(e.target.value || null)}
-                      className="w-full rounded border border-input bg-background p-1.5 text-sm focus:ring-ring focus:ring-1 focus:outline-none"
-                    >
-                      <option value="">All Categories</option>
-                      {categories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <Button variant="outline" size="sm" className="w-full mt-2" onClick={resetFilters}>
-                    Reset Filters
-                  </Button>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4">
             {isLoading ? (
               <div className="border rounded-md overflow-hidden">
                 <Table>
@@ -528,6 +547,18 @@ export default function LorebooksPage() {
                               className="h-7 w-7"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleExportLorebook(lorebook);
+                              }}
+                              title="Export Lorebook"
+                            >
+                              <Download size={14} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setLorebookToEdit(lorebook);
                                 setIsFormDialogOpen(true);
                               }}
@@ -573,11 +604,31 @@ export default function LorebooksPage() {
               </div>
             )}
           </div>
-        </div>
+        </>
       ) : (
-        <div className="flex-1 overflow-hidden">
-          <LorebookEntries lorebookId={selectedLorebookId} profileId={currentProfile?.id || ""} />
-        </div>
+        <>
+          {/* Header for selected lorebook */}
+          <div className="sticky top-0 z-10 bg-background border-b">
+            <div className="flex items-center gap-1 p-4">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleGoBackToList} title="Back to Lorebooks">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h1 className="font-bold mr-auto title">
+                Lorebook: <span className="italic text-primary">{selectedLorebook?.name}</span>
+              </h1>
+              {selectedLorebook && (
+                <Button variant="outline" size="icon" onClick={() => handleExportLorebook(selectedLorebook)} title="Export Lorebook">
+                  <Download className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Main content area */}
+          <div className="flex-1 overflow-hidden">
+            <LorebookEntries lorebookId={selectedLorebookId} profileId={currentProfile?.id || ""} />
+          </div>
+        </>
       )}
 
       {currentProfile?.id && (

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
@@ -14,6 +15,7 @@ interface CustomPromptsListProps {
   onEdit: (promptId: string) => void;
   onDelete: (promptId: string) => void;
   onReorder?: (newPrompts: ChatTemplateCustomPrompt[]) => void;
+  onToggleEnabled?: (promptId: string, enabled: boolean) => void;
   disabled?: boolean;
 }
 
@@ -21,10 +23,11 @@ interface SortablePromptItemProps {
   prompt: ChatTemplateCustomPrompt;
   onEdit: (promptId: string) => void;
   onDelete: (promptId: string) => void;
+  onToggleEnabled?: (promptId: string, enabled: boolean) => void;
   disabled?: boolean;
 }
 
-const SortablePromptItem = ({ prompt, onEdit, onDelete, disabled }: SortablePromptItemProps) => {
+const SortablePromptItem = ({ prompt, onEdit, onDelete, onToggleEnabled, disabled }: SortablePromptItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: prompt.id,
     disabled,
@@ -40,7 +43,7 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete, disabled }: SortableProm
     <Card
       ref={setNodeRef}
       style={style}
-      className={`bg-foreground/5 flex items-center gap-2 p-0.5 mb-1 border-none ${isDragging ? "shadow-lg opacity-80 border-primary" : ""}`}
+      className={`bg-foreground/5 flex items-center gap-2 p-0.5 mb-1 border-none ${isDragging ? "shadow-lg opacity-80 border-primary" : ""} ${!prompt.enabled ? "opacity-60" : ""}`}
     >
       <div {...attributes} {...listeners} className={`${disabled ? "cursor-not-allowed" : "cursor-grab"} touch-none`}>
         <GripVertical className="h-5 w-5 text-muted-foreground" />
@@ -48,10 +51,17 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete, disabled }: SortableProm
 
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className="text-muted-foreground">{getRoleIcon(prompt.role)}</div>
-        <span className="text-xs font-medium flex-1 truncate">{prompt.name}</span>
+        <span className={`text-xs font-medium flex-1 truncate ${!prompt.enabled ? "text-muted-foreground" : ""}`}>{prompt.name}</span>
       </div>
 
-      <div className="flex gap-1">
+      <div className="flex items-center gap-1">
+        <Switch
+          checked={prompt.enabled}
+          onCheckedChange={(checked) => onToggleEnabled?.(prompt.id, checked)}
+          disabled={disabled}
+          size="sm"
+          className="mr-1"
+        />
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(prompt.id)} disabled={disabled}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
@@ -63,7 +73,7 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete, disabled }: SortableProm
   );
 };
 
-export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder, disabled }: CustomPromptsListProps) {
+export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder, onToggleEnabled, disabled }: CustomPromptsListProps) {
   const [items, setItems] = useState<ChatTemplateCustomPrompt[]>(prompts);
 
   // Update local state when props change
@@ -111,7 +121,14 @@ export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder, disabl
         <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-1">
             {items.map((prompt) => (
-              <SortablePromptItem key={prompt.id} prompt={prompt} onEdit={onEdit} onDelete={onDelete} disabled={disabled} />
+              <SortablePromptItem
+                key={prompt.id}
+                prompt={prompt}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onToggleEnabled={onToggleEnabled}
+                disabled={disabled}
+              />
             ))}
           </div>
         </SortableContext>

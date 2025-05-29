@@ -21,7 +21,7 @@
         "useSameAsUser": true,
         "useSameAsSystemPrompt": false
       },
-      "customStopStrings": [""]
+      "customStopStrings": []
     }
   },
   {
@@ -46,7 +46,7 @@
         "useSameAsUser": true,
         "useSameAsSystemPrompt": false
       },
-      "customStopStrings": [""]
+      "customStopStrings": []
     }
   },
   {
@@ -71,7 +71,7 @@
         "useSameAsUser": true,
         "useSameAsSystemPrompt": false
       },
-      "customStopStrings": [""]
+      "customStopStrings": []
     }
   },
   {
@@ -96,7 +96,7 @@
         "useSameAsUser": true,
         "useSameAsSystemPrompt": false
       },
-      "customStopStrings": [""]
+      "customStopStrings": []
     }
   },
   {
@@ -146,7 +146,7 @@
         "useSameAsUser": true,
         "useSameAsSystemPrompt": false
       },
-      "customStopStrings": [""]
+      "customStopStrings": []
     }
   }
 ]

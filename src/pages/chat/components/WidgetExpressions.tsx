@@ -249,7 +249,7 @@ const WidgetExpressions = () => {
   ); // Added characterExpressions and selected text related vars
 
   // Create a throttled version for updates during streaming - Call useThrottledCallback directly
-  const throttledGenerateExpression = useThrottledCallback(generateExpression, 3000, { leading: true, trailing: false });
+  const throttledGenerateExpression = useThrottledCallback(generateExpression, 5000, { leading: true, trailing: false });
 
   // Effect to trigger THROTTLED generation DURING streaming
   useEffect(() => {

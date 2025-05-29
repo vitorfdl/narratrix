@@ -9,6 +9,7 @@ const chatTemplateCustomPromptSchema = z.object({
   position: z.enum(["top", "bottom", "depth"]),
   depth: z.number().optional().default(1), // Depth only applies to depth position
   prompt: z.string().default(""),
+  enabled: z.boolean().optional().default(true),
 });
 
 /**

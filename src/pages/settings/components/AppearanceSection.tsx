@@ -1,8 +1,9 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StepButton } from "@/components/ui/step-button";
+import { useThemeStore } from "@/hooks/ThemeContext";
 import { AppSettings } from "@/schema/profiles-schema";
-import { Palette } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { ALargeSmallIcon, Palette } from "lucide-react";
+import React from "react";
 import { SettingItem, SettingSection } from "./ui/setting-section";
 
 /**
@@ -17,13 +18,14 @@ interface AppearanceSectionProps {
  * Appearance settings section for the settings page.
  */
 export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, onSettingChange }) => {
-  // Local state for global font size (in px)
-  const [fontSize, setFontSize] = useState<number>(16);
+  // Ensure fontSize is always a valid number within allowed range (12-24), fallback to 16 if invalid
+  const fontSize: number =
+    typeof settings.appearance.fontSize === "number" && !Number.isNaN(settings.appearance.fontSize)
+      ? Math.min(24, Math.max(12, settings.appearance.fontSize))
+      : 16;
 
-  // Apply the font size to the root element on change
-  useEffect(() => {
-    document.documentElement.style.fontSize = `${fontSize}px`;
-  }, [fontSize]);
+  // Get the original browser font size from ThemeContext
+  const originalFontSize = useThemeStore((state) => state.originalFontSize);
 
   return (
     <SettingSection title="Appearance">
@@ -40,11 +42,23 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
         </Select>
       </SettingItem>
 
-      {/* Font Size Slider */}
-      <SettingItem label="Font Size">
-        <div className="flex items-center space-x-2">
-          <StepButton className="w-24" min={12} max={24} step={1} value={fontSize} onValueChange={setFontSize} />
-          <span className="text-sm">{fontSize}px</span>
+      <SettingItem icon={<ALargeSmallIcon className="w-4 h-4" />} label="Font Size">
+        <div className="flex items-center gap-3">
+          <span
+            className={`ml-2 px-2 py-0.5 rounded text-xxs text-muted-foreground font-medium border transition-colors
+              ${fontSize === 16 ? "bg-accent text-accent-foreground border-accent" : "bg-muted text-muted-foreground border-border"}`}
+            aria-label="Default font size indicator"
+          >
+            Default ({originalFontSize}px)
+          </span>
+          <StepButton
+            className="w-24"
+            min={12}
+            max={24}
+            step={1}
+            value={fontSize}
+            onValueChange={(value) => onSettingChange("appearance", "fontSize", value)}
+          />
         </div>
       </SettingItem>
     </SettingSection>

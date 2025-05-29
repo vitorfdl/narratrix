@@ -2,6 +2,7 @@ import { formatDateTime } from "@/utils/date-time";
 import { z } from "zod";
 import {
   AgentSchema,
+  Character,
   CharacterSchema,
   CharacterUnion,
   CreateAgentSchema,
@@ -51,9 +52,9 @@ export async function createCharacter(
 
   await executeDBQuery(
     `INSERT INTO characters (
-      id, profile_id, name, type, version, avatar_path, external_update_link, auto_update, system_override, settings, custom, expressions, character_manifest_id,
+      id, profile_id, name, type, version, avatar_path, external_update_link, auto_update, system_override, settings, custom, expressions, character_manifest_id, lorebook_id,
       created_at, updated_at, tags
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
     [
       id,
       profileId,
@@ -68,6 +69,7 @@ export async function createCharacter(
       custom,
       expressions,
       validatedCharacter.type === "character" ? validatedCharacter.character_manifest_id : null,
+      validatedCharacter.lorebook_id,
       now,
       now,
       tags,
@@ -78,7 +80,7 @@ export async function createCharacter(
 }
 
 // Get a character by ID
-export async function getCharacterById(id: string): Promise<CharacterUnion | null> {
+export async function getCharacterById(id: string): Promise<Character | null> {
   const validId = uuidUtils.uuid().parse(id);
 
   const result = await selectDBQuery<any[]>("SELECT * FROM characters WHERE id = $1", [validId]);
@@ -104,7 +106,7 @@ export async function getCharacterById(id: string): Promise<CharacterUnion | nul
   character.created_at = new Date(character.created_at);
   character.updated_at = new Date(character.updated_at);
 
-  return character.type === "agent" ? AgentSchema.parse(character) : CharacterSchema.parse(character);
+  return CharacterSchema.parse(character);
 }
 
 // List characters with filtering
