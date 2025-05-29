@@ -298,14 +298,14 @@ export const configFields: ConfigFields = [
     description: "Settings for caching prompt computations to speed up generation, primarily for specific APIs/models.",
     fields: [
       {
-        name: "chat_depth",
+        name: "prompt_cache_depth",
         type: "stepbutton",
         title: "Chat Depth",
         description: "Number of recent conversation turns to include in the prompt cache.",
-        min: 0,
+        min: 1,
         max: 50,
         step: 1,
-        default: 0,
+        default: 1,
       },
     ],
   },
