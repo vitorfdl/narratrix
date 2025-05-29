@@ -352,6 +352,11 @@ export function useInferenceService() {
         return;
       }
 
+      if (!messageId) {
+        console.error("Message ID is required");
+        return;
+      }
+
       // Get the existing message
       const existingMessage = chatMessages?.find((msg) => msg.id === messageId);
 
@@ -635,7 +640,7 @@ export function useInferenceService() {
         onStreamingStateChange(streamingState.current);
       }
 
-      inferenceUpdateMessageID(streamingState.current.messageId, streamingState.current.accumulatedText ?? "...", messageIndex);
+      inferenceUpdateMessageID(streamingState.current.messageId!, streamingState.current.accumulatedText ?? "...", messageIndex);
 
       return confirmID;
     } catch (error) {

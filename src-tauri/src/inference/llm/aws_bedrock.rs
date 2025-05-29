@@ -8,8 +8,8 @@ use aws_sdk_bedrockruntime::operation::converse::ConverseOutput;
 use aws_sdk_bedrockruntime::types::PerformanceConfigLatency;
 use aws_sdk_bedrockruntime::types::PerformanceConfiguration;
 use aws_sdk_bedrockruntime::types::{
-    ContentBlock, ContentBlockDelta, ConversationRole, ConverseStreamOutput,
-    InferenceConfiguration, Message, SystemContentBlock,
+    CachePointBlock, CachePointType, ContentBlock, ContentBlockDelta, ConversationRole,
+    ConverseStreamOutput, InferenceConfiguration, Message, SystemContentBlock,
 };
 use aws_sdk_bedrockruntime::{
     config::{BehaviorVersion, Region},
@@ -241,10 +241,27 @@ pub async fn converse(request: &InferenceRequest, specs: &ModelSpecs) -> Result<
         converse_request = converse_request.additional_model_request_fields(reasoning_config_doc);
     }
 
-    // Add system prompt if provided
+    // Add system prompt with optional caching
     if let Some(system_prompt) = &request.system_prompt {
-        let system_content = SystemContentBlock::Text(system_prompt.to_string());
-        converse_request = converse_request.system(system_content);
+        let enable_caching = request
+            .parameters
+            .get("prompt_cache_depth")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0)
+            > 0;
+
+        if enable_caching {
+            converse_request =
+                converse_request.system(SystemContentBlock::Text(system_prompt.to_string()));
+            let cache_point = CachePointBlock::builder()
+                .r#type(CachePointType::Default)
+                .build()
+                .map_err(|e| anyhow!("Failed to build cache point: {}", e))?;
+            converse_request = converse_request.system(SystemContentBlock::CachePoint(cache_point));
+        } else {
+            converse_request =
+                converse_request.system(SystemContentBlock::Text(system_prompt.to_string()));
+        }
     }
 
     // Send the request and process the response
@@ -303,10 +320,28 @@ pub async fn converse_stream(
             converse_stream_request.additional_model_request_fields(reasoning_config_doc);
     }
 
-    // Add system prompt if provided
+    // Add system prompt with optional caching
     if let Some(system_prompt) = &request.system_prompt {
-        let system_content = SystemContentBlock::Text(system_prompt.to_string());
-        converse_stream_request = converse_stream_request.system(system_content);
+        let enable_caching = request
+            .parameters
+            .get("prompt_cache_depth")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0)
+            > 0;
+
+        if enable_caching {
+            converse_stream_request =
+                converse_stream_request.system(SystemContentBlock::Text(system_prompt.to_string()));
+            let cache_point = CachePointBlock::builder()
+                .r#type(CachePointType::Default)
+                .build()
+                .map_err(|e| anyhow!("Failed to build cache point: {}", e))?;
+            converse_stream_request =
+                converse_stream_request.system(SystemContentBlock::CachePoint(cache_point));
+        } else {
+            converse_stream_request =
+                converse_stream_request.system(SystemContentBlock::Text(system_prompt.to_string()));
+        }
     }
 
     converse_stream_request = converse_stream_request.performance_config(
@@ -330,6 +365,9 @@ pub async fn converse_stream(
     }?;
 
     // Process the stream chunks
+    // Wait 1-2 seconds before starting to process chunks
+    tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
+
     loop {
         let token = stream.recv().await;
 

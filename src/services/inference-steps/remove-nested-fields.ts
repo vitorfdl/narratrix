@@ -6,7 +6,7 @@
  */
 export function removeNestedFields<T extends Record<string, any>>(
   obj: T,
-  keysToFlatten: string[] = ["dry", "reasoning", "xtc", "smoothing_sampling", "dynamic_temperature"],
+  keysToFlatten: string[] = ["dry", "reasoning", "xtc", "smoothing_sampling", "dynamic_temperature", "prompt_cache"],
 ): Record<string, any> {
   const result = { ...obj };
 
