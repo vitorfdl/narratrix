@@ -1,65 +1,216 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { AgentType } from "@/schema/agent-schema";
+import { useLocalAgentPageSettings } from "@/utils/local-storage";
+import { Bot, Cpu, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
 import { useMemo, useState } from "react";
 import AddAgentDialog from "./components/AddAgentDialog";
+import { AgentCard } from "./components/AgentCard";
+import { AgentSidebar } from "./components/AgentSidebar";
 import ToolList from "./components/ToolList";
 
-// Strictly typed Agent interface for mock data
-interface Agent {
-  id: string;
-  name: string;
-  updated_at: string;
-  type: "agent";
-}
-
 // Mock agent data for development/testing
-const MOCK_AGENTS: Agent[] = [
+const MOCK_AGENTS: AgentType[] = [
   {
-    id: "agent-1",
-    name: "Alice Agent",
-    updated_at: new Date().toISOString(),
-    type: "agent",
+    id: "1",
+    profile_id: "1",
+    favorite: false,
+    nodes: [
+      {
+        id: "chat-input-1",
+        type: "chatInput",
+        position: { x: -100, y: 350 },
+        label: "Chat Input",
+      },
+      {
+        id: "agent-1",
+        type: "agent",
+        position: { x: 250, y: 200 },
+        label: "Agent",
+        config: {
+          systemPromptOverride: "",
+          inputPrompt: "",
+        },
+      },
+      {
+        id: "javascript-1",
+        type: "javascript",
+        position: { x: -100, y: 10 },
+        label: "Javascript",
+      },
+      {
+        id: "chat-output-1",
+        type: "chatOutput",
+        position: { x: 700, y: 350 },
+        label: "Chat Output",
+      },
+    ],
+    edges: [
+      {
+        id: "edge-chat-input-to-agent",
+        source: "chat-input-1",
+        target: "agent-1",
+        sourceHandle: "message",
+        targetHandle: "in-input",
+        edgeType: "string",
+      },
+      {
+        id: "edge-agent-to-chat-output",
+        source: "agent-1",
+        target: "chat-output-1",
+        sourceHandle: "response",
+        targetHandle: "response",
+        edgeType: "string",
+      },
+      {
+        id: "edge-javascript-to-agent",
+        source: "javascript-1",
+        target: "agent-1",
+        sourceHandle: "out-toolset",
+        targetHandle: "in-toolset",
+        edgeType: "toolset",
+      },
+    ],
+    settings: {
+      run_on: {
+        type: "every_message",
+      },
+    },
+    name: "Basic Agent Tool",
+    tags: ["agent", "tool", "javascript"],
+    description: "A simple agent tool with chat input and output",
+    version: "1.0.0",
+    updated_at: new Date(),
+    created_at: new Date(),
   },
   {
-    id: "agent-2",
-    name: "Bob Bot",
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
-    type: "agent",
-  },
-  {
-    id: "agent-3",
-    name: "Charlie Chat",
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    type: "agent",
+    id: "2",
+    profile_id: "1",
+    favorite: true,
+    nodes: [
+      {
+        id: "chat-input-2",
+        type: "chatInput",
+        position: { x: -100, y: 350 },
+        label: "Chat Input",
+      },
+      {
+        id: "agent-2",
+        type: "agent",
+        position: { x: 250, y: 200 },
+        label: "Agent",
+        config: {
+          systemPromptOverride: "You are a helpful AI assistant specialized in coding.",
+          inputPrompt: "",
+        },
+      },
+      {
+        id: "chat-output-2",
+        type: "chatOutput",
+        position: { x: 700, y: 350 },
+        label: "Chat Output",
+      },
+    ],
+    edges: [
+      {
+        id: "edge-chat-input-to-agent-2",
+        source: "chat-input-2",
+        target: "agent-2",
+        sourceHandle: "message",
+        targetHandle: "in-input",
+        edgeType: "string",
+      },
+      {
+        id: "edge-agent-to-chat-output-2",
+        source: "agent-2",
+        target: "chat-output-2",
+        sourceHandle: "response",
+        targetHandle: "response",
+        edgeType: "string",
+      },
+    ],
+    settings: {
+      run_on: {
+        type: "every_message",
+      },
+    },
+    name: "Code Assistant Agent",
+    tags: ["coding", "assistant", "ai"],
+    description: "An AI agent specialized in helping with coding tasks",
+    version: "1.0.0",
+    updated_at: new Date(),
+    created_at: new Date(),
   },
 ];
 
+export type AgentPageSettings = {
+  view: {
+    mode: "grid" | "list";
+    cardsPerRow: number;
+    cardSize: "small" | "medium" | "large";
+  };
+  sort: {
+    field: "name" | "version" | "updated_at" | "created_at";
+    direction: "asc" | "desc";
+  };
+  selectedTags: string[];
+};
+
 export default function AgentPage() {
   // Use local state for mock agents
-  const [agents, setAgents] = useState<Agent[]>(MOCK_AGENTS);
+  const [agents, setAgents] = useState<AgentType[]>(MOCK_AGENTS);
+  const [settings, setSettings] = useLocalAgentPageSettings();
   const [search, setSearch] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<AgentType | null>(null);
 
-  // Filtered by search
+  // Handle tag selection
+  const handleTagSelect = (tag: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      selectedTags: prev.selectedTags.includes(tag) 
+        ? prev.selectedTags.filter((t) => t !== tag) 
+        : [...prev.selectedTags, tag],
+    }));
+  };
+
+  // Filtered and sorted agents
   const filteredAgents = useMemo(() => {
-    if (!search) {
-      return agents;
-    }
-    return agents.filter((agent) => agent.name.toLowerCase().includes(search.toLowerCase()));
-  }, [agents, search]);
+    return agents
+      .filter((agent) => {
+        const matchesSearch = search === "" || 
+          agent.name.toLowerCase().includes(search.toLowerCase()) ||
+          agent.description?.toLowerCase().includes(search.toLowerCase());
+        const matchesTags = settings.selectedTags.length === 0 || 
+          (agent.tags && settings.selectedTags.every((tag) => agent.tags?.includes(tag)));
+        return matchesSearch && matchesTags;
+      })
+      .sort((a, b) => {
+        const direction = settings.sort.direction === "asc" ? 1 : -1;
+        if (settings.sort.field === "name") {
+          return direction * a.name.localeCompare(b.name);
+        }
+        if (settings.sort.field === "version") {
+          return direction * (a.version || "").localeCompare(b.version || "");
+        }
+        const aDate = settings.sort.field === "created_at" ? a.created_at : a.updated_at;
+        const bDate = settings.sort.field === "created_at" ? b.created_at : b.updated_at;
+        return direction * (new Date(bDate).getTime() - new Date(aDate).getTime());
+      });
+  }, [agents, search, settings.selectedTags, settings.sort]);
 
-  // Simulate delete with confirmation and local state update
-  const handleDelete = (agent: Agent) => {
+  // Simulate delete with confirmation
+  const handleDelete = (agent: AgentType) => {
     if (window.confirm(`Delete agent '${agent.name}'?`)) {
       setAgents((prev) => prev.filter((a) => a.id !== agent.id));
     }
   };
 
-  // Simulate refresh (reset to mock data)
+  // Simulate refresh
   const handleRefresh = () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -68,75 +219,182 @@ export default function AgentPage() {
     }, 600);
   };
 
+  // Handle edit
+  const handleEdit = (agent: AgentType) => {
+    setSelectedAgent(agent);
+  };
+
+  // Handle favorite toggle
+  const handleToggleFavorite = (agent: AgentType) => {
+    setAgents((prev) => 
+      prev.map((a) => 
+        a.id === agent.id ? { ...a, favorite: !a.favorite } : a
+      )
+    );
+  };
+
+  // If an agent is selected, show the ToolList view
   if (selectedAgent) {
     return <ToolList agent={selectedAgent} onBack={() => setSelectedAgent(null)} />;
   }
 
   return (
-    <div className="flex flex-col h-full w-full p-6">
-      {/* Page header styled like LorebooksPage */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold title">Agents</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={handleRefresh}>
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          </Button>
-          <Button variant="default" size="sm" onClick={() => setAddDialogOpen(true)}>
-            <Plus className="mr-1 h-5 w-5" /> New Agent
-          </Button>
-        </div>
-      </div>
-      {/* Search bar */}
-      <div className="flex items-center gap-2 mt-4 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search agents..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" autoFocus />
-        </div>
-      </div>
-      {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground">Loading agents...</div>
-        ) : filteredAgents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-            <Search className="h-8 w-8 mb-2" />
-            <div className="text-lg font-semibold mb-2">No agents found</div>
-            <div className="mb-4">Create your first agent to get started.</div>
-            <Button variant="default" size="lg" onClick={() => setAddDialogOpen(true)}>
-              <Plus className="mr-2 h-5 w-5" /> Add Agent
+    <div className="flex h-full overflow-y-auto">
+      <AgentSidebar 
+        agents={agents} 
+        selectedTags={settings.selectedTags} 
+        onTagSelect={handleTagSelect} 
+      />
+      
+      <div className="flex flex-1 flex-col">
+        {/* Header with filters and controls */}
+        <div className="sticky top-0 z-10 bg-background border-b">
+          <div className="flex items-center gap-1 p-4">
+            <h1 className="font-bold mr-auto title flex items-center gap-2">
+              Agents
+            </h1>
+
+            {/* Search */}
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search agents..." 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)} 
+                className="pl-10" 
+              />
+            </div>
+
+            {/* Refresh */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              title="Refresh Agents"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            </Button>
+
+            {/* View Settings */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" title="Grid Settings">
+                  <Settings2 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-muted-foreground">Cards per row</label>
+                    <span className="text-xs text-muted-foreground">{settings.view.cardsPerRow}</span>
+                  </div>
+                  <Slider
+                    value={[settings.view.cardsPerRow]}
+                    min={2}
+                    max={6}
+                    step={1}
+                    onValueChange={([value]) =>
+                      setSettings((prev: AgentPageSettings) => ({
+                        ...prev,
+                        view: {
+                          ...prev.view,
+                          cardsPerRow: value,
+                        },
+                      }))
+                    }
+                  />
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Sort */}
+            <Select
+              value={`${settings.sort.field}-${settings.sort.direction}`}
+              onValueChange={(value) => {
+                const [field, direction] = value.split("-") as [typeof settings.sort.field, typeof settings.sort.direction];
+                setSettings((prev: AgentPageSettings) => ({ ...prev, sort: { field, direction } }));
+              }}
+            >
+              <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="Sort Agents">
+                <SortAsc className="h-4 w-4" />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                <SelectItem value="version-asc">Version (Low-High)</SelectItem>
+                <SelectItem value="version-desc">Version (High-Low)</SelectItem>
+                <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
+                <SelectItem value="created_at-desc">Recently Created</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Add Agent Button */}
+            <Button onClick={() => setAddDialogOpen(true)} className="bg-primary hover:bg-primary/90">
+              <Cpu className="h-4 w-4 mr-2" />
+              Create Agent
             </Button>
           </div>
-        ) : (
-          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-            {filteredAgents.map((agent) => (
-              <Card key={agent.id} className="flex flex-col h-full cursor-pointer" onClick={() => setSelectedAgent(agent)}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-base truncate" title={agent.name}>
-                      {agent.name}
-                    </span>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(agent);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-center items-center text-xs text-muted-foreground">
-                  Agent ID: <span className="font-mono break-all">{agent.id}</span>
-                </CardContent>
-                <CardFooter className="text-xs text-muted-foreground justify-end">{new Date(agent.updated_at).toLocaleDateString()}</CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+        </div>
+
+        {/* Main content area */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <p className="text-muted-foreground">Loading agents...</p>
+            </div>
+          ) : filteredAgents.length > 0 ? (
+            <div className="space-y-6 py-1">
+              <div className="p-4">
+                <div
+                  className="grid gap-3"
+                  style={{
+                    gridTemplateColumns: `repeat(${settings.view.cardsPerRow}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {filteredAgents.map((agent) => (
+                    <AgentCard
+                      key={agent.id}
+                      agent={agent}
+                      cardSize={settings.view.cardSize}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <Bot className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-1">
+                {search || settings.selectedTags.length > 0 ? "No agents match your filters" : "No agents found"}
+              </h3>
+              <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
+                {search || settings.selectedTags.length > 0
+                  ? "Try adjusting your search or filter settings."
+                  : "Get started by creating your first AI agent!"}
+              </p>
+              <Button variant="default" size="lg" onClick={() => setAddDialogOpen(true)} className="bg-primary hover:bg-primary/90">
+                <Cpu size={20} className="mr-2" /> Create Your First Agent
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Add Agent Dialog */}
+        <AddAgentDialog 
+          open={addDialogOpen} 
+          onOpenChange={setAddDialogOpen}
+          onSuccess={(newAgent) => {
+            setAgents((prev) => [...prev, newAgent]);
+            setAddDialogOpen(false);
+          }}
+        />
       </div>
-      <AddAgentDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
     </div>
   );
 }

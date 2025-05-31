@@ -1,11 +1,12 @@
 import { useUIStore } from "@/hooks/UIStore"; // Import the store
 import {
   Book,
+  Bot,
   BoxIcon, // for Models
   Heart, // for Patreon
   Menu,
   MessageCircle, // for Discord
-  MessageSquare, RabbitIcon, // for Chat/Worlds
+  MessageSquare, // for Chat/Worlds
   Settings, // for Settings
   Users
 } from "lucide-react";
@@ -129,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
     {
       id: "agents",
       label: "Agents",
-      icon: <RabbitIcon className="w-5 h-5" />,
+      icon: <Bot className="w-5 h-5" />,
       isMainNav: true,
     },
     { id: "lorebooks", label: "Lorebooks", icon: <Book className="w-5 h-5" />, isMainNav: true },
