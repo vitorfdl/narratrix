@@ -57,7 +57,7 @@ export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDel
         <p className="text-xs text-muted-foreground">by {author}</p>
         <div className="mt-2 flex flex-wrap gap-1">
           {tags.slice(0, 6).map((tag: string) => (
-            <Badge key={tag} variant="default" className="!text-xxs text-foreground py-0.5 px-1">
+            <Badge key={tag} variant="default" className="!text-xxs py-0.5 px-1">
               {tag}
             </Badge>
           ))}
