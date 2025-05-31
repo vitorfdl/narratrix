@@ -19,7 +19,7 @@ body,
     --popover: 220 20% 97%; /* #F5F7FA matches background */
     --popover-foreground: 240 10% 3.9%; /* #0A0A0B */
     --primary: 265 60% 70%; /* #a78bfa - purple-400 */
-    --primary-foreground: 0 0% 98%; /* #FAFAFA */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
     --secondary: 220 14% 90%; /* #E5E9F0 softer secondary */
     --secondary-foreground: 240 5.9% 10%; /* #191919 */
     --muted: 220 16% 92%; /* #EBF0F5 softer muted background */
