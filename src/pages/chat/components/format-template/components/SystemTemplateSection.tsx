@@ -14,8 +14,8 @@ import { DndContext, closestCenter } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronUp, GripVertical, Paperclip, Plus, SeparatorVertical, Trash } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, ChevronDown, ChevronUp, Edit, GripVertical, Paperclip, Plus, SeparatorVertical, Trash, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import "../../../../formatTemplates/styles/shared.css";
 
@@ -47,6 +47,11 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
 
   // Local state for the content being edited
   const [localContent, setLocalContent] = useState(prompt.content);
+
+  // Local state for label editing
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editingLabel, setEditingLabel] = useState("");
+  const labelInputRef = useRef<HTMLInputElement>(null);
 
   // Debounce the call to the parent update function for content changes
   const debouncedParentUpdate = useDebouncedCallback((newContent: string) => {
@@ -90,6 +95,49 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
       .join(" ");
   };
 
+  // Handle label editing
+  const handleLabelEdit = () => {
+    if (disabled) return;
+    setEditingLabel(prompt.label ?? formatName(prompt.name));
+    setIsEditingLabel(true);
+  };
+
+  const handleLabelSave = () => {
+    const trimmedLabel = editingLabel.trim();
+    const formattedName = formatName(prompt.name);
+    
+    // If the label is empty or matches the formatted name, set to null to use default
+    const labelToSave = (!trimmedLabel || trimmedLabel === formattedName) ? null : trimmedLabel;
+    
+    onUpdate(prompt.id, { 
+      label: labelToSave
+    });
+    setIsEditingLabel(false);
+  };
+
+  const handleLabelCancel = () => {
+    setIsEditingLabel(false);
+    setEditingLabel("");
+  };
+
+  const handleLabelKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleLabelSave();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      handleLabelCancel();
+    }
+  };
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingLabel && labelInputRef.current) {
+      labelInputRef.current.focus();
+      labelInputRef.current.select();
+    }
+  }, [isEditingLabel]);
+
   return (
     <Card
       ref={setNodeRef}
@@ -109,7 +157,69 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
             <Button variant="ghost" size="sm" disabled={disabled} onClick={handleCollapseToggle}>
               {prompt.isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
-            <div className="font-medium text-sm">{prompt.label ?? formatName(prompt.name)}</div>
+            
+            {/* Inline editable label */}
+            <div className="flex items-center space-x-1 min-w-0 flex-1">
+              {isEditingLabel ? (
+                <div className="flex items-center space-x-1 flex-1">
+                  <Input
+                    ref={labelInputRef}
+                    value={editingLabel}
+                    onChange={(e) => setEditingLabel(e.target.value)}
+                    onKeyDown={handleLabelKeyDown}
+                    onBlur={handleLabelSave}
+                    className="h-6 text-sm font-medium flex-1 min-w-0"
+                    placeholder="Enter label name"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 p-0"
+                    onClick={handleLabelSave}
+                  >
+                    <Check className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 p-0"
+                    onClick={handleLabelCancel}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-1 group">
+                  <div className="flex flex-col min-w-0">
+                    {prompt.label ? (
+                      <>
+                        <span className="font-medium text-sm truncate">
+                          {prompt.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground/60 truncate">
+                          {formatName(prompt.name)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-medium text-sm truncate">
+                        {formatName(prompt.name)}
+                      </span>
+                    )}
+                  </div>
+                  {!disabled && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={handleLabelEdit}
+                      title="Edit label"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <div className="flex items-center space-x-2">
@@ -177,12 +287,15 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
 
     // Transform sections to items with UI state while preserving collapse state
     const items = currentTemplate.prompts.map((section, index) => {
-      // Try to find existing prompt to preserve collapse state
-      const existingPrompt = prompts.find((p) => p.type === section.type);
+      // Generate a unique ID that includes the index for proper identification
+      const uniqueId = `${section.type}-${index}`;
+      
+      // Try to find existing prompt by the same unique ID to preserve collapse state
+      const existingPrompt = prompts.find((p) => p.id === uniqueId);
 
       return {
         ...section,
-        id: `${section.type}-${index}`,
+        id: uniqueId,
         // Preserve collapse state if it exists, otherwise default to true
         isCollapsed: existingPrompt ? existingPrompt.isCollapsed : true,
         // Ensure enabled field has a default value if not set
@@ -279,8 +392,8 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
       setPrompts((prevPrompts) => {
         const updatedPrompts = prevPrompts.map((prompt) => (prompt.id === id ? { ...prompt, ...updates } : prompt));
 
-        // Trigger update if content or enabled state changed, not for UI state changes like collapse
-        if (updates.content !== undefined || updates.enabled !== undefined) {
+        // Trigger update if content, enabled state, or label changed, not for UI state changes like collapse
+        if (updates.content !== undefined || updates.enabled !== undefined || updates.label !== undefined) {
           // Use the debouncedUpdate directly without setTimeout to prevent race conditions
           debouncedUpdate();
         }
