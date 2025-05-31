@@ -57,5 +57,17 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: include_str!("./migrations/09_profile_quick_btn.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 10,
+            description: "create_agents",
+            sql: include_str!("./migrations/10_create_agents.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 11,
+            description: "favorite_column",
+            sql: include_str!("./migrations/11_favorite_column.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }

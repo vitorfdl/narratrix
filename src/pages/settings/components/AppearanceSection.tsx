@@ -1,4 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
 import { useThemeStore } from "@/hooks/ThemeContext";
 import { AppSettings } from "@/schema/profiles-schema";
@@ -41,6 +42,8 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
           </SelectContent>
         </Select>
       </SettingItem>
+      
+      <Separator />
 
       <SettingItem icon={<ALargeSmallIcon className="w-4 h-4" />} label="Font Size">
         <div className="flex items-center gap-3">

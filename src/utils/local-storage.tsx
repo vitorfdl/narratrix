@@ -1,3 +1,4 @@
+import { AgentPageSettings } from "@/pages/agents/AgentPage";
 import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
 import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
 import { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
@@ -29,6 +30,26 @@ const charactersPagesSettingsAtom = atomWithStorage<CharacterPageSettings>("char
 
 export function useLocalCharactersPagesSettings() {
   return useAtom(charactersPagesSettingsAtom);
+}
+
+/**
+ * Local storage for agent page settings
+ */
+const agentPageSettingsAtom = atomWithStorage<AgentPageSettings>("agentPageSettings", {
+  view: {
+    mode: "grid",
+    cardsPerRow: 4,
+    cardSize: "medium",
+  },
+  sort: {
+    field: "name",
+    direction: "asc",
+  },
+  selectedTags: [],
+});
+
+export function useLocalAgentPageSettings() {
+  return useAtom(agentPageSettingsAtom);
 }
 
 /**

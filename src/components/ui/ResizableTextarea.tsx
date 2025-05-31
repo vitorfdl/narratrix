@@ -12,10 +12,7 @@ export function ResizableTextarea({ className, label, tokens = 50, ...props }: R
       {label && <div className="mb-2 text-sm font-medium text-foreground">{label}</div>}
       <textarea
         className={cn(
-          "flex w-full rounded-sm custom-scrollbar bg-accent px-3 py-2 text-xs font-mono",
-          "border-0 border-b-2 border-b-primary/20",
-          "transition-[border] duration-100",
-          "focus:border-b-primary",
+          "flex w-full rounded-sm custom-scrollbar text-foreground input-fields px-3 py-2 text-xs font-mono",
           "placeholder:text-muted-foreground/50 placeholder:italic",
           "outline-none ring-0",
           "disabled:cursor-not-allowed disabled:opacity-50",
