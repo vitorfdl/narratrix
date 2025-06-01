@@ -7,7 +7,6 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bot, ChevronDown, ChevronUp, Merge, Settings, Split, User } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {} from "../LiveInspector";
 
 interface PayloadProps {
   selectedRequest: any;
@@ -192,6 +191,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                     {!systemPromptCollapsed ? (
                       <MarkdownTextArea
                         editable={false}
+                        useEditorOnly={true}
                         className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
                         initialValue={selectedRequest.systemPrompt || "No system prompt provided"}
                       />
@@ -311,6 +311,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                   {!systemPromptCollapsed ? (
                     <MarkdownTextArea
                       editable={false}
+                      useEditorOnly={true}
                       className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
                       initialValue={selectedRequest.systemPrompt || "No system prompt provided"}
                     />
