@@ -152,6 +152,15 @@ const processStreamChunk = (
 ): { textToAdd: string; reasoningToAdd: string } => {
   const { prefix = "<think>", suffix = "</think>" } = formatTemplate?.config.reasoning || DEFAULT_THINKING_CONFIG;
 
+  // If thinking is disabled (empty prefix or suffix), treat all content as regular text
+  if (!prefix || !suffix) {
+    // Clear any buffered content and add to text
+    const allText = streamingState.chunkBuffer + chunk;
+    streamingState.chunkBuffer = "";
+    streamingState.isThinking = false;
+    return { textToAdd: allText, reasoningToAdd: "" };
+  }
+  
   // Combine buffer with new chunk
   let workingText = streamingState.chunkBuffer + chunk;
   let textToAdd = "";
@@ -348,7 +357,7 @@ export function useInferenceService() {
    */
   const inferenceUpdateMessageID = async (messageId: string, messageText: string, messageIndex = 0) => {
     try {
-      if (messageId === "generate-input-area") {
+      if (messageId === "generate-input-area" || !messageId) {
         return;
       }
 
