@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X } from "lucide-react";
-import { CharacterUnion } from "../../../schema/characters-schema";
+import { Character } from "../../../schema/characters-schema";
 
 interface CharacterSidebarProps {
-  characters: CharacterUnion[];
+  characters: Character[];
   selectedTags: string[];
   onTagSelect: (tag: string) => void;
   onClearTags?: () => void;

@@ -1,16 +1,16 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { CharacterUnion } from "@/schema/characters-schema";
+import { Character } from "@/schema/characters-schema";
 import { Download, LoaderIcon, Palette, Trash2, User } from "lucide-react";
 
 interface CharacterCardProps {
-  model: CharacterUnion;
+  model: Character;
   avatarUrl: string | undefined;
   isLoadingAvatar: boolean;
   cardSize: "small" | "medium" | "large";
-  onEdit: (model: CharacterUnion) => void;
-  onDelete: (model: CharacterUnion) => void;
+  onEdit: (model: Character) => void;
+  onDelete: (model: Character) => void;
   onExport?: (characterId: string) => void;
 }
 

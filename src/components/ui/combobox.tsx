@@ -92,26 +92,26 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search...", 
                       <button
                         onClick={(e) => handleFavoriteClick(e, item.onFavoriteToggle)}
                         className={cn(
-                          "p-1 mr-2 rounded-sm transition-colors hover:bg-accent/50 opacity-0 group-hover:opacity-100",
+                          "p-0 mr-2 rounded-sm transition-colors hover:bg-accent/50 opacity-0 group-hover:opacity-100",
                           item.favorite && "opacity-100",
                         )}
                         title={item.favorite ? "Remove from favorites" : "Add to favorites"}
                       >
                         <Star
                           className={cn(
-                            "h-3.5 w-3.5 transition-colors",
+                            "h-3 w-3 transition-colors",
                             item.favorite ? "fill-muted-foreground text-muted-foreground" : "text-muted-foreground hover:text-foreground",
                           )}
                         />
                       </button>
                     )}
                     <div className="flex flex-col flex-1 min-w-0">
-                      <span className={cn("truncate", item.disabled ? "line-through" : "")}>{item.label}</span>
+                      <span className={cn("truncate p-0 m-0", item.disabled ? "line-through" : "")}>{item.label}</span>
                       {item.hint && <span className="text-xs text-muted-foreground truncate">{item.hint}</span>}
                     </div>
                   </div>
 
-                  <Check className={cn("h-4 w-4 ml-2", selectedValue === item.value ? "opacity-100" : "opacity-0")} />
+                  <Check className={cn("h-2 w-2 ml-0", selectedValue === item.value ? "opacity-100" : "opacity-0")} />
                 </CommandItem>
               ))}
             </CommandGroup>

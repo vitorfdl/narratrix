@@ -4,7 +4,7 @@ import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
-import { Character, CharacterUnion } from "@/schema/characters-schema";
+import { Character } from "@/schema/characters-schema";
 import { motion } from "framer-motion";
 import { UserCircle, UserPlus, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -17,7 +17,7 @@ const WidgetCharacterSheet = () => {
   const characters = useCharacters();
   const { updateSelectedChat } = useChatActions();
   const [isSelectingCharacter, setIsSelectingCharacter] = useState(false);
-  const [currentCharacter, setCurrentCharacter] = useState<CharacterUnion | null>(null);
+  const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Use the hook to get the image URL for the current character

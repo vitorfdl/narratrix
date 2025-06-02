@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useAgents } from "@/hooks/agentStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
@@ -15,7 +16,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
-import { GripVertical, PlayCircleIcon, Settings, StopCircleIcon, Trash2, UserPlus } from "lucide-react";
+import { Bot, Cpu, GripVertical, PlayCircleIcon, Settings, Sparkles, StopCircleIcon, Trash2, UserPlus, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import AddParticipantPopover from "./AddParticipantPopover";
@@ -40,6 +41,7 @@ interface SortableParticipantProps {
   onRemoveParticipant?: (id: string) => void;
   inInferenceQueue: boolean;
   setIsEditCharacterModalOpen: (characterId: string) => void;
+  setIsEditAgentModalOpen: (agentId: string) => void;
 }
 
 const SortableParticipant: React.FC<SortableParticipantProps> = ({
@@ -49,6 +51,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
   onRemoveParticipant,
   inInferenceQueue,
   setIsEditCharacterModalOpen,
+  setIsEditAgentModalOpen,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: participant.id,
@@ -63,7 +66,31 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
   const handleAvatarClick = () => {
     if (participant.type === "character") {
       setIsEditCharacterModalOpen(participant.id);
+    } else if (participant.type === "agent") {
+      setIsEditAgentModalOpen(participant.id);
     }
+  };
+
+  // Agent icon variations for visual interest
+  const agentIcons = [Bot, Cpu, Zap];
+  const AgentIcon = agentIcons[participant.id.charCodeAt(0) % agentIcons.length];
+
+  const getAvatarContent = () => {
+    if (participant.avatar) {
+      return <AvatarImage className="object-cover rounded-full" src={participant.avatar} alt={participant.name} />;
+    }
+
+    if (participant.type === "agent") {
+      return (
+        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 relative overflow-hidden rounded-none">
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 animate-pulse" />
+          <AgentIcon className="h-4 w-4 text-primary relative z-10" />
+          <Sparkles className="absolute -top-1 -right-1 h-2 w-2 text-primary/60" />
+        </AvatarFallback>
+      );
+    }
+
+    return <AvatarFallback className="bg-secondary">{participant.name[0]}</AvatarFallback>;
   };
 
   return (
@@ -73,6 +100,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
       className={cn(
         "flex items-start gap-2 px-2 py-1 rounded-lg transition-colors min-w-0 relative overflow-hidden",
         participant.type !== "user" && !participant.isEnabled ? "bg-muted/30 text-muted-foreground" : "bg-muted/50 hover:bg-muted/80",
+        participant.type === "agent" && participant.isEnabled && "bg-gradient-to-r from-primary/5 to-transparent",
       )}
     >
       {inInferenceQueue && <BorderBeam colorFrom="hsl(var(--primary))" size={60} duration={1.5} />}
@@ -86,10 +114,10 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
             "w-8 h-8",
             participant.type !== "user" && "cursor-pointer hover:scale-110 transition-all duration-300",
             !participant.isEnabled && "opacity-50",
+            participant.type === "agent" && "ring-1 ring-primary/20",
           )}
         >
-          <AvatarImage className="object-cover rounded-full " src={participant.avatar} alt={participant.name} />
-          <AvatarFallback className="bg-secondary">{participant.name[0]}</AvatarFallback>
+          {getAvatarContent()}
         </Avatar>
       </div>
 
@@ -97,7 +125,14 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
       <div className={cn("flex flex-col min-w-0 flex-1", participant.type !== "user" && !participant.isEnabled && "opacity-70")}>
         {/* Row 1: Name */}
         <div className="flex items-center justify-between gap-1">
-          <div className="font-normal truncate text-sm">{participant.name}</div>
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            <div className="font-medium truncate text-xs">{participant.name}</div>
+            {participant.type === "agent" && participant.isEnabled && (
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 25 }}>
+                <Sparkles className="h-3 w-3 text-primary/60 flex-shrink-0" />
+              </motion.div>
+            )}
+          </div>
           {participant.type !== "user" && (
             <Button
               variant="ghost"
@@ -150,7 +185,14 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
                 <Trash2 className="!h-3 !w-3" />
               </Button>
             </div>
-            <div className="text-xxs text-muted-foreground capitalize truncate">{participant.type}</div>
+            <div
+              className={cn(
+                "text-xxs capitalize truncate flex items-center gap-1",
+                participant.type === "agent" ? "text-primary/80 font-medium" : "text-muted-foreground",
+              )}
+            >
+              {participant.type}
+            </div>
           </div>
         )}
 
@@ -168,9 +210,11 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
 
 const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
   const characterList = useCharacters();
+  const agentList = useAgents();
   const currentProfile = useCurrentProfile();
   const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
   const [isEditCharacterModalOpen, setIsEditCharacterModalOpen] = useState<string | null>(null);
+  const [isEditAgentModalOpen, setIsEditAgentModalOpen] = useState<string | null>(null);
 
   const messages = useCurrentChatMessages();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
@@ -202,17 +246,28 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
 
   // Map chat participants to the Participant interface for this component
   const mappedParticipants: Participant[] = participants.map((p) => {
-    // Find the associated character
+    // Find the associated character or agent
     const associatedCharacter = characterList.find((char) => char.id === p.id);
+    const associatedAgent = agentList.find((agent) => agent.id === p.id);
 
-    const type = (associatedCharacter?.type as "character" | "agent") || "character";
+    // Determine the type and get the appropriate data
+    let name = "Unknown";
+    let type: "character" | "agent" = "character";
+    let avatar = "";
 
-    // Get avatar from the associated character
-    const avatar = avatarUrlMap[associatedCharacter?.id || ""];
+    if (associatedCharacter) {
+      name = associatedCharacter.name;
+      type = "character";
+      avatar = avatarUrlMap[associatedCharacter.id] || "";
+    } else if (associatedAgent) {
+      name = associatedAgent.name;
+      type = "agent";
+      avatar = ""; // Agents don't have avatars currently
+    }
 
     return {
       id: p.id,
-      name: associatedCharacter?.name || "Unknown",
+      name,
       type,
       avatar,
       isEnabled: p.enabled,
@@ -278,10 +333,10 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     }
   };
 
-  const handleAddParticipant = (characterId: string) => {
+  const handleAddParticipant = (participantId: string) => {
     // Add participant to chat
     addParticipant({
-      id: characterId,
+      id: participantId,
       enabled: true,
       settings: {},
     });
@@ -314,10 +369,12 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
       }
 
       try {
-        // Find the associated character
+        // Find the associated character or agent
         const character = characterList.find((char) => char.id === participantId);
-        if (!character) {
-          console.error("Character not found");
+        const agent = agentList.find((agent) => agent.id === participantId);
+
+        if (!character && !agent) {
+          console.error("Character or agent not found");
           return;
         }
 
@@ -331,7 +388,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         // Remove from triggering list if there was an error
       }
     },
-    [characterList, messages, inferenceService, streamingState.characterId],
+    [characterList, agentList, messages, inferenceService, streamingState.characterId],
   );
 
   const isInQueue = (participantId: string) =>
@@ -354,6 +411,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
                   onRemoveParticipant={handleRemoveParticipant}
                   inInferenceQueue={isInQueue(participant.id)}
                   setIsEditCharacterModalOpen={setIsEditCharacterModalOpen}
+                  setIsEditAgentModalOpen={setIsEditAgentModalOpen}
                 />
               ))}
             </div>
@@ -391,6 +449,14 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
           // Optionally refresh the character data
         }}
       />
+
+      {/* TODO: Add Agent Edit Dialog when available */}
+      {isEditAgentModalOpen && (
+        <div className="hidden">
+          {/* Placeholder for agent edit modal */}
+          {/* This will be implemented when agent editing is available */}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Handle, Position, useReactFlow, useUpdateNodeInternals } from "@xyflow/react";
-import { Trash2 } from "lucide-react";
+import { FileOutput, Trash2 } from "lucide-react";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { EdgeRegistry, EdgeType } from "./edge-registry";
 import { areEdgeTypesCompatible, isValidEdgeConnection } from "./edge-utils";
@@ -91,7 +91,6 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
   const elementRefs = useRef<Map<string, HTMLElement>>(new Map());
   const nodeRef = useRef<HTMLDivElement>(null);
   const deleteNode = useNodeDelete();
-  const [refsRegistered, setRefsRegistered] = useState(0);
   const connectionState = useConnectionState();
 
   // Get node metadata from registry
@@ -111,10 +110,8 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
       if (element) {
         elementRefs.current.set(id, element);
         onRegisterRef?.(id, element);
-        setRefsRegistered((prev) => prev + 1);
       } else {
         elementRefs.current.delete(id);
-        setRefsRegistered((prev) => prev - 1);
       }
     },
     [onRegisterRef],
@@ -125,29 +122,55 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
     if (!targetRef || !nodeRef.current) {
       // Fallback positioning
       if (isOutput) {
-        // For outputs without refs, use bottom-based positioning
+        // For outputs, position at the bottom-right
         const outputIndex = outputs.findIndex((output) => output.id === handleId);
-        const fallbackBottom = outputs.length === 1 ? "20px" : `${20 + outputIndex * 30}px`;
-        return { bottom: fallbackBottom };
+        const totalOutputs = outputs.length;
+        // Position handles from bottom, with spacing
+        const bottomOffset = 5 + (totalOutputs - 1 - outputIndex) * 30;
+        return {
+          bottom: `${bottomOffset}px`,
+          top: "auto",
+        };
       }
       return { top: `${50 + offsetY}%` };
     }
 
+    // For output handles with targetRef, also use bottom-based positioning
+    if (isOutput) {
+      const targetElement = elementRefs.current.get(targetRef);
+      if (!targetElement) {
+        // Fallback when ref not found
+        const outputIndex = outputs.findIndex((output) => output.id === handleId);
+        const totalOutputs = outputs.length;
+        const bottomOffset = 20 + (totalOutputs - 1 - outputIndex) * 30;
+        return {
+          bottom: `${bottomOffset}px`,
+          top: "auto",
+        };
+      }
+
+      const nodeRect = nodeRef.current.getBoundingClientRect();
+      const targetRect = targetElement.getBoundingClientRect();
+
+      // Calculate position from bottom of the node
+      const relativeBottom = nodeRect.bottom - (targetRect.top + targetRect.height / 2);
+      const bottomPx = Math.max(10, Math.min(nodeRect.height - 10, relativeBottom + offsetY));
+
+      return {
+        bottom: `${bottomPx}px`,
+        top: "auto",
+      };
+    }
+
+    // Input handles continue to use top-based positioning
     const targetElement = elementRefs.current.get(targetRef);
     if (!targetElement) {
-      // Fallback positioning when ref not found
-      if (isOutput) {
-        const outputIndex = outputs.findIndex((output) => output.id === handleId);
-        const fallbackBottom = outputs.length === 1 ? "20px" : `${20 + outputIndex * 30}px`;
-        return { bottom: fallbackBottom };
-      }
       return { top: `${50 + offsetY}%` };
     }
 
     const nodeRect = nodeRef.current.getBoundingClientRect();
     const targetRect = targetElement.getBoundingClientRect();
 
-    // Calculate the center of the target element relative to the node
     const relativeTop = targetRect.top - nodeRect.top + targetRect.height / 2;
     const percentage = (relativeTop / nodeRect.height) * 100;
 
@@ -388,7 +411,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
                   }}
                 >
                   <span className="text-xs text-muted-foreground font-medium mr-2">{output.label}</span>
-                  <div className="w-3 h-3 rounded-full border-2 border-background" style={{ backgroundColor: getHandleColor(output.edgeType) }} />
+                  <FileOutput className="h-4 w-4 text-muted-foreground" style={{ transform: "scaleX(-1)" }} />
                 </div>
               ))}
             </div>
@@ -434,7 +457,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
                 width: "0.9rem",
                 height: "0.9rem",
                 border: "2px solid hsl(var(--background))",
-                bottom: "-1px",
+                right: "-1px",
               },
               output.edgeType,
               false,

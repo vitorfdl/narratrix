@@ -208,7 +208,7 @@ const AgentContent = memo<{
       {/* System Prompt Override Section */}
       <div ref={(el) => registerElementRef?.("system-prompt-section", el)} className="space-y-2">
         <label className="text-xs font-medium">System Prompt Override</label>
-        <div className="p-2 bg-muted/50 rounded-md max-h-20 overflow-y-auto">
+        <div className="p-2 bg-muted/50 rounded-md max-h-20 overflow-y-auto border-l-2 border-purple-400 dark:border-purple-500">
           <p className="text-xs text-muted-foreground line-clamp-3">{config.systemPromptOverride || "Using template default"}</p>
         </div>
       </div>
@@ -221,8 +221,8 @@ const AgentContent = memo<{
       {/* Input Section - This aligns with the "input" input handle */}
       <div ref={(el) => registerElementRef?.("input-section", el)} className="space-y-2">
         <label className="text-xs font-medium">Input</label>
-        <div className="p-2 bg-muted/50 rounded-md">
-          <span className="text-xs italic text-muted-foreground">{config.inputPrompt || "{{input}}"}</span>
+        <div className="p-2 bg-muted/50 rounded-md border-l-2 border-purple-400 dark:border-purple-500">
+          <span className="text-xs italic text-muted-foreground line-clamp-3">{config.inputPrompt || "{{input}}"}</span>
         </div>
       </div>
     </div>

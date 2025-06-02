@@ -146,7 +146,7 @@ export async function importCharacter(
 
   // Use the service to create the character
   const character = await createCharacter(characterDataToImport);
-  // Type assertion: createCharacter returns CharacterUnion, but we expect type 'character' only here
+  // Type assertion: createCharacter returns Character, but we expect type 'character' only here
   if (character.type !== "character") {
     throw new Error("Imported data is not a character type.");
   }

@@ -15,14 +15,91 @@ export interface NodeTheme {
 
 // Utility function to create consistent node themes
 export function createNodeTheme(color: string): NodeTheme {
-  return {
-    border: `border-${color}-400/60 dark:border-${color}-500/60`,
-    bg: `bg-${color}-50/80 dark:bg-${color}-950/80`,
-    header: `bg-${color}-100/70 dark:bg-${color}-900/30`,
-    hover: `hover:border-${color}-500 dark:hover:border-${color}-400`,
-    selected: `ring-2 ring-${color}-400 ring-offset-2 ring-offset-background dark:ring-${color}-500`,
-    icon: `text-${color}-600 dark:text-${color}-400`,
+  // Use predefined themes instead of dynamic template strings to avoid Tailwind purging
+  const predefinedThemes: Record<string, NodeTheme> = {
+    blue: {
+      border: "border-blue-400/60 dark:border-blue-500/60",
+      bg: "bg-blue-50/80 dark:bg-blue-950/80",
+      header: "bg-blue-100/70 dark:bg-blue-900/30",
+      hover: "hover:border-blue-500 dark:hover:border-blue-400",
+      selected: "ring-2 ring-blue-400 ring-offset-2 ring-offset-background dark:ring-blue-500",
+      icon: "text-blue-600 dark:text-blue-400",
+    },
+    purple: {
+      border: "border-purple-400/60 dark:border-purple-500/60",
+      bg: "bg-purple-50/80 dark:bg-purple-950/80",
+      header: "bg-purple-100/70 dark:bg-purple-900/30",
+      hover: "hover:border-purple-500 dark:hover:border-purple-400",
+      selected: "ring-2 ring-purple-400 ring-offset-2 ring-offset-background dark:ring-purple-500",
+      icon: "text-purple-600 dark:text-purple-400",
+    },
+    green: {
+      border: "border-green-400/60 dark:border-green-500/60",
+      bg: "bg-green-50/80 dark:bg-green-950/80",
+      header: "bg-green-100/70 dark:bg-green-900/30",
+      hover: "hover:border-green-500 dark:hover:border-green-400",
+      selected: "ring-2 ring-green-400 ring-offset-2 ring-offset-background dark:ring-green-500",
+      icon: "text-green-600 dark:text-green-400",
+    },
+    orange: {
+      border: "border-orange-400/60 dark:border-orange-500/60",
+      bg: "bg-orange-50/80 dark:bg-orange-950/80",
+      header: "bg-orange-100/70 dark:bg-orange-900/30",
+      hover: "hover:border-orange-500 dark:hover:border-orange-400",
+      selected: "ring-2 ring-orange-400 ring-offset-2 ring-offset-background dark:ring-orange-500",
+      icon: "text-orange-600 dark:text-orange-400",
+    },
+    red: {
+      border: "border-red-400/60 dark:border-red-500/60",
+      bg: "bg-red-50/80 dark:bg-red-950/80",
+      header: "bg-red-100/70 dark:bg-red-900/30",
+      hover: "hover:border-red-500 dark:hover:border-red-400",
+      selected: "ring-2 ring-red-400 ring-offset-2 ring-offset-background dark:ring-red-500",
+      icon: "text-red-600 dark:text-red-400",
+    },
+    yellow: {
+      border: "border-yellow-400/60 dark:border-yellow-500/60",
+      bg: "bg-yellow-50/80 dark:bg-yellow-950/80",
+      header: "bg-yellow-100/70 dark:bg-yellow-900/30",
+      hover: "hover:border-yellow-500 dark:hover:border-yellow-400",
+      selected: "ring-2 ring-yellow-400 ring-offset-2 ring-offset-background dark:ring-yellow-500",
+      icon: "text-yellow-600 dark:text-yellow-400",
+    },
+    indigo: {
+      border: "border-indigo-400/60 dark:border-indigo-500/60",
+      bg: "bg-indigo-50/80 dark:bg-indigo-950/80",
+      header: "bg-indigo-100/70 dark:bg-indigo-900/30",
+      hover: "hover:border-indigo-500 dark:hover:border-indigo-400",
+      selected: "ring-2 ring-indigo-400 ring-offset-2 ring-offset-background dark:ring-indigo-500",
+      icon: "text-indigo-600 dark:text-indigo-400",
+    },
+    teal: {
+      border: "border-teal-400/60 dark:border-teal-500/60",
+      bg: "bg-teal-50/80 dark:bg-teal-950/80",
+      header: "bg-teal-100/70 dark:bg-teal-900/30",
+      hover: "hover:border-teal-500 dark:hover:border-teal-400",
+      selected: "ring-2 ring-teal-400 ring-offset-2 ring-offset-background dark:ring-teal-500",
+      icon: "text-teal-600 dark:text-teal-400",
+    },
+    pink: {
+      border: "border-pink-400/60 dark:border-pink-500/60",
+      bg: "bg-pink-50/80 dark:bg-pink-950/80",
+      header: "bg-pink-100/70 dark:bg-pink-900/30",
+      hover: "hover:border-pink-500 dark:hover:border-pink-400",
+      selected: "ring-2 ring-pink-400 ring-offset-2 ring-offset-background dark:ring-pink-500",
+      icon: "text-pink-600 dark:text-pink-400",
+    },
+    slate: {
+      border: "border-slate-400/60 dark:border-slate-500/60",
+      bg: "bg-slate-50/80 dark:bg-slate-950/80",
+      header: "bg-slate-100/70 dark:bg-slate-900/30",
+      hover: "hover:border-slate-500 dark:hover:border-slate-400",
+      selected: "ring-2 ring-slate-400 ring-offset-2 ring-offset-background dark:ring-slate-500",
+      icon: "text-slate-600 dark:text-slate-400",
+    },
   };
+
+  return predefinedThemes[color] || predefinedThemes.blue;
 }
 
 // Custom node props interface that matches our usage

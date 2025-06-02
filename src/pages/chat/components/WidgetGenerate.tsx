@@ -164,7 +164,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         // Clear the input text if not in quiet mode
         if (!quietResponseRef.current) {
           // Add to history if not a duplicate of the most recent entry
-          if (!generationInputHistory.length || generationInputHistory[generationInputHistory.length - 1] !== submittedText) {
+          if (!generationInputHistory.length || generationInputHistory.at(-1) !== submittedText) {
             // Add to history, limiting entries to X
             const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
             setGenerationInputHistory(newHistory);
@@ -275,11 +275,12 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     }
 
     try {
-      if (generationConfig.userMessage) {
+      if (generationConfig.userMessage && generationInputHistory.at(-1) !== text) {
         const newHistory = [...generationInputHistory, text].slice(-25);
         setGenerationInputHistory(newHistory);
       }
       setText("");
+      console.log(generationConfig);
       await inferenceService.generateMessage(generationConfig);
     } catch (error) {
       console.error("Error generating message:", error);

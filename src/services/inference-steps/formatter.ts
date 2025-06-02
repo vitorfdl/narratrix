@@ -1,4 +1,4 @@
-import { Character, CharacterUnion } from "@/schema/characters-schema";
+import { Character } from "@/schema/characters-schema";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
 import { InferenceMessage } from "@/schema/inference-engine-schema";
@@ -40,7 +40,7 @@ export interface PromptFormatterConfig {
   chatConfig?: {
     injectionPrompts?: Record<string, string>;
     user_character?: Pick<Character, "name" | "custom" | "lorebook_id">;
-    character?: Pick<CharacterUnion, "name" | "settings" | "custom" | "type" | "lorebook_id">;
+    character?: Pick<Character, "name" | "settings" | "custom" | "type" | "lorebook_id">;
     chapter?: Pick<ChatChapter, "title" | "scenario" | "instructions">;
     extra?: Record<string, string>;
     censorship?: {

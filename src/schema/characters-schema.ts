@@ -41,7 +41,6 @@ export const ExpressionSchema = z.object({
   image_path: z.string().nullable(),
 });
 
-// Base fields that both agents and characters share
 const BaseCharacterTypeSchema = z.object({
   id: z.string(),
   profile_id: z.string(),
@@ -66,14 +65,6 @@ const BaseCharacterTypeSchema = z.object({
   updated_at: z.coerce.date(),
 });
 
-// Agent-specific schema
-export const AgentSchema = BaseCharacterTypeSchema.extend({
-  type: z.literal("agent"),
-  custom: z.any().nullable().default({}),
-  expressions: z.null(),
-  character_manifest_id: z.null(),
-});
-
 // Character-specific schema
 export const CharacterSchema = BaseCharacterTypeSchema.extend({
   type: z.literal("character"),
@@ -87,26 +78,9 @@ export const CharacterSchema = BaseCharacterTypeSchema.extend({
     .default({}),
 });
 
-// Union type for both agents and characters
-export const CharacterUnionSchema = z.discriminatedUnion("type", [AgentSchema, CharacterSchema]);
-
 // Infer types from schemas
-export type Agent = z.infer<typeof AgentSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
-export type CharacterUnion = z.infer<typeof CharacterUnionSchema>;
 export type Expression = z.infer<typeof ExpressionSchema>;
-
-// Create schemas (omitting auto-generated fields)
-export const CreateAgentSchema = AgentSchema.omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-}).partial({
-  external_update_link: true,
-  system_override: true,
-  settings: true,
-  custom: true,
-});
 
 export const CreateCharacterSchema = CharacterSchema.omit({
   id: true,
@@ -120,7 +94,6 @@ export const CreateCharacterSchema = CharacterSchema.omit({
 });
 
 // Update schemas (all fields optional)
-export const UpdateAgentSchema = CreateAgentSchema.partial();
 export const UpdateCharacterSchema = CreateCharacterSchema.partial();
 
 // Query schema

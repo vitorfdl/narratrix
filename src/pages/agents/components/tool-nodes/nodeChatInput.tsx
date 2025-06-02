@@ -55,7 +55,7 @@ const ChatInputContent = memo(() => {
             <Settings className="h-3 w-3" />
           </Button>
         </div>
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border-l-2 border-blue-400 dark:border-blue-500">
           <User className="h-3 w-3 text-primary" />
           <span className="text-xs text-muted-foreground font-medium">User Message</span>
         </div>

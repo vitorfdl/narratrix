@@ -197,7 +197,9 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
 
       const newEdge: Edge = {
         ...params,
-        id: ("id" in params && params.id) || `edge-${params.source}-${params.target}`,
+        id:
+          ("id" in params && params.id) ||
+          `edge-${params.source}-${params.sourceHandle || "default"}-${params.target}-${params.targetHandle || "default"}`,
         style: edgeStyle,
         data: { edgeType },
         animated: false,
@@ -439,7 +441,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
 
       // Add the connection from source to new node
       const newEdge: Edge = {
-        id: `edge-${sourceNodeId}-${id}`,
+        id: `edge-${sourceNodeId}-${sourceHandleId || "default"}-${id}-${targetHandle || "default"}`,
         source: sourceNodeId,
         sourceHandle: sourceHandleId,
         target: id,

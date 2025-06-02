@@ -9,7 +9,7 @@ import { Controller, useForm } from "react-hook-form";
 import JsonSchemaCreator from "../json-schema/JsonSchemaCreator";
 import { SchemaDefinition } from "../json-schema/types";
 import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
-import { NodeRegistry } from "../tool-components/node-registry";
+import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 /**
@@ -27,14 +27,7 @@ const JAVASCRIPT_NODE_METADATA = {
   label: "Javascript Node",
   description: "Execute custom JavaScript code with configurable inputs",
   icon: Code,
-  theme: {
-    border: "",
-    bg: "bg-orange-50/50 dark:bg-orange-950/20",
-    header: "bg-orange-100/70 dark:bg-orange-900/30",
-    selected: "ring-2 ring-orange-400 ring-offset-2 ring-offset-background dark:ring-orange-500",
-    icon: "text-orange-600 dark:text-orange-400",
-    hover: "",
-  },
+  theme: createNodeTheme("orange"),
   deletable: true,
   inputs: [] as NodeInput[],
   outputs: [{ id: "out-toolset", label: "Toolset", edgeType: "toolset" }] as NodeOutput[],

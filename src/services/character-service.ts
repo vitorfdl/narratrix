@@ -1,16 +1,7 @@
 import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils";
 import { formatDateTime } from "@/utils/date-time";
 import { z } from "zod";
-import {
-  AgentSchema,
-  Character,
-  CharacterSchema,
-  CharacterUnion,
-  CreateAgentSchema,
-  CreateCharacterSchema,
-  UpdateAgentSchema,
-  UpdateCharacterSchema,
-} from "../schema/characters-schema";
+import { Character, CharacterSchema, CreateCharacterSchema, UpdateCharacterSchema } from "../schema/characters-schema";
 import { uuidUtils } from "../schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database";
 import { removeDirectoryRecursive, removeFile } from "./file-system-service";
@@ -23,9 +14,7 @@ export interface CharacterFilter {
 }
 
 // Create a new character (either agent or character)
-export async function createCharacter(
-  characterData: z.infer<typeof CreateAgentSchema> | z.infer<typeof CreateCharacterSchema>,
-): Promise<CharacterUnion> {
+export async function createCharacter(characterData: z.infer<typeof CreateCharacterSchema>): Promise<Character> {
   const profileId = uuidUtils.uuid().parse(characterData.profile_id);
   const id = crypto.randomUUID();
   const now = formatDateTime();
@@ -39,10 +28,7 @@ export async function createCharacter(
   };
 
   // Validate based on type
-  const validatedCharacter =
-    characterData.type === "agent"
-      ? AgentSchema.parse({ ...baseData, expressions: null, character_manifest_id: null })
-      : CharacterSchema.parse(baseData);
+  const validatedCharacter = CharacterSchema.parse(baseData);
 
   // Convert objects to JSON strings for database storage
   const settings = validatedCharacter.settings ? JSON.stringify(validatedCharacter.settings) : null;
@@ -108,7 +94,7 @@ export async function getCharacterById(id: string): Promise<Character | null> {
 }
 
 // List characters with filtering
-export async function listCharacters(profile_id: string, filter?: CharacterFilter): Promise<CharacterUnion[]> {
+export async function listCharacters(profile_id: string, filter?: CharacterFilter): Promise<Character[]> {
   let query = "SELECT * FROM characters";
   const conditions: string[] = [];
   const params: any[] = [];
@@ -159,15 +145,12 @@ export async function listCharacters(profile_id: string, filter?: CharacterFilte
     character.created_at = new Date(character.created_at);
     character.updated_at = new Date(character.updated_at);
 
-    return character.type === "agent" ? AgentSchema.parse(character) : CharacterSchema.parse(character);
+    return CharacterSchema.parse(character);
   });
 }
 
 // Update a character
-export async function updateCharacter(
-  id: string,
-  updateData: z.infer<typeof UpdateAgentSchema> | z.infer<typeof UpdateCharacterSchema>,
-): Promise<CharacterUnion | null> {
+export async function updateCharacter(id: string, updateData: z.infer<typeof UpdateCharacterSchema>): Promise<Character | null> {
   const characterId = uuidUtils.uuid().parse(id);
 
   const currentCharacter = await getCharacterById(characterId);
