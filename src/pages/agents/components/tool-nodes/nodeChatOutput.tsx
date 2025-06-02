@@ -1,47 +1,55 @@
 import { Button } from "@/components/ui/button";
 import { Bot, MessageCircle, Settings } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
-import { NodeBase, NodeInput, useNodeRef } from "./NodeBase";
-import { NodeConfigProvider, NodeConfigRegistry } from "./NodeConfigRegistry";
+import { NodeBase, NodeInput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
-/**
- * Configuration provider for Chat Output nodes
- */
-export class ChatOutputNodeConfigProvider implements NodeConfigProvider {
-  getDefaultConfig() {
+// Define the node's metadata and properties
+const CHAT_OUTPUT_NODE_METADATA = {
+  type: "chatOutput",
+  label: "Chat Output",
+  description: "Display the final response in the conversation flow",
+  icon: MessageCircle,
+  theme: createNodeTheme("green"),
+  deletable: true,
+  inputs: [{ id: "response", label: "Response", edgeType: "string" as const, targetRef: "response-section" }] as NodeInput[],
+  outputs: [],
+  defaultConfig: {},
+};
+
+// Configuration provider namespace
+export namespace ChatOutputNodeConfigProvider {
+  export function getDefaultConfig() {
     return {
-      label: "Chat Output",
-      config: {},
+      label: CHAT_OUTPUT_NODE_METADATA.label,
+      config: CHAT_OUTPUT_NODE_METADATA.defaultConfig,
     };
   }
 }
-
-// Register the configuration provider
-NodeConfigRegistry.register("chatOutput", new ChatOutputNodeConfigProvider());
 
 /**
  * Memoized content component to prevent unnecessary re-renders
  */
 const ChatOutputContent = memo<{ receivedValue: string }>(({ receivedValue }) => {
   const registerElementRef = useNodeRef();
-  
+
   // Prevent event propagation to React Flow
   const handleConfigButtonClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     // TODO: Add configuration functionality
   }, []);
-  
+
   return (
     <div className="space-y-4 w-full">
       {/* Output Type Section */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Output Type</label>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-6 w-6 p-0 hover:bg-primary/10"
             onClick={handleConfigButtonClick}
             title="Configure output settings"
@@ -50,28 +58,23 @@ const ChatOutputContent = memo<{ receivedValue: string }>(({ receivedValue }) =>
           </Button>
         </div>
         <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-          <Bot className="h-3 w-3 text-accent-foreground" />
+          <Bot className="h-3 w-3 text-green-600 dark:text-green-400" />
           <span className="text-xs text-muted-foreground font-medium">Assistant Response</span>
         </div>
       </div>
 
       {/* Response Preview Section - This aligns with the "response" input handle */}
-      <div 
-        ref={(el) => registerElementRef?.("response-section", el)}
-        className="space-y-2"
-      >
+      <div ref={(el) => registerElementRef?.("response-section", el)} className="space-y-2">
         <label className="text-xs font-medium">Message</label>
-        <div className="p-3 bg-muted/50 rounded-md border-l-2 border-accent max-h-32 overflow-y-auto">
+        <div className="p-3 bg-muted/50 rounded-md border-l-2 border-green-400 dark:border-green-500 max-h-32 overflow-y-auto">
           {receivedValue ? (
             <div className="flex items-start gap-2">
-              <Bot className="h-3 w-3 text-accent-foreground mt-0.5 flex-shrink-0" />
+              <Bot className="h-3 w-3 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
               <div className="text-xs  text-muted-foreground whitespace-pre-wrap">{receivedValue}</div>
             </div>
           ) : (
             <div className="flex items-start gap-2">
-              <span className="text-xs text-muted-foreground italic">
-                Receiving Input...
-              </span>
+              <span className="text-xs text-muted-foreground italic">Receiving Input...</span>
             </div>
           )}
         </div>
@@ -80,7 +83,7 @@ const ChatOutputContent = memo<{ receivedValue: string }>(({ receivedValue }) =>
   );
 });
 
-ChatOutputContent.displayName = 'ChatOutputContent';
+ChatOutputContent.displayName = "ChatOutputContent";
 
 /**
  * ChatOutputNode: Represents the final output in the conversation flow
@@ -88,10 +91,6 @@ ChatOutputContent.displayName = 'ChatOutputContent';
  */
 export const ChatOutputNode = memo(({ data, selected, id }: NodeProps) => {
   const [receivedValue, setReceivedValue] = useState<string>("");
-
-  const inputs: NodeInput[] = [
-    { id: "response", label: "Response", edgeType: "string", targetRef: "response-section" }
-  ];
 
   // Listen for updates to the data (if your system provides runtime values)
   useEffect(() => {
@@ -101,18 +100,17 @@ export const ChatOutputNode = memo(({ data, selected, id }: NodeProps) => {
   }, [data.value]);
 
   return (
-    <NodeBase 
-      title="Chat Output" 
-      nodeType="chatOutput" 
-      data={data} 
-      selected={!!selected} 
-      inputs={inputs}
-      icon={<MessageCircle className="h-4 w-4" />}
-      nodeId={id}
-    >
+    <NodeBase nodeId={id} data={data} selected={!!selected}>
       <ChatOutputContent receivedValue={receivedValue} />
     </NodeBase>
   );
 });
 
-ChatOutputNode.displayName = 'ChatOutputNode'; 
+ChatOutputNode.displayName = "ChatOutputNode";
+
+// Register the node
+NodeRegistry.register({
+  metadata: CHAT_OUTPUT_NODE_METADATA,
+  component: ChatOutputNode,
+  configProvider: ChatOutputNodeConfigProvider,
+});

@@ -35,13 +35,15 @@ export const agentEdgeSchema = z.object({
 /**
  * Agent Settings Schema
  */
-export const agentSettingsSchema = z.object({
-  run_on: z.object({
-    type: z.enum(["manual", "every_message", "scheduled"]),
-    config: z.record(z.string(), z.any()).optional(),
-  }),
-  // Additional settings can be added here
-}).catchall(z.any()); // Allow additional properties
+export const agentSettingsSchema = z
+  .object({
+    run_on: z.object({
+      type: z.enum(["manual", "every_message", "scheduled"]),
+      config: z.record(z.string(), z.any()).optional(),
+    }),
+    // Additional settings can be added here
+  })
+  .catchall(z.any()); // Allow additional properties
 
 /**
  * Agent Schema
@@ -54,15 +56,15 @@ export const agentSchema = z.object({
   description: z.string().nullable().optional(),
   version: z.string().default("1.0.0"),
   tags: z.array(z.string()).default([]),
-  
+
   // Workflow configuration
   nodes: z.array(agentNodeSchema).default([]),
   edges: z.array(agentEdgeSchema).default([]),
   settings: agentSettingsSchema.default({ run_on: { type: "manual" } }),
-  
+
   // Metadata
   category: z.string().nullable().optional(),
-  
+
   created_at: z.date(),
   updated_at: z.date(),
 });
@@ -77,17 +79,17 @@ export const customNodeSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().nullable().optional(),
   version: z.string().default("1.0.0"),
-  
+
   // Node definition
   node_type: z.string().min(1, "Node type is required"),
   tags: z.array(z.string()).default([]),
-  
+
   // Node configuration
   default_config: z.record(z.string(), z.any()).default({}),
-  
+
   // Metadata
   extra: z.record(z.string(), z.any()).default({}),
-  
+
   created_at: z.date(),
   updated_at: z.date(),
 });

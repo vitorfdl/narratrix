@@ -1,5 +1,5 @@
-import type { SchemaDefinition, SchemaProperty } from "./types"
-
+import type { SchemaDefinition, SchemaProperty } from "./types";
+export const parseBoolean = (value: any) => value === 1 || value === true || value === "true";
 export const generateId = (): string => Math.random().toString(36).substr(2, 9)
 
 export const convertToProperties = (props: Record<string, any>, required: string[] = []): SchemaProperty[] => {

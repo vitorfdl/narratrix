@@ -9,8 +9,8 @@ import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
 import { useReactFlow } from "@xyflow/react";
 import { Bot, MessageCircle, Settings } from "lucide-react";
 import React, { memo, useCallback, useEffect, useState } from "react";
-import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "./NodeBase";
-import { NodeConfigProvider, NodeConfigRegistry } from "./NodeConfigRegistry";
+import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 export interface AgentNodeConfig {
@@ -19,36 +19,36 @@ export interface AgentNodeConfig {
   inputPrompt: string;
 }
 
-// Define outputs - these will be positioned in the response section
-const outputs: NodeOutput[] = [
-  { id: "response", label: "Message", edgeType: "string" }
-];
+// Define the node's metadata and properties
+const AGENT_NODE_METADATA = {
+  type: "agent",
+  label: "Agent",
+  description: "AI agent with customizable prompts and tools",
+  icon: Bot,
+  theme: createNodeTheme("purple"),
+  deletable: true,
+  inputs: [
+    { id: "in-input", label: "Input", edgeType: "string" as const, targetRef: "input-section" },
+    { id: "in-toolset", label: "Toolset", edgeType: "toolset" as const, targetRef: "tools-section" },
+    { id: "in-system-prompt", label: "System Prompt Override", edgeType: "string" as const, targetRef: "system-prompt-section" },
+  ] as NodeInput[],
+  outputs: [{ id: "response", label: "Message", edgeType: "string" as const }] as NodeOutput[],
+  defaultConfig: {
+    chatTemplateID: "",
+    systemPromptOverride: "",
+    inputPrompt: "",
+  } as AgentNodeConfig,
+};
 
-// Define inputs with precise positioning using targetRef
-const inputs: NodeInput[] = [
-  { id: "in-input", label: "Input", edgeType: "string", targetRef: "input-section" },
-  { id: "in-toolset", label: "Toolset", edgeType: "toolset", targetRef: "tools-section" },
-  { id: "in-system-prompt", label: "System Prompt Override", edgeType: "string", targetRef: "system-prompt-section" }
-];
-
-/**
- * Configuration provider for Agent nodes
- */
-export class AgentNodeConfigProvider implements NodeConfigProvider {
-  getDefaultConfig() {
+// Configuration provider namespace
+export namespace AgentNodeConfigProvider {
+  export function getDefaultConfig() {
     return {
-      label: "Agent",
-      config: {
-        chatTemplateID: "",
-        systemPromptOverride: "",
-        inputPrompt: "",
-      } as AgentNodeConfig,
+      label: AGENT_NODE_METADATA.label,
+      config: AGENT_NODE_METADATA.defaultConfig,
     };
   }
 }
-
-// Register the configuration provider
-NodeConfigRegistry.register("agent", new AgentNodeConfigProvider());
 
 export interface AgentNodeConfigDialogProps {
   open: boolean;
@@ -63,12 +63,7 @@ const DEFAULT_CONFIG_STATE: AgentNodeConfig = {
   inputPrompt: "",
 };
 
-export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ 
-  open, 
-  config, 
-  onSave, 
-  onCancel 
-}) => {
+export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ open, config, onSave, onCancel }) => {
   const [currentConfig, setCurrentConfig] = useState<AgentNodeConfig>(DEFAULT_CONFIG_STATE);
 
   useEffect(() => {
@@ -106,7 +101,7 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="systemPromptOverride" className="text-sm font-medium flex items-center gap-1">
-                      <Settings className="h-3 w-3" /> System Prompt Override 
+                      <Settings className="h-3 w-3" /> System Prompt Override
                     </Label>
                     <span className="text-xs text-muted-foreground">{estimateTokens(currentConfig.systemPromptOverride, 0) || 0} tokens</span>
                   </div>
@@ -134,7 +129,9 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({
                     onChange={(value) => handleFieldChange("inputPrompt", value)}
                     placeholder="{{input}}"
                   />
-                  <p className="text-xs text-muted-foreground mt-0.5">Template for processing input data. Use {"{{input}}"} to reference the input value.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Template for processing input data. Use {"{{input}}"} to reference the input value.
+                  </p>
                 </div>
               </div>
 
@@ -148,7 +145,9 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({
                     onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateID", chatTemplateId)}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Select the chat template that defines the model and inference settings for this agent</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select the chat template that defines the model and inference settings for this agent
+                </p>
               </div>
             </div>
           </div>
@@ -174,39 +173,35 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({
 /**
  * Memoized content component to prevent unnecessary re-renders
  */
-const AgentContent = memo<{ 
-  config: AgentNodeConfig; 
-  onConfigClick: () => void; 
+const AgentContent = memo<{
+  config: AgentNodeConfig;
+  onConfigClick: () => void;
 }>(({ config, onConfigClick }) => {
   const registerElementRef = useNodeRef();
   const chatTemplate = useChatTemplate(config.chatTemplateID || "");
-  
+
   // Prevent event propagation to React Flow
-  const handleConfigButtonClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onConfigClick();
-  }, [onConfigClick]);
-  
+  const handleConfigButtonClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onConfigClick();
+    },
+    [onConfigClick],
+  );
+
   return (
     <div className="space-y-4 w-full">
       {/* Chat Template Section */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Chat Template</label>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleConfigButtonClick}
-            className="h-6 w-6 p-0 hover:bg-primary/10"
-          >
+          <Button variant="ghost" size="sm" onClick={handleConfigButtonClick} className="h-6 w-6 p-0 hover:bg-primary/10">
             <Settings className="h-3 w-3" />
           </Button>
         </div>
         <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-          <span className="text-xs text-muted-foreground font-medium">
-            {chatTemplate?.name || "No template selected"}
-          </span>
+          <span className="text-xs text-muted-foreground font-medium">{chatTemplate?.name || "No template selected"}</span>
         </div>
       </div>
 
@@ -214,62 +209,45 @@ const AgentContent = memo<{
       <div ref={(el) => registerElementRef?.("system-prompt-section", el)} className="space-y-2">
         <label className="text-xs font-medium">System Prompt Override</label>
         <div className="p-2 bg-muted/50 rounded-md max-h-20 overflow-y-auto">
-          <p className="text-xs text-muted-foreground line-clamp-3">
-            {config.systemPromptOverride || "Using template default"}
-          </p>
+          <p className="text-xs text-muted-foreground line-clamp-3">{config.systemPromptOverride || "Using template default"}</p>
         </div>
       </div>
 
       {/* Tools Section - This aligns with the "tools" input handle */}
-      <div 
-        ref={(el) => registerElementRef?.("tools-section", el)}
-        className="space-y-2"
-      >
+      <div ref={(el) => registerElementRef?.("tools-section", el)} className="space-y-2">
         <label className="text-xs font-medium">Tools</label>
       </div>
 
       {/* Input Section - This aligns with the "input" input handle */}
-      <div 
-        ref={(el) => registerElementRef?.("input-section", el)}
-        className="space-y-2"
-      >
+      <div ref={(el) => registerElementRef?.("input-section", el)} className="space-y-2">
         <label className="text-xs font-medium">Input</label>
         <div className="p-2 bg-muted/50 rounded-md">
-          <span className="text-xs italic text-muted-foreground">
-            {config.inputPrompt || "{{input}}"}
-          </span>
+          <span className="text-xs italic text-muted-foreground">{config.inputPrompt || "{{input}}"}</span>
         </div>
       </div>
     </div>
   );
 });
 
-AgentContent.displayName = 'AgentContent';
+AgentContent.displayName = "AgentContent";
 
 /**
- * Agent Node Component with precise handle positioning
+ * Agent Node Component
  */
 export const AgentNode = memo(({ data, selected, id }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
 
-  const config = (data.config as AgentNodeConfig) || {
-    chatTemplateID: "",
-    systemPromptOverride: "",
-    inputPrompt: "",
-  };
+  const config = (data.config as AgentNodeConfig) || AGENT_NODE_METADATA.defaultConfig;
 
-  const handleConfigSave = useCallback((newConfig: AgentNodeConfig) => {
-    // Use React Flow's setNodes to properly update the node
-    setNodes((nodes) => 
-      nodes.map((node) => 
-        node.id === id 
-          ? { ...node, data: { ...node.data, config: newConfig } }
-          : node
-      )
-    );
-    setConfigDialogOpen(false);
-  }, [id, setNodes]);
+  const handleConfigSave = useCallback(
+    (newConfig: AgentNodeConfig) => {
+      // Use React Flow's setNodes to properly update the node
+      setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
+      setConfigDialogOpen(false);
+    },
+    [id, setNodes],
+  );
 
   const handleConfigClick = useCallback(() => {
     setConfigDialogOpen(true);
@@ -277,27 +255,20 @@ export const AgentNode = memo(({ data, selected, id }: NodeProps) => {
 
   return (
     <>
-      <NodeBase 
-        title="Agent" 
-        nodeType="agent" 
-        data={data} 
-        selected={!!selected} 
-        outputs={outputs}
-        inputs={inputs}
-        icon={<Bot className="h-4 w-4" />}
-        nodeId={id}
-      >
+      <NodeBase nodeId={id} data={data} selected={!!selected}>
         <AgentContent config={config} onConfigClick={handleConfigClick} />
       </NodeBase>
 
-      <AgentNodeConfigDialog
-        open={configDialogOpen}
-        config={config}
-        onSave={handleConfigSave}
-        onCancel={() => setConfigDialogOpen(false)}
-      />
+      <AgentNodeConfigDialog open={configDialogOpen} config={config} onSave={handleConfigSave} onCancel={() => setConfigDialogOpen(false)} />
     </>
   );
 });
 
-AgentNode.displayName = 'AgentNode'; 
+AgentNode.displayName = "AgentNode";
+
+// Register the node
+NodeRegistry.register({
+  metadata: AGENT_NODE_METADATA,
+  component: AgentNode,
+  configProvider: AgentNodeConfigProvider,
+});

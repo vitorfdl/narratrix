@@ -1,47 +1,53 @@
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Settings, User } from "lucide-react";
 import { memo, useCallback } from "react";
-import { NodeBase, NodeOutput, useNodeRef } from "./NodeBase";
-import { NodeConfigProvider, NodeConfigRegistry } from "./NodeConfigRegistry";
+import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
+import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
-/**
- * Configuration provider for Chat Input nodes
- */
-export class ChatInputNodeConfigProvider implements NodeConfigProvider {
-  getDefaultConfig() {
+// Define the node's metadata and properties
+const CHAT_INPUT_NODE_METADATA = {
+  type: "chatInput",
+  label: "Chat Input",
+  description: "User input entry point for the conversation flow",
+  icon: MessageSquare,
+  theme: createNodeTheme("blue"),
+  deletable: true,
+  inputs: [],
+  outputs: [{ id: "message", label: "Message", edgeType: "string" as const }] as NodeOutput[],
+  defaultConfig: {},
+};
+
+// Configuration provider namespace
+export namespace ChatInputNodeConfigProvider {
+  export function getDefaultConfig() {
     return {
-      label: "Chat Input",
-      config: {},
+      label: CHAT_INPUT_NODE_METADATA.label,
+      config: CHAT_INPUT_NODE_METADATA.defaultConfig,
     };
   }
 }
-
-// Register the configuration provider
-NodeConfigRegistry.register("chatInput", new ChatInputNodeConfigProvider());
 
 /**
  * Memoized content component to prevent unnecessary re-renders
  */
 const ChatInputContent = memo(() => {
-  const registerElementRef = useNodeRef();
-  
   // Prevent event propagation to React Flow
   const handleConfigButtonClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     // TODO: Add configuration functionality
   }, []);
-  
+
   return (
     <div className="space-y-4 w-full">
       {/* Input Type Section */}
       <div className="space-y-2">
-      <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Input Type</label>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-6 w-6 p-0 hover:bg-primary/10"
             onClick={handleConfigButtonClick}
             title="Configure input settings"
@@ -58,31 +64,25 @@ const ChatInputContent = memo(() => {
   );
 });
 
-ChatInputContent.displayName = 'ChatInputContent';
+ChatInputContent.displayName = "ChatInputContent";
 
 /**
  * ChatInputNode: Represents user input in the conversation flow
  * This node outputs the user's message to be processed by other nodes
  */
 export const ChatInputNode = memo(({ data, selected, id }: NodeProps) => {
-  const outputs: NodeOutput[] = [
-    { id: "message", label: "Message", edgeType: "string" }
-  ];
-
   return (
-    <NodeBase 
-      title="Chat Input" 
-      nodeType="chatInput" 
-      data={data} 
-      selected={!!selected} 
-      outputs={outputs}
-      icon={<MessageSquare className="h-4 w-4" />}
-      nodeId={id}
-      deletable={true}
-    >
+    <NodeBase nodeId={id} data={data} selected={!!selected}>
       <ChatInputContent />
     </NodeBase>
   );
 });
 
-ChatInputNode.displayName = 'ChatInputNode'; 
+ChatInputNode.displayName = "ChatInputNode";
+
+// Register the node
+NodeRegistry.register({
+  metadata: CHAT_INPUT_NODE_METADATA,
+  component: ChatInputNode,
+  configProvider: ChatInputNodeConfigProvider,
+});

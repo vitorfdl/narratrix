@@ -6,6 +6,7 @@ import { create } from "zustand";
 import { ProfileListItem, ProfileResponse, UpdateProfileParams } from "../schema/profiles-schema";
 import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile, updateProfile } from "../services/profile-service";
 import { useThemeStore } from "./ThemeContext";
+import { useAgentActions } from "./agentStore";
 import { useCharacterActions } from "./characterStore";
 import { useChatActions } from "./chatStore";
 import { useChatTemplateActions } from "./chatTemplateStore";
@@ -256,6 +257,7 @@ export const useProfileSynchronization = () => {
   const { fetchChatTemplates } = useChatTemplateActions();
   const { loadLorebooks } = useLorebookStoreActions();
   const { setTheme } = useThemeStore();
+  const { fetchAgents } = useAgentActions();
 
   useEffect(() => {
     if (currentProfile?.id && currentProfile.settings) {
@@ -267,6 +269,7 @@ export const useProfileSynchronization = () => {
       fetchChatList(currentProfile.id);
       loadLorebooks(currentProfile.id);
       fetchModels({ profile_id: currentProfile.id });
+      fetchAgents(currentProfile.id);
       setTheme(currentProfile.settings.appearance.theme || "system");
     } else {
       console.log("No current profile or settings, skipping data synchronization.");

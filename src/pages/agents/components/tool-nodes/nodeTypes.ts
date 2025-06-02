@@ -1,27 +1,6 @@
-import { ToolNodeData } from "../AgentEditor";
+import { CustomNodeProps } from "../tool-components/node-registry";
 
 /**
- * Custom NodeProps interface that correctly extends ReactFlowNodeProps
- * to allow our custom ToolNodeData type
+ * Node props interface for all node components
  */
-export interface NodeProps {
-  data: ToolNodeData;
-  selected: boolean;
-  id: string;
-  type: string;
-}
-
-// Node options for selection
-export const NODE_TYPE_OPTIONS = [
-  { value: "agent", label: "Agent" },
-  { value: "javascript", label: "Javascript Node" },
-  { value: "chatInput", label: "Chat Input" },
-  { value: "chatOutput", label: "Chat Output" },
-];
-
-// Export all node components
-export { AgentNode } from "./nodeAgent";
-export { ChatInputNode } from "./nodeChatInput";
-export { ChatOutputNode } from "./nodeChatOutput";
-export { JavascriptNode } from "./nodeJavascript";
-
+export type NodeProps = CustomNodeProps;

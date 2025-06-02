@@ -52,11 +52,11 @@ const MESSAGE_BASE_CLASSES = {
 const TYPE_CLASSES = {
   user: "flex-row-reverse bg-gradient-to-br from-primary/5 to-primary/10",
   character: "bg-gradient-to-br from-card to-card/80",
-  system: "bg-gradient-to-br from-card to-card/80 mx-2 @md:mx-6 @lg:mx-6",
+  system: "bg-gradient-to-br from-card to-card/80",
 };
 
 const STATE_CLASSES = {
-  streaming: "border-primary/60 shadow-primary/20 shadow-md animate-pulse transition-all",
+  streaming: "border-primary/60 shadow-primary/20 shadow-md transition-all",
   editing: "text-left ring-2 ring-primary/30 rounded-xl h-auto bg-background/95",
   disabled: "border-dashed border-destructive/60 opacity-40 bg-destructive/5 hover:bg-destructive/10 hover:border-destructive/80",
 };
@@ -216,10 +216,10 @@ const MessageItem = ({
 
   const contentClassName = React.useMemo(() => {
     return cn(
-      MESSAGE_BASE_CLASSES.content, 
+      MESSAGE_BASE_CLASSES.content,
       message.type === "user" && isEditingID !== message.id && "flex justify-end",
       message.type === "system" && "text-center",
-      isDisabled && "relative"
+      isDisabled && "relative",
     );
   }, [message.type, isEditingID, message.id, isDisabled]);
 
@@ -229,7 +229,7 @@ const MessageItem = ({
       isEditingID !== message.id ? "bg-transparent border-none" : STATE_CLASSES.editing,
       isStreaming && "animate-pulse duration-500",
       message.type === "system" && "text-left",
-      isDisabled && "line-through decoration-destructive decoration-2 text-muted-foreground/70"
+      isDisabled && "line-through decoration-destructive decoration-2 text-muted-foreground/70",
     );
   }, [isEditingID, message.id, isStreaming, message.type, isDisabled]);
 
@@ -242,7 +242,7 @@ const MessageItem = ({
   const ScriptIndicator = ({ script }: { script: keyof typeof SCRIPT_CONFIGS }) => {
     const config = SCRIPT_CONFIGS[script];
     const Icon = config.icon;
-    
+
     return (
       <div className={cn(MESSAGE_BASE_CLASSES.scriptIndicator, config.className)}>
         <Icon className={cn("h-3.5 w-3.5", config.iconClassName)} />
@@ -256,7 +256,7 @@ const MessageItem = ({
   const ScriptHeader = ({ script }: { script: keyof typeof SCRIPT_CONFIGS }) => {
     const config = SCRIPT_CONFIGS[script];
     const Icon = config.icon;
-    
+
     return (
       <div className={MESSAGE_BASE_CLASSES.scriptHeader}>
         <div className="flex items-center gap-2">
@@ -270,9 +270,9 @@ const MessageItem = ({
         </div>
         {message.type === "system" && (
           <div className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
-            {new Date(message.created_at).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
+            {new Date(message.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
             })}
           </div>
         )}
@@ -306,20 +306,14 @@ const MessageItem = ({
           {hasReasoningData && message.type === "character" && <ReasoningSection content={reasoningContent || ""} />}
 
           {/* Enhanced script handling */}
-          {message.extra?.script && (
-            <>
-              {message.type === "system" ? (
-                <ScriptHeader script={message.extra.script} />
-              ) : (
-                <div className={cn(
-                  "flex mb-3",
-                  message.type === "user" ? "justify-end" : "justify-start"
-                )}>
-                  <ScriptIndicator script={message.extra.script} />
-                </div>
-              )}
-            </>
-          )}
+          {message.extra?.script &&
+            (message.type === "system" ? (
+              <ScriptHeader script={message.extra.script} />
+            ) : (
+              <div className={cn("flex mb-3", message.type === "user" ? "justify-end" : "justify-start")}>
+                <ScriptIndicator script={message.extra.script} />
+              </div>
+            ))}
 
           <MarkdownTextArea
             autofocus={isEditing}

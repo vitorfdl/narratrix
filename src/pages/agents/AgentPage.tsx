@@ -3,148 +3,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useAgentActions, useAgentError, useAgentLoading, useAgents } from "@/hooks/agentStore";
 import { AgentType } from "@/schema/agent-schema";
 import { useLocalAgentPageSettings } from "@/utils/local-storage";
 import { Bot, Cpu, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import EditAgentPage from "./EditAgentPage";
 import AddAgentDialog from "./components/AddAgentDialog";
 import { AgentCard } from "./components/AgentCard";
 import { AgentSidebar } from "./components/AgentSidebar";
-import ToolList from "./components/ToolList";
-
-// Mock agent data for development/testing
-const MOCK_AGENTS: AgentType[] = [
-  {
-    id: "1",
-    profile_id: "1",
-    favorite: false,
-    nodes: [
-      {
-        id: "chat-input-1",
-        type: "chatInput",
-        position: { x: -100, y: 350 },
-        label: "Chat Input",
-      },
-      {
-        id: "agent-1",
-        type: "agent",
-        position: { x: 250, y: 200 },
-        label: "Agent",
-        config: {
-          systemPromptOverride: "",
-          inputPrompt: "",
-        },
-      },
-      {
-        id: "javascript-1",
-        type: "javascript",
-        position: { x: -100, y: 10 },
-        label: "Javascript",
-      },
-      {
-        id: "chat-output-1",
-        type: "chatOutput",
-        position: { x: 700, y: 350 },
-        label: "Chat Output",
-      },
-    ],
-    edges: [
-      {
-        id: "edge-chat-input-to-agent",
-        source: "chat-input-1",
-        target: "agent-1",
-        sourceHandle: "message",
-        targetHandle: "in-input",
-        edgeType: "string",
-      },
-      {
-        id: "edge-agent-to-chat-output",
-        source: "agent-1",
-        target: "chat-output-1",
-        sourceHandle: "response",
-        targetHandle: "response",
-        edgeType: "string",
-      },
-      {
-        id: "edge-javascript-to-agent",
-        source: "javascript-1",
-        target: "agent-1",
-        sourceHandle: "out-toolset",
-        targetHandle: "in-toolset",
-        edgeType: "toolset",
-      },
-    ],
-    settings: {
-      run_on: {
-        type: "every_message",
-      },
-    },
-    name: "Basic Agent Tool",
-    tags: ["agent", "tool", "javascript"],
-    description: "A simple agent tool with chat input and output",
-    version: "1.0.0",
-    updated_at: new Date(),
-    created_at: new Date(),
-  },
-  {
-    id: "2",
-    profile_id: "1",
-    favorite: true,
-    nodes: [
-      {
-        id: "chat-input-2",
-        type: "chatInput",
-        position: { x: -100, y: 350 },
-        label: "Chat Input",
-      },
-      {
-        id: "agent-2",
-        type: "agent",
-        position: { x: 250, y: 200 },
-        label: "Agent",
-        config: {
-          systemPromptOverride: "You are a helpful AI assistant specialized in coding.",
-          inputPrompt: "",
-        },
-      },
-      {
-        id: "chat-output-2",
-        type: "chatOutput",
-        position: { x: 700, y: 350 },
-        label: "Chat Output",
-      },
-    ],
-    edges: [
-      {
-        id: "edge-chat-input-to-agent-2",
-        source: "chat-input-2",
-        target: "agent-2",
-        sourceHandle: "message",
-        targetHandle: "in-input",
-        edgeType: "string",
-      },
-      {
-        id: "edge-agent-to-chat-output-2",
-        source: "agent-2",
-        target: "chat-output-2",
-        sourceHandle: "response",
-        targetHandle: "response",
-        edgeType: "string",
-      },
-    ],
-    settings: {
-      run_on: {
-        type: "every_message",
-      },
-    },
-    name: "Code Assistant Agent",
-    tags: ["coding", "assistant", "ai"],
-    description: "An AI agent specialized in helping with coding tasks",
-    version: "1.0.0",
-    updated_at: new Date(),
-    created_at: new Date(),
-  },
-];
 
 export type AgentPageSettings = {
   view: {
@@ -160,21 +29,38 @@ export type AgentPageSettings = {
 };
 
 export default function AgentPage() {
-  // Use local state for mock agents
-  const [agents, setAgents] = useState<AgentType[]>(MOCK_AGENTS);
+  // Store integration
+  const agents = useAgents();
+  const isLoading = useAgentLoading();
+  const error = useAgentError();
+  const { fetchAgents, deleteAgent, updateAgent } = useAgentActions();
+  const currentProfile = useCurrentProfile();
+
+  // Local state
   const [settings, setSettings] = useLocalAgentPageSettings();
   const [search, setSearch] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<AgentType | null>(null);
+
+  // Fetch agents on component mount and profile change
+  useEffect(() => {
+    if (currentProfile?.id) {
+      fetchAgents(currentProfile.id);
+    }
+  }, [currentProfile?.id, fetchAgents]);
+
+  // Show error toast when error occurs
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   // Handle tag selection
   const handleTagSelect = (tag: string) => {
     setSettings((prev) => ({
       ...prev,
-      selectedTags: prev.selectedTags.includes(tag) 
-        ? prev.selectedTags.filter((t) => t !== tag) 
-        : [...prev.selectedTags, tag],
+      selectedTags: prev.selectedTags.includes(tag) ? prev.selectedTags.filter((t) => t !== tag) : [...prev.selectedTags, tag],
     }));
   };
 
@@ -182,11 +68,9 @@ export default function AgentPage() {
   const filteredAgents = useMemo(() => {
     return agents
       .filter((agent) => {
-        const matchesSearch = search === "" || 
-          agent.name.toLowerCase().includes(search.toLowerCase()) ||
-          agent.description?.toLowerCase().includes(search.toLowerCase());
-        const matchesTags = settings.selectedTags.length === 0 || 
-          (agent.tags && settings.selectedTags.every((tag) => agent.tags?.includes(tag)));
+        const matchesSearch =
+          search === "" || agent.name.toLowerCase().includes(search.toLowerCase()) || agent.description?.toLowerCase().includes(search.toLowerCase());
+        const matchesTags = settings.selectedTags.length === 0 || (agent.tags && settings.selectedTags.every((tag) => agent.tags?.includes(tag)));
         return matchesSearch && matchesTags;
       })
       .sort((a, b) => {
@@ -203,20 +87,24 @@ export default function AgentPage() {
       });
   }, [agents, search, settings.selectedTags, settings.sort]);
 
-  // Simulate delete with confirmation
-  const handleDelete = (agent: AgentType) => {
+  // Handle delete with confirmation
+  const handleDelete = async (agent: AgentType) => {
     if (window.confirm(`Delete agent '${agent.name}'?`)) {
-      setAgents((prev) => prev.filter((a) => a.id !== agent.id));
+      try {
+        await deleteAgent(agent.id);
+        toast.success(`Agent '${agent.name}' deleted successfully`);
+      } catch (error) {
+        console.error("Failed to delete agent:", error);
+        // Error toast is handled by the store's error state
+      }
     }
   };
 
-  // Simulate refresh
+  // Handle refresh
   const handleRefresh = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setAgents(MOCK_AGENTS);
-      setIsLoading(false);
-    }, 600);
+    if (currentProfile?.id) {
+      fetchAgents(currentProfile.id);
+    }
   };
 
   // Handle edit
@@ -225,54 +113,55 @@ export default function AgentPage() {
   };
 
   // Handle favorite toggle
-  const handleToggleFavorite = (agent: AgentType) => {
-    setAgents((prev) => 
-      prev.map((a) => 
-        a.id === agent.id ? { ...a, favorite: !a.favorite } : a
-      )
-    );
+  const handleToggleFavorite = async (agent: AgentType) => {
+    if (!currentProfile?.id) {
+      toast.error("No profile selected");
+      return;
+    }
+
+    try {
+      await updateAgent(currentProfile.id, agent.id, {
+        favorite: !agent.favorite,
+      });
+      toast.success(`Agent ${agent.favorite ? "removed from" : "added to"} favorites`);
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+      // Error toast is handled by the store's error state
+    }
   };
+
+  // Show loading state if no profile is available
+  if (!currentProfile) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <p className="text-muted-foreground">Please select a profile to view agents</p>
+      </div>
+    );
+  }
 
   // If an agent is selected, show the ToolList view
   if (selectedAgent) {
-    return <ToolList agent={selectedAgent} onBack={() => setSelectedAgent(null)} />;
+    return <EditAgentPage agent={selectedAgent} onBack={() => setSelectedAgent(null)} />;
   }
 
   return (
     <div className="flex h-full overflow-y-auto">
-      <AgentSidebar 
-        agents={agents} 
-        selectedTags={settings.selectedTags} 
-        onTagSelect={handleTagSelect} 
-      />
-      
+      <AgentSidebar agents={agents} selectedTags={settings.selectedTags} onTagSelect={handleTagSelect} />
+
       <div className="flex flex-1 flex-col">
         {/* Header with filters and controls */}
         <div className="sticky top-0 z-10 bg-background border-b">
           <div className="flex items-center gap-1 p-4">
-            <h1 className="font-bold mr-auto title flex items-center gap-2">
-              Agents
-            </h1>
+            <h1 className="font-bold mr-auto title flex items-center gap-2">Agents</h1>
 
             {/* Search */}
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search agents..." 
-                value={search} 
-                onChange={(e) => setSearch(e.target.value)} 
-                className="pl-10" 
-              />
+              <Input placeholder="Search agents..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
             </div>
 
             {/* Refresh */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isLoading}
-              title="Refresh Agents"
-            >
+            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoading} title="Refresh Agents">
               <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </Button>
 
@@ -386,14 +275,7 @@ export default function AgentPage() {
         </div>
 
         {/* Add Agent Dialog */}
-        <AddAgentDialog 
-          open={addDialogOpen} 
-          onOpenChange={setAddDialogOpen}
-          onSuccess={(newAgent) => {
-            setAgents((prev) => [...prev, newAgent]);
-            setAddDialogOpen(false);
-          }}
-        />
+        <AddAgentDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
       </div>
     </div>
   );

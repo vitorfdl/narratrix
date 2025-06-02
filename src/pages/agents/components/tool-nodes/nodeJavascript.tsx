@@ -8,8 +8,8 @@ import React, { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import JsonSchemaCreator from "../json-schema/JsonSchemaCreator";
 import { SchemaDefinition } from "../json-schema/types";
-import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "./NodeBase";
-import { NodeConfigProvider, NodeConfigRegistry } from "./NodeConfigRegistry";
+import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 /**
@@ -21,31 +21,38 @@ export interface JavascriptNodeConfig {
   inputSchema?: SchemaDefinition | null;
 }
 
-// Define inputs with precise positioning using targetRef
-const inputs: NodeInput[] = [];
+// Define the node's metadata and properties
+const JAVASCRIPT_NODE_METADATA = {
+  type: "javascript",
+  label: "Javascript Node",
+  description: "Execute custom JavaScript code with configurable inputs",
+  icon: Code,
+  theme: {
+    border: "",
+    bg: "bg-orange-50/50 dark:bg-orange-950/20",
+    header: "bg-orange-100/70 dark:bg-orange-900/30",
+    selected: "ring-2 ring-orange-400 ring-offset-2 ring-offset-background dark:ring-orange-500",
+    icon: "text-orange-600 dark:text-orange-400",
+    hover: "",
+  },
+  deletable: true,
+  inputs: [] as NodeInput[],
+  outputs: [{ id: "out-toolset", label: "Toolset", edgeType: "toolset" }] as NodeOutput[],
+  defaultConfig: {
+    name: "Javascript Node",
+    code: "// Write your JavaScript code here\nreturn input;",
+  } as JavascriptNodeConfig,
+};
 
-// Define outputs - these will be positioned in the response section
-const outputs: NodeOutput[] = [
-  { id: "out-toolset", label: "Toolset", edgeType: "toolset" },
-];
-
-/**
- * Configuration provider for Javascript nodes
- */
-export class JavascriptNodeConfigProvider implements NodeConfigProvider {
-  getDefaultConfig() {
+// Configuration provider namespace
+export namespace JavascriptNodeConfigProvider {
+  export function getDefaultConfig() {
     return {
-      label: "Javascript Node",
-      config: {
-        name: "Javascript Node",
-        code: "// Write your JavaScript code here\nreturn input;",
-      } as JavascriptNodeConfig,
+      label: JAVASCRIPT_NODE_METADATA.label,
+      config: JAVASCRIPT_NODE_METADATA.defaultConfig,
     };
   }
 }
-
-// Register the configuration provider
-NodeConfigRegistry.register("javascript", new JavascriptNodeConfigProvider());
 
 /**
  * JavascriptNodeConfigDialog: Dialog for configuring JavaScript node
@@ -125,13 +132,7 @@ export const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProp
                         <div className="flex items-center justify-between mb-0">
                           <span className="text-xs font-medium">{currentInputSchema.title || "Input Schema"}</span>
                           <div className="flex gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSchemaDialogOpen(true)}
-                              className="h-6 px-2 text-xs"
-                            >
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setSchemaDialogOpen(true)} className="h-6 px-2 text-xs">
                               Edit
                             </Button>
                             <Button
@@ -145,9 +146,7 @@ export const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProp
                             </Button>
                           </div>
                         </div>
-                        {currentInputSchema.description && (
-                          <p className="text-xs text-muted-foreground mb-2">{currentInputSchema.description}</p>
-                        )}
+                        {currentInputSchema.description && <p className="text-xs text-muted-foreground mb-2">{currentInputSchema.description}</p>}
                         <div className="text-xs text-muted-foreground">
                           {Object.keys(currentInputSchema.properties || {}).length} properties defined
                         </div>
@@ -156,13 +155,7 @@ export const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProp
                       <div className="p-3 bg-muted/20 rounded-md border-dashed border">
                         <div className="text-center">
                           <p className="text-xs text-muted-foreground mb-2">No input schema configured</p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSchemaDialogOpen(true)}
-                            className="h-7 px-3 text-xs"
-                          >
+                          <Button type="button" variant="outline" size="sm" onClick={() => setSchemaDialogOpen(true)} className="h-7 px-3 text-xs">
                             Configure Schema
                           </Button>
                         </div>
@@ -178,7 +171,7 @@ export const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProp
                     control={control}
                     render={({ field }) => (
                       <MarkdownTextArea
-                        key={open ? 'open' : 'closed'} // Force remount when dialog opens
+                        key={open ? "open" : "closed"} // Force remount when dialog opens
                         initialValue={field.value}
                         onChange={field.onChange}
                         placeholder={"// Write your JavaScript code here\n// Input data will be available as 'input' variable\nreturn input;"}
@@ -216,111 +209,108 @@ export const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProp
 /**
  * Memoized content component to prevent unnecessary re-renders
  */
-const JavascriptContent = memo<{ config: JavascriptNodeConfig; onConfigureSchema: () => void; onConfigureCode: () => void }>(({ config, onConfigureSchema, onConfigureCode }) => {
-  const registerElementRef = useNodeRef();
-  
-  // Prevent event propagation to React Flow
-  const handleSchemaButtonClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onConfigureSchema();
-  }, [onConfigureSchema]);
+const JavascriptContent = memo<{ config: JavascriptNodeConfig; onConfigureSchema: () => void; onConfigureCode: () => void }>(
+  ({ config, onConfigureSchema, onConfigureCode }) => {
+    const registerElementRef = useNodeRef();
 
-  const handleCodeButtonClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onConfigureCode();
-  }, [onConfigureCode]);
-  
-  return (
-    <div className="space-y-4 w-full">
-      {/* Input Section - Aligns with input handles */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Inputs</label>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-6 w-6 p-0 hover:bg-primary/10"
-            onClick={handleCodeButtonClick}
-            title="Configure JavaScript code"
-          >
-            <Settings className="h-3 w-3" />
-          </Button>
+    // Prevent event propagation to React Flow
+    const handleSchemaButtonClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onConfigureSchema();
+      },
+      [onConfigureSchema],
+    );
+
+    const handleCodeButtonClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onConfigureCode();
+      },
+      [onConfigureCode],
+    );
+
+    return (
+      <div className="space-y-4 w-full">
+        {/* Input Section - Aligns with input handles */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium">Inputs</label>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-primary/10"
+              onClick={handleCodeButtonClick}
+              title="Configure JavaScript code"
+            >
+              <Settings className="h-3 w-3" />
+            </Button>
+          </div>
+          <div className="space-y-1">
+            <div ref={(el) => registerElementRef?.("json-input-section", el)} className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-md">
+              <div className="w-2 h-2 rounded-full bg-yellow-500" />
+              <span className="text-xs text-muted-foreground">
+                {config.inputSchema
+                  ? `${config.inputSchema.title || "Input Schema"} (${Object.keys(config.inputSchema.properties || {}).length} props)`
+                  : "JSON Data (No schema)"}
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="space-y-1">
-          <div 
-            ref={(el) => registerElementRef?.("json-input-section", el)}
-            className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-md"
-          >
-            <div className="w-2 h-2 rounded-full bg-yellow-500" />
-            <span className="text-xs text-muted-foreground">
-              {config.inputSchema ? 
-                `${config.inputSchema.title || "Input Schema"} (${Object.keys(config.inputSchema.properties || {}).length} props)` :
-                "JSON Data (No schema)"
-              }
+
+        {/* Code Preview */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium">Code</label>
+          </div>
+          <div className="p-2 bg-muted/50 rounded-md max-h-16 overflow-y-auto font-mono">
+            <span className="text-xxs text-muted-foreground">
+              {config.code
+                ? config.code.split("\n").slice(0, 3).join("\n") + (config.code.split("\n").length > 3 ? "\n..." : "")
+                : "// No code configured"}
             </span>
           </div>
         </div>
       </div>
+    );
+  },
+);
 
-      {/* Code Preview */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Code</label>
-        </div>
-        <div className="p-2 bg-muted/50 rounded-md max-h-16 overflow-y-auto font-mono">
-          <span className="text-xxs text-muted-foreground">
-            {config.code ? 
-              config.code.split('\n').slice(0, 3).join('\n') + (config.code.split('\n').length > 3 ? '\n...' : '')
-              : "// No code configured"
-            }
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-JavascriptContent.displayName = 'JavascriptContent';
+JavascriptContent.displayName = "JavascriptContent";
 
 export const JavascriptNode = memo(({ id, data, selected }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
-  const config = (data.config || {}) as JavascriptNodeConfig;
+  const config = (data.config || JAVASCRIPT_NODE_METADATA.defaultConfig) as JavascriptNodeConfig;
 
   // Node display name fallback
   const nodeName = config.name?.trim() || "JavaScript";
 
-  const handleConfigSave = useCallback((newConfig: JavascriptNodeConfig) => {
-    // Use React Flow's setNodes to properly update the node
-    setNodes((nodes) => 
-      nodes.map((node) => 
-        node.id === id 
-          ? { ...node, data: { ...node.data, config: newConfig } }
-          : node
-      )
-    );
-    setConfigDialogOpen(false);
-  }, [id, setNodes]);
+  const handleConfigSave = useCallback(
+    (newConfig: JavascriptNodeConfig) => {
+      // Use React Flow's setNodes to properly update the node
+      setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
+      setConfigDialogOpen(false);
+    },
+    [id, setNodes],
+  );
 
   const handleConfigCancel = useCallback(() => {
     setConfigDialogOpen(false);
   }, []);
 
-  const handleSchemaConfigSave = useCallback((schema: SchemaDefinition) => {
-    // Use React Flow's setNodes to properly update the node
-    const updatedConfig = { ...config, inputSchema: schema };
-    setNodes((nodes) => 
-      nodes.map((node) => 
-        node.id === id 
-          ? { ...node, data: { ...node.data, config: updatedConfig } }
-          : node
-      )
-    );
-    setSchemaDialogOpen(false);
-  }, [config, id, setNodes]);
+  const handleSchemaConfigSave = useCallback(
+    (schema: SchemaDefinition) => {
+      // Use React Flow's setNodes to properly update the node
+      const updatedConfig = { ...config, inputSchema: schema };
+      setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: updatedConfig } } : node)));
+      setSchemaDialogOpen(false);
+    },
+    [config, id, setNodes],
+  );
 
   const handleSchemaConfigCancel = useCallback(() => {
     setSchemaDialogOpen(false);
@@ -336,30 +326,11 @@ export const JavascriptNode = memo(({ id, data, selected }: NodeProps) => {
 
   return (
     <>
-      <NodeBase 
-        title={nodeName} 
-        nodeType="javascript" 
-        data={data} 
-        selected={!!selected} 
-        inputs={inputs} 
-        outputs={outputs}
-        icon={<Code className="h-4 w-4" />}
-        nodeId={id}
-        // onConfigure={() => setConfigDialogOpen(true)}
-      >
-        <JavascriptContent 
-          config={config} 
-          onConfigureSchema={handleConfigureSchema}
-          onConfigureCode={handleConfigureCode}
-        />
+      <NodeBase nodeId={id} data={data} selected={!!selected}>
+        <JavascriptContent config={config} onConfigureSchema={handleConfigureSchema} onConfigureCode={handleConfigureCode} />
       </NodeBase>
 
-      <JavascriptNodeConfigDialog
-        open={configDialogOpen}
-        initialConfig={config}
-        onSave={handleConfigSave}
-        onCancel={handleConfigCancel}
-      />
+      <JavascriptNodeConfigDialog open={configDialogOpen} initialConfig={config} onSave={handleConfigSave} onCancel={handleConfigCancel} />
 
       <JsonSchemaCreator
         open={schemaDialogOpen}
@@ -372,4 +343,11 @@ export const JavascriptNode = memo(({ id, data, selected }: NodeProps) => {
   );
 });
 
-JavascriptNode.displayName = 'JavascriptNode';
+JavascriptNode.displayName = "JavascriptNode";
+
+// Register the node
+NodeRegistry.register({
+  metadata: JAVASCRIPT_NODE_METADATA,
+  component: JavascriptNode,
+  configProvider: JavascriptNodeConfigProvider,
+});

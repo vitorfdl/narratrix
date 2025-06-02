@@ -1,11 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
 import { useThemeStore } from "@/hooks/ThemeContext";
-import {
-  AgentEdgeType,
-  AgentNodeType,
-  AgentType
-} from "@/schema/agent-schema";
+import { deepEqual } from "@/lib/utils";
+import { AgentType } from "@/schema/agent-schema";
 import {
   Background,
   BackgroundVariant,
@@ -20,204 +15,73 @@ import {
   ReactFlowProvider,
   XYPosition,
   addEdge,
+  reconnectEdge,
   useEdgesState,
   useNodesState,
-  useReactFlow
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { EdgeType, NodeDeleteProvider } from "./tool-nodes/NodeBase";
-import { NodeConfigRegistry } from "./tool-nodes/NodeConfigRegistry";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ConnectionStateProvider, NodeDeleteProvider } from "./tool-components/NodeBase";
+import { NodePicker } from "./tool-components/NodePicker";
 import {
-  AgentNode,
-  ChatInputNode,
-  ChatOutputNode,
-  JavascriptNode,
-  NODE_TYPE_OPTIONS,
-} from "./tool-nodes/nodeTypes";
+  convertCoreEdgeToReactFlow,
+  convertReactFlowEdgeToCore,
+  getEdgeStyle,
+  getEdgeTypeFromHandle,
+  isValidEdgeConnection,
+  updateEdgeStyles,
+  validateAndFixEdge,
+} from "./tool-components/edge-utils";
+import { NodeRegistry } from "./tool-components/node-registry";
+import { convertCoreNodeToReactFlow, convertReactFlowNodeToCore, getNodeConfig, getNodeId } from "./tool-components/node-utils";
+import { ToolEditorProps, ToolNodeData } from "./tool-components/types";
 
-// Node type keys - updated to match Langflow style
-export type ToolNodeType = "agent" | "chatInput" | "chatOutput" | "javascript" | "message";
+// Import all node types to ensure they register themselves
+import "./tool-nodes";
 
-const nodeTypes: NodeTypes = {
-  agent: AgentNode,
-  chatInput: ChatInputNode,
-  chatOutput: ChatOutputNode,
-  javascript: JavascriptNode,
-};
-
-// Use schema types instead of custom interfaces
-// export type AgentNodeType = AgentNodeType;
-// export type AgentEdgeType = AgentEdgeType;
-
-// Node data typing for React Flow
-export interface ToolNodeData {
-  label: string;
-  config?: Record<string, any>;
-  [key: string]: unknown;
-}
-
-// Props for the ToolEditor component
-export interface ToolEditorProps {
-  toolConfig: AgentType;
-  onSave?: (config: AgentType) => void;
-  onChange?: (config: AgentType) => void;
-  readOnly?: boolean;
-}
-
-// Get edge style based on edge type and selection state
-const getEdgeStyle = (edgeType?: EdgeType, selected?: boolean) => {
-  const baseStyle = {
-    strokeWidth: selected ? 4 : 2,
-    strokeDasharray: undefined as string | undefined,
-  };
-
-  // Selection styling overrides
-  if (selected) {
-    return {
-      ...baseStyle,
-      stroke: "hsl(var(--primary))",
-      strokeWidth: 4,
-      filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.6))",
-    };
-  }
-
-  switch (edgeType) {
-    case "string":
-      return { 
-        ...baseStyle, 
-        stroke: "#3b82f6", // blue-500
-        strokeWidth: 2,
-      };
-    case "toolset":
-      return { 
-        ...baseStyle, 
-        stroke: "#eab308", // yellow-500
-        strokeWidth: 2,
-      };
-    case "stream":
-      return { 
-        ...baseStyle, 
-        stroke: "#a855f7", // purple-500
-        strokeWidth: 3,
-        strokeDasharray: "8,4",
-      };
-    default:
-      return { 
-        ...baseStyle, 
-        stroke: "hsl(var(--primary))", // Use CSS variable for theme support
-        strokeWidth: 2,
-      };
-  }
-};
-
-// Helper for generating IDs
-let nodeId = 1;
-const getNodeId = () => `node-${nodeId++}`;
-
-// Utility functions to convert between core data and React Flow format
-const convertCoreNodeToReactFlow = (coreNode: AgentNodeType): Node<ToolNodeData> => {
-  return {
-    id: coreNode.id,
-    type: coreNode.type,
-    position: coreNode.position,
-    data: {
-      label: coreNode.label,
-      config: coreNode.config,
-    },
-  };
-};
-
-const convertReactFlowNodeToCore = (reactFlowNode: Node<ToolNodeData>): AgentNodeType => {
-  return {
-    id: reactFlowNode.id,
-    type: reactFlowNode.type as ToolNodeType,
-    label: reactFlowNode.data.label,
-    config: reactFlowNode.data.config,
-    position: reactFlowNode.position,
-  };
-};
-
-const convertCoreEdgeToReactFlow = (coreEdge: AgentEdgeType): Edge => {
-  return {
-    id: coreEdge.id,
-    source: coreEdge.source,
-    target: coreEdge.target,
-    sourceHandle: coreEdge.sourceHandle,
-    targetHandle: coreEdge.targetHandle,
-    style: getEdgeStyle(coreEdge.edgeType as EdgeType),
-    data: { edgeType: coreEdge.edgeType },
-  };
-};
-
-const convertReactFlowEdgeToCore = (reactFlowEdge: Edge): AgentEdgeType => {
-  return {
-    id: reactFlowEdge.id,
-    source: reactFlowEdge.source,
-    target: reactFlowEdge.target,
-    sourceHandle: reactFlowEdge.sourceHandle || "",
-    targetHandle: reactFlowEdge.targetHandle || "",
-    edgeType: (reactFlowEdge.data?.edgeType as EdgeType) || "string",
-  };
-};
-
-// Node type configuration - now using the registry
-const getNodeConfig = (type: string) => {
-  return NodeConfigRegistry.getConfig(type);
-};
-
-interface NodePickerProps {
-  position: XYPosition;
-  onSelect: (type: string) => void;
-  onCancel: () => void;
-}
-
-// Node picker component
-const NodePicker: React.FC<NodePickerProps> = ({ position, onSelect, onCancel }) => {
-  const comboboxItems = NODE_TYPE_OPTIONS.map((option) => ({
-    label: option.label,
-    value: option.value,
-  }));
-
-  return (
-    <div
-      className="absolute z-50"
-      style={{
-        left: position.x,
-        top: position.y,
-      }}
-    >
-      <div className="bg-card border border-border rounded-md shadow-lg p-3 w-[250px]">
-        <div className="text-sm font-medium mb-2">Select node type:</div>
-        <Combobox
-          items={comboboxItems}
-          onChange={(value) => onSelect(value || "")}
-          placeholder="Search node types..."
-          trigger={
-            <Button variant="outline" className="w-full justify-between">
-              <span>Select node type</span>
-            </Button>
-          }
-        />
-        <Button variant="outline" size="sm" className="w-full mt-2 text-xs text-muted-foreground" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onChange, readOnly = false }) => {
+const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, readOnly = false }) => {
   const { theme } = useThemeStore();
-  
-  // Initialize nodes and edges from toolConfig or default
-  const initialConfig = toolConfig!;
-  const initialReactFlowNodes = initialConfig.nodes.map(convertCoreNodeToReactFlow);
-  const initialReactFlowEdges = initialConfig.edges.map(convertCoreEdgeToReactFlow);
-  
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<ToolNodeData>>(initialReactFlowNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialReactFlowEdges);
-  const [configModal, setConfigModal] = useState<{ open: boolean; node: Node<ToolNodeData> | null }>({ open: false, node: null });
+
+  // Get node types from registry
+  const nodeTypes = NodeRegistry.getNodeTypes();
+
+  // Connection state for visual feedback during edge dragging
+  const [connectionState, setConnectionState] = useState<any>({
+    isConnecting: false,
+    sourceNodeId: undefined,
+    sourceHandleId: undefined,
+    sourceEdgeType: undefined,
+  });
+
+  // Initialize nodes and edges from toolConfig with proper validation
+  const initialNodes = useMemo(() => {
+    if (!toolConfig?.nodes) {
+      return [];
+    }
+    return toolConfig.nodes.map(convertCoreNodeToReactFlow);
+  }, [toolConfig?.nodes]);
+
+  const initialEdges = useMemo(() => {
+    if (!toolConfig?.edges || !toolConfig?.nodes) {
+      return [];
+    }
+
+    // Validate and fix edges before loading
+    const validatedEdges = toolConfig.edges
+      .map((edge) => validateAndFixEdge(edge, toolConfig.nodes || []))
+      .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
+
+    // Log any corrections made
+    if (validatedEdges.length !== toolConfig.edges.length) {
+      console.warn(`Corrected ${toolConfig.edges.length - validatedEdges.length} invalid edges`);
+    }
+
+    return validatedEdges.map(convertCoreEdgeToReactFlow);
+  }, [toolConfig?.edges, toolConfig?.nodes]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<ToolNodeData>>(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
   const [nodePicker, setNodePicker] = useState<{
@@ -226,31 +90,65 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onCh
     connectionState: any;
   } | null>(null);
 
-  // Update nodes and edges when toolConfig changes
-  useEffect(() => {
-    if (toolConfig) {
-      const newNodes = toolConfig.nodes.map(convertCoreNodeToReactFlow);
-      const newEdges = toolConfig.edges.map(convertCoreEdgeToReactFlow);
-      setNodes(newNodes);
-      setEdges(newEdges);
-    }
-  }, [toolConfig, setNodes, setEdges]);
+  // Keep track of the last configuration sent to parent to avoid unnecessary updates
+  const lastSentConfigRef = useRef<AgentType | null>(null);
 
-  // Custom edge change handler that updates styles based on selection
-  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
-    onEdgesChange(changes);
-    
-    // Update styles for selection changes
-    const selectionChanges = changes.filter(change => change.type === 'select');
-    if (selectionChanges.length > 0) {
-      setEdges((currentEdges) =>
-        currentEdges.map((edge) => ({
-          ...edge,
-          style: getEdgeStyle(edge.data?.edgeType as EdgeType, edge.selected),
-        }))
-      );
+  // Update nodes and edges when toolConfig changes (but avoid double initialization)
+  useEffect(() => {
+    if (toolConfig && (toolConfig.id || toolConfig.version)) {
+      const newNodes = toolConfig.nodes?.map(convertCoreNodeToReactFlow) || [];
+
+      // Validate and fix edges before loading
+      const validatedEdges =
+        toolConfig.edges
+          ?.map((edge) => validateAndFixEdge(edge, toolConfig.nodes || []))
+          .filter((edge): edge is NonNullable<typeof edge> => edge !== null) || [];
+      const newEdges = validatedEdges.map(convertCoreEdgeToReactFlow);
+
+      // Only update if the nodes/edges have actually changed
+      const nodesChanged =
+        JSON.stringify(nodes.map((n) => ({ id: n.id, position: n.position, type: n.type }))) !==
+        JSON.stringify(newNodes.map((n) => ({ id: n.id, position: n.position, type: n.type })));
+      const edgesChanged =
+        JSON.stringify(edges.map((e) => ({ id: e.id, source: e.source, target: e.target }))) !==
+        JSON.stringify(newEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })));
+
+      if (nodesChanged) {
+        setNodes(newNodes);
+      }
+      if (edgesChanged) {
+        setEdges(newEdges);
+      }
     }
-  }, [onEdgesChange, setEdges]);
+  }, [toolConfig?.id, toolConfig?.version]); // Only trigger on config ID or version change
+
+  // Handle edge changes with validation and style updates
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      try {
+        // Apply changes first
+        onEdgesChange(changes);
+
+        // Then update styles in the next tick to avoid conflicts
+        setTimeout(() => {
+          setEdges((currentEdges) => updateEdgeStyles(currentEdges));
+        }, 0);
+      } catch (error) {
+        console.error("Error handling edge changes:", error);
+        // Reset edges to a valid state if there's an error
+        const validEdges = edges.filter((edge) => {
+          const validation = isValidEdgeConnection(edge.source, edge.sourceHandle || "", edge.target, edge.targetHandle || "", nodes, edges);
+          if (!validation.valid) {
+            console.warn(`Removing invalid edge ${edge.id}: ${validation.error}`);
+            return false;
+          }
+          return true;
+        });
+        setEdges(updateEdgeStyles(validEdges));
+      }
+    },
+    [onEdgesChange, edges, nodes, setEdges],
+  );
 
   // Convert current state to core configuration
   const getCurrentConfiguration = useCallback((): AgentType => {
@@ -258,7 +156,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onCh
       ...toolConfig,
       favorite: toolConfig?.favorite || false,
       name: toolConfig?.name || "Untitled Workflow",
-      version: toolConfig?.version || "1.0.0", 
+      version: toolConfig?.version || "1.0.0",
       tags: toolConfig?.tags || [],
       settings: toolConfig?.settings || { run_on: { type: "manual" } },
       nodes: nodes.map(convertReactFlowNodeToCore),
@@ -268,50 +166,144 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onCh
     };
   }, [nodes, edges, toolConfig]);
 
-  // Notify parent of changes
+  // Notify parent of changes only when there are actual changes
   useEffect(() => {
     if (onChange) {
       const currentConfig = getCurrentConfiguration();
-      onChange(currentConfig);
+
+      // Only call onChange if the configuration has actually changed
+      if (!lastSentConfigRef.current || !deepEqual(currentConfig, lastSentConfigRef.current)) {
+        lastSentConfigRef.current = currentConfig;
+        onChange(currentConfig);
+      }
     }
   }, [nodes, edges, onChange, getCurrentConfiguration]);
 
-  // Save handler
-  const handleSave = useCallback(() => {
-    if (onSave) {
-      const currentConfig = getCurrentConfiguration();
-      onSave(currentConfig);
-    }
-  }, [onSave, getCurrentConfiguration]);
-
   const onConnect = useCallback(
     (params: Edge | Connection) => {
+      // Validate the connection before creating the edge
+      const validation = isValidEdgeConnection(params.source!, params.sourceHandle || "", params.target!, params.targetHandle || "", nodes, edges);
+
+      if (!validation.valid && !validation.existingEdge) {
+        console.error(`Cannot create edge: ${validation.error}`);
+        return;
+      }
+
       // Get the edge type from the source handle
       const sourceNodeId = params.source;
       const sourceHandleId = params.sourceHandle;
-
-      // Find the source node in the DOM
-      const sourceNode = document.querySelector(`[data-id="${sourceNodeId}"]`);
-      const sourceHandle = sourceNode?.querySelector(`[data-handleid="${sourceHandleId}"]`);
-      const edgeType = (sourceHandle?.getAttribute("data-edge-type") as EdgeType) || "default";
+      const edgeType = getEdgeTypeFromHandle(sourceNodeId!, sourceHandleId!);
       const edgeStyle = getEdgeStyle(edgeType);
 
       const newEdge: Edge = {
         ...params,
-        id: ('id' in params && params.id) || `edge-${params.source}-${params.target}`,
+        id: ("id" in params && params.id) || `edge-${params.source}-${params.target}`,
         style: edgeStyle,
         data: { edgeType },
-        animated: edgeType === "stream", // Animate stream connections
+        animated: false,
+        reconnectable: true,
       };
 
-      setEdges((eds) => addEdge(newEdge, eds));
+      setEdges((eds) => {
+        let updatedEdges = eds;
+
+        // If there's an existing edge to the same input, remove it first
+        if (validation.existingEdge) {
+          console.log(`Replacing existing edge ${validation.existingEdge.id} with new connection`);
+          updatedEdges = eds.filter((edge) => edge.id !== validation.existingEdge!.id);
+        }
+
+        // Add the new edge and update styles
+        return updateEdgeStyles(addEdge(newEdge, updatedEdges));
+      });
     },
-    [setEdges],
+    [setEdges, nodes, edges],
   );
 
-  // Edge-to-node creation - with node type selection
+  // Handle edge reconnection with validation
+  const onReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      // Validate the new connection before allowing reconnection
+      const validation = isValidEdgeConnection(
+        newConnection.source!,
+        newConnection.sourceHandle || "",
+        newConnection.target!,
+        newConnection.targetHandle || "",
+        nodes,
+        edges.filter((edge) => edge.id !== oldEdge.id), // Exclude the old edge from validation
+      );
+
+      if (!validation.valid && !validation.existingEdge) {
+        console.error(`Cannot reconnect edge: ${validation.error}`);
+        return;
+      }
+
+      // Get the edge type from the source handle
+      const edgeType = getEdgeTypeFromHandle(newConnection.source!, newConnection.sourceHandle!);
+
+      setEdges((eds) => {
+        let updatedEdges = eds;
+
+        // If there's an existing edge to the same input, remove it first
+        if (validation.existingEdge) {
+          console.log(`Replacing existing edge ${validation.existingEdge.id} with reconnection`);
+          updatedEdges = eds.filter((edge) => edge.id !== validation.existingEdge!.id);
+        }
+
+        // Use React Flow's reconnectEdge utility and update the edge data
+        const reconnectedEdges = reconnectEdge(oldEdge, newConnection, updatedEdges);
+
+        // Update the reconnected edge with proper edge type and style
+        return updateEdgeStyles(
+          reconnectedEdges.map((edge) => {
+            if (
+              edge.source === newConnection.source &&
+              edge.target === newConnection.target &&
+              edge.sourceHandle === newConnection.sourceHandle &&
+              edge.targetHandle === newConnection.targetHandle
+            ) {
+              return {
+                ...edge,
+                data: { edgeType },
+                style: getEdgeStyle(edgeType),
+              };
+            }
+            return edge;
+          }),
+        );
+      });
+    },
+    [setEdges, nodes, edges],
+  );
+
+  // Handle connection start for visual feedback
+  const onConnectStart = useCallback(
+    (event: any, { nodeId, handleId, handleType }: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
+      if (nodeId && handleId && handleType) {
+        // Get the actual edge type from the handle instead of hardcoding
+        const sourceEdgeType = handleType === "source" ? getEdgeTypeFromHandle(nodeId, handleId) : undefined;
+        setConnectionState({
+          isConnecting: true,
+          sourceNodeId: nodeId,
+          sourceHandleId: handleId,
+          sourceEdgeType,
+        });
+      }
+    },
+    [],
+  );
+
+  // Handle connection end to reset visual feedback
   const onConnectEnd = useCallback(
     (event: any, connectionState: any) => {
+      // Reset connection state
+      setConnectionState({
+        isConnecting: false,
+        sourceNodeId: undefined,
+        sourceHandleId: undefined,
+        sourceEdgeType: undefined,
+      });
+
       // Only proceed if connection is not valid (dropped on empty space) and we have a source node
       if (!connectionState.isValid && connectionState.fromNode) {
         // Extract client coordinates
@@ -319,7 +311,9 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onCh
 
         // Get the ReactFlow wrapper bounds
         const wrapperRect = reactFlowWrapper.current?.getBoundingClientRect();
-        if (!wrapperRect) return;
+        if (!wrapperRect) {
+          return;
+        }
 
         // Convert screen coordinates to container-relative coordinates
         let x = clientX - wrapperRect.left;
@@ -361,73 +355,108 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onCh
   );
 
   // Create node of selected type
-  const handleNodeTypeSelect = useCallback((type: string) => {
-    if (!nodePicker) {
-      return;
-    }
+  const handleNodeTypeSelect = useCallback(
+    (type: string) => {
+      if (!nodePicker) {
+        return;
+      }
 
-    const { position, connectionState } = nodePicker;
+      const { position, connectionState } = nodePicker;
 
-    // Create node ID
-    const id = `${type}-${getNodeId()}`;
+      // Create node ID
+      const id = `${type}-${getNodeId()}`;
 
-    // Get node configuration based on type
-    const nodeData = getNodeConfig(type);
+      // Get node configuration based on type
+      const nodeData = getNodeConfig(type);
 
-    // Convert picker position (container coordinates) back to flow coordinates
-    // Get the ReactFlow wrapper bounds
-    const wrapperRect = reactFlowWrapper.current?.getBoundingClientRect();
-    if (!wrapperRect) return;
+      // Convert picker position (container coordinates) back to flow coordinates
+      // Get the ReactFlow wrapper bounds
+      const wrapperRect = reactFlowWrapper.current?.getBoundingClientRect();
+      if (!wrapperRect) {
+        return;
+      }
 
-    // Calculate the center of where the picker was shown as the node position
-    const toolbarHeight = 60;
-    const pickerCenterX = position.x + 125; // Half of picker width (250px)
-    const pickerCenterY = position.y + 60;  // Approximate center of picker height
+      // Calculate the center of where the picker was shown as the node position
+      const toolbarHeight = 60;
+      const pickerCenterX = position.x + 125; // Half of picker width (250px)
+      const pickerCenterY = position.y + 60; // Approximate center of picker height
 
-    // Convert to screen coordinates
-    const screenX = pickerCenterX + wrapperRect.left;
-    const screenY = pickerCenterY + wrapperRect.top + toolbarHeight;
+      // Convert to screen coordinates
+      const screenX = pickerCenterX + wrapperRect.left;
+      const screenY = pickerCenterY + wrapperRect.top + toolbarHeight;
 
-    // Convert screen coordinates to flow coordinates
-    const flowPosition = screenToFlowPosition({
-      x: screenX,
-      y: screenY,
-    });
+      // Convert screen coordinates to flow coordinates
+      const flowPosition = screenToFlowPosition({
+        x: screenX,
+        y: screenY,
+      });
 
-    // Create the new node
-    const newNode = {
-      id,
-      type,
-      position: flowPosition,
-      data: nodeData,
-    };
+      // Create the new node
+      const newNode: Node<ToolNodeData> = {
+        id,
+        type,
+        position: flowPosition,
+        data: nodeData,
+        // Add required properties for proper React Flow functionality
+        draggable: true,
+        selectable: true,
+        deletable: true,
+      };
 
-    // Add the node to the flow
-    setNodes((nds) => nds.concat(newNode));
+      // Add the node to the flow
+      setNodes((nds) => nds.concat(newNode));
 
-    // Get the edge type from the source handle
-    const sourceHandleId = connectionState.fromHandle?.id;
-    const sourceNode = document.querySelector(`[data-id="${connectionState.fromNode.id}"]`);
-    const sourceHandle = sourceNode?.querySelector(`[data-handleid="${sourceHandleId}"]`);
-    const edgeType = (sourceHandle?.getAttribute("data-edge-type") as EdgeType) || "default";
-    const edgeStyle = getEdgeStyle(edgeType);
+      // Validate and create the connection
+      const sourceHandleId = connectionState.fromHandle?.id;
+      const sourceNodeId = connectionState.fromNode.id;
 
-    // Add the connection from source to new node
-    const newEdge: Edge = {
-      id: `edge-${connectionState.fromNode.id}-${id}`,
-      source: connectionState.fromNode.id,
-      sourceHandle: connectionState.fromHandle?.id,
-      target: id,
-      style: edgeStyle,
-      data: { edgeType },
-      animated: edgeType === "stream", // Animate stream connections
-    };
+      // Validate the connection direction
+      if (sourceHandleId?.startsWith("in-")) {
+        console.log(connectionState);
+        console.error(`Cannot create edge from input handle "${sourceHandleId}"`);
+        setNodePicker(null);
+        return;
+      }
 
-    setEdges((eds) => eds.concat(newEdge));
+      // Get the edge type from the source handle
+      const sourceNode = document.querySelector(`[data-id="${sourceNodeId}"]`);
+      const sourceHandle = sourceNode?.querySelector(`[data-handleid="${sourceHandleId}"]`);
+      const edgeType = getEdgeTypeFromHandle(sourceNodeId, sourceHandleId);
+      const edgeStyle = getEdgeStyle(edgeType);
 
-    // Hide the picker
-    setNodePicker(null);
-  }, [nodePicker, reactFlowWrapper, screenToFlowPosition, setNodes, setEdges]);
+      // Determine the appropriate target handle based on edge type and target node type
+      let targetHandle = "";
+      if (edgeType === "toolset" && type === "javascript") {
+        // For toolset connections to javascript nodes, there's no specific input handle
+        targetHandle = "";
+      } else if (edgeType === "toolset" && type === "agent") {
+        targetHandle = "in-toolset";
+      } else if (edgeType === "string" && type === "agent") {
+        targetHandle = "in-input";
+      } else if (edgeType === "string" && type === "chatOutput") {
+        targetHandle = "response";
+      }
+
+      // Add the connection from source to new node
+      const newEdge: Edge = {
+        id: `edge-${sourceNodeId}-${id}`,
+        source: sourceNodeId,
+        sourceHandle: sourceHandleId,
+        target: id,
+        targetHandle,
+        style: edgeStyle,
+        data: { edgeType },
+        animated: false,
+        reconnectable: true,
+      };
+
+      setEdges((eds) => updateEdgeStyles(eds.concat(newEdge)));
+
+      // Hide the picker
+      setNodePicker(null);
+    },
+    [nodePicker, reactFlowWrapper, screenToFlowPosition, setNodes, setEdges],
+  );
 
   // Close the picker without creating a node
   const handleCancelNodePicker = useCallback(() => {
@@ -437,168 +466,159 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onCh
   // Delete selected nodes and edges with keyboard
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      if (readOnly) return;
-      
-      if (event.key === 'Delete') {
+      if (readOnly) {
+        return;
+      }
+
+      if (event.key === "Delete") {
         // Check if the user is currently interacting with an input, textarea, or modal
         const target = event.target as HTMLElement;
-        
+
         // Don't delete if user is typing in an input field, textarea, or contenteditable element
-        if (target.tagName === 'INPUT' || 
-            target.tagName === 'TEXTAREA' || 
-            target.contentEditable === 'true' ||
-            target.isContentEditable) {
+        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.contentEditable === "true" || target.isContentEditable) {
           return;
         }
-        
+
         // Don't delete if the target is within a modal/dialog
-        const isInModal = target.closest('[role="dialog"]') || 
-                         target.closest('[data-radix-dialog-content]') ||
-                         target.closest('.modal') ||
-                         target.closest('[aria-modal="true"]');
-        
+        const isInModal =
+          target.closest('[role="dialog"]') ||
+          target.closest("[data-radix-dialog-content]") ||
+          target.closest(".modal") ||
+          target.closest('[aria-modal="true"]');
+
         if (isInModal) {
           return;
         }
-        
+
         // Don't delete if the target is within a dropdown, popover, or similar overlay
-        const isInOverlay = target.closest('[role="menu"]') ||
-                           target.closest('[role="listbox"]') ||
-                           target.closest('[role="combobox"]') ||
-                           target.closest('[data-radix-popper-content-wrapper]') ||
-                           target.closest('[data-radix-popover-content]');
-        
+        const isInOverlay =
+          target.closest('[role="menu"]') ||
+          target.closest('[role="listbox"]') ||
+          target.closest('[role="combobox"]') ||
+          target.closest("[data-radix-popper-content-wrapper]") ||
+          target.closest("[data-radix-popover-content]");
+
         if (isInOverlay) {
           return;
         }
-        
+
         // Get selected nodes and edges
-        const selectedNodes = nodes.filter(node => node.selected);
-        const selectedEdges = edges.filter(edge => edge.selected);
-        
+        const selectedNodes = nodes.filter((node) => node.selected);
+        const selectedEdges = edges.filter((edge) => edge.selected);
+
         if (selectedNodes.length > 0 || selectedEdges.length > 0) {
           // Delete selected nodes and their connected edges
           if (selectedNodes.length > 0) {
-            const nodeIdsToDelete = selectedNodes.map(node => node.id);
+            const nodeIdsToDelete = selectedNodes.map((node) => node.id);
             setNodes((nds) => nds.filter((n) => !nodeIdsToDelete.includes(n.id)));
-            setEdges((eds) => eds.filter((e) => 
-              !nodeIdsToDelete.includes(e.source) && !nodeIdsToDelete.includes(e.target)
-            ));
+            setEdges((eds) => eds.filter((e) => !nodeIdsToDelete.includes(e.source) && !nodeIdsToDelete.includes(e.target)));
           }
-          
+
           // Delete selected edges
           if (selectedEdges.length > 0) {
-            const edgeIdsToDelete = selectedEdges.map(edge => edge.id);
+            const edgeIdsToDelete = selectedEdges.map((edge) => edge.id);
             setEdges((eds) => eds.filter((e) => !edgeIdsToDelete.includes(e.id)));
           }
         }
       }
     },
-    [nodes, edges, setNodes, setEdges, readOnly]
+    [nodes, edges, setNodes, setEdges, readOnly],
   );
 
   // Add keyboard event listener
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyDown]);
 
   // Delete node handler for trash button
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
-      if (readOnly || nodeId === "start" || nodeId === "end") return;
-      
+      if (readOnly || nodeId === "start" || nodeId === "end") {
+        return;
+      }
+
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
       setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
     },
-    [setNodes, setEdges, readOnly]
+    [setNodes, setEdges, readOnly],
   );
 
-  // Save config handler for all nodes
-  const handleSaveConfig = (newConfig: any) => {
-    if (configModal.node) {
-      setNodes((nds) => nds.map((n) => (n.id === configModal.node!.id ? { ...n, data: { ...n.data, config: newConfig } } : n)));
-    }
-    setConfigModal({ open: false, node: null });
-  };
+  // Global connection validation for ReactFlow
+  const isValidConnection = useCallback(
+    (connection: Edge | Connection) => {
+      const validation = isValidEdgeConnection(
+        connection.source!,
+        connection.sourceHandle || "",
+        connection.target!,
+        connection.targetHandle || "",
+        nodes,
+        edges,
+      );
+
+      if (!validation.valid && !validation.existingEdge) {
+        console.error(`❌ Global validation BLOCKED connection: ${validation.error}`);
+        return false;
+      }
+
+      console.log("✅ Global validation ALLOWED connection");
+      return true;
+    },
+    [nodes, edges],
+  );
 
   return (
     <div className="w-full h-full min-h-[400px] bg-background border-2 border-dashed border-primary/40 rounded-lg flex flex-col">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between p-3 border-b border-border bg-card/50">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-foreground">
-            {toolConfig?.name || "Tool Editor"}
-          </h3>
-          {readOnly && (
-            <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
-              Read Only
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {onSave && !readOnly && (
-            <Button 
-              onClick={handleSave} 
-              size="sm" 
-              variant="default"
-              className="text-xs"
-            >
-              Save Tool
-            </Button>
-          )}
-        </div>
-      </div>
-
       <div className="flex-1 relative" style={{ minHeight: 350 }} ref={reactFlowWrapper}>
         <NodeDeleteProvider onDelete={handleDeleteNode}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={readOnly ? () => {} : onNodesChange}
-            onEdgesChange={readOnly ? () => {} : handleEdgesChange}
-            onConnect={readOnly ? () => {} : onConnect}
-            nodeTypes={nodeTypes}
-            proOptions={{ hideAttribution: true }}
-            fitView
-            fitViewOptions={{
-              maxZoom: 1,
-            }}
-            colorMode={theme === "dark" ? "dark" : "light"}
-            minZoom={0.5}
-            maxZoom={1.5}
-            onConnectEnd={readOnly ? () => {} : onConnectEnd}
-            nodesDraggable={!readOnly}
-            nodesConnectable={!readOnly}
-            nodesFocusable={!readOnly}
-            edgesFocusable={!readOnly}
-            elementsSelectable={!readOnly}
-            defaultEdgeOptions={{
-              style: { strokeWidth: 2 },
-            }}
-            connectionLineStyle={{
-              strokeWidth: 2,
-              stroke: 'hsl(var(--primary))',
-              strokeDasharray: '5,5',
-            }}
-            snapToGrid={true}
-            snapGrid={[10, 10]}
-            connectionRadius={20}
-          >
-            <MiniMap className="border border-foreground" />
-            <Controls />
-            <Background variant={BackgroundVariant.Cross} gap={40} size={1} />
-          </ReactFlow>
+          <ConnectionStateProvider connectionState={connectionState}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={readOnly ? () => {} : onNodesChange}
+              onEdgesChange={readOnly ? () => {} : handleEdgesChange}
+              onConnect={readOnly ? () => {} : onConnect}
+              onReconnect={readOnly ? () => {} : onReconnect}
+              onConnectStart={readOnly ? () => {} : onConnectStart}
+              onConnectEnd={readOnly ? () => {} : onConnectEnd}
+              isValidConnection={readOnly ? () => false : isValidConnection}
+              nodeTypes={nodeTypes as NodeTypes}
+              proOptions={{ hideAttribution: true }}
+              fitView
+              fitViewOptions={{
+                maxZoom: 1,
+              }}
+              colorMode={theme === "dark" ? "dark" : "light"}
+              minZoom={0.5}
+              maxZoom={1.5}
+              nodesDraggable={!readOnly}
+              nodesConnectable={!readOnly}
+              nodesFocusable={!readOnly}
+              edgesFocusable={!readOnly}
+              elementsSelectable={!readOnly}
+              defaultEdgeOptions={{
+                style: { strokeWidth: 2 },
+              }}
+              connectionLineStyle={{
+                strokeWidth: 2,
+                stroke: "hsl(var(--primary))",
+                strokeDasharray: "5,5",
+              }}
+              snapToGrid={true}
+              snapGrid={[10, 10]}
+              connectionRadius={20}
+            >
+              <MiniMap className="border border-foreground" />
+              <Controls />
+              <Background variant={BackgroundVariant.Dots} />
+            </ReactFlow>
+          </ConnectionStateProvider>
         </NodeDeleteProvider>
 
         {!readOnly && nodePicker?.show && (
-          <NodePicker 
-            position={nodePicker.position} 
-            onSelect={handleNodeTypeSelect} 
-            onCancel={handleCancelNodePicker} 
-          />
+          <NodePicker position={nodePicker.position} onSelect={handleNodeTypeSelect} onCancel={handleCancelNodePicker} />
         )}
       </div>
     </div>
@@ -606,10 +626,10 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onCh
 };
 
 // Wrap component with ReactFlowProvider
-const ToolEditor: React.FC<ToolEditorProps> = ({ toolConfig, onSave, onChange, readOnly }) => {
+const ToolEditor: React.FC<ToolEditorProps> = ({ toolConfig, onChange, readOnly }) => {
   return (
     <ReactFlowProvider>
-      <ToolEditorContent toolConfig={toolConfig} onSave={onSave} onChange={onChange} readOnly={readOnly} />
+      <ToolEditorContent toolConfig={toolConfig} onChange={onChange} readOnly={readOnly} />
     </ReactFlowProvider>
   );
 };

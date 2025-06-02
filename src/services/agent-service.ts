@@ -1,3 +1,4 @@
+import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils";
 import {
   AgentEdgeType,
   AgentNodeType,
@@ -17,7 +18,6 @@ import { formatDateTime } from "@/utils/date-time";
 import { uuidUtils } from "../schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database";
 
-const parseBoolean = (value: any) => value === 1 || value === true || value === "true";
 
 // Helper to parse JSON fields from DB results for Agent
 function parseAgentJsonFields(agent: any): AgentType {
