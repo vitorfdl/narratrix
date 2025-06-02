@@ -189,7 +189,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
       </CardContent>
 
       {/* Action buttons - shown on hover */}
-      <div className="absolute right-2 bottom-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="absolute right-2 top-2  flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
         <Button 
           variant="secondary" 
           size="icon" 

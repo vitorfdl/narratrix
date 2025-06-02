@@ -1,3 +1,4 @@
+import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils";
 import { ChatTemplate, ChatTemplateCustomPrompt, chatTemplateSchema } from "@/schema/template-chat-schema";
 import { uuidUtils } from "@/schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "@/utils/database";
@@ -75,6 +76,7 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
     `SELECT
       id,
       profile_id,
+      favorite,
       name,
       model_id,
       format_template_id,
@@ -111,6 +113,8 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
     template.lorebook_list = template.lorebook_list || [];
   }
 
+  template.favorite = parseBoolean(template.favorite);
+
   // Convert date strings to Date objects
   template.created_at = new Date(template.created_at);
   template.updated_at = new Date(template.updated_at);
@@ -125,6 +129,7 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
     SELECT
       id,
       profile_id,
+      favorite,
       name,
       model_id,
       format_template_id,
@@ -182,6 +187,8 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
     } else {
       template.lorebook_list = template.lorebook_list || [];
     }
+
+    template.favorite = parseBoolean(template.favorite);
 
     // Convert date strings to Date objects
     return chatTemplateSchema.parse({

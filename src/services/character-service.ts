@@ -1,3 +1,4 @@
+import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils";
 import { formatDateTime } from "@/utils/date-time";
 import { z } from "zod";
 import {
@@ -97,10 +98,7 @@ export async function getCharacterById(id: string): Promise<Character | null> {
   character.expressions = character.expressions ? JSON.parse(character.expressions) : null;
   character.tags = character.tags ? JSON.parse(character.tags) : [];
 
-  // Convert auto_update to boolean if it's a string
-  if (typeof character.auto_update === "string") {
-    character.auto_update = character.auto_update.toLowerCase() === "true" || character.auto_update === "1";
-  }
+  character.auto_update = parseBoolean(character.auto_update);
 
   // Convert dates
   character.created_at = new Date(character.created_at);
@@ -155,10 +153,7 @@ export async function listCharacters(profile_id: string, filter?: CharacterFilte
     character.expressions = character.expressions ? JSON.parse(character.expressions) : null;
     character.tags = character.tags ? JSON.parse(character.tags) : [];
 
-    // Convert auto_update to boolean if it's a string
-    if (typeof character.auto_update === "string") {
-      character.auto_update = character.auto_update.toLowerCase() === "true" || character.auto_update === "1";
-    }
+    character.auto_update = parseBoolean(character.auto_update);
 
     // Convert dates
     character.created_at = new Date(character.created_at);

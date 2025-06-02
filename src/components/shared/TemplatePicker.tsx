@@ -7,16 +7,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { sortAlphabetically } from "@/utils/sorting";
+import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
 import { basename, extname } from "@tauri-apps/api/path";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { ChevronsUpDown, CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+
 export interface Template {
   id: string;
   name: string;
+  favorite?: boolean;
 }
 
 export interface TemplatePickerProps {
@@ -26,6 +28,7 @@ export interface TemplatePickerProps {
   onDelete: (templateId: string) => void;
   onNewTemplate: (name: string, sourceTemplateId?: string) => void;
   onEditName: (templateId: string, name: string) => void;
+  onFavoriteChange: (templateId: string, favorite: boolean) => void;
   onImport?: (fileName: string, templateData: { [key: string]: any }) => void;
   onExport?: (templateId: string) => void;
   compact?: boolean;
@@ -41,6 +44,7 @@ export function TemplatePicker({
   onDelete,
   onNewTemplate,
   onEditName,
+  onFavoriteChange,
   onImport,
   onExport,
   clearable = false,
@@ -119,6 +123,13 @@ export function TemplatePicker({
     }
   };
 
+  const handleFavoriteToggle = useCallback(
+    (templateId: string, currentFavorite: boolean) => {
+      onFavoriteChange(templateId, !currentFavorite);
+    },
+    [onFavoriteChange],
+  );
+
   // File import functionality
   const handleImportClick = useCallback(async () => {
     if (isImporting || !onImport) {
@@ -163,15 +174,13 @@ export function TemplatePicker({
     }
   }, [onImport, isImporting]);
 
-  // Map templates to ComboboxItem format
-  // Map templates to ComboboxItem format and order by label (alphanumeric)
-  const comboboxItems: ComboboxItem[] = templates
-    .slice()
-    .sort((a, b) => sortAlphabetically(a.name, b.name))
-    .map((template) => ({
-      value: template.id,
-      label: template.name,
-    }));
+  // Map templates to ComboboxItem format with favorites at the top
+  const comboboxItems: ComboboxItem[] = sortTemplatesByFavoriteAndName(templates).map((template) => ({
+    value: template.id,
+    label: template.name,
+    favorite: template.favorite,
+    onFavoriteToggle: () => handleFavoriteToggle(template.id, template.favorite || false),
+  }));
 
   return (
     <>

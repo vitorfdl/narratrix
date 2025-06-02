@@ -174,8 +174,7 @@ export function useLocalSummarySettings() {
  */
 const modelsPageSettingsAtom = atomWithStorage<ModelsPageSettings>("modelsPageSettings", {
   view: {
-    mode: "grid",
-    gridColumns: 4,
+    cardsPerRow: 4,
   },
   sort: {
     field: "name",

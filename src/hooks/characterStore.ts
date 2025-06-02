@@ -1,4 +1,4 @@
-import { Agent, Character, CharacterUnion, EXPRESSION_LIST } from "@/schema/characters-schema";
+import { Character, CharacterUnion, EXPRESSION_LIST } from "@/schema/characters-schema";
 import {
   CharacterFilter,
   createCharacter as createCharacterAPI,
@@ -23,7 +23,7 @@ interface CharacterState {
 
   actions: {
     // CRUD Operations
-    createCharacter: (characterData: Character | Agent) => Promise<CharacterUnion>;
+    createCharacter: (characterData: Character) => Promise<CharacterUnion>;
     getCharacterById: (id: string) => Promise<CharacterUnion | null>;
     updateCharacter: (
       profile_id: string,

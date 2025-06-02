@@ -337,7 +337,7 @@ export default function Characters() {
                   </div>
                   <Slider
                     value={[settings.view.cardsPerRow]}
-                    min={2}
+                    min={1}
                     max={6}
                     step={1}
                     onValueChange={([value]) =>
@@ -424,10 +424,10 @@ export default function Characters() {
               <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
                 {search || settings.selectedTags.length > 0
                   ? "Try adjusting your search or filter settings."
-                  : "Get started by creating your first character or agent!"}
+                  : "Get started by creating your first character!"}
               </p>
               <Button variant="default" size="lg" onClick={() => setCreateDialogOpen(true)}>
-                <Plus size={20} className="mr-2" /> Create Character / Agent
+                <Plus size={20} className="mr-2" /> Create Character
               </Button>
             </div>
           )}

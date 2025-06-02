@@ -8,7 +8,7 @@ import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvide
 import { QuickAction } from "@/schema/profiles-schema";
 import { GenerationOptions, StreamingState } from "@/services/inference-service";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
-import { Loader2, StopCircle } from "lucide-react";
+import { Loader2, Send, StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QuickActions from "./utils-generate/QuickActions";
@@ -320,10 +320,22 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
             <Languages className="!w-3.5 !h-3.5" />
           </Toggle> */}
         </div>
-        {isAnyCharacterStreaming() && (
+        {isAnyCharacterStreaming() ? (
           <Button variant="destructive" size="xs" onClick={handleCancel} title="Cancel Generation" className="ml-auto">
             <StopCircle className="!w-3.5 !h-3.5 mr-1" />
             Cancel
+          </Button>
+        ) : (
+          <Button 
+            variant="default" 
+            size="xs" 
+            onClick={() => handleSubmit(text)} 
+            title={`Send Message (${sendCommand || "Ctrl+Enter"})`}
+            className="ml-auto"
+            disabled={!text.trim()}
+          >
+            <Send className="!w-3.5 !h-3.5 mr-1" />
+            Send
           </Button>
         )}
       </div>
