@@ -136,7 +136,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         // Use the inference service to generate a message
         await inferenceService.generateMessage({
           characterId: nextCharacter?.id ?? "",
-          userMessage: submittedText.trim(),
+          userMessage: structuredClone(submittedText.trim()),
           stream: true,
           onStreamingStateChange: (state) => {
             // Handle streaming state changes for both regular and quiet responses
@@ -276,7 +276,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
 
     try {
       if (generationConfig.userMessage) {
-        const newHistory = [...generationInputHistory, generationConfig.userMessage].slice(-25);
+        const newHistory = [...generationInputHistory, text].slice(-25);
         setGenerationInputHistory(newHistory);
       }
       setText("");
@@ -326,10 +326,10 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
             Cancel
           </Button>
         ) : (
-          <Button 
-            variant="default" 
-            size="xs" 
-            onClick={() => handleSubmit(text)} 
+          <Button
+            variant="default"
+            size="xs"
+            onClick={() => handleSubmit(text)}
             title={`Send Message (${sendCommand || "Ctrl+Enter"})`}
             className="ml-auto"
             disabled={!text.trim()}

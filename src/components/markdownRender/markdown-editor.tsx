@@ -8,7 +8,7 @@ import { EditorView, tooltips } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import { highlightBracketsExtension } from "./extensions/codemirror-highlight-brackets";
-import { createHistoryCompletionSource } from "./extensions/codemirror-history";
+import { createHistoryCompletionSource, historyExtension } from "./extensions/codemirror-history";
 import { markdownFormatKeymap } from "./extensions/markdown-format-keymap";
 import { SuggestionItem } from "./markdown-textarea";
 import { narratrixCodeMirror } from "./styles/narratrix-codemirror-theme";
@@ -197,6 +197,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
                 return "custom-tooltip";
               },
             }),
+            ...(enableHistory ? [historyExtension(generationInputHistory)] : []),
           ]}
           onChange={handleChange}
           onCreateEditor={(editor) => {
