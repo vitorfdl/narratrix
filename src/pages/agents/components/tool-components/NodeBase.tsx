@@ -42,6 +42,7 @@ export interface NodeInput {
   edgeType?: EdgeType;
   targetRef?: string; // Reference to a specific element ID for precise positioning
   offsetY?: number; // Additional Y offset for fine-tuning
+  allowMultipleConnections?: boolean; // Whether this input can accept multiple connections (default: false)
 }
 
 export interface NodeOutput {
@@ -362,7 +363,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
         ref={nodeRef}
         data-nodetype={nodeType}
         className={cn(
-          "relative min-w-[280px] max-w-[400px] rounded-lg border-2 transition-all duration-200",
+          "relative min-w-[280px] max-w-[300px] rounded-lg border-2 transition-all duration-200",
           theme.border,
           "bg-background",
           theme.hover,

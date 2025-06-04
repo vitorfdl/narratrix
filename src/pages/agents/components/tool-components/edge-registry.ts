@@ -50,10 +50,24 @@ export namespace EdgeRegistry {
       type: "any",
       label: "Any",
       description: "Universal connection that accepts any edge type",
-      color: "#6b7280", // gray-500
+      color: "#8b5cf6", // violet-500
       strokeWidth: 2,
       getStyle: (selected) => ({
         stroke: selected ? "hsl(var(--primary))" : "#6b7280",
+        strokeWidth: selected ? 4 : 2,
+        filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))" : undefined,
+        zIndex: selected ? 1000 : 1,
+      }),
+    });
+
+    register({
+      type: "message-list",
+      label: "Message List",
+      description: "Message list connection",
+      color: "#05dcd1", // indigo-500
+      strokeWidth: 2,
+      getStyle: (selected) => ({
+        stroke: selected ? "hsl(var(--primary))" : "#05dcd1",
         strokeWidth: selected ? 4 : 2,
         filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))" : undefined,
         zIndex: selected ? 1000 : 1,
@@ -108,4 +122,4 @@ export namespace EdgeRegistry {
 }
 
 // Export edge type as a union of registered types
-export type EdgeType = "string" | "toolset" | "any";
+export type EdgeType = "string" | "toolset" | "any" | "message-list";

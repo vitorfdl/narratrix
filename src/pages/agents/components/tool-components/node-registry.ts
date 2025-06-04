@@ -116,7 +116,7 @@ export interface NodeMetadata {
   label: string;
   description?: string;
   icon?: LucideIcon;
-  category?: string;
+  category: string;
   color?: string; // Legacy theme color - deprecated, use theme instead
   theme?: NodeTheme; // Custom theme configuration
   deletable?: boolean;

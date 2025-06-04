@@ -5,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { useChatTemplate } from "@/hooks/chatTemplateStore";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
-import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
-import { useReactFlow } from "@xyflow/react";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
+import { useReactFlow, useStore } from "@xyflow/react";
 import { Bot, MessageCircle, Settings } from "lucide-react";
-import React, { memo, useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
 import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
@@ -22,14 +22,16 @@ export interface AgentNodeConfig {
 // Define the node's metadata and properties
 const AGENT_NODE_METADATA = {
   type: "agent",
-  label: "Agent",
+  label: "LLM Agent",
   description: "AI agent with customizable prompts and tools",
   icon: Bot,
+  category: "Inference",
   theme: createNodeTheme("purple"),
   deletable: true,
   inputs: [
     { id: "in-input", label: "Input", edgeType: "string" as const, targetRef: "input-section" },
-    { id: "in-toolset", label: "Toolset", edgeType: "toolset" as const, targetRef: "tools-section" },
+    { id: "in-toolset", label: "Toolset", edgeType: "toolset" as const, targetRef: "tools-section", allowMultipleConnections: true },
+    { id: "in-history", label: "History", edgeType: "message-list" as const, targetRef: "history-section" },
     { id: "in-system-prompt", label: "System Prompt Override", edgeType: "string" as const, targetRef: "system-prompt-section" },
   ] as NodeInput[],
   outputs: [{ id: "response", label: "Message", edgeType: "string" as const }] as NodeOutput[],
@@ -174,11 +176,20 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ op
  * Memoized content component to prevent unnecessary re-renders
  */
 const AgentContent = memo<{
+  nodeId: string;
   config: AgentNodeConfig;
   onConfigClick: () => void;
-}>(({ config, onConfigClick }) => {
+}>(({ nodeId, config, onConfigClick }) => {
   const registerElementRef = useNodeRef();
   const chatTemplate = useChatTemplate(config.chatTemplateID || "");
+
+  // Subscribe to edges from React Flow store to get real-time updates
+  const edges = useStore((state) => state.edges);
+
+  // Count connected tool edges
+  const connectedToolsCount = useMemo(() => {
+    return edges.filter((edge) => edge.target === nodeId && edge.targetHandle === "in-toolset").length;
+  }, [edges, nodeId]);
 
   // Prevent event propagation to React Flow
   const handleConfigButtonClick = useCallback(
@@ -215,12 +226,17 @@ const AgentContent = memo<{
 
       {/* Tools Section - This aligns with the "tools" input handle */}
       <div ref={(el) => registerElementRef?.("tools-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Tools</label>
+        <label className="text-xs font-medium">Toolset{connectedToolsCount > 0 && ` (${connectedToolsCount})`}</label>
+      </div>
+
+      {/* History Section - This aligns with the "history" input handle */}
+      <div ref={(el) => registerElementRef?.("history-section", el)} className="space-y-2">
+        <label className="text-xs font-medium">Chat History</label>
       </div>
 
       {/* Input Section - This aligns with the "input" input handle */}
       <div ref={(el) => registerElementRef?.("input-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Input</label>
+        <label className="text-xs font-medium">User Prompt</label>
         <div className="p-2 bg-muted/50 rounded-md border-l-2 border-purple-400 dark:border-purple-500">
           <span className="text-xs italic text-muted-foreground line-clamp-3">{config.inputPrompt || "{{input}}"}</span>
         </div>
@@ -256,7 +272,7 @@ export const AgentNode = memo(({ data, selected, id }: NodeProps) => {
   return (
     <>
       <NodeBase nodeId={id} data={data} selected={!!selected}>
-        <AgentContent config={config} onConfigClick={handleConfigClick} />
+        <AgentContent nodeId={id} config={config} onConfigClick={handleConfigClick} />
       </NodeBase>
 
       <AgentNodeConfigDialog open={configDialogOpen} config={config} onSave={handleConfigSave} onCancel={() => setConfigDialogOpen(false)} />

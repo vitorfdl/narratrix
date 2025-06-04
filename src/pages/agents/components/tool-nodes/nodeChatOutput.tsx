@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { useStore } from "@xyflow/react";
 import { Bot, MessageCircle, Settings } from "lucide-react";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { NodeBase, NodeInput, useNodeRef } from "../tool-components/NodeBase";
 import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
@@ -9,6 +10,7 @@ import { NodeProps } from "./nodeTypes";
 const CHAT_OUTPUT_NODE_METADATA = {
   type: "chatOutput",
   label: "Chat Output",
+  category: "Chat",
   description: "Display the final response in the conversation flow",
   icon: MessageCircle,
   theme: createNodeTheme("green"),
@@ -31,8 +33,16 @@ export namespace ChatOutputNodeConfigProvider {
 /**
  * Memoized content component to prevent unnecessary re-renders
  */
-const ChatOutputContent = memo<{ receivedValue: string }>(({ receivedValue }) => {
+const ChatOutputContent = memo<{ nodeId: string }>(({ nodeId }) => {
   const registerElementRef = useNodeRef();
+
+  // Subscribe to edges from React Flow store to get real-time updates
+  const edges = useStore((state) => state.edges);
+
+  // Count connected tool edges
+  const isResponseConnected = useMemo(() => {
+    return edges.filter((edge) => edge.target === nodeId && edge.targetHandle === "response").length;
+  }, [edges, nodeId]);
 
   // Prevent event propagation to React Flow
   const handleConfigButtonClick = useCallback((e: React.MouseEvent) => {
@@ -67,13 +77,13 @@ const ChatOutputContent = memo<{ receivedValue: string }>(({ receivedValue }) =>
       <div ref={(el) => registerElementRef?.("response-section", el)} className="space-y-2">
         <label className="text-xs font-medium">Message</label>
         <div className="p-3 bg-muted/50 rounded-md border-l-2 border-green-400 dark:border-green-500 max-h-32 overflow-y-auto">
-          {receivedValue ? (
+          {!isResponseConnected ? (
             <div className="flex items-start gap-2">
-              <Bot className="h-3 w-3 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-              <div className="text-xs  text-muted-foreground whitespace-pre-wrap">{receivedValue}</div>
+              <div className="text-xs  text-muted-foreground whitespace-pre-wrap">Chat Output Configuration will display here</div>
             </div>
           ) : (
             <div className="flex items-start gap-2">
+              <Bot className="h-3 w-3 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
               <span className="text-xs text-muted-foreground italic">Receiving Input...</span>
             </div>
           )}
@@ -101,7 +111,7 @@ export const ChatOutputNode = memo(({ data, selected, id }: NodeProps) => {
 
   return (
     <NodeBase nodeId={id} data={data} selected={!!selected}>
-      <ChatOutputContent receivedValue={receivedValue} />
+      <ChatOutputContent nodeId={id} />
     </NodeBase>
   );
 });

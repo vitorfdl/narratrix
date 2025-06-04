@@ -50,7 +50,7 @@ const EditAgentPage: React.FC<EditAgentPageProps> = ({ agent, onBack }) => {
       </div>
 
       {/* Tool editor node box */}
-      <div className="flex-1 flex flex-col p-6">
+      <div className="flex-1 flex flex-col">
         <div className="flex-1">
           <ToolEditor toolConfig={currentAgent} onChange={handleAgentChange} />
         </div>

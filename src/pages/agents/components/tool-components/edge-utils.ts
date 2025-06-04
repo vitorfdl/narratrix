@@ -134,6 +134,24 @@ export const getEdgeTypeFromHandle = (nodeId: string, handleId: string): EdgeTyp
   return "string";
 };
 
+// Check if an input handle allows multiple connections
+export const allowsMultipleConnections = (targetNodeId: string, targetHandle: string, nodes: Node<ToolNodeData>[]): boolean => {
+  const targetNode = nodes.find((n) => n.id === targetNodeId);
+  if (!targetNode) {
+    return false;
+  }
+
+  // Get node metadata from registry
+  const nodeMetadata = NodeRegistry.getNodeMetadata(targetNode.type || "");
+  if (!nodeMetadata) {
+    return false;
+  }
+
+  // Find the input handle configuration
+  const input = nodeMetadata.inputs?.find((inp) => inp.id === targetHandle);
+  return input?.allowMultipleConnections ?? false; // Default to false if not specified
+};
+
 // Check if an input handle already has a connection
 export const hasExistingConnection = (targetNodeId: string, targetHandle: string, edges: Edge[]): Edge | null => {
   return edges.find((edge) => edge.target === targetNodeId && edge.targetHandle === targetHandle) || null;
@@ -194,7 +212,14 @@ export const isValidEdgeConnection = (
   // Check if target input already has a connection (after type compatibility check)
   const existingEdge = hasExistingConnection(targetNodeId, targetHandle, edges);
   if (existingEdge) {
-    // Return valid with existing edge info for replacement (types are already compatible)
+    // Check if the input allows multiple connections
+    const allowsMultiple = allowsMultipleConnections(targetNodeId, targetHandle, nodes);
+
+    if (allowsMultiple) {
+      // Multiple connections allowed, this is a valid new connection
+      return { valid: true };
+    }
+    // Single connection only, return valid with existing edge info for replacement
     return { valid: true, existingEdge };
   }
 

@@ -22,6 +22,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AgentSidebar } from "./tool-components/EditorSidebar";
 import { ConnectionStateProvider, NodeDeleteProvider } from "./tool-components/NodeBase";
 import { NodePicker } from "./tool-components/NodePicker";
 import {
@@ -572,7 +573,11 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   );
 
   return (
-    <div className="w-full h-full min-h-[400px] bg-background border-2 border-dashed border-primary/40 rounded-lg flex flex-col">
+    <div className="w-full h-full min-h-[400px] dark:bg-background border-2 border-dashed border-primary/40 rounded-lg flex">
+      {/* Sidebar */}
+      {!readOnly && <AgentSidebar className="flex-shrink-0" />}
+
+      {/* Main Editor */}
       <div className="flex-1 relative" style={{ minHeight: 350 }} ref={reactFlowWrapper}>
         <NodeDeleteProvider onDelete={handleDeleteNode}>
           <ConnectionStateProvider connectionState={connectionState}>
