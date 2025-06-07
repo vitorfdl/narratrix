@@ -20,7 +20,7 @@ import { LorebookEntries } from "@/pages/lorebooks/components/LorebookEntries";
 import { Character } from "@/schema/characters-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { saveImage } from "@/services/file-system-service";
-import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { CheckCircleIcon, ChevronDown, CircleCheckBig, UserRoundPenIcon, XCircleIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { toast } from "sonner";

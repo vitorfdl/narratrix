@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
+import type { GenerationOptions, StreamingState } from "@/providers/inferenceChatProvider";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { QuickAction } from "@/schema/profiles-schema";
-import { GenerationOptions, StreamingState } from "@/services/inference-service";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { Loader2, Send, StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -138,7 +138,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           characterId: nextCharacter?.id ?? "",
           userMessage: structuredClone(submittedText.trim()),
           stream: true,
-          onStreamingStateChange: (state) => {
+          onStreamingStateChange: (state: StreamingState | null) => {
             // Handle streaming state changes for both regular and quiet responses
             handleStreamingStateChange(state);
 

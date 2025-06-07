@@ -65,14 +65,14 @@ body,
     --border: 223 6% 27%; /* #43454A */
     --input: 223 6% 27%; /* #43454A */
     --ring: 293 59% 74%; /* #db9ee5 */
-    --chart-1:293 59% 74%; /* #DB9EE5 */
+    --chart-1: 293 59% 74%; /* #DB9EE5 */
     --chart-2: 293 35% 45%; /* #9A53A3 - darker primary */
     --chart-3: 260 40% 55%; /* #7B6EDB - complementary to primary */
     --chart-4: 320 70% 60%; /* #E55A9B - analogous to primary */
     --chart-5: 350 65% 55%; /* #DB5A69 - triadic with primary */
     --chart-6: 230 60% 60%; /* #5A7EE5 - cool contrast */
     --chart-7: 180 50% 45%; /* #39A3A3 - teal complement */
-    --chart-8: 30 80% 60%;  /* #E5A33A - warm contrast */
+    --chart-8: 30 80% 60%; /* #E5A33A - warm contrast */
     --radius: 0.4rem;
 
     --accentBase: 223 9% 18%;
@@ -95,15 +95,14 @@ body,
     @apply border-border outline-ring/50;
   }
   body {
-    @apply  bg-background text-foreground overflow-hidden;
+    @apply bg-background text-foreground overflow-hidden;
   }
 }
-
 
 @layer components {
   .page-container {
     @apply p-4 pb-0;
-  }  
+  }
 
   .template-card-header {
     @apply bg-primary/10 h-10 mb-3 !pt-3;
@@ -112,7 +111,7 @@ body,
   .template-card-title {
     @apply flex items-center gap-2 pt-0 text-sm font-medium text-foreground;
   }
-  
+
   .title {
     @apply text-xl font-semibold mb-1 pl-3 border-l-4 border-primary;
   }
@@ -120,7 +119,7 @@ body,
   .textarea-special-text {
     @apply text-primary;
   }
-  
+
   .textarea-quoted-text {
     @apply text-chart-4  italic;
   }
@@ -146,21 +145,24 @@ body,
     @apply border-b-2 border-b-primary/20 border-border/30 focus:border-b-primary;
     @apply transition-colors duration-200;
   }
-
-
 }
 @layer components {
   /* Custom animation for the speaker border */
   @keyframes border-pulse {
-    0%, 100% { border-color: theme('colors.primary.DEFAULT / 70%'); } /* Start/End with primary/70 */
-    50% { border-color: theme('colors.primary.DEFAULT / 100%'); } /* Pulse to full opacity primary */
+    0%,
+    100% {
+      border-color: hsl(var(--primary) / 70%);
+    } /* Start/End with primary/70 */
+    50% {
+      border-color: hsl(var(--primary) / 100%);
+    } /* Pulse to full opacity primary */
   }
   .animate-border-pulse {
     animation: border-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     /* Ensure border width is consistent */
-    border-width: 2px; 
+    border-width: 2px;
   }
-  
+
   /* Custom scrollbar styling */
   .custom-scrollbar {
     scrollbar-width: thin;
@@ -244,7 +246,7 @@ body,
 .custom-tooltip li .cm-completionDetail {
   @apply text-primary italic text-[0.5rem];
   right: 8px;
-  background-color: hsl(var(--muted)/80%);
+  background-color: hsl(var(--muted) / 80%);
   padding: 1px 4px;
   border-radius: 3px;
   margin-top: 1px;
@@ -253,7 +255,7 @@ body,
 /* Style for completion sections */
 .custom-tooltip completion-section {
   @apply text-accent-foreground font-medium text-xs;
-  background: linear-gradient(135deg, hsl(var(--muted)/50%), hsl(var(--muted)/30%));
+  background: linear-gradient(135deg, hsl(var(--muted) / 50%), hsl(var(--muted) / 30%));
   padding: 3px 8px;
   display: block;
   border-left: 3px solid hsl(var(--primary));

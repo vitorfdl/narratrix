@@ -43,8 +43,11 @@ describe("applyInferenceTemplate", () => {
 
     const result = await applyInferenceTemplate({ systemPrompt, inferenceTemplate, messages, chatConfig: {} });
 
+    // Combine system prompt and messages to get the full formatted text
+    const formattedText = result.systemPrompt + result.messages.map(msg => msg.text).join("");
+
     // Assert
-    expect(result.text).toBe(expectedOutput);
+    expect(formattedText).toBe(expectedOutput);
     expect(result.customStopStrings).toContain("</asst>\n");
     expect(result.customStopStrings).toContain("</user>\n");
     expect(result.customStopStrings).toHaveLength(2);
@@ -60,7 +63,10 @@ describe("applyInferenceTemplate", () => {
 
     const result = await applyInferenceTemplate({ systemPrompt, inferenceTemplate, messages, chatConfig: {} });
 
+    // Combine system prompt and messages to get the full formatted text
+    const formattedText = result.systemPrompt + result.messages.map(msg => msg.text).join("");
+
     // Assert
-    expect(result.text).toBe("<sys>System instructions.</sys>\n<user>Hello there.</user>\n<asst>Hi!");
+    expect(formattedText).toBe("<sys>System instructions.</sys>\n<user>Hello there.</user>\n<asst>Hi!");
   });
 });

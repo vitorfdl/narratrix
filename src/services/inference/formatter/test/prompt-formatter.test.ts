@@ -43,7 +43,6 @@ describe("replaceTextPlaceholders", () => {
       User Name: {{user.name}}
       Title: {{chapter.title}}
       Scenario: {{chapter.scenario}}
-      Instructions: {{chapter.instructions}}
       Character Personality: {{character.personality}}
       User Personality: {{user.personality}}
     `;
@@ -61,7 +60,6 @@ describe("replaceTextPlaceholders", () => {
       chapter: {
         title: "The Beginning",
         scenario: "A fantasy world",
-        instructions: "Follow the story",
       },
     };
 
@@ -74,7 +72,6 @@ describe("replaceTextPlaceholders", () => {
       User Name: Bob
       Title: The Beginning
       Scenario: A fantasy world
-      Instructions: Follow the story
       Character Personality: Friendly and helpful
       User Personality: Curious and determined
     `);

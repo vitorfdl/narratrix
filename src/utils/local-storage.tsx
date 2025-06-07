@@ -162,7 +162,7 @@ const summarySettingsAtom = atomWithStorage<SummarySettings>("summarySettings", 
   chatTemplateID: "",
   requestPrompt: "",
   systemPrompt: "",
-  injectionPrompt: "",
+  injectionPrompt: "---\n{{summary}}\n---",
 });
 
 export function useLocalSummarySettings() {

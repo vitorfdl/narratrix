@@ -6,11 +6,11 @@ import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
-import { applyContextLimit } from "./apply-context-limit";
-import { applyInferenceTemplate } from "./apply-inference-template";
-import { LorebookContentResponse, getLorebookContent, processLorebookMessages } from "./apply-lorebook";
-import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./format-template-utils";
-import { replaceTextPlaceholders } from "./replace-text";
+import { applyContextLimit } from "./formatter/apply-context-limit";
+import { applyInferenceTemplate } from "./formatter/apply-inference-template";
+import { LorebookContentResponse, getLorebookContent, processLorebookMessages } from "./formatter/apply-lorebook";
+import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./formatter/format-template-utils";
+import { replaceTextPlaceholders } from "./formatter/replace-text";
 
 /**
  * Interface for message with character information
@@ -73,6 +73,7 @@ export function getChatHistory(
   messages: MessageWithCharacter[],
   userMessage?: string,
   prefixOption?: FormatTemplate["config"]["settings"]["prefix_messages"],
+  injectionPrompts?: Record<string, string>,
 ): InferenceMessage[] {
   const inferenceMessages: InferenceMessage[] = [];
 
@@ -87,6 +88,7 @@ export function getChatHistory(
       const character = message.character_name || "";
       const index = message.message_index || 0;
       const messageText = message.messages[index];
+
       if (message.type === "user" && messageText) {
         inferenceMessages.push({
           role: "user",
@@ -98,10 +100,23 @@ export function getChatHistory(
           text: canInsertPrefix ? addPrefix(messageText, character) : messageText,
         });
       } else if (message.type === "system") {
-        inferenceMessages.push({
-          role: "user",
-          text: messageText,
-        });
+        // Handle summary messages specially
+        if (message.extra?.script === "summary" && injectionPrompts?.summary) {
+          // Use the injection template and replace {{summary}} with the actual summary content
+          const injectionTemplate = injectionPrompts.summary;
+          const formattedSummary = injectionTemplate.replace(/\{\{summary\}\}/g, messageText);
+
+          inferenceMessages.push({
+            role: "user",
+            text: formattedSummary,
+          });
+        } else {
+          // Regular system message
+          inferenceMessages.push({
+            role: "user",
+            text: messageText,
+          });
+        }
       }
     }
   }
@@ -256,13 +271,9 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
   const prefixOption = config.formatTemplate?.config.settings.prefix_messages;
   const contextSeparator = config.formatTemplate?.config.context_separator?.replaceAll("\\n", "\n");
   // Step 1: Get chat history with user message
-  const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt, prefixOption);
+  const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt, prefixOption, config.chatConfig?.injectionPrompts);
   // Step 2: Process custom prompts from the chat template
   let processedMessages = processCustomPrompts(chatHistory, config.chatTemplate?.custom_prompts);
-
-  if (config.formatTemplate?.config.settings.collapse_consecutive_lines) {
-    processedMessages = collapseConsecutiveLines(structuredClone(processedMessages));
-  }
 
   // Get the order of lorebooks to be used (Character > User > Template)
   const LoreBookOrder = [
@@ -301,8 +312,12 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
     systemOverridePrompt: config.systemOverridePrompt,
     contextSeparator,
   });
-  const formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
 
+  let formattedPrompt = replaceTextPlaceholders(processedMessages, rawSystemPrompt, config.chatConfig);
+
+  if (config.formatTemplate?.config.settings.collapse_consecutive_lines) {
+    formattedPrompt = collapseConsecutiveLines(structuredClone(formattedPrompt));
+  }
   const limitedPrompt = await applyContextLimit(formattedPrompt, {
     config: config.chatTemplate?.config || { max_context: 100, max_tokens: 1500, max_depth: 100 },
     custom_prompts: config.chatTemplate?.custom_prompts || [],

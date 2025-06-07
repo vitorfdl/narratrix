@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
-import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { motion } from "framer-motion";
 import { CheckCircleIcon, MessageSquarePlus, PersonStanding, Sparkles, UserRound, XCircleIcon } from "lucide-react";
 import { useEffect, useState } from "react";

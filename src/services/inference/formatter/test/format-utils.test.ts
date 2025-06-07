@@ -1,42 +1,86 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { describe, expect, it } from "vitest";
+import { FormattedPromptResult } from "../../formatter";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "../format-template-utils";
 
 describe("collapseConsecutiveLines", () => {
-  it("should collapse 3 or more consecutive line breaks into 2", () => {
-    const messages: InferenceMessage[] = [
-      { role: "user", text: "Line 1\n\n\nLine 2\n\n\n\nLine 3" },
-      { role: "assistant", text: "Response 1\n\n\n\n\nResponse 2" },
-    ];
+  it("should collapse 3 or more consecutive line breaks into 2 in messages", () => {
+    const result: FormattedPromptResult = {
+      inferenceMessages: [
+        { role: "user", text: "Line 1\n\n\nLine 2\n\n\n\nLine 3" },
+        { role: "assistant", text: "Response 1\n\n\n\n\nResponse 2" },
+      ],
+    };
 
-    const result = collapseConsecutiveLines(messages);
+    const processedResult = collapseConsecutiveLines(result);
 
-    expect(result).toEqual([
+    expect(processedResult.inferenceMessages).toEqual([
       { role: "user", text: "Line 1\n\nLine 2\n\nLine 3" },
       { role: "assistant", text: "Response 1\n\nResponse 2" },
     ]);
   });
 
+  it("should collapse 3 or more consecutive line breaks into 2 in system prompt", () => {
+    const result: FormattedPromptResult = {
+      inferenceMessages: [{ role: "user", text: "User message" }],
+      systemPrompt: "System instruction\n\n\nWith multiple\n\n\n\nLine breaks",
+    };
+
+    const processedResult = collapseConsecutiveLines(result);
+
+    expect(processedResult.systemPrompt).toBe("System instruction\n\nWith multiple\n\nLine breaks");
+    expect(processedResult.inferenceMessages).toEqual([{ role: "user", text: "User message" }]);
+  });
+
   it("should not modify messages with less than 3 consecutive line breaks", () => {
-    const messages: InferenceMessage[] = [
-      { role: "user", text: "Line 1\n\nLine 2" },
-      { role: "assistant", text: "Response 1\nResponse 2" },
-    ];
+    const result: FormattedPromptResult = {
+      inferenceMessages: [
+        { role: "user", text: "Line 1\n\nLine 2" },
+        { role: "assistant", text: "Response 1\nResponse 2" },
+      ],
+    };
 
-    const result = collapseConsecutiveLines(messages);
+    const processedResult = collapseConsecutiveLines(result);
 
-    expect(result).toEqual(messages);
+    expect(processedResult.inferenceMessages).toEqual(result.inferenceMessages);
   });
 
   it("should handle messages with empty or undefined text", () => {
-    const messages: InferenceMessage[] = [
-      { role: "user", text: "" },
-      { role: "assistant", text: "" },
-    ];
+    const result: FormattedPromptResult = {
+      inferenceMessages: [
+        { role: "user", text: "" },
+        { role: "assistant", text: "" },
+      ],
+    };
 
-    const result = collapseConsecutiveLines(messages);
+    const processedResult = collapseConsecutiveLines(result);
 
-    expect(result).toEqual(messages);
+    expect(processedResult.inferenceMessages).toEqual(result.inferenceMessages);
+  });
+
+  it("should preserve all properties of FormattedPromptResult", () => {
+    const result: FormattedPromptResult = {
+      inferenceMessages: [{ role: "user", text: "Message\n\n\nwith breaks" }],
+      systemPrompt: "System\n\n\nprompt",
+      customStopStrings: ["stop1", "stop2"],
+    };
+
+    const processedResult = collapseConsecutiveLines(result);
+
+    expect(processedResult.customStopStrings).toEqual(["stop1", "stop2"]);
+    expect(processedResult.systemPrompt).toBe("System\n\nprompt");
+    expect(processedResult.inferenceMessages[0].text).toBe("Message\n\nwith breaks");
+  });
+
+  it("should handle undefined system prompt", () => {
+    const result: FormattedPromptResult = {
+      inferenceMessages: [{ role: "user", text: "Message" }],
+      systemPrompt: undefined,
+    };
+
+    const processedResult = collapseConsecutiveLines(result);
+
+    expect(processedResult.systemPrompt).toBeUndefined();
   });
 });
 

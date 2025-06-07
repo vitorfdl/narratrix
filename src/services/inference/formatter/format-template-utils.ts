@@ -1,24 +1,35 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
+import { FormattedPromptResult } from "../formatter";
 
 /**
  * Collapses consecutive lines in messages text content
- * @param messages Array of inference messages
- * @returns Array of messages with consecutive lines collapsed
+ * @param result FormattedPromptResult containing inference messages and other properties
+ * @returns FormattedPromptResult with consecutive lines collapsed in messages
  */
-export function collapseConsecutiveLines(messages: InferenceMessage[]): InferenceMessage[] {
-  return messages.map((message) => {
+export function collapseConsecutiveLines(result: FormattedPromptResult): FormattedPromptResult {
+  const collapseText = (text: string) => text.replace(/\n{3,}/g, "\n\n");
+  const processedMessages = result.inferenceMessages.map((message) => {
     if (!message.text) {
       return message;
     }
 
     // Replace consecutive line breaks with a single line break
-    const collapsedText = message.text.replace(/\n{3,}/g, "\n\n");
+    const collapsedText = collapseText(message.text);
 
     return {
       ...message,
       text: collapsedText,
     };
   });
+
+  // Process system prompt if it exists
+  const processedSystemPrompt = result.systemPrompt ? collapseText(result.systemPrompt) : result.systemPrompt;
+
+  return {
+    ...result,
+    inferenceMessages: processedMessages,
+    systemPrompt: processedSystemPrompt,
+  };
 }
 
 /**

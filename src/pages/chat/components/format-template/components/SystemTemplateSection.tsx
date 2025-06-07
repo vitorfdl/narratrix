@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useFormatTemplate, useTemplateActions } from "@/hooks/templateStore";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, SystemPromptSection, SystemPromptType } from "@/schema/template-format-schema";
-import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -97,7 +97,9 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
 
   // Handle label editing
   const handleLabelEdit = () => {
-    if (disabled) return;
+    if (disabled) {
+      return;
+    }
     setEditingLabel(prompt.label ?? formatName(prompt.name));
     setIsEditingLabel(true);
   };
@@ -105,12 +107,12 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
   const handleLabelSave = () => {
     const trimmedLabel = editingLabel.trim();
     const formattedName = formatName(prompt.name);
-    
+
     // If the label is empty or matches the formatted name, set to null to use default
-    const labelToSave = (!trimmedLabel || trimmedLabel === formattedName) ? null : trimmedLabel;
-    
-    onUpdate(prompt.id, { 
-      label: labelToSave
+    const labelToSave = !trimmedLabel || trimmedLabel === formattedName ? null : trimmedLabel;
+
+    onUpdate(prompt.id, {
+      label: labelToSave,
     });
     setIsEditingLabel(false);
   };
@@ -157,7 +159,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
             <Button variant="ghost" size="sm" disabled={disabled} onClick={handleCollapseToggle}>
               {prompt.isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
-            
+
             {/* Inline editable label */}
             <div className="flex items-center space-x-1 min-w-0 flex-1">
               {isEditingLabel ? (
@@ -171,20 +173,10 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
                     className="h-6 text-sm font-medium flex-1 min-w-0"
                     placeholder="Enter label name"
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 p-0"
-                    onClick={handleLabelSave}
-                  >
+                  <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={handleLabelSave}>
                     <Check className="h-3 w-3" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 p-0"
-                    onClick={handleLabelCancel}
-                  >
+                  <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={handleLabelCancel}>
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
@@ -193,17 +185,11 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
                   <div className="flex flex-col min-w-0">
                     {prompt.label ? (
                       <>
-                        <span className="font-medium text-sm truncate">
-                          {prompt.label}
-                        </span>
-                        <span className="text-xs text-muted-foreground/60 truncate">
-                          {formatName(prompt.name)}
-                        </span>
+                        <span className="font-medium text-sm truncate">{prompt.label}</span>
+                        <span className="text-xs text-muted-foreground/60 truncate">{formatName(prompt.name)}</span>
                       </>
                     ) : (
-                      <span className="font-medium text-sm truncate">
-                        {formatName(prompt.name)}
-                      </span>
+                      <span className="font-medium text-sm truncate">{formatName(prompt.name)}</span>
                     )}
                   </div>
                   {!disabled && (
@@ -289,7 +275,7 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
     const items = currentTemplate.prompts.map((section, index) => {
       // Generate a unique ID that includes the index for proper identification
       const uniqueId = `${section.type}-${index}`;
-      
+
       // Try to find existing prompt by the same unique ID to preserve collapse state
       const existingPrompt = prompts.find((p) => p.id === uniqueId);
 
