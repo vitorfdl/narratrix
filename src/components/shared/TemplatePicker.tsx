@@ -28,7 +28,7 @@ export interface TemplatePickerProps {
   onDelete: (templateId: string) => void;
   onNewTemplate: (name: string, sourceTemplateId?: string) => void;
   onEditName: (templateId: string, name: string) => void;
-  onFavoriteChange: (templateId: string, favorite: boolean) => void;
+  onFavoriteChange?: (templateId: string, favorite: boolean) => void;
   onImport?: (fileName: string, templateData: { [key: string]: any }) => void;
   onExport?: (templateId: string) => void;
   compact?: boolean;
@@ -125,7 +125,9 @@ export function TemplatePicker({
 
   const handleFavoriteToggle = useCallback(
     (templateId: string, currentFavorite: boolean) => {
-      onFavoriteChange(templateId, !currentFavorite);
+      if (onFavoriteChange) {
+        onFavoriteChange(templateId, !currentFavorite);
+      }
     },
     [onFavoriteChange],
   );
