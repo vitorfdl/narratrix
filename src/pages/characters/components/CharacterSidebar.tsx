@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X } from "lucide-react";
-import { CharacterUnion } from "../../../schema/characters-schema";
+import { Character } from "../../../schema/characters-schema";
 
 interface CharacterSidebarProps {
-  characters: CharacterUnion[];
+  characters: Character[];
   selectedTags: string[];
   onTagSelect: (tag: string) => void;
   onClearTags?: () => void;
@@ -42,8 +42,9 @@ export function CharacterSidebar({
     <div className="w-44 border-r border-border bg-background/95">
       <ScrollArea className="h-[calc(100vh-4rem)]">
         {/* All Characters Header */}
-        <div className="py-2 px-3 font-medium text-base">
-          All Characters <span className="text-muted-foreground">({filteredCharactersCount})</span>
+        <div className="py-2 px-3 font-medium text-base flex items-center gap-2">
+          <span>All Characters</span>
+          <span className="text-muted-foreground ml-auto">({filteredCharactersCount})</span>
         </div>
 
         {/* Active Filters Indicator with Clear button */}
@@ -60,6 +61,7 @@ export function CharacterSidebar({
 
         {/* Tags List */}
         <div className="ml-1">
+          <div className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tags</div>
           {uniqueTags.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">No tags available</p>
           ) : (

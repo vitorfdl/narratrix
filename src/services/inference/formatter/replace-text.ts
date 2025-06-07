@@ -1,6 +1,6 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
+import { FormattedPromptResult, PromptFormatterConfig } from "../formatter";
 import { applyCensorship } from "./apply-censorship";
-import { FormattedPromptResult, PromptFormatterConfig } from "./formatter";
 
 /**
  * Applies placeholder replacements to a given text string based on the configuration.
@@ -119,6 +119,124 @@ export function replaceRandomPattern(text: string): string {
 }
 
 /**
+ * A dice Roll Pattern is a text started with "roll:" embraced by a single bracket:
+ * - {{roll:1d20+5}}
+ * It must roll a dice with the number of sides and modifier.
+ * The result will be a random number between 1 and the number of sides, plus the modifier.
+ * @param text
+ */
+export function replaceDiceRollPattern(text: string): string {
+  // Regular expression to match dice roll patterns like {{roll:XdY+Z}} or {{roll:XdY-Z}} or {{roll:XdY}}
+  const diceRollRegex = /\{\{roll:([^}]+)\}\}/g;
+
+  return text.replace(diceRollRegex, (match, rollExpression) => {
+    try {
+      // Parse the dice roll expression (e.g., "1d20+5", "2d6-1", "1d100")
+      // Updated regex to handle optional whitespace around components
+      const dicePattern = /^\s*(\d+)\s*d\s*(\d+)\s*([+-]\s*\d+)?\s*$/i;
+      const diceMatch = rollExpression.trim().match(dicePattern);
+
+      if (!diceMatch) {
+        // Invalid dice notation, return original text
+        return match;
+      }
+
+      const numDice = Number.parseInt(diceMatch[1], 10);
+      const numSides = Number.parseInt(diceMatch[2], 10);
+      // Handle modifier with potential whitespace by removing all spaces before parsing
+      const modifier = diceMatch[3] ? Number.parseInt(diceMatch[3].replace(/\s/g, ""), 10) : 0;
+
+      // Validate dice parameters
+      if (numDice <= 0 || numDice > 100 || numSides <= 0 || numSides > 1000) {
+        // Invalid parameters, return original text
+        return match;
+      }
+
+      // Roll the dice
+      let total = 0;
+      for (let i = 0; i < numDice; i++) {
+        total += Math.floor(Math.random() * numSides) + 1;
+      }
+
+      // Apply modifier
+      const finalResult = total + modifier;
+
+      return finalResult.toString();
+    } catch (error) {
+      // If parsing fails, return the original match
+      return match;
+    }
+  });
+}
+
+/**
+ * Replaces date and time patterns with current date/time values:
+ * - {{time}} - the current time (12-hour format with AM/PM)
+ * - {{date}} - the current date (localized format)
+ * - {{weekday}} - the current weekday name
+ * - {{isotime}} - the current ISO time (24-hour clock, HH:MM:SS)
+ * - {{isodate}} - the current ISO date (YYYY-MM-DD)
+ * @param text
+ */
+export function replaceDateTimePattern(text: string, now = new Date()): string {
+  // Define all date/time patterns and their replacements
+  const patterns: Record<string, string> = {
+    // Current time in 12-hour format with AM/PM
+    "{{time}}": now.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }),
+
+    // Current date in localized format
+    "{{date}}": now.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+
+    // Current weekday name
+    "{{weekday}}": now.toLocaleDateString("en-US", {
+      weekday: "long",
+    }),
+
+    // Current ISO time (24-hour clock)
+    "{{isotime}}": now.toTimeString().split(" ")[0], // HH:MM:SS format
+
+    // Current ISO date (YYYY-MM-DD)
+    "{{isodate}}": now.toISOString().split("T")[0], // YYYY-MM-DD format
+  };
+
+  let processedText = text;
+
+  // Replace each pattern
+  Object.entries(patterns).forEach(([pattern, replacement]) => {
+    // Use global replacement with escaped regex pattern
+    const escapedPattern = pattern.replace(/[{}]/g, "\\$&");
+    const regex = new RegExp(escapedPattern, "g");
+    processedText = processedText.replace(regex, replacement);
+  });
+
+  return processedText;
+}
+
+/**
+ * Removes comment/note patterns from text:
+ * - {{// this is a note}} - removes the entire pattern including the comment
+ * This allows users to add internal notes or comments that won't appear in the final output.
+ * @param text
+ */
+export function replaceCommentPattern(text: string): string {
+  // Regular expression to match comment patterns like {{// any text here}}
+  // This regex looks for {{ followed by // and then matches everything until the closing }}
+  // It uses a non-greedy approach to handle nested braces properly
+  const commentRegex = /\{\{\/\/.*?\}\}/g;
+
+  // Remove all comment patterns by replacing them with empty string
+  return text.replace(commentRegex, "");
+}
+
+/**
  * Replace placeholder text in a string
  * Alternative to replaceTextPlaceholders for strings
  */
@@ -150,7 +268,10 @@ export function replaceTextPlaceholders(
   const processText = (text: string): string => {
     const withReplacements = applyTextReplacements(text, normalizedConfig);
     const withRandomPattern = replaceRandomPattern(withReplacements);
-    return applyCensorship(withRandomPattern, censorship?.words || []);
+    const withDiceRolls = replaceDiceRollPattern(withRandomPattern);
+    const withDateTimePattern = replaceDateTimePattern(withDiceRolls);
+    const withCommentPattern = replaceCommentPattern(withDateTimePattern);
+    return applyCensorship(withCommentPattern, censorship?.words || []);
   };
 
   // Process text replacements in messages

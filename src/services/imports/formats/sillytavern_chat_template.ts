@@ -1,5 +1,6 @@
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { z } from "zod";
+import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
 // Zod schema for SillyTavern prompt structure
 const SillyTavernPromptSchema = z.object({
@@ -159,17 +160,14 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
     }
 
     // Map injection_position to our position system
-    if (prompt.injection_position === 0) {
-      position = "top";
-    } else {
-      position = "depth";
-    }
+    // if (prompt.injection_position === 0) {
+    //   position = "top";
+    // } else {
+    position = "depth";
+    // }
 
     // Transform prompt content placeholders
-    let transformedContent = prompt.content || "";
-    transformedContent = transformedContent.replace(/\{\{persona\}\}/g, "{{user.personality}}");
-    transformedContent = transformedContent.replace(/\{\{description\}\}/g, "{{character.personality}}");
-    transformedContent = transformedContent.replace(/\{\{scenario\}\}/g, "{{chapter.scenario}}");
+    const transformedContent = replaceSillytavernFunctions(prompt.content || "");
 
     const customPrompt: ChatTemplateCustomPrompt = {
       id: prompt.identifier,
@@ -201,6 +199,7 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
   // Create the template object
   const template: Omit<ChatTemplate, "id" | "created_at" | "updated_at"> = {
     profile_id: profileId,
+    favorite: false,
     // Remove file extension from fileName if present before assigning as template name
     name: fileName,
     model_id: null, // SillyTavern stores model info differently, we'll leave this null

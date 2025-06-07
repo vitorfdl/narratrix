@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
-import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { useLocalSummarySettings } from "@/utils/local-storage";
 import { MessageCircle, Settings, TextSelect } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS_STATE: SummarySettings = {
   chatTemplateID: "",
   requestPrompt: "",
   systemPrompt: "",
-  injectionPrompt: "",
+  injectionPrompt: "---\n{{summary}}\n---",
 };
 
 export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChange, onSave }) => {

@@ -13,7 +13,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useLorebookStoreActions } from "@/hooks/lorebookStore";
 import { basicPromptSuggestionList } from "@/schema/chat-message-schema";
 import { CreateLorebookEntryParams, LorebookEntry, UpdateLorebookEntryParams, createLorebookEntrySchema } from "@/schema/lorebook-schema";
-import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BookDown, BookUp, Bot, CheckCircleIcon, User } from "lucide-react";
 import { useEffect, useState } from "react";

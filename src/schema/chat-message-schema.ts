@@ -5,7 +5,21 @@ import { uuidUtils } from "./utils-schema";
 const functionSuggestionList: SuggestionItem[] = [
   { title: "word1|word2|word3", description: "Randomizer", type: "function" },
   { title: "N$$word1|word2", description: "Randomize next N words", type: "function" },
+  { title: "roll:1d20+5", description: "Roll a d20 with +5 modifier", type: "function" },
+  { title: "roll:2d6", description: "Roll two d6 dice", type: "function" },
+  { title: "roll:1d100", description: "Roll a percentile die", type: "function" },
+  { title: "roll:3d6+2", description: "Roll 3d6 with +2 modifier", type: "function" },
 ];
+
+const dateTimeSuggestionList: SuggestionItem[] = [
+  { title: "time", description: "Current time (12-hour format with AM/PM)", type: "function" },
+  { title: "date", description: "Current date (localized format)", type: "function" },
+  { title: "weekday", description: "Current weekday name", type: "function" },
+  { title: "isotime", description: "Current ISO time (24-hour clock)", type: "function" },
+  { title: "isodate", description: "Current ISO date (YYYY-MM-DD)", type: "function" },
+];
+
+const commentSuggestionList: SuggestionItem[] = [{ title: "// comment text", description: "Internal note (removed from output)", type: "function" }];
 
 export const basicPromptSuggestionList: SuggestionItem[] = [
   { title: "user", description: "User Character/Profile Name", section: "prompt" },
@@ -13,7 +27,10 @@ export const basicPromptSuggestionList: SuggestionItem[] = [
   { title: "character.name", description: "Same as {{char}}", section: "prompt" },
   { title: "user.personality", section: "prompt" },
   { title: "character.personality", section: "prompt" },
+  { title: "groups", description: "Comma-separated list of characters in the chat", section: "prompt" },
   ...functionSuggestionList.map((item) => ({ ...item, section: "function" as const })),
+  ...dateTimeSuggestionList.map((item) => ({ ...item, section: "function" as const })),
+  ...commentSuggestionList.map((item) => ({ ...item, section: "function" as const })),
 ];
 
 export const promptReplacementSuggestionList: SuggestionItem[] = [

@@ -2,6 +2,9 @@ import React, { createContext, ReactNode, useContext } from "react";
 import { toast } from "sonner";
 import { useInferenceService as useInferenceServiceOriginal } from "../services/inference-service";
 
+// Re-export types from the separated modules for convenience
+export type { GenerationOptions, StreamingState, StreamingStateChangeCallback } from "../services/inference/types";
+
 // Create a context for the inference service
 const InferenceServiceContext = createContext<ReturnType<typeof useInferenceServiceOriginal> | null>(null);
 

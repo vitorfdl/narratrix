@@ -54,7 +54,7 @@ export function MarkdownViewer({ content, className, label }: MarkdownViewerProp
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
       <div
         className={cn(

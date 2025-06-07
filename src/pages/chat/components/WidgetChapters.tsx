@@ -15,9 +15,9 @@ import { cn } from "@/lib/utils";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { deleteChatMessagesByFilter } from "@/services/chat-message-service";
-import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowUpDown, BookOpen, Copy, GripVertical, MessageSquareX, MoreHorizontal, Plus, Search, Settings, Trash2 } from "lucide-react";
@@ -532,7 +532,13 @@ const WidgetChapters = () => {
           </div>
         ) : (
           <ScrollArea className="h-full">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+            <DndContext
+              autoScroll={false}
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+            >
               <SortableContext items={sortedChapters.map((chapter) => chapter.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
                   {sortedChapters.map((chapter) => (

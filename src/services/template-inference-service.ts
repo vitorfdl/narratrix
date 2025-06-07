@@ -1,3 +1,4 @@
+import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils.ts";
 // src/services/inference-template-service.ts
 import { formatDateTime } from "@/utils/date-time.ts";
 import { CreateInferenceTemplateParams, InferenceTemplate, inferenceTemplateSchema } from "../schema/template-inferance-schema.ts";
@@ -50,6 +51,7 @@ export async function getInferenceTemplateById(id: string): Promise<InferenceTem
       profile_id, 
       name, 
       config,
+      favorite,
       created_at, 
       updated_at
     FROM inference_template 
@@ -65,6 +67,7 @@ export async function getInferenceTemplateById(id: string): Promise<InferenceTem
 
   // Parse the config JSON string
   template.config = JSON.parse(template.config);
+  template.favorite = parseBoolean(template.favorite);
 
   // Convert date strings to Date objects
   template.created_at = new Date(template.created_at);
@@ -81,6 +84,7 @@ export async function listInferenceTemplates(filter?: InferenceTemplateFilter): 
       profile_id, 
       name, 
       config,
+      favorite,
       created_at, 
       updated_at
     FROM inference_template
@@ -111,6 +115,7 @@ export async function listInferenceTemplates(filter?: InferenceTemplateFilter): 
   return result.map((template) => ({
     ...template,
     config: JSON.parse(template.config),
+    favorite: parseBoolean(template.favorite),
     created_at: new Date(template.created_at),
     updated_at: new Date(template.updated_at),
   })) as InferenceTemplate[];

@@ -1,6 +1,6 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { Lorebook, LorebookEntry } from "@/schema/lorebook-schema";
-import { getLorebookById } from "../lorebook-service";
+import { getLorebookById } from "../../lorebook-service";
 import { estimateTokens } from "./apply-context-limit";
 
 export interface LorebookContentResponse {

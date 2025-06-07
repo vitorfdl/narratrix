@@ -120,6 +120,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
   const handleNewTemplate = async (name: string, sourceTemplateId?: string) => {
     let newTemplateObj: NewFormatTemplate = {
       name: name,
+      favorite: false,
       profile_id: currentProfile?.id || "",
       config: {
         settings: {
@@ -140,12 +141,12 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         lorebook_separator: "\\n---\\n",
       },
       prompts: [
-        { type: "context", content: SYSTEM_PROMPT_DEFAULT_CONTENT.context },
-        { type: "lorebook-top", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-top"] },
-        { type: "chapter-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["chapter-context"] },
-        { type: "character-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["character-context"] },
-        { type: "user-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["user-context"] },
-        { type: "lorebook-bottom", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-bottom"] },
+        { type: "context", content: SYSTEM_PROMPT_DEFAULT_CONTENT.context, enabled: true },
+        { type: "lorebook-top", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-top"], enabled: true },
+        { type: "chapter-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["chapter-context"], enabled: true },
+        { type: "character-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["character-context"], enabled: true },
+        { type: "user-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["user-context"], enabled: true },
+        { type: "lorebook-bottom", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-bottom"], enabled: true },
       ],
     };
 
@@ -160,6 +161,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
           profile_id: templateToDuplicate.profile_id,
           config: templateToDuplicate.config, // Deep copy config
           prompts: templateToDuplicate.prompts, // Deep copy prompts
+          favorite: false,
         };
         // Note: Ensure config and prompts are deep copied if they contain nested objects/arrays
         // For simplicity here, we assume a shallow copy is sufficient or that the structure allows it.
@@ -254,18 +256,10 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         onEditName={handleEditName}
         onImport={handleImportFromPicker}
         onExport={handleExport}
+        onFavoriteChange={(templateId: string, favorite: boolean) => updateFormatTemplate(templateId, { favorite })}
       />
     ),
-    [
-      formatTemplateID,
-      formatTemplates,
-      handleTemplateSelect,
-      handleDeleteTemplate,
-      handleNewTemplate,
-      handleEditName,
-      handleImportFromPicker,
-      handleExport,
-    ],
+    [formatTemplateID, formatTemplates],
   );
 
   return (

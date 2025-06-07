@@ -1,5 +1,6 @@
 import { FormatTemplate, SYSTEM_PROMPT_DEFAULT_CONTENT, SystemPromptSection } from "@/schema/template-format-schema";
 import { z } from "zod";
+import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
 // Zod schema for SillyTavern instruct section
 const SillyTavernInstructSchema = z.object({
@@ -92,12 +93,12 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
   // Default prompts if story_string is empty or undefined
   if (!storyString) {
     return [
-      { type: "context", content: SYSTEM_PROMPT_DEFAULT_CONTENT.context },
-      { type: "lorebook-top", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-top"] },
-      { type: "chapter-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["chapter-context"] },
-      { type: "character-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["character-context"] },
-      { type: "user-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["user-context"] },
-      { type: "lorebook-bottom", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-bottom"] },
+      { type: "context", content: SYSTEM_PROMPT_DEFAULT_CONTENT.context, enabled: true },
+      { type: "lorebook-top", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-top"], enabled: true },
+      { type: "chapter-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["chapter-context"], enabled: true },
+      { type: "character-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["character-context"], enabled: true },
+      { type: "user-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["user-context"], enabled: true },
+      { type: "lorebook-bottom", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-bottom"], enabled: true },
     ];
   }
 
@@ -106,7 +107,8 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
   if (systemMatch?.[1]?.trim()) {
     prompts.push({
       type: "context",
-      content: systemMatch[1].trim(),
+      content: replaceSillytavernFunctions(systemMatch[1].trim()),
+      enabled: true,
     });
   }
 
@@ -115,7 +117,8 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
   if (wiBeforeMatch) {
     prompts.push({
       type: "lorebook-top",
-      content: wiBeforeMatch[1].trim(),
+      content: replaceSillytavernFunctions(wiBeforeMatch[1].trim()),
+      enabled: true,
     });
   }
 
@@ -124,7 +127,8 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
   if (descriptionMatch) {
     prompts.push({
       type: "character-context",
-      content: descriptionMatch[1].trim(),
+      content: replaceSillytavernFunctions(descriptionMatch[1].trim()),
+      enabled: true,
     });
   }
 
@@ -138,7 +142,8 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
     } else {
       prompts.push({
         type: "character-context",
-        content: personalityMatch[1].trim(),
+        content: replaceSillytavernFunctions(personalityMatch[1].trim()),
+        enabled: true,
       });
     }
   }
@@ -148,7 +153,8 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
   if (scenarioMatch) {
     prompts.push({
       type: "chapter-context",
-      content: scenarioMatch[1].trim(),
+      content: replaceSillytavernFunctions(scenarioMatch[1].trim()),
+      enabled: true,
     });
   }
 
@@ -157,7 +163,8 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
   if (wiAfterMatch) {
     prompts.push({
       type: "lorebook-bottom",
-      content: wiAfterMatch[1].trim(),
+      content: replaceSillytavernFunctions(wiAfterMatch[1].trim()),
+      enabled: true,
     });
   }
 
@@ -166,19 +173,20 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
   if (personaMatch) {
     prompts.push({
       type: "user-context",
-      content: personaMatch[1].trim(),
+      content: replaceSillytavernFunctions(personaMatch[1].trim()),
+      enabled: true,
     });
   }
 
   // If no prompts were extracted, return defaults
   if (prompts.length === 0) {
     return [
-      { type: "context", content: SYSTEM_PROMPT_DEFAULT_CONTENT.context },
-      { type: "lorebook-top", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-top"] },
-      { type: "chapter-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["chapter-context"] },
-      { type: "character-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["character-context"] },
-      { type: "user-context", content: SYSTEM_PROMPT_DEFAULT_CONTENT["user-context"] },
-      { type: "lorebook-bottom", content: SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-bottom"] },
+      { type: "context", content: replaceSillytavernFunctions(SYSTEM_PROMPT_DEFAULT_CONTENT.context), enabled: true },
+      { type: "lorebook-top", content: replaceSillytavernFunctions(SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-top"]), enabled: true },
+      { type: "chapter-context", content: replaceSillytavernFunctions(SYSTEM_PROMPT_DEFAULT_CONTENT["chapter-context"]), enabled: true },
+      { type: "character-context", content: replaceSillytavernFunctions(SYSTEM_PROMPT_DEFAULT_CONTENT["character-context"]), enabled: true },
+      { type: "user-context", content: replaceSillytavernFunctions(SYSTEM_PROMPT_DEFAULT_CONTENT["user-context"]), enabled: true },
+      { type: "lorebook-bottom", content: replaceSillytavernFunctions(SYSTEM_PROMPT_DEFAULT_CONTENT["lorebook-bottom"]), enabled: true },
     ];
   }
 
@@ -224,6 +232,7 @@ export function transformSillyTavernFormatTemplate(
   const template: Omit<FormatTemplate, "id" | "created_at" | "updated_at"> = {
     profile_id: profileId,
     name: templateName,
+    favorite: false,
     config: {
       settings,
       reasoning,

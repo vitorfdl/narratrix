@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { QuickAction } from "@/schema/profiles-schema";
-import { estimateTokens } from "@/services/inference-steps/apply-context-limit";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { motion } from "framer-motion";
 import { MessageCircle, MessageSquarePlus, Settings, Wand2 } from "lucide-react";
 import React, { useEffect, useState } from "react";

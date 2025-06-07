@@ -9,7 +9,7 @@ import {
 } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { getCharacterById } from "@/services/character-service";
-import { replaceStringPlaceholders } from "@/services/inference-steps/replace-text";
+import { replaceStringPlaceholders } from "@/services/inference/formatter/replace-text";
 import { LayoutTemplateIcon, PencilLine, SendIcon, UserPlus } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";

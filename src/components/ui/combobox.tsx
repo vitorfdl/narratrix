@@ -1,7 +1,7 @@
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Check, X } from "lucide-react";
+import { Check, Star, X } from "lucide-react";
 import * as React from "react";
 
 export interface ComboboxItem {
@@ -9,6 +9,8 @@ export interface ComboboxItem {
   value: string;
   disabled?: boolean;
   hint?: string;
+  favorite?: boolean;
+  onFavoriteToggle?: () => void;
 }
 
 interface ComboboxProps {
@@ -35,6 +37,14 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search...", 
     },
     [onChange],
   );
+
+  const handleFavoriteClick = React.useCallback((e: React.MouseEvent, onFavoriteToggle?: () => void) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onFavoriteToggle) {
+      onFavoriteToggle();
+    }
+  }, []);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -75,13 +85,33 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search...", 
                     }
                   }}
                   disabled={item.disabled}
-                  className={cn("flex justify-between items-center w-full", item.disabled ? "cursor-not-allowed opacity-50" : "")}
+                  className={cn("flex justify-between items-center w-full group", item.disabled ? "cursor-not-allowed opacity-50" : "")}
                 >
-                  <div className="flex flex-col">
-                    <span className={item.disabled ? "line-through" : ""}>{item.label}</span>
-                    {item.hint && <span className="text-xs text-muted-foreground">{item.hint}</span>}
+                  <div className="flex items-center flex-1 min-w-0">
+                    {item.onFavoriteToggle && (
+                      <button
+                        onClick={(e) => handleFavoriteClick(e, item.onFavoriteToggle)}
+                        className={cn(
+                          "p-0 mr-2 rounded-sm transition-colors hover:bg-accent/50 opacity-0 group-hover:opacity-100",
+                          item.favorite && "opacity-100",
+                        )}
+                        title={item.favorite ? "Remove from favorites" : "Add to favorites"}
+                      >
+                        <Star
+                          className={cn(
+                            "h-3 w-3 transition-colors",
+                            item.favorite ? "fill-muted-foreground text-muted-foreground" : "text-muted-foreground hover:text-foreground",
+                          )}
+                        />
+                      </button>
+                    )}
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className={cn("truncate p-0 m-0", item.disabled ? "line-through" : "")}>{item.label}</span>
+                      {item.hint && <span className="text-xs text-muted-foreground truncate">{item.hint}</span>}
+                    </div>
                   </div>
-                  <Check className={cn("mr-2 h-4 w-4", selectedValue === item.value ? "opacity-100" : "opacity-0")} />
+
+                  <Check className={cn("h-2 w-2 ml-0", selectedValue === item.value ? "opacity-100" : "opacity-0")} />
                 </CommandItem>
               ))}
             </CommandGroup>

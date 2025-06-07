@@ -19,7 +19,7 @@ import { useChatActions, useCurrentChatParticipants, useCurrentChatTemplateID } 
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
-import { useModels } from "@/hooks/modelsStore";
+import { useModels, useModelsActions } from "@/hooks/modelsStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
@@ -30,7 +30,7 @@ import { prepareLorebooksForEmbedding } from "@/services/imports/shared/lorebook
 import { NewChatTemplateParams, getChatTemplateById } from "@/services/template-chat-service";
 import { createFormatTemplate, getFormatTemplateById } from "@/services/template-format-service";
 import { ExportType, exportSingleToJsonFile } from "@/utils/export-utils";
-import { sortAlphabetically } from "@/utils/sorting";
+import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
 import { configFields } from "../manifests/configFields";
 import { ExportOptions, ExportOptionsDialog } from "./ExportOptionsDialog";
 import { ImportOptions, ImportOptionsDialog } from "./ImportOptionsDialog";
@@ -56,8 +56,9 @@ interface ChatTemplateConfigProps {
 const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTemplateConfigProps) => {
   const chatTemplateList = useChatTemplateList();
   const { updateChatTemplate } = useChatTemplateActions();
-  const { fetchFormatTemplates } = useTemplateActions();
+  const { fetchFormatTemplates, updateFormatTemplate } = useTemplateActions();
   const models = useModels();
+  const { updateModel } = useModelsActions();
   const formatTemplates = useFormatTemplateList();
   const lorebooks = useLorebooks();
   const participants = useCurrentChatParticipants();
@@ -178,23 +179,24 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     return chatTemplateList.map((template) => ({
       id: template.id,
       name: template.name,
+      favorite: template.favorite,
     }));
   }, [chatTemplateList]);
 
   const formatTemplateOptions = useMemo(() => {
-    return formatTemplates.map((template) => ({
+    return sortTemplatesByFavoriteAndName(formatTemplates).map((template) => ({
       label: template.name,
       value: template.id,
+      favorite: template.favorite,
+      onFavoriteToggle: () => updateFormatTemplate(template.id, { favorite: !template.favorite }),
     }));
   }, [formatTemplates]);
 
   const lorebookOptions = useMemo(() => {
-    return lorebooks
-      .map((lorebook) => ({
-        label: lorebook.name,
-        value: lorebook.id,
-      }))
-      .sort((a, b) => sortAlphabetically(a.label, b.label));
+    return sortTemplatesByFavoriteAndName(lorebooks).map((lorebook) => ({
+      label: lorebook.name,
+      value: lorebook.id,
+    }));
   }, [lorebooks]);
 
   // Check if component should be disabled (no template selected)
@@ -318,13 +320,12 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       .sort((a, b) => (a.disabled ? 1 : 0) - (b.disabled ? 1 : 0));
   }, [activeFields, selectedModelId, availableInferenceFields, isDisabled]);
 
-  const modelOptions = models
-    .filter((model: Model) => model.type === "llm")
-    .map((model: Model) => ({
-      label: model.name,
-      value: model.id,
-    }))
-    .sort((a, b) => sortAlphabetically(a.label, b.label));
+  const modelOptions = sortTemplatesByFavoriteAndName(models.filter((model: Model) => model.type === "llm")).map((model: Model) => ({
+    label: model.name,
+    value: model.id,
+    favorite: model.favorite,
+    onFavoriteToggle: () => updateModel(model.id, { favorite: !model.favorite }),
+  }));
 
   /**
    * Handles adding a field to the active fields list.
@@ -804,6 +805,9 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
           compact={true}
           templates={templateOptions}
           selectedTemplateId={currentChatTemplateID || null}
+          onFavoriteChange={(templateId, favorite) => {
+            updateChatTemplate(templateId, { favorite });
+          }}
           onTemplateSelect={handleTemplateSelect}
           onDelete={handleDeleteTemplate}
           onNewTemplate={handleCreateTemplate}

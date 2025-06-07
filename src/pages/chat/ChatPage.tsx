@@ -295,7 +295,11 @@ export default function ChatPage() {
       // Persist the change
       await updateChat(chatToRenameId, { name: newName.trim() });
       await fetchChatList(profileId);
-      // For now, the optimistic update + store update should suffice
+
+      // Refresh the list of all chats to update the ChatMenuDropdown
+      const refreshedChats = await listChats({ profile_id: profileId });
+      setAllChats(refreshedChats);
+
       toast.success(`Chat renamed to "${newName.trim()}".`);
     } catch (error) {
       console.error("Failed to rename chat:", error);
