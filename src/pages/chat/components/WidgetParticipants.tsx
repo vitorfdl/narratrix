@@ -12,7 +12,7 @@ import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { Character } from "@/schema/characters-schema";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { restrictToParentElement, restrictToVerticalAxis, restrictToFirstScrollableAncestor } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
@@ -290,7 +290,11 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
       ];
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before activating
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -399,7 +403,13 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     <div className="flex flex-col h-full bg-none">
       {/* Participants List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-0.5 custom-scrollbar">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          autoScroll={false}
+          modifiers={[restrictToVerticalAxis, restrictToParentElement, restrictToFirstScrollableAncestor]}
+        >
           <SortableContext items={displayedParticipants.map((p) => p.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-1">
               {displayedParticipants.map((participant) => (
