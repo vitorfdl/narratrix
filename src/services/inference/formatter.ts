@@ -149,29 +149,85 @@ export function createSystemPrompt(config: CreateSystemPromptConfig): string | u
   let prompts = structuredClone(systemPromptTemplate?.prompts?.filter((prompt) => prompt.enabled) || []);
 
   if (customPrompts && customPrompts.length > 0) {
+    // Group custom prompts by position and depth to maintain order
+    const topPrompts: typeof customPrompts = [];
+    const bottomPrompts: typeof customPrompts = [];
+    const depthGroups: Record<number, typeof customPrompts> = {};
+    const defaultPrompts: typeof customPrompts = [];
+
     for (const customPrompt of customPrompts) {
       if (customPrompt.role !== "system" || !customPrompt.enabled) {
         continue;
       }
 
+      if (customPrompt.position === "top") {
+        topPrompts.push(customPrompt);
+      } else if (customPrompt.position === "bottom") {
+        bottomPrompts.push(customPrompt);
+      } else if (customPrompt.position === "depth") {
+        const depth = customPrompt.depth || 1;
+        if (!depthGroups[depth]) {
+          depthGroups[depth] = [];
+        }
+        depthGroups[depth].push(customPrompt);
+      } else {
+        // Default behavior: insert at the beginning
+        defaultPrompts.push(customPrompt);
+      }
+    }
+
+    // Process in order: default (top), top, depth (by depth value), bottom
+    // Default prompts (insert at beginning in reverse order to maintain original order)
+    for (let i = defaultPrompts.length - 1; i >= 0; i--) {
+      const customPrompt = defaultPrompts[i];
       const systemPrompt = {
         type: "custom-field" as any,
         content: customPrompt.prompt,
         enabled: true,
       };
+      prompts.unshift(systemPrompt);
+    }
 
-      if (customPrompt.position === "top") {
-        prompts.unshift(systemPrompt);
-      } else if (customPrompt.position === "bottom") {
-        prompts.push(systemPrompt);
-      } else if (customPrompt.position === "depth") {
-        const depth = customPrompt.depth || 1;
-        const insertPosition = Math.max(0, prompts.length - depth);
+    // Top prompts (insert at beginning in reverse order to maintain original order)
+    for (let i = topPrompts.length - 1; i >= 0; i--) {
+      const customPrompt = topPrompts[i];
+      const systemPrompt = {
+        type: "custom-field" as any,
+        content: customPrompt.prompt,
+        enabled: true,
+      };
+      prompts.unshift(systemPrompt);
+    }
+
+    // Depth prompts (process by depth value, maintaining order within each depth)
+    const sortedDepths = Object.keys(depthGroups)
+      .map(Number)
+      .sort((a, b) => a - b);
+    for (const depth of sortedDepths) {
+      const depthPrompts = depthGroups[depth];
+      // Insert all prompts with the same depth at the same calculated position
+      const insertPosition = Math.max(0, prompts.length - depth);
+
+      // Insert in reverse order to maintain original sequence
+      for (let i = depthPrompts.length - 1; i >= 0; i--) {
+        const customPrompt = depthPrompts[i];
+        const systemPrompt = {
+          type: "custom-field" as any,
+          content: customPrompt.prompt,
+          enabled: true,
+        };
         prompts.splice(insertPosition, 0, systemPrompt);
-      } else {
-        // Default behavior: insert at the beginning
-        prompts.unshift(systemPrompt);
       }
+    }
+
+    // Bottom prompts (append in original order)
+    for (const customPrompt of bottomPrompts) {
+      const systemPrompt = {
+        type: "custom-field" as any,
+        content: customPrompt.prompt,
+        enabled: true,
+      };
+      prompts.push(systemPrompt);
     }
   }
 
@@ -318,6 +374,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
   if (config.formatTemplate?.config.settings.collapse_consecutive_lines) {
     formattedPrompt = collapseConsecutiveLines(structuredClone(formattedPrompt));
   }
+
   const limitedPrompt = await applyContextLimit(formattedPrompt, {
     config: config.chatTemplate?.config || { max_context: 100, max_tokens: 1500, max_depth: 100 },
     custom_prompts: config.chatTemplate?.custom_prompts || [],
