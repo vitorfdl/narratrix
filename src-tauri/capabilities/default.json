@@ -8,8 +8,13 @@
     "core:default",
     "fs:default",
     "fs:allow-write-file",
+    "fs:allow-read-file",
     "fs:allow-appdata-write",
     "fs:allow-appdata-write-recursive",
+    "fs:allow-appdata-read",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-resource-read",
+    "fs:allow-resource-read-recursive",
     "dialog:default",
     "opener:default",
     {
@@ -27,8 +32,7 @@
     "updater:allow-download-and-install",
     {
       "identifier": "fs:scope",
-      "allow": ["**/*"],
-      "requireLiteralLeadingDot": false
+      "allow": ["$RESOURCE/**/*", "$APPDATA/**/*", "$HOME/**/*", "$APPCONFIG/**/*", "$TEMP/**/*"]
     },
     "clipboard-manager:default",
     "clipboard-manager:allow-write-text"

@@ -20,6 +20,7 @@ const v12Migration = async (profile: ProfileResponse): Promise<ProfileResponse> 
           // Create a new format template with the current profile ID
           const params: NewFormatTemplate = {
             profile_id: profile.id,
+            favorite: false,
             name: template.name,
             config: {
               settings: {
@@ -33,6 +34,7 @@ const v12Migration = async (profile: ProfileResponse): Promise<ProfileResponse> 
             prompts: template.prompts.map((prompt) => ({
               type: prompt.type as SystemPromptType,
               content: prompt.content,
+              enabled: true,
             })),
           };
 
