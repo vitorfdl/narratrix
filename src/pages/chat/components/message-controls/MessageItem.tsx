@@ -42,7 +42,7 @@ const SCRIPT_CONFIGS = {
 const MESSAGE_BASE_CLASSES = {
   container: "group relative flex gap-4 p-4 rounded-xl border border-border/50 hover:border-border transition-all duration-200 hover:shadow-sm",
   content: "flex-grow relative pb-6 text-justify",
-  markdown: "select-text text-sm text-foreground leading-relaxed",
+  markdown: "select-text text-sm text-foreground leading-relaxed mt-2",
   controlsContainer: "absolute bottom-0 w-full flex justify-between items-center translate-y-3",
   scriptIndicator: "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border backdrop-blur-sm",
   scriptHeader: "flex items-center justify-between mb-3 pb-2 border-b border-border/70",
