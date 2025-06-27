@@ -32,20 +32,9 @@ interface SortableTabProps {
   onRenameRequest: (tabId: string) => void;
   onDuplicateRequest: (tabId: string) => void;
   onDeleteRequest: (tabId: string) => void;
-  isDragging?: boolean;
 }
 
-function SortableTab({
-  tab,
-  index,
-  activeTab,
-  onTabChange,
-  onCloseTab,
-  onRenameRequest,
-  onDuplicateRequest,
-  onDeleteRequest,
-  isDragging = false,
-}: SortableTabProps) {
+function SortableTab({ tab, index, activeTab, onTabChange, onCloseTab, onRenameRequest, onDuplicateRequest, onDeleteRequest }: SortableTabProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSortableDragging } = useSortable({ id: tab.id });
 
   const style = {
@@ -198,7 +187,6 @@ export function ChatTabs({
                   onRenameRequest={onRenameRequest}
                   onDuplicateRequest={onDuplicateRequest}
                   onDeleteRequest={onDeleteRequest}
-                  isDragging={activeId === tab.id}
                 />
               ))}
             </SortableContext>

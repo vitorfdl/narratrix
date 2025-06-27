@@ -18,6 +18,7 @@ const v11Migration = async (profile: ProfileResponse): Promise<ProfileResponse> 
           const params: CreateInferenceTemplateParams = {
             profile_id: profile.id,
             name: template.name,
+            favorite: false,
             config: {
               ...template.config,
               assistantMessageFormatting: {
