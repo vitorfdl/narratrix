@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { Character } from "@/schema/characters-schema";
+import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToParentElement, restrictToVerticalAxis, restrictToFirstScrollableAncestor } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -223,6 +224,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
   const inferenceService = useInferenceServiceFromContext();
+  const { executeWorkflow: executeAgentWorkflow, workflowState } = useAgentWorkflow();
 
   // State to track current streaming state
   const [streamingState, setStreamingState] = useState(() => inferenceService.getStreamingState());
@@ -382,22 +384,56 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
           return;
         }
 
-        // Use the inference service to generate a message
-        await inferenceService.generateMessage({
-          characterId: participantId,
-        });
+        if (agent) {
+          // Execute agent workflow
+          console.log("Executing agent workflow:", agent.name);
+
+          try {
+            const result = await executeAgentWorkflow(
+              agent,
+              "", // No initial input for now
+              (nodeId, result) => {
+                console.log(`Node ${nodeId} executed:`, result);
+              },
+            );
+
+            if (result) {
+              console.log("Agent workflow completed with result:", result);
+              toast.success(`Agent ${agent.name} completed successfully`);
+            } else {
+              console.log("Agent workflow completed with no output");
+              toast.success(`Agent ${agent.name} completed`);
+            }
+          } catch (error) {
+            console.error("Agent workflow execution failed:", error);
+            toast.error(`Agent ${agent.name} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+          }
+        } else if (character) {
+          // Use the inference service to generate a message for characters
+          await inferenceService.generateMessage({
+            characterId: participantId,
+          });
+        }
       } catch (error) {
         console.error("Error triggering message:", error);
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
-        // Remove from triggering list if there was an error
       }
     },
     [characterList, agentList, messages, inferenceService, streamingState.characterId],
   );
 
-  const isInQueue = (participantId: string) =>
-    (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") ||
-    (participantId === "user" && streamingState.messageId === "generate-input-area");
+  const isInQueue = (participantId: string) => {
+    // Check if character is in inference queue
+    const inCharacterQueue =
+      (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") ||
+      (participantId === "user" && streamingState.messageId === "generate-input-area");
+
+    // Check if agent is in workflow execution
+    const agent = agentList.find((a) => a.id === participantId);
+    const inAgentQueue = agent && workflowState.isRunning;
+
+    return inCharacterQueue || inAgentQueue;
+  };
 
   return (
     <div className="flex flex-col h-full bg-none">
@@ -419,7 +455,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
                   onToggleParticipant={handleToggleParticipant}
                   onTriggerMessage={handleTriggerMessage}
                   onRemoveParticipant={handleRemoveParticipant}
-                  inInferenceQueue={isInQueue(participant.id)}
+                  inInferenceQueue={isInQueue(participant.id) || false}
                   setIsEditCharacterModalOpen={setIsEditCharacterModalOpen}
                   setIsEditAgentModalOpen={setIsEditAgentModalOpen}
                 />
