@@ -1,3 +1,4 @@
+import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils";
 import { FormatTemplate, NewFormatTemplate, formatTemplateSchema } from "@/schema/template-format-schema.ts";
 import { uuidUtils } from "@/schema/utils-schema.ts";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "@/utils/database.ts";
@@ -52,6 +53,7 @@ export async function getFormatTemplateById(id: string): Promise<FormatTemplate 
       name, 
       config,
       prompts,
+      favorite,
       created_at, 
       updated_at
     FROM format_template 
@@ -74,6 +76,8 @@ export async function getFormatTemplateById(id: string): Promise<FormatTemplate 
     template.prompts = JSON.parse(template.prompts);
   }
 
+  template.favorite = parseBoolean(template.favorite);
+
   // Convert date strings to Date objects
   template.created_at = new Date(template.created_at);
   template.updated_at = new Date(template.updated_at);
@@ -93,6 +97,7 @@ export async function listFormatTemplates(profileID: string): Promise<FormatTemp
       name, 
       config,
       prompts,
+      favorite,
       created_at, 
       updated_at
     FROM format_template
@@ -112,6 +117,8 @@ export async function listFormatTemplates(profileID: string): Promise<FormatTemp
     if (typeof template.prompts === "string") {
       template.prompts = JSON.parse(template.prompts);
     }
+
+    template.favorite = parseBoolean(template.favorite);
 
     // Convert date strings to Date objects
     return formatTemplateSchema.parse({

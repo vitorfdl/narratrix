@@ -1,7 +1,7 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
-import { PromptFormatterConfig } from "./formatter";
+import { PromptFormatterConfig } from "../formatter";
 import { applyTextReplacements } from "./replace-text";
 
 interface ApplyInferenceTemplateConfig {

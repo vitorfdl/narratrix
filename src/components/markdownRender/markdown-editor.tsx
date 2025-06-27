@@ -8,7 +8,7 @@ import { EditorView, tooltips } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import { highlightBracketsExtension } from "./extensions/codemirror-highlight-brackets";
-import { createHistoryCompletionSource } from "./extensions/codemirror-history";
+import { createHistoryCompletionSource, historyExtension } from "./extensions/codemirror-history";
 import { markdownFormatKeymap } from "./extensions/markdown-format-keymap";
 import { SuggestionItem } from "./markdown-textarea";
 import { narratrixCodeMirror } from "./styles/narratrix-codemirror-theme";
@@ -35,7 +35,7 @@ export interface MarkdownEditorRef {
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
   (
-    { initialValue = "", enableHistory = false, onChange, className, label, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true },
+    { initialValue = "", enableHistory = false, onChange, className, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true },
     ref,
   ) => {
     const editorRef = useRef<EditorView | null>(null);
@@ -176,39 +176,37 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
     }));
 
     return (
-      <div ref={containerRef} className="flex flex-col h-full">
-        {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
-        <CodeMirror
-          autoFocus={true}
-          value={initialValue}
-          editable={editable}
-          extensions={[
-            markdownFormatKeymap,
-            tooltips({ parent: document.body }),
-            markdown({ base: markdownLanguage, codeLanguages: languages, addKeymap: true }),
-            highlightBracketsExtension(),
-            EditorView.lineWrapping,
-            autocompletion({
-              override: enableHistory ? [completionSource, createHistoryCompletionSource(generationInputHistory)] : [completionSource],
-              defaultKeymap: true,
-              aboveCursor: true,
-              maxRenderedOptions: 10,
-              tooltipClass: () => {
-                return "custom-tooltip";
-              },
-            }),
-          ]}
-          onChange={handleChange}
-          onCreateEditor={(editor) => {
-            editorRef.current = editor;
-          }}
-          height="100%"
-          placeholder={placeholder}
-          className={cn("prose text-xs ring-1 ring-border rounded-md input-fields font-mono overflow-auto flex-1", className)}
-          theme={narratrixCodeMirror}
-          // style={{ minHeight, maxHeight, overflow: "auto" }}
-        />
-      </div>
+      <CodeMirror
+        autoFocus={true}
+        value={initialValue}
+        editable={editable}
+        extensions={[
+          markdownFormatKeymap,
+          tooltips({ parent: document.body }),
+          markdown({ base: markdownLanguage, codeLanguages: languages, addKeymap: true }),
+          highlightBracketsExtension(),
+          EditorView.lineWrapping,
+          autocompletion({
+            override: enableHistory ? [completionSource, createHistoryCompletionSource(generationInputHistory)] : [completionSource],
+            defaultKeymap: true,
+            aboveCursor: true,
+            maxRenderedOptions: 10,
+            tooltipClass: () => {
+              return "custom-tooltip";
+            },
+          }),
+          ...(enableHistory ? [historyExtension(generationInputHistory)] : []),
+        ]}
+        onChange={handleChange}
+        onCreateEditor={(editor) => {
+          editorRef.current = editor;
+        }}
+        height="100%"
+        placeholder={placeholder}
+        className={cn("prose text-xs ring-1 ring-border rounded-md input-fields font-mono overflow-auto flex-1", className)}
+        theme={narratrixCodeMirror}
+        // style={{ minHeight, maxHeight, overflow: "auto" }}
+      />
     );
   },
 );

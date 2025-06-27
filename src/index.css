@@ -11,34 +11,34 @@ body,
 @plugin "@tailwindcss/typography";
 @layer base {
   :root {
-    --background: 220 20% 97%; /* #F5F7FA instead of pure white */
-    --foreground: 240 10% 3.9%; /* #0A0A0B */
-    --sidebar: 223 25% 94%; /* #EDF0F5 softer sidebar */
-    --card: 0 0% 99%; /* #FCFCFC slightly off-white for cards */
-    --card-foreground: 240 10% 3.9%; /* #0A0A0B */
-    --popover: 220 20% 97%; /* #F5F7FA matches background */
-    --popover-foreground: 240 10% 3.9%; /* #0A0A0B */
-    --primary: 265 60% 70%; /* #a78bfa - purple-400 */
+    --background: 263 15% 93%; /* #EFEEF4 - soft lavender gray */
+    --foreground: 263 30% 15%; /* #2A2535 - deep purple-tinted black */
+    --sidebar: 263 20% 88%; /* #E4E1ED - muted lavender */
+    --card: 263 10% 96%; /* #F7F6F9 - off-white with purple tint */
+    --card-foreground: 263 25% 20%; /* #3B3547 - softer than pure black */
+    --popover: 263 15% 91%; /* #EAE8F0 - slightly darker than background */
+    --popover-foreground: 263 30% 15%; /* #2A2535 */
+    --primary: 265 60% 65%; /* #9F7AFA - slightly deeper purple */
     --primary-foreground: 0 0% 98%; /* #FAFAFA */
-    --secondary: 220 14% 90%; /* #E5E9F0 softer secondary */
-    --secondary-foreground: 240 5.9% 10%; /* #191919 */
-    --muted: 220 16% 92%; /* #EBF0F5 softer muted background */
-    --muted-foreground: 240 3.8% 46.1%; /* #71717A */
-    --accent: 225 25% 94%; /* #EEF1F8 soft accent background */
-    --accent-foreground: 293 59% 74%; /* #DB9EE5 */
-    --destructive: 0 52% 55%; /* #C2362E */
+    --secondary: 263 12% 85%; /* #DAD7E0 - purple-tinted gray */
+    --secondary-foreground: 263 20% 25%; /* #473F54 */
+    --muted: 263 10% 88%; /* #E5E3E9 - soft muted purple */
+    --muted-foreground: 263 15% 45%; /* #6B6175 - purple gray */
+    --accent: 263 18% 90%; /* #E8E5EE - subtle purple accent */
+    --accent-foreground: 265 60% 60%; /* #8E66FA - matches primary family */
+    --destructive: 350 60% 50%; /* #CC3366 - softer red with purple undertone */
     --destructive-foreground: 0 0% 98%; /* #FAFAFA */
-    --border: 220 13% 85%; /* #D9DEE5 softer border */
-    --input: 220 13% 85%; /* #D9DEE5 softer input */
-    --ring: 240 10% 3.9%; /* #18181B */
-    --chart-1: 293 59% 74%; /* #DB9EE5 */
-    --chart-2: 293 35% 45%; /* #9A53A3 - darker primary */
-    --chart-3: 260 40% 55%; /* #7B6EDB - complementary to primary */
-    --chart-4: 320 70% 60%; /* #E55A9B - analogous to primary */
-    --chart-5: 350 65% 55%; /* #DB5A69 - triadic with primary */
-    --chart-6: 230 60% 60%; /* #5A7EE5 - cool contrast */
-    --chart-7: 180 50% 45%; /* #39A3A3 - teal complement */
-    --chart-8: 30 80% 60%;  /* #E5A33A - warm contrast */
+    --border: 263 15% 82%; /* #D2CED9 - subtle purple border */
+    --input: 263 12% 85%; /* #DAD7E0 - matches secondary */
+    --ring: 265 60% 65%; /* #9F7AFA - matches primary */
+    --chart-1: 265 60% 65%; /* #9F7AFA - primary purple */
+    --chart-2: 280 50% 55%; /* #9966CC - deeper purple */
+    --chart-3: 250 45% 60%; /* #8080D9 - blue-purple */
+    --chart-4: 320 55% 65%; /* #D97FA6 - pink-purple */
+    --chart-5: 340 50% 60%; /* #CC6699 - magenta-purple */
+    --chart-6: 220 50% 65%; /* #6699E6 - blue complement */
+    --chart-7: 180 40% 50%; /* #4D9999 - teal complement */
+    --chart-8: 30 65% 65%; /* #E6A366 - warm orange complement */
     --radius: 0.4rem;
     --font-sans: "Inter", sans-serif;
     --font-serif: "Merriweather", serif;
@@ -65,14 +65,14 @@ body,
     --border: 223 6% 27%; /* #43454A */
     --input: 223 6% 27%; /* #43454A */
     --ring: 293 59% 74%; /* #db9ee5 */
-    --chart-1:293 59% 74%; /* #DB9EE5 */
+    --chart-1: 293 59% 74%; /* #DB9EE5 */
     --chart-2: 293 35% 45%; /* #9A53A3 - darker primary */
     --chart-3: 260 40% 55%; /* #7B6EDB - complementary to primary */
     --chart-4: 320 70% 60%; /* #E55A9B - analogous to primary */
     --chart-5: 350 65% 55%; /* #DB5A69 - triadic with primary */
     --chart-6: 230 60% 60%; /* #5A7EE5 - cool contrast */
     --chart-7: 180 50% 45%; /* #39A3A3 - teal complement */
-    --chart-8: 30 80% 60%;  /* #E5A33A - warm contrast */
+    --chart-8: 30 80% 60%; /* #E5A33A - warm contrast */
     --radius: 0.4rem;
 
     --accentBase: 223 9% 18%;
@@ -95,15 +95,14 @@ body,
     @apply border-border outline-ring/50;
   }
   body {
-    @apply  bg-background text-foreground overflow-hidden;
+    @apply bg-background text-foreground overflow-hidden;
   }
 }
-
 
 @layer components {
   .page-container {
     @apply p-4 pb-0;
-  }  
+  }
 
   .template-card-header {
     @apply bg-primary/10 h-10 mb-3 !pt-3;
@@ -112,7 +111,7 @@ body,
   .template-card-title {
     @apply flex items-center gap-2 pt-0 text-sm font-medium text-foreground;
   }
-  
+
   .title {
     @apply text-xl font-semibold mb-1 pl-3 border-l-4 border-primary;
   }
@@ -120,7 +119,7 @@ body,
   .textarea-special-text {
     @apply text-primary;
   }
-  
+
   .textarea-quoted-text {
     @apply text-chart-4  italic;
   }
@@ -146,21 +145,24 @@ body,
     @apply border-b-2 border-b-primary/20 border-border/30 focus:border-b-primary;
     @apply transition-colors duration-200;
   }
-
-
 }
 @layer components {
   /* Custom animation for the speaker border */
   @keyframes border-pulse {
-    0%, 100% { border-color: theme('colors.primary.DEFAULT / 70%'); } /* Start/End with primary/70 */
-    50% { border-color: theme('colors.primary.DEFAULT / 100%'); } /* Pulse to full opacity primary */
+    0%,
+    100% {
+      border-color: hsl(var(--primary) / 70%);
+    } /* Start/End with primary/70 */
+    50% {
+      border-color: hsl(var(--primary) / 100%);
+    } /* Pulse to full opacity primary */
   }
   .animate-border-pulse {
     animation: border-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     /* Ensure border width is consistent */
-    border-width: 2px; 
+    border-width: 2px;
   }
-  
+
   /* Custom scrollbar styling */
   .custom-scrollbar {
     scrollbar-width: thin;
@@ -244,7 +246,7 @@ body,
 .custom-tooltip li .cm-completionDetail {
   @apply text-primary italic text-[0.5rem];
   right: 8px;
-  background-color: hsl(var(--muted)/80%);
+  background-color: hsl(var(--muted) / 80%);
   padding: 1px 4px;
   border-radius: 3px;
   margin-top: 1px;
@@ -253,7 +255,7 @@ body,
 /* Style for completion sections */
 .custom-tooltip completion-section {
   @apply text-accent-foreground font-medium text-xs;
-  background: linear-gradient(135deg, hsl(var(--muted)/50%), hsl(var(--muted)/30%));
+  background: linear-gradient(135deg, hsl(var(--muted) / 50%), hsl(var(--muted) / 30%));
   padding: 3px 8px;
   display: block;
   border-left: 3px solid hsl(var(--primary));

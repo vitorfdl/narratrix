@@ -3,6 +3,7 @@ import { z } from "zod";
 
 // Import the schema from the main import file
 import { createLorebookEntrySchema, createLorebookSchema } from "@/schema/lorebook-schema";
+import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
 // Define the entry type without lorebook_id
 type LorebookEntryImportType = Omit<z.infer<typeof createLorebookEntrySchema>, "lorebook_id">;
@@ -138,7 +139,7 @@ export function transformLorebookSpecV2(data: LorebookSpecV2, fileName: string):
 
     return {
       comment: entry.comment,
-      content: entry.content,
+      content: replaceSillytavernFunctions(entry.content),
       keywords: entry.key || [],
       enabled: enabled,
       constant: entry.constant ?? false,

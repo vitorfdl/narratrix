@@ -1,5 +1,6 @@
 import { CreateCharacterSchema } from "@/schema/characters-schema";
 import { z } from "zod";
+import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
 // Zod schema for chara_card_v2 minimal validation
 const CharaCardV2Schema = z.object({
@@ -80,7 +81,7 @@ export function transformCharacterSpecV2(data: CharaCardV2, profileId: string): 
     const parsedMesExamples = d.mes_example.replaceAll("<START>\r\n", "").replaceAll("<START>", "");
     insertPart(parsedMesExamples, "Example Messages");
   }
-  const personalityJoined = personalityParts.filter(Boolean).join("\n\n");
+  const personalityJoined = replaceSillytavernFunctions(personalityParts.filter(Boolean).join("\n\n"));
 
   // Map to internal character schema
   const character: z.infer<typeof CreateCharacterSchema> = {

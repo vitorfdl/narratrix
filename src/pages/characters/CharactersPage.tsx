@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterActions, useCharacterAvatars, useCharacters, useCharactersLoading } from "@/hooks/characterStore";
 import { useLorebookStoreActions } from "@/hooks/lorebookStore";
-import { Character, CharacterUnion } from "@/schema/characters-schema";
+import { Character } from "@/schema/characters-schema";
 import { getCharacterById } from "@/services/character-service";
 import { exportCharacterToPng } from "@/services/exports/character-png-export";
 import { prepareLorebookForEmbedding } from "@/services/imports/shared/lorebook-export";
@@ -50,7 +50,7 @@ export default function Characters() {
 
   // Local State
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterUnion | null>(null);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [search, setSearch] = useState("");
   const currentProfile = useCurrentProfile();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -209,12 +209,12 @@ export default function Characters() {
     }
   };
 
-  const handleEdit = (character: CharacterUnion) => {
+  const handleEdit = (character: Character) => {
     setSelectedCharacter(character);
     setEditDialogOpen(true);
   };
 
-  const handleDelete = async (character: CharacterUnion) => {
+  const handleDelete = async (character: Character) => {
     const confirmed = await confirm(`Are you sure you want to delete ${character.name}?`);
     if (confirmed) {
       await deleteCharacter(character.id);
@@ -337,7 +337,7 @@ export default function Characters() {
                   </div>
                   <Slider
                     value={[settings.view.cardsPerRow]}
-                    min={2}
+                    min={1}
                     max={6}
                     step={1}
                     onValueChange={([value]) =>
@@ -424,10 +424,10 @@ export default function Characters() {
               <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
                 {search || settings.selectedTags.length > 0
                   ? "Try adjusting your search or filter settings."
-                  : "Get started by creating your first character or agent!"}
+                  : "Get started by creating your first character!"}
               </p>
               <Button variant="default" size="lg" onClick={() => setCreateDialogOpen(true)}>
-                <Plus size={20} className="mr-2" /> Create Character / Agent
+                <Plus size={20} className="mr-2" /> Create Character
               </Button>
             </div>
           )}

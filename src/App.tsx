@@ -6,7 +6,6 @@ import { Toaster } from "./components/ui/sonner";
 import { useCurrentProfile, useInitializeProfiles, useIsAuthenticated, useProfileSynchronization } from "./hooks/ProfileStore";
 import { initializeTheme } from "./hooks/ThemeContext";
 import ProfilePicker from "./pages/profileLogin/ProfilePage";
-import { InferenceProvider } from "./providers/InferenceProvider";
 import { checkForUpdates } from "./services/updater";
 
 const AppContent: React.FC = () => {
@@ -45,10 +44,10 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <InferenceProvider>
+    <>
       <AppContent />
       <Toaster richColors closeButton position="bottom-right" />
-    </InferenceProvider>
+    </>
   );
 };
 

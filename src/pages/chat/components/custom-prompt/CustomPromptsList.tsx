@@ -3,10 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Pencil, Trash } from "lucide-react";
+import { Check, GripVertical, Pencil, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getRoleIcon } from "./CustomPromptModal";
 
@@ -28,6 +28,8 @@ interface SortablePromptItemProps {
 }
 
 const SortablePromptItem = ({ prompt, onEdit, onDelete, onToggleEnabled, disabled }: SortablePromptItemProps) => {
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState<boolean>(false);
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: prompt.id,
     disabled,
@@ -38,6 +40,31 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete, onToggleEnabled, disable
     transition,
     zIndex: isDragging ? 10 : 0,
   };
+
+  const handleDeleteClick = (): void => {
+    if (isConfirmingDelete) {
+      onDelete(prompt.id);
+      setIsConfirmingDelete(false);
+    } else {
+      setIsConfirmingDelete(true);
+    }
+  };
+
+  // Reset confirmation state after 2 seconds or when disabled changes
+  useEffect(() => {
+    if (disabled) {
+      setIsConfirmingDelete(false);
+      return;
+    }
+
+    if (isConfirmingDelete) {
+      const timeout = setTimeout(() => {
+        setIsConfirmingDelete(false);
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [disabled, isConfirmingDelete]);
 
   return (
     <Card
@@ -65,8 +92,8 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete, onToggleEnabled, disable
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(prompt.id)} disabled={disabled}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(prompt.id)} disabled={disabled}>
-          <Trash className="h-3.5 w-3.5" />
+        <Button variant={isConfirmingDelete ? "default" : "ghost"} size="icon" className="!h-7 !w-7" onClick={handleDeleteClick} disabled={disabled}>
+          {isConfirmingDelete ? <Check className="h-3.5 w-3.5" /> : <Trash className="h-3.5 w-3.5" />}
         </Button>
       </div>
     </Card>
@@ -117,7 +144,13 @@ export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder, onTogg
 
   return (
     <div className={`w-full ${disabled ? "opacity-70" : ""}`}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+      <DndContext
+        autoScroll={false}
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+        modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+      >
         <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-1">
             {items.map((prompt) => (

@@ -57,6 +57,7 @@ const defaultConfig = {
 const defaultTemplate: CreateInferenceTemplateParams = {
   ...defaultConfig,
   profile_id: "",
+  favorite: false,
 };
 
 export const LabeledInput: React.FC<LabeledInputProps> = ({ label, value, placeholder, disabled, onChange }) => (
@@ -205,6 +206,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
           newTemplateData = {
             profile_id: currentProfile.id,
             name: `${sourceTemplate.name} (Copy)`, // Use source name for copy
+            favorite: sourceTemplate.favorite,
             config: structuredClone(sourceTemplate.config), // Deep clone config
           };
         } else {
@@ -340,6 +342,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
       const newState: CreateInferenceTemplateParams = {
         profile_id: currentTemplate.profile_id,
         name: currentTemplate.name,
+        favorite: currentTemplate.favorite,
         config: currentTemplate.config,
       };
       const newStateStr = JSON.stringify(newState);

@@ -82,7 +82,7 @@ export default function FormatTemplateModal({ open, onOpenChange, selectedTempla
           </div>
         </DialogHeader>
 
-        <DialogBody>
+        <DialogBody  className="max-h-[95vh]">
           <div className="space-y-4 flex flex-col items-center py-4">
             {error && <div className="text-destructive">{error}</div>}
 

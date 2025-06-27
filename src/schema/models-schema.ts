@@ -10,6 +10,7 @@ export const ModelSchema = z.object({
   name: z.string().min(1),
   type: ModelTypeSchema,
   manifest_id: z.string(),
+  favorite: z.boolean().default(false),
   config: z.record(z.string(), z.any()),
   max_concurrency: z.number().min(1).max(10).default(1),
   inference_template_id: z.string().optional().nullable(),

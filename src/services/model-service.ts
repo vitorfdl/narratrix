@@ -110,6 +110,7 @@ export async function getModelById(id: string): Promise<Model | null> {
       manifest_id,
       inference_template_id,
       max_concurrency,
+      favorite,
       created_at, 
       updated_at
     FROM models 
@@ -143,6 +144,7 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
       manifest_id,
       inference_template_id,
       max_concurrency,
+      favorite,
       created_at, 
       updated_at
     FROM models
@@ -181,6 +183,7 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
   return result.map((model) => ({
     ...model,
     config: JSON.parse(model.config || "{}"),
+    favorite: model.favorite || false,
     created_at: new Date(model.created_at),
     updated_at: new Date(model.updated_at),
   })) as Model[];
@@ -248,3 +251,4 @@ export async function getModelsByProfileGroupedByType(profileId: string): Promis
 
 // Export type definitions
 export type { Model, ModelType };
+

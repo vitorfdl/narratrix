@@ -354,7 +354,7 @@ const WidgetExpressions = () => {
                           onChange={(value) => setTempSystemPrompt(value)}
                           editable={true}
                           placeholder={defaultSystemPrompt}
-                          className="min-h-[100px] max-h-[20vh] overflow-y-auto"
+                          className="min-h-[100px] max-h-[25vh] overflow-y-auto"
                           suggestions={ExpressionSuggestionList}
                         />
                       </div>
@@ -367,7 +367,7 @@ const WidgetExpressions = () => {
                           editable={true}
                           placeholder={defaultRequestPrompt}
                           suggestions={ExpressionSuggestionList}
-                          className="min-h-[100px] max-h-[20vh]"
+                          className="min-h-[100px] max-h-[25vh]"
                         />
                         <p className="text-xs italic text-muted-foreground">
                           Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}

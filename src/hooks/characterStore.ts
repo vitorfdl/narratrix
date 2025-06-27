@@ -1,4 +1,4 @@
-import { Agent, Character, CharacterUnion, EXPRESSION_LIST } from "@/schema/characters-schema";
+import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
 import {
   CharacterFilter,
   createCharacter as createCharacterAPI,
@@ -15,7 +15,7 @@ import { useShallow } from "zustand/shallow";
 
 interface CharacterState {
   // State
-  characters: CharacterUnion[];
+  characters: Character[];
   isLoading: boolean;
   error: string | null;
   avatarUrls: Record<string, string>;
@@ -23,13 +23,13 @@ interface CharacterState {
 
   actions: {
     // CRUD Operations
-    createCharacter: (characterData: Character | Agent) => Promise<CharacterUnion>;
-    getCharacterById: (id: string) => Promise<CharacterUnion | null>;
+    createCharacter: (characterData: Character) => Promise<Character>;
+    getCharacterById: (id: string) => Promise<Character | null>;
     updateCharacter: (
       profile_id: string,
       id: string,
-      updateData: Partial<Omit<CharacterUnion, "id" | "profile_id" | "created_at" | "updated_at">>,
-    ) => Promise<CharacterUnion | null>;
+      updateData: Partial<Omit<Character, "id" | "profile_id" | "created_at" | "updated_at">>,
+    ) => Promise<Character | null>;
     deleteCharacter: (id: string) => Promise<boolean>;
 
     // List Operations

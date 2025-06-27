@@ -1,10 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useInferenceTemplate } from "@/hooks/templateStore";
-import { Clock, Copy, Cpu, EditIcon, MoreVertical, Trash2, Zap } from "lucide-react";
+import { Brain, Clock, Copy, Cpu, Edit, GitBranch, Network, Server, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Model } from "../../../schema/models-schema";
 
@@ -19,10 +18,10 @@ interface ModelCardProps {
 export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialogOpen }: ModelCardProps) {
   const { getManifestById } = useModelManifestsActions();
   const [manifestName, setManifestName] = useState<string>("");
-  // const [manifestFields, setManifestFields] = useState<Manifest["fields"]>([]);
   const inferenceTemplate = useInferenceTemplate(model.inference_template_id || "");
+  
   // For demonstration purposes, you can replace these with actual model properties
-  const isNew = model.created_at && new Date().getTime() - new Date(model.created_at).getTime() < 15 * 60 * 60 * 1000; // 3 hours
+  const isNew = model.created_at && new Date().getTime() - new Date(model.created_at).getTime() < 15 * 60 * 60 * 1000; // 15 hours
   const isPopular = false; // Replace with actual logic if you have popularity metrics
 
   useEffect(() => {
@@ -32,7 +31,6 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
         const manifest = await getManifestById(model.manifest_id);
         if (manifest) {
           setManifestName(manifest.name);
-          // setManifestFields(manifest.fields);
         }
       } catch (error) {
         console.error("Failed to fetch manifest:", error);
@@ -66,15 +64,6 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
     }
   }
 
-  // Format the date to a more readable format
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(date);
-  };
-
   // Generate capabilities based on model type and inference template
   const getCapabilities = () => {
     const capabilities = [];
@@ -89,127 +78,164 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
     return capabilities;
   };
 
+  // Get model type icon
+  const getModelIcon = () => {
+    const type = model.type.toLowerCase();
+    if (type.includes("chat") || type.includes("gpt")) return Brain;
+    if (type.includes("embedding")) return Network;
+    if (type.includes("completion")) return GitBranch;
+    return Cpu;
+  };
+
+  const ModelIcon = getModelIcon();
+
   return (
-    <>
-      <Card
-        onClick={() => setConfigDialogOpen(model)}
-        className="bg-card border-border hover:cursor-pointer hover:border-primary/50 transition-all overflow-hidden group h-full flex flex-col"
-      >
-        <CardHeader className="pb-2 flex flex-row justify-between items-start">
-          <div>
-            <div className="flex items-center gap-2">
-              <CardTitle className="flex w-full justify-between items-center gap-2 text-foreground">{model.name}</CardTitle>
-              {isNew && <Badge className="bg-primary hover:bg-primary/80">New</Badge>}
-              {isPopular && (
-                <Badge variant="outline" className="border-accent-foreground text-accent-foreground">
-                  Popular
-                </Badge>
-              )}
+    <Card 
+      onClick={() => setConfigDialogOpen(model)}
+      className="group relative overflow-hidden flex flex-col h-full bg-gradient-to-br from-background to-accent/10 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer"
+    >
+      <CardHeader className="relative pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <ModelIcon className="h-5 w-5" />
             </div>
-            <CardDescription className="flex items-center mt-1">
-              <span className="text-muted-foreground">{manifestName || model.manifest_id}</span>
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover border-border">
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit?.(model);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <EditIcon className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDuplicate?.(model);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete?.(model);
-                  }}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </CardHeader>
-
-        <CardContent className="pb-2 flex-grow">
-          <div className="space-y-1.5">
-            {urlValue && (
-              <div className="flex items-center text-sm">
-                <Cpu className="h-4 w-4 mr-2 text-muted-foreground/70 flex-shrink-0" />
-                <span className="text-foreground mr-1  font-mono font-bold">URL:</span>
-                <span className="text-muted-foreground  truncate" title={urlValue}>
-                  {urlValue}
-                </span>
-              </div>
-            )}
-            {modelValue && (
-              <div className="flex items-center text-sm">
-                <Cpu className="h-4 w-4 mr-2 text-muted-foreground/70 flex-shrink-0" />
-                <span className="text-foreground mr-1 font-mono font-bold">Model:</span>
-                <span className="text-muted-foreground truncate" title={modelValue}>
-                  {modelValue}
-                </span>
-              </div>
-            )}
-            {!urlValue && !modelValue && (
-              <div className="flex items-center text-sm">
-                <Cpu className="h-4 w-4 mr-2 text-muted-foreground/70 flex-shrink-0" />
-                <span className="text-muted-foreground mr-1">Type:</span>
-                <span className="text-card-foreground font-mono">{fallbackValue || model.type.toUpperCase()}</span>
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-1 pt-2">
-              {getCapabilities().map((capability, index) => (
-                <Badge key={index} variant="secondary" className="bg-secondary hover:bg-secondary/80 text-secondary-foreground">
-                  {capability}
-                </Badge>
-              ))}
-              {inferenceTemplate && (
-                <Badge variant="secondary" className="bg-secondary hover:bg-secondary/80 text-primary">
-                  {inferenceTemplate.name}
-                </Badge>
-              )}
+            <div className="flex-1">
+              <h3 className="font-semibold text-base line-clamp-1">{model.name}</h3>
+              <p className="text-xs text-muted-foreground">
+                {manifestName || model.manifest_id}
+              </p>
             </div>
           </div>
-        </CardContent>
+          
+          <div className="flex items-center gap-2">
+            {/* Status badges */}
+            {isNew && (
+              <Badge 
+                variant="default" 
+                className="text-xxs flex items-center text-primary-foreground"
+              >
+                <Zap className="h-3 w-3 mr-1" />
+                New
+              </Badge>
+            )}
+            {isPopular && (
+              <Badge 
+                variant="secondary" 
+                className="text-xxs flex items-center"
+              >
+                Popular
+              </Badge>
+            )}
 
-        <CardFooter className="py-2 px-6 flex justify-between text-sm text-muted-foreground mt-auto">
-          <div className="flex items-center">
-            <Zap className="h-3 w-3 mr-1" />
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 space-y-3">
+        {/* Model configuration details */}
+        <div className="space-y-2">
+          {urlValue && (
+            <div className="flex items-center gap-2 text-xs">
+              <Server className="h-3 w-3 text-muted-foreground" />
+              <span className="font-mono text-muted-foreground truncate" title={urlValue}>
+                {urlValue}
+              </span>
+            </div>
+          )}
+          {modelValue && (
+            <div className="flex items-center gap-2 text-xs">
+              <Brain className="h-3 w-3 text-muted-foreground" />
+              <span className="font-mono text-muted-foreground truncate" title={modelValue}>
+                {modelValue}
+              </span>
+            </div>
+          )}
+          {!urlValue && !modelValue && fallbackValue && (
+            <div className="flex items-center gap-2 text-xs">
+              <Cpu className="h-3 w-3 text-muted-foreground" />
+              <span className="font-mono text-muted-foreground truncate">
+                {fallbackValue}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Model stats */}
+        <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Zap className="h-3 w-3" />
             <span>Max: {model.max_concurrency}</span>
           </div>
-          <div className="flex items-center">
-            <Clock className="h-3 w-3 mr-1" />
-            <span>Updated: {formatDate(new Date(model.updated_at))}</span>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Cpu className="h-3 w-3" />
+            <span>{model.type.toUpperCase()}</span>
           </div>
-        </CardFooter>
+        </div>
 
-        <div className="h-1 w-full bg-gradient-to-r from-primary to-accent-foreground transform translate-y-1 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500" />
-      </Card>
-    </>
+        {/* Capabilities */}
+        <div className="flex flex-wrap gap-1">
+          {getCapabilities().map((capability, index) => (
+            <Badge key={index} variant="outline" className="text-xxs py-0.5 px-1.5">
+              {capability}
+            </Badge>
+          ))}
+          {inferenceTemplate && (
+            <Badge variant="secondary" className="text-xxs py-0.5 px-1.5 text-primary">
+              {inferenceTemplate.name}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+
+      {/* Action buttons - shown on hover */}
+      <div className="absolute right-2 top-2  flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(model);
+          }} 
+          title="Edit Model"
+        >
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDuplicate?.(model);
+          }} 
+          title="Duplicate Model"
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
+        <Button 
+          variant="destructive" 
+          size="icon" 
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(model);
+          }} 
+          title="Delete Model"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      <CardFooter className="p-3 pt-0 text-xs text-muted-foreground mt-auto">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            <span>Updated {new Date(model.updated_at).toLocaleDateString()}</span>
+          </div>
+        </div>
+      </CardFooter>
+    </Card>
   );
 }

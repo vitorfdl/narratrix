@@ -11,7 +11,7 @@ import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
 import { NewModelParams } from "@/services/model-service";
 import { useLocalModelsPageSettings } from "@/utils/local-storage";
-import { Brain, Database, Grid2X2, Grid3X3, Image, List, Music, Plus, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
+import { Brain, Database, Image, Music, Plus, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Model, ModelType } from "../../schema/models-schema";
 import { ModelCard } from "./components/ModelCard";
@@ -20,8 +20,7 @@ import { ModelForm } from "./components/ModelForm";
 
 export type ModelsPageSettings = {
   view: {
-    mode: "grid" | "list";
-    gridColumns: number;
+    cardsPerRow: number;
   };
   sort: {
     field: "name" | "type" | "updated_at" | "created_at";
@@ -305,61 +304,37 @@ export default function Models() {
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-1 border rounded-md p-1">
-            <Button
-              variant={settings.view.mode === "grid" ? "ghost" : "secondary"}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setSettings((prev: ModelsPageSettings) => ({ ...prev, view: { ...prev.view, mode: "grid" } }))}
-              title="Grid View"
-            >
-              {settings.view.gridColumns === 3 ? <Grid3X3 className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}
-            </Button>
-            <Button
-              variant={settings.view.mode === "list" ? "ghost" : "secondary"}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setSettings((prev: ModelsPageSettings) => ({ ...prev, view: { ...prev.view, mode: "list" } }))}
-              title="List View"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-
           {/* View Settings */}
-          {settings.view.mode === "grid" && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" title="Grid Columns">
-                  <Settings2 className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-muted-foreground">Grid columns</label>
-                    <span className="text-xs text-muted-foreground">{settings.view.gridColumns}</span>
-                  </div>
-                  <Slider
-                    value={[settings.view.gridColumns]}
-                    min={2}
-                    max={5}
-                    step={1}
-                    onValueChange={([value]) =>
-                      setSettings((prev: ModelsPageSettings) => ({
-                        ...prev,
-                        view: {
-                          ...prev.view,
-                          gridColumns: value,
-                        },
-                      }))
-                    }
-                  />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" title="Grid Settings">
+                <Settings2 className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <div className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground">Cards per row</label>
+                  <span className="text-xs text-muted-foreground">{settings.view.cardsPerRow}</span>
                 </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+                <Slider
+                  value={[settings.view.cardsPerRow]}
+                  min={2}
+                  max={6}
+                  step={1}
+                  onValueChange={([value]) =>
+                    setSettings((prev: ModelsPageSettings) => ({
+                      ...prev,
+                      view: {
+                        ...prev.view,
+                        cardsPerRow: value,
+                      },
+                    }))
+                  }
+                />
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Sort */}
           <Select
@@ -437,10 +412,10 @@ export default function Models() {
           </div>
         ) : filteredAndSortedModels.length > 0 ? (
           <div className="space-y-6 py-1">
-            {settings.view.mode === "grid" ? (
-              // Grid View
-              filteredGroups.map((group) => (
-                <div key={group.type} className="space-y-3">
+            {/* Grid View */}
+            <div className="p-4">
+              {filteredGroups.map((group) => (
+                <div key={group.type} className="space-y-3 mb-6">
                   {settings.filter.type === "all" && (
                     <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
                       {getModelTypeIcon(group.type)}
@@ -451,7 +426,7 @@ export default function Models() {
                   <div
                     className="grid gap-4"
                     style={{
-                      gridTemplateColumns: `repeat(${settings.view.gridColumns}, minmax(0, 1fr))`,
+                      gridTemplateColumns: `repeat(${settings.view.cardsPerRow}, minmax(0, 1fr))`,
                     }}
                   >
                     {group.models.map((model) => (
@@ -466,22 +441,8 @@ export default function Models() {
                     ))}
                   </div>
                 </div>
-              ))
-            ) : (
-              // List View - TODO: Implement ModelListItem component
-              <div className="space-y-2">
-                {filteredAndSortedModels.map((model) => (
-                  <ModelCard
-                    key={model.id}
-                    model={model}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onDuplicate={handleDuplicate}
-                    setConfigDialogOpen={() => handleConfigOpen(model)}
-                  />
-                ))}
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">

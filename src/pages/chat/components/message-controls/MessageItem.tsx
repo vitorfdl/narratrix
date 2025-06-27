@@ -5,6 +5,7 @@ import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "@/schema/chat-message-schema";
+import { Bot, EyeOff, FileText, Play } from "lucide-react";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ContextCutDivider, EditControls, MessageActions, StreamingIndicator } from "./AdditionalActions";
@@ -12,26 +13,52 @@ import { MessageAvatar } from "./MessageAvatar";
 import { ReasoningSection } from "./ReasoningCollapsible";
 import { VersionControls } from "./VersionButtons";
 
+// Script type configurations with icons and styling
+const SCRIPT_CONFIGS = {
+  agent: {
+    icon: Bot,
+    label: "AI Agent",
+    description: "Automated response",
+    className: "bg-chart-2/15 text-chart-2 border-chart-2/30",
+    iconClassName: "text-chart-2",
+  },
+  summary: {
+    icon: FileText,
+    label: "Summary",
+    description: "Context summary",
+    className: "bg-chart-4/15 text-chart-4 border-chart-4/30",
+    iconClassName: "text-chart-4",
+  },
+  start_chapter: {
+    icon: Play,
+    label: "Chapter Start",
+    description: "New chapter begins",
+    className: "bg-primary/15 text-primary border-primary/30",
+    iconClassName: "text-primary",
+  },
+} as const;
+
 // Class name lookup tables
 const MESSAGE_BASE_CLASSES = {
-  container: "group relative flex gap-4 p-4 rounded-lg border-b-2 border-secondary hover:shadow-md",
+  container: "group relative flex gap-4 p-4 rounded-xl border border-border/50 hover:border-border transition-all duration-200 hover:shadow-sm",
   content: "flex-grow relative pb-6 text-justify",
-  markdown: "select-text text-sm text-white text-sans",
+  markdown: "select-text text-sm text-foreground leading-relaxed mt-2",
   controlsContainer: "absolute bottom-0 w-full flex justify-between items-center translate-y-3",
-  scriptTag:
-    "px-3 py-1 text-xs font-semibold font-mono rounded-full bg-primary/20 text-primary-foreground border border-primary/30 capitalize tracking-wider shadow-sm",
+  scriptIndicator: "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border backdrop-blur-sm",
+  scriptHeader: "flex items-center justify-between mb-3 pb-2 border-b border-border/70",
+  disabledOverlay: "absolute inset-0 rounded-xl pointer-events-none",
 };
 
 const TYPE_CLASSES = {
-  user: "flex-row-reverse",
-  character: "",
-  system: "bg-muted mx-5 @md:mx-10 @lg:mx-35",
+  user: "flex-row-reverse bg-gradient-to-br from-primary/5 to-primary/10",
+  character: "bg-gradient-to-br from-card to-card/80",
+  system: "bg-gradient-to-br from-card to-card/80",
 };
 
 const STATE_CLASSES = {
-  streaming: "border-primary border-b-2 animate-pulse transition-all",
-  editing: "text-left ring-1 ring-border rounded-lg h-auto",
-  disabled: "border-dashed border-muted-foreground opacity-60 bg-chart-5/20",
+  streaming: "border-primary/60 shadow-primary/20 shadow-md transition-all",
+  editing: "text-left ring-2 ring-primary/30 rounded-xl h-auto bg-background/95",
+  disabled: "border-dashed border-destructive/60 opacity-40 bg-destructive/5 hover:bg-destructive/10 hover:border-destructive/80",
 };
 
 interface MessageItemProps {
@@ -164,33 +191,93 @@ const MessageItem = ({
     return null;
   }, [message.type, message.character_id, avatarUrlMap, characters, currentChatUserCharacterID, currentProfileAvatarUrl]);
 
+  // Disabled message indicator
+  const DisabledIndicator = () => (
+    <div className="absolute top-2 right-2 z-10">
+      <div className="flex items-center gap-1.5 px-2 py-1 bg-destructive/90 text-destructive-foreground text-xs font-medium rounded-md shadow-sm backdrop-blur-sm">
+        <EyeOff className="h-3 w-3" />
+        <span className="hidden @sm:inline">Excluded</span>
+      </div>
+    </div>
+  );
+
   // Compute class names just once
   const containerClassName = React.useMemo(() => {
     return cn(
       MESSAGE_BASE_CLASSES.container,
       TYPE_CLASSES[message.type],
-      !isDisabled && message.type === "character" && "bg-card",
-      !isDisabled && message.type === "user" && "bg-primary/5",
+      !isDisabled && message.type === "character" && "shadow-sm",
+      !isDisabled && message.type === "user" && "shadow-sm",
+      message.type === "system" && "shadow-inner",
       isStreaming && STATE_CLASSES.streaming,
       isDisabled && STATE_CLASSES.disabled,
     );
   }, [message.type, isStreaming, isDisabled]);
 
   const contentClassName = React.useMemo(() => {
-    return cn(MESSAGE_BASE_CLASSES.content, message.type === "user" && isEditingID !== message.id && "flex justify-end");
-  }, [message.type, isEditingID, message.id]);
+    return cn(
+      MESSAGE_BASE_CLASSES.content,
+      message.type === "user" && isEditingID !== message.id && "flex justify-end",
+      message.type === "system" && "text-center",
+      isDisabled && "relative",
+    );
+  }, [message.type, isEditingID, message.id, isDisabled]);
 
   const markdownClassName = React.useMemo(() => {
     return cn(
       MESSAGE_BASE_CLASSES.markdown,
       isEditingID !== message.id ? "bg-transparent border-none" : STATE_CLASSES.editing,
       isStreaming && "animate-pulse duration-500",
+      message.type === "system" && "text-left",
+      isDisabled && "line-through decoration-destructive decoration-2 text-muted-foreground/70",
     );
-  }, [isEditingID, message.id, isStreaming]);
+  }, [isEditingID, message.id, isStreaming, message.type, isDisabled]);
 
   // Handle local save to ensure updated content is passed to parent
   const handleSave = async () => {
     await handleSaveEdit(message.id);
+  };
+
+  // Script indicator component
+  const ScriptIndicator = ({ script }: { script: keyof typeof SCRIPT_CONFIGS }) => {
+    const config = SCRIPT_CONFIGS[script];
+    const Icon = config.icon;
+
+    return (
+      <div className={cn(MESSAGE_BASE_CLASSES.scriptIndicator, config.className)}>
+        <Icon className={cn("h-3.5 w-3.5", config.iconClassName)} />
+        <span className="font-semibold">{config.label}</span>
+        <span className="text-xs opacity-75 hidden @sm:inline">• {config.description}</span>
+      </div>
+    );
+  };
+
+  // Enhanced script header for system messages
+  const ScriptHeader = ({ script }: { script: keyof typeof SCRIPT_CONFIGS }) => {
+    const config = SCRIPT_CONFIGS[script];
+    const Icon = config.icon;
+
+    return (
+      <div className={MESSAGE_BASE_CLASSES.scriptHeader}>
+        <div className="flex items-center gap-2">
+          <div className={cn("p-1.5 rounded-md border", config.className)}>
+            <Icon className={cn("h-4 w-4", config.iconClassName)} />
+          </div>
+          <div>
+            <div className="font-semibold text-sm">{config.label}</div>
+            <div className="text-xs text-muted-foreground">{config.description}</div>
+          </div>
+        </div>
+        {message.type === "system" && (
+          <div className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
+            {new Date(message.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -198,6 +285,14 @@ const MessageItem = ({
       {isContextCut && <ContextCutDivider />}
 
       <div data-message-id={message.id} className={containerClassName}>
+        {/* Disabled message overlays */}
+        {isDisabled && (
+          <>
+            <div className={MESSAGE_BASE_CLASSES.disabledOverlay} />
+            <DisabledIndicator />
+          </>
+        )}
+
         {/* Avatar section */}
         {(message.type === "user" || message.type === "character") && (
           <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />
@@ -210,11 +305,15 @@ const MessageItem = ({
           {/* Reasoning section if available */}
           {hasReasoningData && message.type === "character" && <ReasoningSection content={reasoningContent || ""} />}
 
-          {message.extra?.script && (
-            <div className="flex justify-center items-center mb-2">
-              <div className={MESSAGE_BASE_CLASSES.scriptTag}>{message.extra.script.replace("_", " ")}</div>
-            </div>
-          )}
+          {/* Enhanced script handling */}
+          {message.extra?.script &&
+            (message.type === "system" ? (
+              <ScriptHeader script={message.extra.script} />
+            ) : (
+              <div className={cn("flex mb-3", message.type === "user" ? "justify-end" : "justify-start")}>
+                <ScriptIndicator script={message.extra.script} />
+              </div>
+            ))}
 
           <MarkdownTextArea
             autofocus={isEditing}

@@ -8,7 +8,7 @@ import type {
   ModelSpecs,
 } from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
-import { parseEngineParameters } from "@/services/inference-steps/parse-engine-parameters";
+import { parseEngineParameters } from "@/services/inference/formatter/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useConsoleStoreActions } from "./consoleStore";
 

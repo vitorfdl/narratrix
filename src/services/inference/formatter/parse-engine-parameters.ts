@@ -1,5 +1,5 @@
 import { Engine } from "@/schema/model-manifest-schema";
-import { Model } from "../model-service";
+import { Model } from "@/schema/models-schema";
 
 function parseAnthropicParameters(rawParameters: Record<string, any>) {
   const newParameters = structuredClone(rawParameters);

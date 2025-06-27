@@ -58,9 +58,20 @@ function ChatListItem({ chat, showTimestamp, onSelectChat, onRenameRequest, onDu
               <span className="m-0 p-0">{formatRelativeTime(new Date(chat.updated_at))}</span>
             </div>
           )}
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={handleDelete}>
+          <div
+            className="h-6 w-6 text-muted-foreground hover:text-destructive inline-flex items-center justify-center rounded-md transition-colors cursor-pointer hover:bg-accent"
+            onClick={handleDelete}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleDelete(e as any);
+              }
+            }}
+          >
             <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          </div>
         </CommandItem>
         <Separator className="bg-foreground/10" />
       </ContextMenuTrigger>

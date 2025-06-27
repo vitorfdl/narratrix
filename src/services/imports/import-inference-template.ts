@@ -101,6 +101,7 @@ function transformSillyTavernInstruct(data: SillyTavernInstruct, profileId: stri
   return {
     profile_id: profileId,
     name: instruct.name,
+    favorite: false,
     config: {
       systemPromptFormatting: {
         prefix: instruct.system_sequence_prefix || instruct.system_sequence,

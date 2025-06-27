@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
+import type { GenerationOptions, StreamingState } from "@/providers/inferenceChatProvider";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { QuickAction } from "@/schema/profiles-schema";
-import { GenerationOptions, StreamingState } from "@/services/inference-service";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
-import { Loader2, StopCircle } from "lucide-react";
+import { Loader2, Send, StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QuickActions from "./utils-generate/QuickActions";
@@ -136,9 +136,9 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         // Use the inference service to generate a message
         await inferenceService.generateMessage({
           characterId: nextCharacter?.id ?? "",
-          userMessage: submittedText.trim(),
+          userMessage: structuredClone(submittedText.trim()),
           stream: true,
-          onStreamingStateChange: (state) => {
+          onStreamingStateChange: (state: StreamingState | null) => {
             // Handle streaming state changes for both regular and quiet responses
             handleStreamingStateChange(state);
 
@@ -164,7 +164,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         // Clear the input text if not in quiet mode
         if (!quietResponseRef.current) {
           // Add to history if not a duplicate of the most recent entry
-          if (!generationInputHistory.length || generationInputHistory[generationInputHistory.length - 1] !== submittedText) {
+          if (!generationInputHistory.length || generationInputHistory.at(-1) !== submittedText) {
             // Add to history, limiting entries to X
             const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
             setGenerationInputHistory(newHistory);
@@ -248,11 +248,14 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       const participantMessageType = action.participantMessageType;
 
       if (participantMessageType === "swap") {
-        // Swap the last message with the new user message
+        // Generate a new variation of the last character message (like swiping right)
         const lastMessage = chatMessages?.[chatMessages.length - 1];
         if (lastMessage && lastMessage.type === "character") {
           generationConfig.characterId = lastMessage.character_id!;
           generationConfig.existingMessageId = lastMessage.id;
+          // Calculate the next index to generate a new message variation
+          const newIndex = lastMessage.messages.length;
+          generationConfig.messageIndex = newIndex;
           generationConfig.extraSuggestions!.last_message = lastMessage.messages[lastMessage.message_index];
         }
       }
@@ -275,11 +278,12 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     }
 
     try {
-      if (generationConfig.userMessage) {
-        const newHistory = [...generationInputHistory, generationConfig.userMessage].slice(-25);
+      if (generationConfig.userMessage && generationInputHistory.at(-1) !== text) {
+        const newHistory = [...generationInputHistory, text].slice(-25);
         setGenerationInputHistory(newHistory);
       }
       setText("");
+      console.log(generationConfig);
       await inferenceService.generateMessage(generationConfig);
     } catch (error) {
       console.error("Error generating message:", error);
@@ -320,10 +324,22 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
             <Languages className="!w-3.5 !h-3.5" />
           </Toggle> */}
         </div>
-        {isAnyCharacterStreaming() && (
+        {isAnyCharacterStreaming() ? (
           <Button variant="destructive" size="xs" onClick={handleCancel} title="Cancel Generation" className="ml-auto">
             <StopCircle className="!w-3.5 !h-3.5 mr-1" />
             Cancel
+          </Button>
+        ) : (
+          <Button
+            variant="default"
+            size="xs"
+            onClick={() => handleSubmit(text)}
+            title={`Send Message (${sendCommand || "Ctrl+Enter"})`}
+            className="ml-auto"
+            disabled={!text.trim()}
+          >
+            <Send className="!w-3.5 !h-3.5 mr-1" />
+            Send
           </Button>
         )}
       </div>
