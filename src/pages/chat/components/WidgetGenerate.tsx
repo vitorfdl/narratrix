@@ -248,11 +248,14 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       const participantMessageType = action.participantMessageType;
 
       if (participantMessageType === "swap") {
-        // Swap the last message with the new user message
+        // Generate a new variation of the last character message (like swiping right)
         const lastMessage = chatMessages?.[chatMessages.length - 1];
         if (lastMessage && lastMessage.type === "character") {
           generationConfig.characterId = lastMessage.character_id!;
           generationConfig.existingMessageId = lastMessage.id;
+          // Calculate the next index to generate a new message variation
+          const newIndex = lastMessage.messages.length;
+          generationConfig.messageIndex = newIndex;
           generationConfig.extraSuggestions!.last_message = lastMessage.messages[lastMessage.message_index];
         }
       }
