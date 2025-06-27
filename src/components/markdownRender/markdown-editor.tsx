@@ -35,7 +35,7 @@ export interface MarkdownEditorRef {
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
   (
-    { initialValue = "", enableHistory = false, onChange, className, label, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true },
+    { initialValue = "", enableHistory = false, onChange, className, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true },
     ref,
   ) => {
     const editorRef = useRef<EditorView | null>(null);
