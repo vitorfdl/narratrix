@@ -74,7 +74,7 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ op
     }
   }, [open, config]);
 
-  const handleSave = (runNow = false) => {
+  const handleSave = (_runNow = false) => {
     onSave(currentConfig);
   };
 

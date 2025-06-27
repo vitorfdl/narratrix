@@ -281,7 +281,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
 
   // Handle connection start for visual feedback
   const onConnectStart = useCallback(
-    (event: any, { nodeId, handleId, handleType }: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
+    (_event: any, { nodeId, handleId, handleType }: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
       if (nodeId && handleId && handleType) {
         // Get the actual edge type from the handle instead of hardcoding
         const sourceEdgeType = handleType === "source" ? getEdgeTypeFromHandle(nodeId, handleId) : undefined;
@@ -422,8 +422,8 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
       }
 
       // Get the edge type from the source handle
-      const sourceNode = document.querySelector(`[data-id="${sourceNodeId}"]`);
-      const sourceHandle = sourceNode?.querySelector(`[data-handleid="${sourceHandleId}"]`);
+      // const sourceNode = document.querySelector(`[data-id="${sourceNodeId}"]`);
+      // const sourceHandle = sourceNode?.querySelector(`[data-handleid="${sourceHandleId}"]`);
       const edgeType = getEdgeTypeFromHandle(sourceNodeId, sourceHandleId);
       const edgeStyle = getEdgeStyle(edgeType);
 

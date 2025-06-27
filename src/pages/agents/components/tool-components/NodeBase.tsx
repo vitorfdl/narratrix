@@ -85,7 +85,7 @@ export const NodeDeleteProvider: React.FC<{
   return <NodeDeleteContext.Provider value={onDelete}>{children}</NodeDeleteContext.Provider>;
 };
 
-export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, children, onRegisterRef }) => {
+export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, selected, children, onRegisterRef }) => {
   const { getNode, getEdges, getNodes } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const [isHovered, setIsHovered] = useState(false);
@@ -289,7 +289,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
 
   const theme = getNodeTheme();
 
-  const isValidConnection = (handleEdgeType?: EdgeType) => (connection: any) => {
+  const isValidConnection = (_handleEdgeType?: EdgeType) => (connection: any) => {
     // Get fresh data on each validation call
     const currentEdges = getEdges();
     const currentNodes = getNodes();

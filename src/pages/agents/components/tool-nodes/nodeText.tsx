@@ -6,7 +6,7 @@ import { useReactFlow } from "@xyflow/react";
 import { FileText, Settings } from "lucide-react";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { NodeBase, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
 import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -133,7 +133,7 @@ export const TextNodeConfigDialog: React.FC<TextNodeConfigDialogProps> = ({ open
  * Memoized content component to prevent unnecessary re-renders
  */
 const TextContent = memo<{ config: TextNodeConfig; onConfigure: () => void }>(({ config, onConfigure }) => {
-  const registerElementRef = useNodeRef();
+  // const registerElementRef = useNodeRef();
 
   // Prevent event propagation to React Flow
   const handleConfigureClick = useCallback(

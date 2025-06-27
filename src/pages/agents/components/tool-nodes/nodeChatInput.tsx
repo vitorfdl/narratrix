@@ -9,6 +9,7 @@ import { NodeProps } from "./nodeTypes";
 const CHAT_INPUT_NODE_METADATA = {
   type: "chatInput",
   label: "Chat Input",
+  category: "Chat",
   description: "User input entry point for the conversation flow",
   icon: MessageSquare,
   theme: createNodeTheme("blue"),

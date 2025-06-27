@@ -1,14 +1,14 @@
 import { useUIStore } from "@/hooks/UIStore"; // Import the store
 import {
   Book,
-  Bot,
+  // Bot,
   BoxIcon, // for Models
   Heart, // for Patreon
   Menu,
   MessageCircle, // for Discord
   MessageSquare, // for Chat/Worlds
   Settings, // for Settings
-  Users
+  Users,
 } from "lucide-react";
 // src/components/layout/Sidebar.tsx
 import { useEffect, useRef, useState } from "react";
@@ -127,12 +127,12 @@ const Sidebar: React.FC<SidebarProps> = () => {
       icon: <Users className="w-5 h-5" />,
       isMainNav: true,
     },
-    {
-      id: "agents",
-      label: "Agents",
-      icon: <Bot className="w-5 h-5" />,
-      isMainNav: true,
-    },
+    // {
+    //   id: "agents",
+    //   label: "Agents",
+    //   icon: <Bot className="w-5 h-5" />,
+    //   isMainNav: true,
+    // },
     { id: "lorebooks", label: "Lorebooks", icon: <Book className="w-5 h-5" />, isMainNav: true },
     {
       id: "chat",

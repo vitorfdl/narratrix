@@ -100,7 +100,7 @@ ChatOutputContent.displayName = "ChatOutputContent";
  * This node receives the processed response and displays it to the user
  */
 export const ChatOutputNode = memo(({ data, selected, id }: NodeProps) => {
-  const [receivedValue, setReceivedValue] = useState<string>("");
+  const [_receivedValue, setReceivedValue] = useState<string>("");
 
   // Listen for updates to the data (if your system provides runtime values)
   useEffect(() => {

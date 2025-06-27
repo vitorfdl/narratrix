@@ -176,7 +176,7 @@ export default function JsonSchemaCreator({ open, onOpenChange, initialSchema, o
     navigator.clipboard.writeText(JSON.stringify(generateSchema(), null, 2));
   };
 
-  const renderProperty = (property: SchemaProperty, level = 0, parentId?: string, isArrayItem = false): JSX.Element => {
+  const renderProperty = (property: SchemaProperty, level = 0, _parentId?: string, isArrayItem = false): JSX.Element => {
     const isExpanded = expandedNodes.has(property.id);
     const hasChildren = (property.type === "object" && property.properties?.length) || (property.type === "array" && property.items);
     const isSelected = selectedProperty?.id === property.id;
