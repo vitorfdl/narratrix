@@ -39,7 +39,7 @@ import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
 import { ConfigItem } from "./fields/ConfigItems";
 import FormatTemplateModal from "./format-template/FormatTemplateModal";
 
-const bigScreenBreakpoints = "@[10rem]:flex";
+const bigScreenBreakpoints = "@[18rem]:flex";
 
 interface ChatTemplateConfigProps {
   currentChatTemplateID?: string | null;
