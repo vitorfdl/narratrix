@@ -283,7 +283,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         setGenerationInputHistory(newHistory);
       }
       setText("");
-      console.log(generationConfig);
       await inferenceService.generateMessage(generationConfig);
     } catch (error) {
       console.error("Error generating message:", error);

@@ -4,9 +4,10 @@ import { CompletionContext, CompletionResult, autocompletion } from "@codemirror
 // import { createHistoryCompletionSource, historyExtension } from "./codemirror-history";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { EditorView, tooltips } from "@codemirror/view";
+import { Prec } from "@codemirror/state";
+import { EditorView, tooltips, keymap } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useMemo } from "react";
 import { highlightBracketsExtension } from "./extensions/codemirror-highlight-brackets";
 import { createHistoryCompletionSource, historyExtension } from "./extensions/codemirror-history";
 import { markdownFormatKeymap } from "./extensions/markdown-format-keymap";
@@ -31,6 +32,81 @@ export interface MarkdownEditorRef {
 }
 
 /**
+ * Creates a CodeMirror keymap extension for handling send shortcuts
+ * This integrates directly with CodeMirror's event system for reliable keyboard handling
+ */
+const createSendShortcutKeymap = (
+  sendShortcut: string | undefined,
+  onSubmit: ((text: string) => void) | undefined,
+  editorRef: React.MutableRefObject<EditorView | null>,
+) => {
+  if (!sendShortcut || !onSubmit) {
+    return [];
+  }
+
+  const keyBindings: { key: string; run: () => boolean }[] = [];
+
+  switch (sendShortcut) {
+    case "Enter": {
+      keyBindings.push({
+        key: "Enter",
+        run: () => {
+          const currentContent = editorRef.current?.state.doc.toString() || "";
+          onSubmit(currentContent);
+          return true; // Prevent default behavior
+        },
+      });
+      break;
+    }
+    case "Ctrl+Enter": {
+      keyBindings.push({
+        key: "Ctrl-Enter",
+        run: () => {
+          const currentContent = editorRef.current?.state.doc.toString() || "";
+          onSubmit(currentContent);
+          return true;
+        },
+      });
+      break;
+    }
+    case "CMD+Enter": {
+      keyBindings.push({
+        key: "Cmd-Enter",
+        run: () => {
+          const currentContent = editorRef.current?.state.doc.toString() || "";
+          onSubmit(currentContent);
+          return true;
+        },
+      });
+      // Also add Ctrl-Enter for cross-platform compatibility
+      keyBindings.push({
+        key: "Ctrl-Enter",
+        run: () => {
+          const currentContent = editorRef.current?.state.doc.toString() || "";
+          onSubmit(currentContent);
+          return true;
+        },
+      });
+      break;
+    }
+    case "Shift+Enter": {
+      keyBindings.push({
+        key: "Shift-Enter",
+        run: () => {
+          const currentContent = editorRef.current?.state.doc.toString() || "";
+          onSubmit(currentContent);
+          return true;
+        },
+      });
+      break;
+    }
+  }
+
+  // Use highest precedence to ensure our shortcuts take priority over default keymaps
+  return Prec.highest(keymap.of(keyBindings));
+};
+
+/**
  * I probably should have integrated CodeMirror directly.
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
@@ -39,10 +115,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
     ref,
   ) => {
     const editorRef = useRef<EditorView | null>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
     const isInitialMount = useRef(true);
     const isUserEditing = useRef(false);
     const [generationInputHistory] = useLocalGenerationInputHistory();
+
+    // Create the send shortcut keymap extension
+    const sendShortcutKeymap = useMemo(() => createSendShortcutKeymap(sendShortcut, onSubmit, editorRef), [sendShortcut, onSubmit]);
+
     // Create the custom completion source function using provided suggestions
     const createCompletionSource = useCallback((suggestions: SuggestionItem[]) => {
       return (context: CompletionContext): CompletionResult | null => {
@@ -111,60 +190,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
       }, 50);
     };
 
-    const handleKeyDown = useCallback(
-      (e: KeyboardEvent) => {
-        if (!onSubmit) {
-          return;
-        }
-
-        const isCtrlEnter = e.key === "Enter" && (e.ctrlKey || e.metaKey);
-        const isShiftEnter = e.key === "Enter" && e.shiftKey;
-        const isEnter = e.key === "Enter" && !e.ctrlKey && !e.shiftKey && !e.metaKey;
-
-        let shouldSubmit = false;
-
-        switch (sendShortcut) {
-          case "Enter": {
-            shouldSubmit = isEnter;
-            break;
-          }
-          case "Ctrl+Enter": {
-            shouldSubmit = isCtrlEnter;
-            break;
-          }
-          case "CMD+Enter": {
-            shouldSubmit = isCtrlEnter;
-            break;
-          }
-          case "Shift+Enter": {
-            shouldSubmit = isShiftEnter;
-            break;
-          }
-        }
-
-        if (shouldSubmit) {
-          e.preventDefault();
-          const currentContent = editorRef.current?.state.doc.toString() || "";
-          onSubmit(currentContent);
-        }
-      },
-      [onSubmit, sendShortcut],
-    );
-
-    // Set up keyboard event listener
-    useEffect(() => {
-      if (!onSubmit || !containerRef.current) {
-        return;
-      }
-
-      const container = containerRef.current;
-      container.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        container.removeEventListener("keydown", handleKeyDown);
-      };
-    }, [handleKeyDown, onSubmit]);
-
     const completionSource = createCompletionSource(suggestions);
 
     useImperativeHandle(ref, () => ({
@@ -196,6 +221,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
             },
           }),
           ...(enableHistory ? [historyExtension(generationInputHistory)] : []),
+          // Add the send shortcut keymap extension
+          sendShortcutKeymap,
         ]}
         onChange={handleChange}
         onCreateEditor={(editor) => {
