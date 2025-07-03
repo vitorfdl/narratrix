@@ -68,7 +68,7 @@ interface chatState {
     updateParticipant: (participantId: string, data: Partial<ChatParticipant>) => Promise<void>;
     toggleParticipantEnabled: (participantId: string) => Promise<void>;
 
-    createChat: (chat: CreateChatParams) => Promise<Chat>;
+    createChat: (chat: CreateChatParams, skipDefaultChapter?: boolean) => Promise<Chat>;
     deleteChat: (id: string) => Promise<void>;
     clearChatList: () => void;
     clearError: () => void;
@@ -163,7 +163,7 @@ export const useChatStore = create<chatState>((set, get) => ({
       }
     },
 
-    createChat: async (chat: CreateChatParams) => {
+    createChat: async (chat: CreateChatParams, skipDefaultChapter?: boolean) => {
       try {
         set({ isLoading: true, error: null });
         const newChat = await apiCreateChat(chat);
@@ -172,23 +172,30 @@ export const useChatStore = create<chatState>((set, get) => ({
           throw new Error("Failed to create chat");
         }
 
-        // Create a default chapter for the new chat
-        const defaultChapter = await apiCreateChatChapter({
-          chat_id: newChat.id,
-          title: "Chapter 1",
-          sequence: 1,
-          scenario: null,
-          instructions: null,
-          start_message: null,
-        });
+        let updatedChat = newChat;
 
-        // Update the chat with the active chapter
-        const updatedChat = await apiUpdateChat(newChat.id, {
-          active_chapter_id: defaultChapter.id,
-        });
+        // Only create a default chapter if not skipped (for duplication scenarios)
+        if (!skipDefaultChapter) {
+          // Create a default chapter for the new chat
+          const defaultChapter = await apiCreateChatChapter({
+            chat_id: newChat.id,
+            title: "Chapter 1",
+            sequence: 1,
+            scenario: null,
+            instructions: null,
+            start_message: null,
+          });
 
-        if (!updatedChat) {
-          throw new Error("Failed to update chat with active chapter");
+          // Update the chat with the active chapter
+          const chatUpdate = await apiUpdateChat(newChat.id, {
+            active_chapter_id: defaultChapter.id,
+          });
+
+          if (!chatUpdate) {
+            throw new Error("Failed to update chat with active chapter");
+          }
+
+          updatedChat = chatUpdate;
         }
 
         set({
