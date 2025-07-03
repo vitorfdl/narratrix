@@ -208,12 +208,26 @@ export default function ChatPage() {
           user_character_settings: originalChat.user_character_settings || [],
         };
 
-        const newChat = await createChat(duplicateChatData);
+        // Create chat without default chapter to avoid conflicts when duplicating
+        const newChat = await createChat(duplicateChatData, true);
+
+        // Create all chapters from the original chat
+        let activeChapterId: string | null = null;
         for (const chapter of chapters) {
-          await createChatChapter({
+          const newChapter = await createChatChapter({
             ...chapter,
             chat_id: newChat.id,
           });
+
+          // Keep track of which chapter should be active
+          if (chapter.id === originalChat.active_chapter_id) {
+            activeChapterId = newChapter.id;
+          }
+        }
+
+        // Update the chat with the correct active chapter
+        if (activeChapterId) {
+          await updateChat(newChat.id, { active_chapter_id: activeChapterId });
         }
 
         const updatedTabs = [...openTabIds, newChat.id];
