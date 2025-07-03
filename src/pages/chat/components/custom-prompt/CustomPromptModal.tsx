@@ -79,7 +79,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent allowClickOutsideClose={false}>
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <MessageSquarePlus className="h-5 w-5 text-primary" />

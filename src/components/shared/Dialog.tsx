@@ -7,15 +7,34 @@ import React from "react";
  */
 export const Dialog = ShadDialog.Dialog;
 
+interface DialogContentProps extends React.ComponentProps<typeof ShadDialog.DialogContent> {
+  /** Whether the dialog can be closed by pressing the Escape key. Defaults to false. */
+  allowEscapeKeyClose?: boolean;
+  /** Whether the dialog can be closed by clicking outside of it. Defaults to false. */
+  allowClickOutsideClose?: boolean;
+}
+
 /**
  * DialogContent component with Narratrix custom classes for layout, background, and shadow.
  * Use for the main content area of the dialog.
+ * By default, prevents closing via ESC key or clicking outside.
  */
-export const DialogContent = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof ShadDialog.DialogContent>>(
-  ({ className = "", size = "large", ...props }, ref) => {
+export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
+  ({ className = "", size = "large", allowEscapeKeyClose = true, allowClickOutsideClose = true, ...props }, ref) => {
     // Merge custom classes with any provided by the user
     const mergedClassName = ["flex flex-col w-full p-0 bg-background rounded-lg shadow-lg px-6 py-2", className].filter(Boolean).join(" ");
-    return <ShadDialog.DialogContent showCloseButton={false} ref={ref} className={mergedClassName} size={size} {...props} />;
+
+    return (
+      <ShadDialog.DialogContent
+        showCloseButton={false}
+        ref={ref}
+        className={mergedClassName}
+        size={size}
+        onEscapeKeyDown={allowEscapeKeyClose ? undefined : (e) => e.preventDefault()}
+        onPointerDownOutside={allowClickOutsideClose ? undefined : (e) => e.preventDefault()}
+        {...props}
+      />
+    );
   },
 );
 DialogContent.displayName = "DialogContent";
