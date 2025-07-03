@@ -6,7 +6,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bot, ChevronDown, ChevronUp, Merge, Settings, Split, User } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+
+// Pagination constants for PayloadTab
+const PAYLOAD_PAGE_SIZE = 15; // Number of messages per page
+const PAYLOAD_RENDER_BUFFER_MULTIPLIER = 3; // Render 2 pages worth at once
 
 interface PayloadProps {
   selectedRequest: any;
@@ -23,9 +27,15 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
   const [systemPromptCollapsed, setSystemPromptCollapsed] = useState(true);
   const [viewMode, setViewMode] = useState<"split" | "concatenated">("split");
 
+  // Message pagination state
+  const [msgRenderIndex, setMsgRenderIndex] = useState<number>(0);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [shouldScrollToTop, setShouldScrollToTop] = useState<boolean>(false);
+
   const isCompletion = selectedRequest.modelSpecs.model_type === "completion";
 
-  // Handle scroll events to detect when user scrolls up or down
+  // Handle scroll events to detect when user scrolls up or down and implement pagination
   const handleScroll = useCallback(() => {
     if (payloadScrollRef.current) {
       const scrollContainer = payloadScrollRef.current.querySelector("[data-radix-scroll-area-viewport]");
@@ -37,9 +47,51 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
         setUserScrolled(isScrolledUp);
         setShowScrollButton(isScrolledUp);
         setShowScrollTopButton(isScrolledDown);
+
+        // Disable auto-scroll if user manually scrolled
+        if (isScrolledUp && autoScrollEnabled) {
+          setAutoScrollEnabled(false);
+        }
+
+        // Re-enable auto-scroll if user scrolled back to bottom
+        if (!isScrolledUp && !autoScrollEnabled) {
+          setAutoScrollEnabled(true);
+        }
+
+        // More aggressive pagination logic - load earlier messages when scrolling up
+        const topThreshold = scrollHeight * 0.25; // Load when within 25% of content height from top
+        if (scrollTop < topThreshold && msgRenderIndex > 0 && !isLoadingMore) {
+          const newIndex = Math.max(0, msgRenderIndex - PAYLOAD_PAGE_SIZE);
+          if (newIndex !== msgRenderIndex) {
+            setIsLoadingMore(true);
+            // Use setTimeout to make the transition smoother
+            setTimeout(() => {
+              setMsgRenderIndex(newIndex);
+              setIsLoadingMore(false);
+            }, 50);
+          }
+        }
+
+        // Load more recent messages when scrolling down
+        const bottomThreshold = scrollHeight * 0.75; // Load when past 75% of content height
+        if (scrollTop > bottomThreshold && selectedRequest.messages && !isLoadingMore) {
+          const maxMessages = selectedRequest.messages.length;
+          const currentEndIndex = msgRenderIndex + PAYLOAD_RENDER_BUFFER_MULTIPLIER * PAYLOAD_PAGE_SIZE;
+          if (currentEndIndex < maxMessages) {
+            const maxPossibleIndex = Math.max(0, maxMessages - PAYLOAD_RENDER_BUFFER_MULTIPLIER * PAYLOAD_PAGE_SIZE);
+            const newIndex = Math.min(msgRenderIndex + PAYLOAD_PAGE_SIZE, maxPossibleIndex);
+            if (newIndex !== msgRenderIndex && newIndex >= 0) {
+              setIsLoadingMore(true);
+              setTimeout(() => {
+                setMsgRenderIndex(newIndex);
+                setIsLoadingMore(false);
+              }, 50);
+            }
+          }
+        }
       }
     }
-  }, [selectedRequestId]);
+  }, [selectedRequestId, msgRenderIndex, selectedRequest.messages, autoScrollEnabled, isLoadingMore]);
 
   // Attach scroll event listener
   useEffect(() => {
@@ -53,6 +105,16 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
   // Scroll to bottom function
   const scrollToBottom = useCallback(
     (behavior: ScrollBehavior = "smooth") => {
+      // Reset pagination to show latest messages
+      if (selectedRequest.messages && selectedRequest.messages.length > 0) {
+        const messageCount = selectedRequest.messages.length;
+        const newIndex = Math.max(0, messageCount - PAYLOAD_RENDER_BUFFER_MULTIPLIER * PAYLOAD_PAGE_SIZE);
+        setMsgRenderIndex(newIndex);
+      }
+
+      // Re-enable auto-scroll
+      setAutoScrollEnabled(true);
+
       if (payloadScrollRef.current) {
         const scrollContainer = payloadScrollRef.current.querySelector("[data-radix-scroll-area-viewport]");
         if (scrollContainer) {
@@ -66,20 +128,27 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
         }
       }
     },
-    [payloadScrollRef],
+    [payloadScrollRef, selectedRequest.messages],
   );
 
   // Scroll to top function
   const scrollToTop = useCallback(() => {
-    if (payloadScrollRef.current) {
+    // Set pagination to show earliest messages and flag for scroll
+    setMsgRenderIndex(0);
+    setAutoScrollEnabled(false);
+    setShouldScrollToTop(true);
+  }, []);
+
+  // Effect to handle scroll to top after render
+  useLayoutEffect(() => {
+    if (shouldScrollToTop && payloadScrollRef.current) {
       const scrollContainer = payloadScrollRef.current.querySelector("[data-radix-scroll-area-viewport]");
       if (scrollContainer) {
-        setTimeout(() => {
-          scrollContainer.scrollTop = 0;
-        }, 10);
+        scrollContainer.scrollTop = 0;
+        setShouldScrollToTop(false);
       }
     }
-  }, [payloadScrollRef]);
+  }, [shouldScrollToTop, msgRenderIndex]); // Trigger after msgRenderIndex changes
 
   // Scroll to bottom of payload when tab is active or request changes
   useEffect(() => {
@@ -107,11 +176,41 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
     return `${text.substring(0, maxLength)}...`;
   };
 
+  // Reset pagination state when request changes
+  useEffect(() => {
+    setMsgRenderIndex(0);
+    setAutoScrollEnabled(true);
+    setUserScrolled(false);
+    setShowScrollButton(false);
+    setShowScrollTopButton(false);
+    setIsLoadingMore(false);
+    setShouldScrollToTop(false);
+  }, [selectedRequestId]);
+
+  // Update render index when messages change and auto-scroll is enabled
+  useEffect(() => {
+    if (selectedRequest.messages && selectedRequest.messages.length > 0 && autoScrollEnabled) {
+      const messageCount = selectedRequest.messages.length;
+      const newIndex = Math.max(0, messageCount - PAYLOAD_RENDER_BUFFER_MULTIPLIER * PAYLOAD_PAGE_SIZE);
+      setMsgRenderIndex(newIndex);
+    }
+  }, [selectedRequest.messages?.length, autoScrollEnabled]);
+
   // Initialize collapsed state for all messages when request changes
   useEffect(() => {
     const allMessageIndices: Set<number> = new Set(selectedRequest.messages.map((_: any, index: number) => index));
     setCollapsedMessages(allMessageIndices);
   }, [selectedRequestId, selectedRequest.messages]);
+
+  // Calculate which messages to render based on pagination
+  const getVisibleMessages = () => {
+    if (!selectedRequest.messages) {
+      return [];
+    }
+    const startIndex = msgRenderIndex;
+    const endIndex = Math.min(selectedRequest.messages.length, msgRenderIndex + PAYLOAD_RENDER_BUFFER_MULTIPLIER * PAYLOAD_PAGE_SIZE);
+    return selectedRequest.messages.slice(startIndex, endIndex);
+  };
 
   // Generate concatenated content for completion requests
   const getConcatenatedContent = () => {
@@ -212,19 +311,38 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                         <Badge variant="secondary" className="text-xs font-normal">
                           {selectedRequest.messages.length} messages
                         </Badge>
+                        {selectedRequest.messages.length > PAYLOAD_RENDER_BUFFER_MULTIPLIER * PAYLOAD_PAGE_SIZE && (
+                          <Badge variant="outline" className="text-xs font-normal">
+                            Showing {getVisibleMessages().length} of {selectedRequest.messages.length}
+                          </Badge>
+                        )}
                       </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-4">
-                    {selectedRequest.messages.map((message: any, index: number) => {
+                    {/* Show indicator when there are earlier messages */}
+                    {msgRenderIndex > 0 && (
+                      <div className="flex justify-center py-2 text-sm text-muted-foreground">
+                        <div className="bg-muted rounded-lg px-3 py-1 text-center">
+                          {isLoadingMore ? (
+                            <span className="text-xs">Loading earlier messages...</span>
+                          ) : (
+                            <span className="text-xs">Scroll up to load earlier messages</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {getVisibleMessages().map((message: any, visibleIndex: number) => {
+                      const actualIndex = msgRenderIndex + visibleIndex;
                       const isUser = message.role === "user";
-                      const isCollapsed = collapsedMessages.has(index);
+                      const isCollapsed = collapsedMessages.has(actualIndex);
                       const messageText = message.text || "";
                       const shouldShowCollapse = messageText.length > 200;
 
                       return (
-                        <div key={index} className="space-y-2">
-                          {index > 0 && <Separator className="my-4" />}
+                        <div key={actualIndex} className="space-y-2">
+                          {visibleIndex > 0 && <Separator className="my-4" />}
 
                           {/* Message Header */}
                           <div className="flex items-center justify-between">
@@ -241,7 +359,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => toggleMessageCollapse(index)}
+                                  onClick={() => toggleMessageCollapse(actualIndex)}
                                   className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                                 >
                                   {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
@@ -267,7 +385,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                                 <Button
                                   variant="link"
                                   size="sm"
-                                  onClick={() => toggleMessageCollapse(index)}
+                                  onClick={() => toggleMessageCollapse(actualIndex)}
                                   className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80"
                                 >
                                   Show more
@@ -278,6 +396,19 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                         </div>
                       );
                     })}
+
+                    {/* Show indicator when there are later messages */}
+                    {msgRenderIndex + getVisibleMessages().length < selectedRequest.messages.length && (
+                      <div className="flex justify-center py-2 text-sm text-muted-foreground">
+                        <div className="bg-muted rounded-lg px-3 py-1 text-center">
+                          {isLoadingMore ? (
+                            <span className="text-xs">Loading more recent messages...</span>
+                          ) : (
+                            <span className="text-xs">Scroll down to load more recent messages</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -332,19 +463,38 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                       <Badge variant="secondary" className="text-xs font-normal">
                         {selectedRequest.messages.length} messages
                       </Badge>
+                      {selectedRequest.messages.length > PAYLOAD_RENDER_BUFFER_MULTIPLIER * PAYLOAD_PAGE_SIZE && (
+                        <Badge variant="outline" className="text-xs font-normal">
+                          Showing {getVisibleMessages().length} of {selectedRequest.messages.length}
+                        </Badge>
+                      )}
                     </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-4">
-                  {selectedRequest.messages.map((message: any, index: number) => {
+                  {/* Show indicator when there are earlier messages */}
+                  {msgRenderIndex > 0 && (
+                    <div className="flex justify-center py-2 text-sm text-muted-foreground">
+                      <div className="bg-muted rounded-lg px-3 py-1 text-center">
+                        {isLoadingMore ? (
+                          <span className="text-xs">Loading earlier messages...</span>
+                        ) : (
+                          <span className="text-xs">Scroll up to load earlier messages</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {getVisibleMessages().map((message: any, visibleIndex: number) => {
+                    const actualIndex = msgRenderIndex + visibleIndex;
                     const isUser = message.role === "user";
-                    const isCollapsed = collapsedMessages.has(index);
+                    const isCollapsed = collapsedMessages.has(actualIndex);
                     const messageText = message.text || "";
                     const shouldShowCollapse = messageText.length > 200;
 
                     return (
-                      <div key={index} className="space-y-2">
-                        {index > 0 && <Separator className="my-4" />}
+                      <div key={actualIndex} className="space-y-2">
+                        {visibleIndex > 0 && <Separator className="my-4" />}
 
                         {/* Message Header */}
                         <div className="flex items-center justify-between">
@@ -361,7 +511,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => toggleMessageCollapse(index)}
+                                onClick={() => toggleMessageCollapse(actualIndex)}
                                 className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                               >
                                 {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
@@ -387,7 +537,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                               <Button
                                 variant="link"
                                 size="sm"
-                                onClick={() => toggleMessageCollapse(index)}
+                                onClick={() => toggleMessageCollapse(actualIndex)}
                                 className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80"
                               >
                                 Show more
@@ -398,6 +548,19 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                       </div>
                     );
                   })}
+
+                  {/* Show indicator when there are later messages */}
+                  {msgRenderIndex + getVisibleMessages().length < selectedRequest.messages.length && (
+                    <div className="flex justify-center py-2 text-sm text-muted-foreground">
+                      <div className="bg-muted rounded-lg px-3 py-1 text-center">
+                        {isLoadingMore ? (
+                          <span className="text-xs">Loading more recent messages...</span>
+                        ) : (
+                          <span className="text-xs">Scroll down to load more recent messages</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </>
