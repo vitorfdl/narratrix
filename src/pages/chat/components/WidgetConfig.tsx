@@ -81,7 +81,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const [selectedLorebookList, setSelectedLorebookList] = useState<string[]>([]);
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
-  const [maxDepth, setMaxDepth] = useState<number>(100);
+  const [maxDepth, setMaxDepth] = useState<number>(1000);
   const [lorebookTokenBudget, setLorebookTokenBudget] = useState<number>(2048);
   const [isFormatTemplateModalOpen, setIsFormatTemplateModalOpen] = useState(false);
   const [isExportOptionsDialogOpen, setIsExportOptionsDialogOpen] = useState(false);
@@ -967,7 +967,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
               showSlider
               onValueChange={setContextSize}
               min={512}
-              max={32768 * 3}
+              max={32768 * 10}
               step={512}
               className="h-7"
               disabled={isDisabled}
@@ -1028,7 +1028,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
                 setMaxDepth(value);
               }}
               min={0}
-              max={100}
+              max={10000}
               step={10}
               className="h-7"
               disabled={isDisabled}
