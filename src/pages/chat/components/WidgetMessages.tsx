@@ -60,6 +60,8 @@ const WidgetMessages: React.FC = () => {
 
   // Ref for selection debounce timer
   const selectionTimeoutRef = useRef<number | null>(null);
+  // Track last pagination action to prevent rapid changes
+  const lastPaginationActionRef = useRef<number>(0);
 
   const handleCancelEdit = useCallback(() => {
     setIsEditingID(null);
@@ -239,19 +241,28 @@ const WidgetMessages: React.FC = () => {
         setAutoScrollEnabled(true);
       }
 
-      // Pagination logic - load more messages when scrolling near the top
-      const threshold = 200; // Load more when within 200px of top
-      if (scrollTop < threshold && msgRenderIndex > 0) {
-        const newIndex = Math.max(0, msgRenderIndex - CHAT_PAGE_SIZE);
-        setMsgRenderIndex(newIndex);
+      // Pagination logic with stronger protection against rapid changes
+      const now = Date.now();
+      const timeSinceLastAction = now - lastPaginationActionRef.current;
+
+      // Require at least 500ms between pagination actions to prevent macOS touchpad issues
+      if (timeSinceLastAction < 500) {
+        return;
       }
 
-      // Load more messages when scrolling near the bottom (if there are more messages)
+      const threshold = 200;
       const bottomThreshold = scrollHeight - clientHeight - 200;
-      if (scrollTop > bottomThreshold) {
+
+      // Only trigger pagination if we're clearly at the edges
+      if (scrollTop < threshold && msgRenderIndex > 0) {
+        lastPaginationActionRef.current = now;
+        const newIndex = Math.max(0, msgRenderIndex - CHAT_PAGE_SIZE);
+        setMsgRenderIndex(newIndex);
+      } else if (scrollTop > bottomThreshold) {
         const maxMessages = messages.length;
         const currentlyRendered = msgRenderIndex + RENDER_BUFFER_MULTIPLIER * CHAT_PAGE_SIZE;
         if (currentlyRendered < maxMessages) {
+          lastPaginationActionRef.current = now;
           const newIndex = Math.min(msgRenderIndex + CHAT_PAGE_SIZE, maxMessages - RENDER_BUFFER_MULTIPLIER * CHAT_PAGE_SIZE);
           if (newIndex >= 0 && newIndex !== msgRenderIndex) {
             setMsgRenderIndex(newIndex);
@@ -319,6 +330,15 @@ const WidgetMessages: React.FC = () => {
     setUserScrolled(false);
     setShowScrollButton(false);
   }, [currentChatId]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Initial scroll to the bottom when component mounts
   useEffect(() => {
