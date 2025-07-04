@@ -11,6 +11,7 @@ import { useExpressionStore } from "@/hooks/expressionStore";
 import { ChevronDown } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useDebouncedCallback } from "use-debounce";
 
 import { useCharacters } from "@/hooks/characterStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
@@ -21,8 +22,8 @@ import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
 import { SummarySettings } from "./message-controls/SummaryDialog";
 
 // Message pagination constants - inspired by NextChat
-const CHAT_PAGE_SIZE = 5; // Number of messages per page
-const RENDER_BUFFER_MULTIPLIER = 3; // Render 3 pages worth of messages at once
+const CHAT_PAGE_SIZE = 15; // Number of messages per page
+const MIN_RENDER_MESSAGES = 30; // Minimum messages to keep rendered
 
 // Message container styles
 const MESSAGE_CONTAINER_STYLES = "relative flex flex-col h-full @container";
@@ -48,14 +49,15 @@ const WidgetMessages: React.FC = () => {
   const [messageReasonings, setMessageReasonings] = useState<Record<string, string>>({});
   const [streamingTimestamp, setStreamingTimestamp] = useState<number>(0); // Track streaming updates
 
-  // Message pagination state
-  const [msgRenderIndex, setMsgRenderIndex] = useState<number>(0);
-  const [autoScrollEnabled, setAutoScrollEnabled] = useState<boolean>(true);
+  // Message pagination state - NextChat style
+  const [renderMessages, setRenderMessages] = useState(messages.slice(-MIN_RENDER_MESSAGES));
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hitBottom, setHitBottom] = useState(true);
 
   // Refs for scroll management
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [userScrolled, setUserScrolled] = useState(false);
+  const scrollLockRef = useRef(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   // Ref for selection debounce timer
@@ -219,81 +221,78 @@ const WidgetMessages: React.FC = () => {
     return unsubscribe;
   }, [inferenceService, streamingMessageId]);
 
-  // Handle scroll events to detect when user manually scrolls up and implement pagination
-  const handleScroll = useCallback(() => {
-    if (messagesContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-
-      // Check if user scrolled up manually
-      const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100;
-      setUserScrolled(isScrolledUp);
-      setShowScrollButton(isScrolledUp);
-
-      // Disable auto-scroll if user manually scrolled
-      if (isScrolledUp && autoScrollEnabled) {
-        setAutoScrollEnabled(false);
-      }
-
-      // Re-enable auto-scroll if user scrolled back to bottom
-      if (!isScrolledUp && !autoScrollEnabled) {
-        setAutoScrollEnabled(true);
-      }
-
-      // Pagination logic - load more messages when scrolling near the top
-      const threshold = 200; // Load more when within 200px of top
-      if (scrollTop < threshold && msgRenderIndex > 0) {
-        const newIndex = Math.max(0, msgRenderIndex - CHAT_PAGE_SIZE);
-        setMsgRenderIndex(newIndex);
-      }
-
-      // Load more messages when scrolling near the bottom (if there are more messages)
-      const bottomThreshold = scrollHeight - clientHeight - 200;
-      if (scrollTop > bottomThreshold) {
-        const maxMessages = messages.length;
-        const currentlyRendered = msgRenderIndex + RENDER_BUFFER_MULTIPLIER * CHAT_PAGE_SIZE;
-        if (currentlyRendered < maxMessages) {
-          const newIndex = Math.min(msgRenderIndex + CHAT_PAGE_SIZE, maxMessages - RENDER_BUFFER_MULTIPLIER * CHAT_PAGE_SIZE);
-          if (newIndex >= 0 && newIndex !== msgRenderIndex) {
-            setMsgRenderIndex(newIndex);
-          }
-        }
-      }
+  // Handle scroll events with debouncing - NextChat style
+  const onChatScroll = useDebouncedCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) {
+      return;
     }
-  }, [msgRenderIndex, messages.length, autoScrollEnabled]);
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const bottomHeight = scrollHeight - clientHeight;
+    const distanceToBottom = bottomHeight - scrollTop;
+    const isNearBottom = distanceToBottom <= 100;
+
+    setHitBottom(isNearBottom);
+    setShowScrollButton(!isNearBottom && distanceToBottom > 500);
+
+    // Load more messages when scrolling near the top
+    const isTouchTopEdge = scrollTop <= 50;
+    const currentMessageCount = renderMessages.length;
+    const allMessageCount = messages.length;
+    const hasMoreMessages = currentMessageCount < allMessageCount;
+
+    if (isTouchTopEdge && !isLoadingMore && hasMoreMessages && !scrollLockRef.current) {
+      setIsLoadingMore(true);
+      scrollLockRef.current = true;
+
+      // Calculate how many more messages to load
+      const numberToLoad = Math.min(CHAT_PAGE_SIZE, allMessageCount - currentMessageCount);
+      const newStartIndex = allMessageCount - currentMessageCount - numberToLoad;
+      const newMessages = messages.slice(Math.max(0, newStartIndex), allMessageCount - currentMessageCount);
+
+      // Store current scroll height before adding messages
+      const prevScrollHeight = container.scrollHeight;
+
+      // Add new messages to the beginning
+      setRenderMessages((prev) => [...newMessages, ...prev]);
+
+      // Restore scroll position after DOM update
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const newScrollHeight = container.scrollHeight;
+          const scrollDiff = newScrollHeight - prevScrollHeight;
+          container.scrollTop = scrollTop + scrollDiff;
+
+          setIsLoadingMore(false);
+          scrollLockRef.current = false;
+        });
+      });
+    }
+  }, 100);
 
   // Scroll to the bottom of the messages
-  const scrollToBottom = useCallback(
-    (behavior: ScrollBehavior = "smooth") => {
-      // Reset pagination to show latest messages
-      const messageCount = messages.length;
-      if (messageCount > 0) {
-        const newIndex = Math.max(0, messageCount - RENDER_BUFFER_MULTIPLIER * CHAT_PAGE_SIZE);
-        setMsgRenderIndex(newIndex);
-      }
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const container = messagesContainerRef.current;
+    if (!container) {
+      return;
+    }
 
-      // Re-enable auto-scroll
-      setAutoScrollEnabled(true);
-
-      // Scroll to bottom after a brief delay to allow for re-rendering
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
-      }, 0);
-
-      if (behavior === "auto") {
-        // Reset user scroll state when we force scroll
-        setUserScrolled(false);
-        setShowScrollButton(false);
-      }
-    },
-    [messages.length],
-  );
+    requestAnimationFrame(() => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior,
+      });
+    });
+  }, []);
 
   // Auto-scroll to bottom during streaming
   useEffect(() => {
-    if (streamingMessageId && autoScrollEnabled && !userScrolled) {
-      scrollToBottom();
+    if (streamingMessageId && hitBottom) {
+      scrollToBottom("smooth");
     }
-  }, [streamingTimestamp, autoScrollEnabled, userScrolled, scrollToBottom, streamingMessageId]);
+  }, [streamingTimestamp, hitBottom, scrollToBottom, streamingMessageId]);
+
   // Check if a message has reasoning data
   const hasReasoning = useCallback(
     (messageId: string) => {
@@ -302,22 +301,39 @@ const WidgetMessages: React.FC = () => {
     [messageReasonings],
   );
 
-  // Update render index when messages change (new messages arrive)
+  // Update render messages when messages change
   useEffect(() => {
-    const messageCount = messages.length;
-    if (messageCount > 0 && autoScrollEnabled) {
-      // When auto-scroll is enabled, show the latest messages
-      const newIndex = Math.max(0, messageCount - RENDER_BUFFER_MULTIPLIER * CHAT_PAGE_SIZE);
-      setMsgRenderIndex(newIndex);
-    }
-  }, [messages.length, autoScrollEnabled]);
+    const totalMessages = messages.length;
+    const currentRendered = renderMessages.length;
 
-  // Reset pagination state when chat changes
+    // If we're showing recent messages and new messages arrive
+    if (hitBottom || currentRendered === 0) {
+      setRenderMessages(messages.slice(-MIN_RENDER_MESSAGES));
+      // Scroll to bottom for new messages
+      if (hitBottom) {
+        requestAnimationFrame(() => scrollToBottom("auto"));
+      }
+    } else {
+      // Preserve the view when messages update but we're not at bottom
+      const oldestRenderedId = renderMessages[0]?.id;
+      if (oldestRenderedId) {
+        const oldestIndex = messages.findIndex((m) => m.id === oldestRenderedId);
+        if (oldestIndex >= 0) {
+          // Keep the same messages in view
+          const endIndex = Math.min(oldestIndex + currentRendered, totalMessages);
+          setRenderMessages(messages.slice(oldestIndex, endIndex));
+        }
+      }
+    }
+  }, [messages, hitBottom]);
+
+  // Reset state when chat changes
   useEffect(() => {
-    setMsgRenderIndex(0);
-    setAutoScrollEnabled(true);
-    setUserScrolled(false);
+    setRenderMessages(messages.slice(-MIN_RENDER_MESSAGES));
+    setHitBottom(true);
     setShowScrollButton(false);
+    scrollLockRef.current = false;
+    requestAnimationFrame(() => scrollToBottom("auto"));
   }, [currentChatId]);
 
   // Initial scroll to the bottom when component mounts
@@ -484,66 +500,63 @@ const WidgetMessages: React.FC = () => {
     }
   }, [isEditingID]);
 
-  // Calculate which messages to render based on pagination
-  const visibleMessages = useMemo(() => {
-    const startIndex = msgRenderIndex;
-    const endIndex = Math.min(messages.length, msgRenderIndex + RENDER_BUFFER_MULTIPLIER * CHAT_PAGE_SIZE);
-    return messages.slice(startIndex, endIndex);
-  }, [messages, msgRenderIndex]);
-
   // Memoize message list rendering to prevent unnecessary recalculations
   // Include the streamingTimestamp in the dependency array to re-render during streaming
   const messageListItems = useMemo(() => {
-    return visibleMessages.map((message, visibleIndex) => {
-      // Calculate the actual index in the full messages array
-      const actualIndex = msgRenderIndex + visibleIndex;
+    return renderMessages
+      .map((message, index) => {
+        // Find the actual index in the full messages array
+        const actualIndex = messages.findIndex((m) => m.id === message.id);
+        if (actualIndex === -1) {
+          return null; // Skip if message not found
+        }
 
-      // Check if message is the last one for UI purposes
-      const isLastMessage = actualIndex === messages.length - 1 || message.type === "system";
-      // Check if this message is currently streaming
-      const isStreaming = streamingMessageId === message.id;
-      // Check if this message has reasoning data
-      const hasReasoningData = hasReasoning(message.id);
-      // Get reasoning content if available
-      const reasoningContent = messageReasonings[message.id] || "";
+        // Check if message is the last one for UI purposes
+        const isLastMessage = actualIndex === messages.length - 1 || message.type === "system";
+        // Check if this message is currently streaming
+        const isStreaming = streamingMessageId === message.id;
+        // Check if this message has reasoning data
+        const hasReasoningData = hasReasoning(message.id);
+        // Get reasoning content if available
+        const reasoningContent = messageReasonings[message.id] || "";
 
-      // Mid-message layer control for messages that aren't first or disabled
-      // We need to check against the actual index, not the visible index
-      const showMidLayer =
-        actualIndex > 0 && !message.disabled && actualIndex > 0 && messages[actualIndex - 1] && !messages[actualIndex - 1].disabled;
+        // Mid-message layer control for messages that aren't first or disabled
+        // We need to check against the actual index, not the visible index
+        const showMidLayer =
+          actualIndex > 0 && !message.disabled && actualIndex > 0 && messages[actualIndex - 1] && !messages[actualIndex - 1].disabled;
 
-      return (
-        <div key={`message-wrapper-${message.id}`} className={MESSAGE_GROUP_STYLES}>
-          {/* Add MidMessageLayerControl before each message except the first */}
-          {showMidLayer && visibleIndex > 0 && (
-            <MidMessageLayerWrapper messageBefore={messages[actualIndex - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />
-          )}
+        return (
+          <div key={`message-wrapper-${message.id}`} className={MESSAGE_GROUP_STYLES}>
+            {/* Add MidMessageLayerControl before each message except the first */}
+            {showMidLayer && index > 0 && (
+              <MidMessageLayerWrapper messageBefore={messages[actualIndex - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />
+            )}
 
-          <MessageItem
-            message={message}
-            index={actualIndex}
-            isContextCut={false} // Mark as context cut if not showing from the beginning
-            isLastMessage={isLastMessage}
-            isStreaming={isStreaming}
-            hasReasoningData={hasReasoningData}
-            reasoningContent={reasoningContent}
-            isEditingID={isEditingID}
-            editedContent={editedContent}
-            setEditedContent={setEditedContent}
-            handleCancelEdit={handleCancelEdit}
-            handleSaveEdit={handleSaveEdit}
-            handleSwipe={handleSwipe}
-            handleMessageSelection={handleMessageSelection}
-            onRegenerateMessage={onRegenerateMessage}
-            setIsEditingID={setIsEditingID}
-          />
-        </div>
-      );
-    });
+            <MessageItem
+              message={message}
+              index={actualIndex}
+              isContextCut={false}
+              isLastMessage={isLastMessage}
+              isStreaming={isStreaming}
+              hasReasoningData={hasReasoningData}
+              reasoningContent={reasoningContent}
+              isEditingID={isEditingID}
+              editedContent={editedContent}
+              setEditedContent={setEditedContent}
+              handleCancelEdit={handleCancelEdit}
+              handleSaveEdit={handleSaveEdit}
+              handleSwipe={handleSwipe}
+              handleMessageSelection={handleMessageSelection}
+              onRegenerateMessage={onRegenerateMessage}
+              setIsEditingID={setIsEditingID}
+            />
+          </div>
+        );
+      })
+      .filter(Boolean); // Remove any null entries
   }, [
-    visibleMessages,
+    renderMessages,
     messages,
-    msgRenderIndex,
     streamingMessageId,
     messageReasonings,
     isEditingID,
@@ -564,26 +577,22 @@ const WidgetMessages: React.FC = () => {
 
   return (
     <div className={MESSAGE_CONTAINER_STYLES}>
-      <div ref={messagesContainerRef} className={MESSAGES_LIST_STYLES} onScroll={handleScroll}>
-        {/* Show indicator when there are earlier messages */}
-        {msgRenderIndex > 0 && (
+      <div ref={messagesContainerRef} className={MESSAGES_LIST_STYLES} onScroll={onChatScroll}>
+        {/* Show loading indicator when loading more messages */}
+        {isLoadingMore && (
           <div className="flex justify-center py-2 text-sm text-muted-foreground">
-            <div className="bg-muted rounded-lg px-3 py-1">
-              Showing {visibleMessages.length} of {messages.length} messages
-            </div>
+            <div className="bg-muted rounded-lg px-3 py-1 animate-pulse">Loading more messages...</div>
+          </div>
+        )}
+
+        {/* Show indicator when there are more messages to load */}
+        {renderMessages.length < messages.length && !isLoadingMore && (
+          <div className="flex justify-center py-2 text-sm text-muted-foreground">
+            <div className="bg-muted rounded-lg px-3 py-1">{messages.length - renderMessages.length} earlier messages</div>
           </div>
         )}
 
         {messageListItems}
-
-        {/* Show indicator when there are later messages */}
-        {msgRenderIndex + visibleMessages.length < messages.length && (
-          <div className="flex justify-center py-2 text-sm text-muted-foreground">
-            <div className="bg-muted rounded-lg px-3 py-1">
-              <span className="text-xs">Scroll down to load more recent messages</span>
-            </div>
-          </div>
-        )}
 
         {/* This empty div is our scroll target */}
         <div ref={messagesEndRef} />
