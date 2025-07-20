@@ -7,25 +7,26 @@ code in this repository.
 
 ### Build and Development
 
-- **Development**: `npm run dev` - Starts Vite development server
-- **Build**: `npm run build` - TypeScript compilation + Vite build
-- **Preview**: `npm run preview` - Preview built application
-- **Test**: `npm run test` - Run Vitest tests
+- **Development**: `pnpm run dev` - Starts Vite development server
+- **Build**: `pnpm run build` - TypeScript compilation + Vite build
+- **Preview**: `pnpm run preview` - Preview built application
+- **Test**: `pnpm run test` - Run Vitest tests
 
 ### Tauri Commands
 
-- **Development**: `npm run tauri dev` - Start Tauri development environment
-- **Build**: `npm run tauri build` - Build Tauri application for production
+- **Development**: `cargo tauri dev` - Start Tauri development environment
+- **Build**: `cargo tauri build` - Build Tauri application for production
 
 ### Code Quality
 
 - **Linting**: Use Biome for linting and formatting (`@biomejs/biome`)
 - **Type Checking**: TypeScript strict mode is enabled
-- **Auto-formatting**: Biome format and lint are automatically applied after every file edit
+- **Auto-formatting**: Biome format and lint are automatically applied after
+  every file edit
 
 ### Important Testing Note
 
-⚠️ **NEVER** run the program using `npm run start` or `cargo tauri`. All
+⚠️ **NEVER** run the program using `pnpm run start` or `cargo tauri dev`. All
 realtime tests must be done exclusively by asking the user to perform these
 actions.
 
@@ -170,4 +171,6 @@ and guidelines:
 
 ## AI Code Generation Best Practices
 
-- **Suggestion Capabilities**: When creating plans or implementing features, suggest relevant npm packages that can significantly reduce implementation complexity
+- **Suggestion Capabilities**: When creating plans or implementing features,
+  suggest relevant npm packages that can significantly reduce implementation
+  complexity
