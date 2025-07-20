@@ -11,7 +11,7 @@ import { useExpressionStore } from "@/hooks/expressionStore";
 import { ChevronDown } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useDebouncedCallback } from "use-debounce";
+import { useStickToBottom } from "use-stick-to-bottom";
 
 import { useCharacters } from "@/hooks/characterStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
@@ -24,6 +24,9 @@ import { SummarySettings } from "./message-controls/SummaryDialog";
 // Message pagination constants - inspired by NextChat
 const CHAT_PAGE_SIZE = 15; // Number of messages per page
 const MIN_RENDER_MESSAGES = 30; // Minimum messages to keep rendered
+
+// Scroll behavior constants
+const TOP_EDGE_THRESHOLD = 50; // Distance from top to trigger loading more messages
 
 // Message container styles
 const MESSAGE_CONTAINER_STYLES = "relative flex flex-col h-full @container";
@@ -52,13 +55,10 @@ const WidgetMessages: React.FC = () => {
   // Message pagination state - NextChat style
   const [renderMessages, setRenderMessages] = useState(messages.slice(-MIN_RENDER_MESSAGES));
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hitBottom, setHitBottom] = useState(true);
-
-  // Refs for scroll management
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollLockRef = useRef(false);
-  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  // Auto-scroll hook for smooth chat behavior
+  const { scrollRef, contentRef, isAtBottom, scrollToBottom } = useStickToBottom();
 
   // Ref for selection debounce timer
   const selectionTimeoutRef = useRef<number | null>(null);
@@ -221,23 +221,15 @@ const WidgetMessages: React.FC = () => {
     return unsubscribe;
   }, [inferenceService, streamingMessageId]);
 
-  // Handle scroll events with debouncing - NextChat style
-  const onChatScroll = useDebouncedCallback(() => {
-    const container = messagesContainerRef.current;
+  // Handle scroll events for message pagination
+  const onChatScroll = useCallback(() => {
+    const container = scrollRef.current;
     if (!container) {
       return;
     }
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const bottomHeight = scrollHeight - clientHeight;
-    const distanceToBottom = bottomHeight - scrollTop;
-    const isNearBottom = distanceToBottom <= 100;
-
-    setHitBottom(isNearBottom);
-    setShowScrollButton(!isNearBottom && distanceToBottom > 500);
-
-    // Load more messages when scrolling near the top
-    const isTouchTopEdge = scrollTop <= 50;
+    const { scrollTop } = container;
+    const isTouchTopEdge = scrollTop <= TOP_EDGE_THRESHOLD;
     const currentMessageCount = renderMessages.length;
     const allMessageCount = messages.length;
     const hasMoreMessages = currentMessageCount < allMessageCount;
@@ -269,29 +261,8 @@ const WidgetMessages: React.FC = () => {
         });
       });
     }
-  }, 100);
+  }, [scrollRef, renderMessages.length, messages.length, isLoadingMore]);
 
-  // Scroll to the bottom of the messages
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const container = messagesContainerRef.current;
-    if (!container) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior,
-      });
-    });
-  }, []);
-
-  // Auto-scroll to bottom during streaming
-  useEffect(() => {
-    if (streamingMessageId && hitBottom) {
-      scrollToBottom("smooth");
-    }
-  }, [streamingTimestamp, hitBottom, scrollToBottom, streamingMessageId]);
 
   // Check if a message has reasoning data
   const hasReasoning = useCallback(
@@ -307,12 +278,9 @@ const WidgetMessages: React.FC = () => {
     const currentRendered = renderMessages.length;
 
     // If we're showing recent messages and new messages arrive
-    if (hitBottom || currentRendered === 0) {
+    if (isAtBottom || currentRendered === 0) {
       setRenderMessages(messages.slice(-MIN_RENDER_MESSAGES));
-      // Scroll to bottom for new messages
-      if (hitBottom) {
-        requestAnimationFrame(() => scrollToBottom("auto"));
-      }
+      // Let use-stick-to-bottom handle auto-scroll behavior
     } else {
       // Preserve the view when messages update but we're not at bottom
       const oldestRenderedId = renderMessages[0]?.id;
@@ -325,16 +293,14 @@ const WidgetMessages: React.FC = () => {
         }
       }
     }
-  }, [messages, hitBottom]);
+  }, [messages, isAtBottom, scrollToBottom]);
 
   // Reset state when chat changes
   useEffect(() => {
     setRenderMessages(messages.slice(-MIN_RENDER_MESSAGES));
-    setHitBottom(true);
-    setShowScrollButton(false);
     scrollLockRef.current = false;
     requestAnimationFrame(() => scrollToBottom("auto"));
-  }, [currentChatId]);
+  }, [currentChatId, scrollToBottom]);
 
   // Initial scroll to the bottom when component mounts
   useEffect(() => {
@@ -577,29 +543,28 @@ const WidgetMessages: React.FC = () => {
 
   return (
     <div className={MESSAGE_CONTAINER_STYLES}>
-      <div ref={messagesContainerRef} className={MESSAGES_LIST_STYLES} onScroll={onChatScroll}>
-        {/* Show loading indicator when loading more messages */}
-        {isLoadingMore && (
-          <div className="flex justify-center py-2 text-sm text-muted-foreground">
-            <div className="bg-muted rounded-lg px-3 py-1 animate-pulse">Loading more messages...</div>
-          </div>
-        )}
+      <div ref={scrollRef} className={MESSAGES_LIST_STYLES} onScroll={onChatScroll}>
+        <div ref={contentRef}>
+          {/* Show loading indicator when loading more messages */}
+          {isLoadingMore && (
+            <div className="flex justify-center py-2 text-sm text-muted-foreground">
+              <div className="bg-muted rounded-lg px-3 py-1 animate-pulse">Loading more messages...</div>
+            </div>
+          )}
 
-        {/* Show indicator when there are more messages to load */}
-        {renderMessages.length < messages.length && !isLoadingMore && (
-          <div className="flex justify-center py-2 text-sm text-muted-foreground">
-            <div className="bg-muted rounded-lg px-3 py-1">{messages.length - renderMessages.length} earlier messages</div>
-          </div>
-        )}
+          {/* Show indicator when there are more messages to load */}
+          {renderMessages.length < messages.length && !isLoadingMore && (
+            <div className="flex justify-center py-2 text-sm text-muted-foreground">
+              <div className="bg-muted rounded-lg px-3 py-1">{messages.length - renderMessages.length} earlier messages</div>
+            </div>
+          )}
 
-        {messageListItems}
-
-        {/* This empty div is our scroll target */}
-        <div ref={messagesEndRef} />
+          {messageListItems}
+        </div>
       </div>
 
       {/* Scroll to bottom button */}
-      {showScrollButton && (
+      {!isAtBottom && (
         <Button variant="outline" size="icon" className={SCROLL_BUTTON_STYLES} onClick={() => scrollToBottom()} title="Scroll to latest messages">
           <ChevronDown className="h-4 w-4" />
         </Button>

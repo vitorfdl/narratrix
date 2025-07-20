@@ -18,7 +18,6 @@ import { formatDateTime } from "@/utils/date-time";
 import { uuidUtils } from "../schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database";
 
-
 // Helper to parse JSON fields from DB results for Agent
 function parseAgentJsonFields(agent: any): AgentType {
   return {
@@ -163,7 +162,7 @@ export async function listAgents(filter: AgentFilter): Promise<AgentType[]> {
 // Update an agent
 export async function updateAgent(id: string, updateData: UpdateAgentParams): Promise<AgentType | null> {
   const agentId = uuidUtils.uuid().parse(id);
-  
+
   // Fetch to ensure ownership before update
   const currentAgent = await getAgentById(agentId);
   if (!currentAgent) {
@@ -296,7 +295,7 @@ export async function listCustomNodes(filter: CustomNodeFilter): Promise<CustomN
 // Update a custom node
 export async function updateCustomNode(id: string, updateData: UpdateCustomNodeParams): Promise<CustomNodeType | null> {
   const nodeId = uuidUtils.uuid().parse(id);
-  
+
   // Fetch to ensure ownership before update
   const currentNode = await getCustomNodeById(nodeId);
   if (!currentNode) {
@@ -372,6 +371,10 @@ export async function duplicateAgent(id: string, newName: string): Promise<Agent
 
 // Export types
 export type {
-  AgentType as Agent, CreateAgentParams, CreateCustomNodeParams, CustomNodeType as CustomNode, UpdateAgentParams, UpdateCustomNodeParams
+  AgentType as Agent,
+  CreateAgentParams,
+  CreateCustomNodeParams,
+  CustomNodeType as CustomNode,
+  UpdateAgentParams,
+  UpdateCustomNodeParams,
 };
-

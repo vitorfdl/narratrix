@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run test:*)",
+      "Bash(git status)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(git ls-files*)",
+      "Bash(git rev-parse*)",
+      "Bash(git describe*)",
+      "Bash(git remote*)",
+      "Bash(git config --get*)",
+      "Bash(*biome*)",
+      "Bash(*vitest*)",
+      "Bash(npx biome:*)",
+      "Bash(npx vitest:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(gh pr view:*)"
+    ],
+    "deny": [
+      "Bash(npm install*)",
+      "Bash(pnpm install*)",
+      "Bash(npm start*)",
+      "Bash(pnpm start*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./.claude/post-edit.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}

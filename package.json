@@ -94,6 +94,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.4",
+    "use-stick-to-bottom": "^1.1.1",
     "usehooks-ts": "^3.1.1",
     "uuid": "^11.1.0",
     "zod": "^3.25.45",
