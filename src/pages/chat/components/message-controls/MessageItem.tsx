@@ -40,7 +40,7 @@ const SCRIPT_CONFIGS = {
 
 // Class name lookup tables
 const MESSAGE_BASE_CLASSES = {
-  container: "group relative flex gap-4 p-4 rounded-xl border border-border/50 hover:border-border transition-all duration-200 hover:shadow-sm",
+  container: "group relative flex gap-4 p-4 my-1 rounded-xl border border-border/50 hover:border-border transition-all duration-200 hover:shadow-sm",
   content: "flex-grow relative pb-6 text-justify",
   markdown: "select-text text-sm text-foreground leading-relaxed mt-2",
   controlsContainer: "absolute bottom-0 w-full flex justify-between items-center translate-y-3",
@@ -133,12 +133,6 @@ const MessageItem = ({
     }
   }, [message.messages, message.message_index, isStreaming, message.id, isEditingID]);
 
-  // When entering edit mode, initialize edited content with the current message
-  useEffect(() => {
-    if (isEditing) {
-      setEditedContent(displayContent);
-    }
-  }, [isEditing, displayContent, setEditedContent]);
 
   const onExcludeFromPrompt = useCallback(async () => {
     try {
@@ -172,6 +166,13 @@ const MessageItem = ({
     // TODO: Implement translate when Google Integration is implemented
     console.log("Translate", messageId);
   };
+
+  // Helper function to start editing with immediate content initialization
+  const startEditing = useCallback((messageId: string) => {
+    const currentContent = displayContent;
+    setEditedContent(currentContent);
+    setIsEditingID(messageId);
+  }, [displayContent, setEditedContent, setIsEditingID]);
 
   // Memoize computed values
   const avatarPath = React.useMemo(() => {
@@ -353,7 +354,7 @@ const MessageItem = ({
                     messageType={message.type}
                     isDisabled={isDisabled}
                     isStreaming={isStreaming}
-                    onEdit={setIsEditingID}
+                    onEdit={startEditing}
                     onRegenerateMessage={onRegenerateMessage}
                     onDeleteMessage={onDeleteMessage}
                     onTranslate={onTranslate}

@@ -25,6 +25,7 @@ export interface MDXEditorProps {
   suggestions?: SuggestionItem[];
   enableHistory?: boolean;
   editable?: boolean;
+  autofocus?: boolean;
 }
 
 export interface MarkdownEditorRef {
@@ -111,7 +112,7 @@ const createSendShortcutKeymap = (
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
   (
-    { initialValue = "", enableHistory = false, onChange, className, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true },
+    { initialValue = "", enableHistory = false, onChange, className, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true, autofocus = false },
     ref,
   ) => {
     const editorRef = useRef<EditorView | null>(null);
@@ -202,7 +203,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
 
     return (
       <CodeMirror
-        autoFocus={true}
+        autoFocus={autofocus}
         value={initialValue}
         editable={editable}
         extensions={[
