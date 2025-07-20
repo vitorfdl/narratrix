@@ -15,7 +15,7 @@
     padding: 0 2px;
     border-radius: 3px;
 
-    @apply text-primary
+    @apply text-primary;
   }
 
   /* Special text styling (Uses var from markdown.css) */

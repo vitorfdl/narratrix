@@ -129,14 +129,14 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
 
       const categories = new Map<string, IconData[]>();
 
-      filteredIcons.forEach((icon) => {
+      for (const icon of filteredIcons) {
         if (icon.categories && icon.categories.length > 0) {
-          icon.categories.forEach((category) => {
+          for (const category of icon.categories) {
             if (!categories.has(category)) {
               categories.set(category, []);
             }
             categories.get(category)!.push(icon);
-          });
+          }
         } else {
           const category = "Other";
           if (!categories.has(category)) {
@@ -144,7 +144,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
           }
           categories.get(category)!.push(icon);
         }
-      });
+      }
 
       return Array.from(categories.entries())
         .map(([name, icons]) => ({ name, icons }))

@@ -263,7 +263,6 @@ const WidgetMessages: React.FC = () => {
     }
   }, [scrollRef, renderMessages.length, messages.length, isLoadingMore]);
 
-
   // Check if a message has reasoning data
   const hasReasoning = useCallback(
     (messageId: string) => {

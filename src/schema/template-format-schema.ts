@@ -80,7 +80,7 @@ export {
   SYSTEM_PROMPT_DEFAULT_CONTENT,
   SYSTEM_PROMPT_TYPES,
   templateFormattingSchema,
-  templateSettingsSchema
+  templateSettingsSchema,
 };
 
 export type TemplateFormatting = z.infer<typeof templateFormattingSchema>;

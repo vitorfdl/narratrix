@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "test": "vitest",
+    "lint": "biome check ./src",
+    "lint:fix": "biome check --write .",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri"

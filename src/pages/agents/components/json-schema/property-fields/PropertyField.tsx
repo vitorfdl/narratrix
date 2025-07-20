@@ -1,48 +1,34 @@
-import { Input } from "@/components/ui/input"
-import { CommandTagInput } from "@/components/ui/input-tag"
-import { Label } from "@/components/ui/label"
-import { ResizableTextarea } from "@/components/ui/ResizableTextarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { StepButton } from "@/components/ui/step-button"
-import { Switch } from "@/components/ui/switch"
-import { SCHEMA_TYPES } from "../constants"
-import type { PropertyFieldProps } from "../types"
+import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
+import { Input } from "@/components/ui/input";
+import { CommandTagInput } from "@/components/ui/input-tag";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StepButton } from "@/components/ui/step-button";
+import { Switch } from "@/components/ui/switch";
+import { SCHEMA_TYPES } from "../constants";
+import type { PropertyFieldProps } from "../types";
 
 export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps): JSX.Element | null => {
   if (config.condition && !config.condition(property)) {
-    return null
+    return null;
   }
 
-  const value = config.getValue(property)
+  const value = config.getValue(property);
 
   const handleChange = (newValue: any): void => {
-    const updates = config.setValue(property, newValue)
-    onUpdate(updates)
-  }
+    const updates = config.setValue(property, newValue);
+    onUpdate(updates);
+  };
 
   const renderField = (): JSX.Element => {
     switch (config.type) {
-      case 'text':
-        return (
-          <Input
-            id={`prop-${config.id}`}
-            value={value}
-            onChange={(e) => handleChange(e.target.value)}
-            placeholder={config.placeholder}
-          />
-        )
-      
-      case 'number':
-        return (
-          <StepButton
-            id={`prop-${config.id}`}
-            value={value}
-            onValueChange={handleChange}
-            placeholder={config.placeholder}
-          />
-        )
-      
-      case 'textarea':
+      case "text":
+        return <Input id={`prop-${config.id}`} value={value} onChange={(e) => handleChange(e.target.value)} placeholder={config.placeholder} />;
+
+      case "number":
+        return <StepButton id={`prop-${config.id}`} value={value} onValueChange={handleChange} placeholder={config.placeholder} />;
+
+      case "textarea":
         return (
           <ResizableTextarea
             id={`prop-${config.id}`}
@@ -51,9 +37,9 @@ export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps
             placeholder={config.placeholder}
             rows={config.rows}
           />
-        )
-      
-      case 'select':
+        );
+
+      case "select":
         return (
           <Select value={value} onValueChange={handleChange}>
             <SelectTrigger>
@@ -62,12 +48,12 @@ export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps
             <SelectContent>
               {config.options?.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
-                  {config.id === 'type' ? (
+                  {config.id === "type" ? (
                     <div className="flex items-center gap-2">
                       {(() => {
-                        const typeConfig = SCHEMA_TYPES.find(t => t.value === option.value)
-                        const IconComponent = typeConfig?.icon
-                        return IconComponent ? <IconComponent className="w-4 h-4" /> : null
+                        const typeConfig = SCHEMA_TYPES.find((t) => t.value === option.value);
+                        const IconComponent = typeConfig?.icon;
+                        return IconComponent ? <IconComponent className="w-4 h-4" /> : null;
                       })()}
                       {option.label}
                     </div>
@@ -78,27 +64,21 @@ export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps
               ))}
             </SelectContent>
           </Select>
-        )
-      
-      case 'switch':
+        );
+
+      case "switch":
         return (
           <div className="flex items-center space-x-2">
-            <Switch
-              id={`prop-${config.id}`}
-              checked={value}
-              onCheckedChange={handleChange}
-            />
+            <Switch id={`prop-${config.id}`} checked={value} onCheckedChange={handleChange} />
             <Label htmlFor={`prop-${config.id}`}>{config.label}</Label>
           </div>
-        )
-      
-      case 'number-pair':
+        );
+
+      case "number-pair":
         return (
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label htmlFor={`prop-${config.id}-min`}>
-                {config.id === 'length' ? 'Min Length' : 'Minimum'}
-              </Label>
+              <Label htmlFor={`prop-${config.id}-min`}>{config.id === "length" ? "Min Length" : "Minimum"}</Label>
               <StepButton
                 id={`prop-${config.id}-min`}
                 value={value.min}
@@ -108,9 +88,7 @@ export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps
               />
             </div>
             <div>
-              <Label htmlFor={`prop-${config.id}-max`}>
-                {config.id === 'length' ? 'Max Length' : 'Maximum'}
-              </Label>
+              <Label htmlFor={`prop-${config.id}-max`}>{config.id === "length" ? "Max Length" : "Maximum"}</Label>
               <StepButton
                 id={`prop-${config.id}-max`}
                 value={value.max}
@@ -120,29 +98,20 @@ export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps
               />
             </div>
           </div>
-        )
-      
-      case 'tag':
-        return (
-          <CommandTagInput
-            value={value}
-            onChange={handleChange}
-            placeholder={config.placeholder}
-            maxTags={20}
-          />
-        )
-      
+        );
+
+      case "tag":
+        return <CommandTagInput value={value} onChange={handleChange} placeholder={config.placeholder} maxTags={20} />;
+
       default:
-        return <div>Unsupported field type</div>
+        return <div>Unsupported field type</div>;
     }
-  }
+  };
 
   return (
     <div>
-      {config.type !== 'switch' && (
-        <Label htmlFor={`prop-${config.id}`}>{config.label}</Label>
-      )}
+      {config.type !== "switch" && <Label htmlFor={`prop-${config.id}`}>{config.label}</Label>}
       {renderField()}
     </div>
-  )
-} 
+  );
+};

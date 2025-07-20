@@ -5,9 +5,9 @@ import { CompletionContext, CompletionResult, autocompletion } from "@codemirror
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { Prec } from "@codemirror/state";
-import { EditorView, tooltips, keymap } from "@codemirror/view";
+import { EditorView, keymap, tooltips } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useMemo } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { highlightBracketsExtension } from "./extensions/codemirror-highlight-brackets";
 import { createHistoryCompletionSource, historyExtension } from "./extensions/codemirror-history";
 import { markdownFormatKeymap } from "./extensions/markdown-format-keymap";
@@ -112,7 +112,18 @@ const createSendShortcutKeymap = (
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
   (
-    { initialValue = "", enableHistory = false, onChange, className, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true, autofocus = false },
+    {
+      initialValue = "",
+      enableHistory = false,
+      onChange,
+      className,
+      placeholder,
+      sendShortcut,
+      onSubmit,
+      suggestions = [],
+      editable = true,
+      autofocus = false,
+    },
     ref,
   ) => {
     const editorRef = useRef<EditorView | null>(null);

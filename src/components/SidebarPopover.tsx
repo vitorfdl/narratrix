@@ -20,11 +20,7 @@ const SidebarPopover: React.FC<SidebarPopoverProps> = ({ hiddenWidgets }) => {
     <div className="absolute right-0 top-0 h-full z-50 flex items-center">
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            style={{ writingMode: "vertical-rl", textOrientation: "upright" }}
-            className="whitespace-nowrap"
-          >
+          <Button variant="outline" style={{ writingMode: "vertical-rl", textOrientation: "upright" }} className="whitespace-nowrap">
             Hidden Widgets
           </Button>
         </PopoverTrigger>

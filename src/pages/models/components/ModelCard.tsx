@@ -19,7 +19,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
   const { getManifestById } = useModelManifestsActions();
   const [manifestName, setManifestName] = useState<string>("");
   const inferenceTemplate = useInferenceTemplate(model.inference_template_id || "");
-  
+
   // For demonstration purposes, you can replace these with actual model properties
   const isNew = model.created_at && new Date().getTime() - new Date(model.created_at).getTime() < 15 * 60 * 60 * 1000; // 15 hours
   const isPopular = false; // Replace with actual logic if you have popularity metrics
@@ -81,16 +81,22 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
   // Get model type icon
   const getModelIcon = () => {
     const type = model.type.toLowerCase();
-    if (type.includes("chat") || type.includes("gpt")) return Brain;
-    if (type.includes("embedding")) return Network;
-    if (type.includes("completion")) return GitBranch;
+    if (type.includes("chat") || type.includes("gpt")) {
+      return Brain;
+    }
+    if (type.includes("embedding")) {
+      return Network;
+    }
+    if (type.includes("completion")) {
+      return GitBranch;
+    }
     return Cpu;
   };
 
   const ModelIcon = getModelIcon();
 
   return (
-    <Card 
+    <Card
       onClick={() => setConfigDialogOpen(model)}
       className="group relative overflow-hidden flex flex-col h-full bg-gradient-to-br from-background to-accent/10 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer"
     >
@@ -102,32 +108,23 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-base line-clamp-1">{model.name}</h3>
-              <p className="text-xs text-muted-foreground">
-                {manifestName || model.manifest_id}
-              </p>
+              <p className="text-xs text-muted-foreground">{manifestName || model.manifest_id}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Status badges */}
             {isNew && (
-              <Badge 
-                variant="default" 
-                className="text-xxs flex items-center text-primary-foreground"
-              >
+              <Badge variant="default" className="text-xxs flex items-center text-primary-foreground">
                 <Zap className="h-3 w-3 mr-1" />
                 New
               </Badge>
             )}
             {isPopular && (
-              <Badge 
-                variant="secondary" 
-                className="text-xxs flex items-center"
-              >
+              <Badge variant="secondary" className="text-xxs flex items-center">
                 Popular
               </Badge>
             )}
-
           </div>
         </div>
       </CardHeader>
@@ -154,9 +151,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
           {!urlValue && !modelValue && fallbackValue && (
             <div className="flex items-center gap-2 text-xs">
               <Cpu className="h-3 w-3 text-muted-foreground" />
-              <span className="font-mono text-muted-foreground truncate">
-                {fallbackValue}
-              </span>
+              <span className="font-mono text-muted-foreground truncate">{fallbackValue}</span>
             </div>
           )}
         </div>
@@ -190,38 +185,38 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
 
       {/* Action buttons - shown on hover */}
       <div className="absolute right-2 top-2  flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <Button 
-          variant="secondary" 
-          size="icon" 
+        <Button
+          variant="secondary"
+          size="icon"
           className="h-8 w-8"
           onClick={(e) => {
             e.stopPropagation();
             onEdit?.(model);
-          }} 
+          }}
           title="Edit Model"
         >
           <Edit className="h-3.5 w-3.5" />
         </Button>
-        <Button 
-          variant="secondary" 
-          size="icon" 
+        <Button
+          variant="secondary"
+          size="icon"
           className="h-8 w-8"
           onClick={(e) => {
             e.stopPropagation();
             onDuplicate?.(model);
-          }} 
+          }}
           title="Duplicate Model"
         >
           <Copy className="h-3.5 w-3.5" />
         </Button>
-        <Button 
-          variant="destructive" 
-          size="icon" 
+        <Button
+          variant="destructive"
+          size="icon"
           className="h-8 w-8"
           onClick={(e) => {
             e.stopPropagation();
             onDelete?.(model);
-          }} 
+          }}
           title="Delete Model"
         >
           <Trash2 className="h-3.5 w-3.5" />

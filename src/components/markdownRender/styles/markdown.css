@@ -143,49 +143,49 @@
   /* This block is likely redundant if using Tailwind's dark mode properly */
   /* ... existing dark prettylights vars ... */
   :root {
-      color-scheme: dark;
-      --color-prettylights-syntax-comment: #8b949e;
-      --color-prettylights-syntax-constant: #79c0ff;
-      --color-prettylights-syntax-entity: #d2a8ff;
-      --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
-      --color-prettylights-syntax-entity-tag: #7ee787;
-      --color-prettylights-syntax-keyword: #ff7b72;
-      --color-prettylights-syntax-string: #a5d6ff;
-      --color-prettylights-syntax-variable: #ffa657;
-      --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
-      --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
-      --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
-      --color-prettylights-syntax-carriage-return-text: #f0f6fc;
-      --color-prettylights-syntax-carriage-return-bg: #b62324;
-      --color-prettylights-syntax-string-regexp: #7ee787;
-      --color-prettylights-syntax-markup-list: #f2cc60;
-      --color-prettylights-syntax-markup-heading: #1f6feb;
-      --color-prettylights-syntax-markup-italic: var(--primary);
-      --color-prettylights-syntax-markup-bold: #c9d1d9;
-      --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
-      --color-prettylights-syntax-markup-deleted-bg: #67060c;
-      --color-prettylights-syntax-markup-inserted-text: #aff5b4;
-      --color-prettylights-syntax-markup-inserted-bg: #033a16;
-      --color-prettylights-syntax-markup-changed-text: #ffdfb6;
-      --color-prettylights-syntax-markup-changed-bg: #5a1e02;
-      --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
-      --color-prettylights-syntax-markup-ignored-bg: #1158c7;
-      --color-prettylights-syntax-meta-diff-range: #d2a8ff;
-      --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
-      --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
-      --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
-      --color-fg-default: hsl(var(--foreground));
-      --color-fg-muted: hsl(var(--muted-foreground));
-      --color-fg-subtle: hsl(var(--muted-foreground));
-      --color-canvas-default: hsl(var(--background));
-      --color-canvas-subtle: hsl(var(--secondary));
-      --color-border-default: hsl(var(--border));
-      --color-border-muted: hsl(var(--border));
-      --color-neutral-muted: hsla(var(--muted) / 0.4);
-      --color-accent-fg: hsl(var(--primary));
-      --color-accent-emphasis: hsl(var(--ring));
-      --color-attention-subtle: hsl(var(--secondary));
-      --color-danger-fg: hsl(var(--destructive));
+    color-scheme: dark;
+    --color-prettylights-syntax-comment: #8b949e;
+    --color-prettylights-syntax-constant: #79c0ff;
+    --color-prettylights-syntax-entity: #d2a8ff;
+    --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
+    --color-prettylights-syntax-entity-tag: #7ee787;
+    --color-prettylights-syntax-keyword: #ff7b72;
+    --color-prettylights-syntax-string: #a5d6ff;
+    --color-prettylights-syntax-variable: #ffa657;
+    --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
+    --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
+    --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
+    --color-prettylights-syntax-carriage-return-text: #f0f6fc;
+    --color-prettylights-syntax-carriage-return-bg: #b62324;
+    --color-prettylights-syntax-string-regexp: #7ee787;
+    --color-prettylights-syntax-markup-list: #f2cc60;
+    --color-prettylights-syntax-markup-heading: #1f6feb;
+    --color-prettylights-syntax-markup-italic: var(--primary);
+    --color-prettylights-syntax-markup-bold: #c9d1d9;
+    --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
+    --color-prettylights-syntax-markup-deleted-bg: #67060c;
+    --color-prettylights-syntax-markup-inserted-text: #aff5b4;
+    --color-prettylights-syntax-markup-inserted-bg: #033a16;
+    --color-prettylights-syntax-markup-changed-text: #ffdfb6;
+    --color-prettylights-syntax-markup-changed-bg: #5a1e02;
+    --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
+    --color-prettylights-syntax-markup-ignored-bg: #1158c7;
+    --color-prettylights-syntax-meta-diff-range: #d2a8ff;
+    --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
+    --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
+    --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
+    --color-fg-default: hsl(var(--foreground));
+    --color-fg-muted: hsl(var(--muted-foreground));
+    --color-fg-subtle: hsl(var(--muted-foreground));
+    --color-canvas-default: hsl(var(--background));
+    --color-canvas-subtle: hsl(var(--secondary));
+    --color-border-default: hsl(var(--border));
+    --color-border-muted: hsl(var(--border));
+    --color-neutral-muted: hsla(var(--muted) / 0.4);
+    --color-accent-fg: hsl(var(--primary));
+    --color-accent-emphasis: hsl(var(--ring));
+    --color-attention-subtle: hsl(var(--secondary));
+    --color-danger-fg: hsl(var(--destructive));
   }
 }
 
@@ -240,7 +240,7 @@ pre:focus-within .copy-code-button {
 .markdown-body a {
   /* @apply text-blue-600 dark:text-blue-400 no-underline hover:underline; */
   /* Let's use theme's primary color for links */
-   @apply text-primary no-underline hover:underline;
+  @apply text-primary no-underline hover:underline;
   background-color: transparent;
 }
 
@@ -251,7 +251,7 @@ pre:focus-within .copy-code-button {
 
 .markdown-body b,
 .markdown-body strong {
-   @apply font-semibold text-inherit;
+  @apply font-semibold text-inherit;
 }
 
 .markdown-body dfn {
@@ -264,7 +264,7 @@ pre:focus-within .copy-code-button {
 
 .markdown-body mark {
   /* Use secondary for background as attention-subtle is not directly mappable */
-   @apply bg-secondary text-foreground;
+  @apply bg-secondary text-foreground;
 }
 
 .markdown-body small {
@@ -273,7 +273,7 @@ pre:focus-within .copy-code-button {
 
 .markdown-body sub,
 .markdown-body sup {
-   @apply text-[0.75em] relative align-baseline;
+  @apply text-[0.75em] relative align-baseline;
 }
 
 .markdown-body sub {
@@ -281,7 +281,7 @@ pre:focus-within .copy-code-button {
 }
 
 .markdown-body sup {
-   @apply top-[-0.5em];
+  @apply top-[-0.5em];
 }
 
 .markdown-body img {
@@ -380,21 +380,21 @@ pre:focus-within .copy-code-button {
 .markdown-body [role="button"]:focus,
 .markdown-body input[type="radio"]:focus,
 .markdown-body input[type="checkbox"]:focus {
-   @apply outline-none ring-2 ring-ring ring-offset-2; /* Tailwind focus style */
+  @apply outline-none ring-2 ring-ring ring-offset-2; /* Tailwind focus style */
 }
 
 .markdown-body a:focus:not(:focus-visible),
 .markdown-body [role="button"]:focus:not(:focus-visible),
 .markdown-body input[type="radio"]:focus:not(:focus-visible),
 .markdown-body input[type="checkbox"]:focus:not(:focus-visible) {
-   @apply ring-0; /* Remove ring if not focus-visible */
+  @apply ring-0; /* Remove ring if not focus-visible */
 }
 
 .markdown-body a:focus-visible,
 .markdown-body [role="button"]:focus-visible,
 .markdown-body input[type="radio"]:focus-visible,
 .markdown-body input[type="checkbox"]:focus-visible {
-   @apply outline-none ring-2 ring-ring ring-offset-2; /* Ensure visible focus has ring */
+  @apply outline-none ring-2 ring-ring ring-offset-2; /* Ensure visible focus has ring */
 }
 
 .markdown-body a:not([class]):focus,
@@ -416,24 +416,24 @@ pre:focus-within .copy-code-button {
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-   /* Margins applied in specific h1-h6 rules */
-   @apply font-semibold leading-tight; /* Use tight leading for headings */
+  /* Margins applied in specific h1-h6 rules */
+  @apply font-semibold leading-tight; /* Use tight leading for headings */
 }
 
 .markdown-body h2 {
-   @apply mt-6 mb-4 text-xl font-semibold pb-2 border-b border-border;
+  @apply mt-6 mb-4 text-xl font-semibold pb-2 border-b border-border;
 }
 
 .markdown-body h3 {
-   @apply mt-5 mb-3 text-lg font-semibold;
+  @apply mt-5 mb-3 text-lg font-semibold;
 }
 
 .markdown-body h4 {
-   @apply mt-4 mb-2 text-base font-semibold;
+  @apply mt-4 mb-2 text-base font-semibold;
 }
 
 .markdown-body h5 {
-   @apply mt-3 mb-2 text-sm font-semibold;
+  @apply mt-3 mb-2 text-sm font-semibold;
 }
 
 .markdown-body h6 {
@@ -480,7 +480,7 @@ pre:focus-within .copy-code-button {
   /* font-family handled by .markdown-body pre */
   /* size handled by pre rule below */
   /* margin handled by p, blockquote etc. rule */
-   @apply break-normal;
+  @apply break-normal;
 }
 
 .markdown-body .octicon {
@@ -521,7 +521,7 @@ pre:focus-within .copy-code-button {
 }
 
 .markdown-body .absent {
-   @apply text-destructive;
+  @apply text-destructive;
 }
 
 .markdown-body .anchor {
@@ -599,7 +599,7 @@ pre:focus-within .copy-code-button {
 .markdown-body h5 code,
 .markdown-body h6 tt,
 .markdown-body h6 code {
-   @apply px-1 text-base font-mono align-baseline; /* Reset size/font for code in headings */
+  @apply px-1 text-base font-mono align-baseline; /* Reset size/font for code in headings */
 }
 
 .markdown-body summary h1,
@@ -809,9 +809,9 @@ pre:focus-within .copy-code-button {
 
 .markdown-body code,
 .markdown-body tt {
-   /* Inline code styling */
-   @apply px-1 py-0.5 mx-0.5 font-mono text-[0.875em] align-baseline bg-muted rounded break-words; /* Use break-words for inline */
-   white-space: normal; /* Override break-spaces */
+  /* Inline code styling */
+  @apply px-1 py-0.5 mx-0.5 font-mono text-[0.875em] align-baseline bg-muted rounded break-words; /* Use break-words for inline */
+  white-space: normal; /* Override break-spaces */
 }
 
 .markdown-body code br,
@@ -824,19 +824,19 @@ pre:focus-within .copy-code-button {
 }
 
 .markdown-body samp {
-   /* font-family handled by .markdown-body code */
-   @apply text-[85%];
+  /* font-family handled by .markdown-body code */
+  @apply text-[85%];
 }
 
 .markdown-body pre code {
-   /* font-size handled by pre > code */
+  /* font-size handled by pre > code */
 }
 
 .markdown-body pre > code {
-   /* Styling applied directly to inline code within pre */
-   @apply p-0 m-0 font-mono text-xs leading-normal break-normal whitespace-pre bg-transparent border-0 text-foreground;
-   /* Reset inline code styles */
-   border-radius: 0;
+  /* Styling applied directly to inline code within pre */
+  @apply p-0 m-0 font-mono text-xs leading-normal break-normal whitespace-pre bg-transparent border-0 text-foreground;
+  /* Reset inline code styles */
+  border-radius: 0;
 }
 
 .markdown-body .highlight {
@@ -850,8 +850,8 @@ pre:focus-within .copy-code-button {
 
 .markdown-body .highlight pre,
 .markdown-body pre {
-   @apply p-4 my-2 overflow-auto text-xs leading-normal rounded-md bg-muted text-foreground; /* Use muted bg for code blocks */
-   direction: ltr;
+  @apply p-4 my-2 overflow-auto text-xs leading-normal rounded-md bg-muted text-foreground; /* Use muted bg for code blocks */
+  direction: ltr;
 }
 
 .markdown-body pre code,
@@ -1111,9 +1111,7 @@ pre:focus-within .copy-code-button {
 }
 
 .markdown-body .contains-task-list:hover .task-list-item-convert-container,
-.markdown-body
-  .contains-task-list:focus-within
-  .task-list-item-convert-container {
+.markdown-body .contains-task-list:focus-within .task-list-item-convert-container {
   display: block;
   width: auto;
   height: 24px;

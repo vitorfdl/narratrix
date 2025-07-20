@@ -73,11 +73,11 @@ const gridLayoutAtom = atomWithStorage<GridPosition[]>("gridLayout", defaultPosi
 
         const mergedLayout = produce(storedLayout, (draftLayout: GridPosition[]) => {
           const storedIds = new Set(draftLayout.map((pos: GridPosition) => pos.id));
-          defaultPositions.forEach((defaultPos) => {
+          for (const defaultPos of defaultPositions) {
             if (!storedIds.has(defaultPos.id)) {
               draftLayout.push(defaultPos);
             }
-          });
+          }
         });
 
         return mergedLayout;

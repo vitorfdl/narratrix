@@ -44,7 +44,7 @@ describe("applyInferenceTemplate", () => {
     const result = await applyInferenceTemplate({ systemPrompt, inferenceTemplate, messages, chatConfig: {} });
 
     // Combine system prompt and messages to get the full formatted text
-    const formattedText = result.systemPrompt + result.messages.map(msg => msg.text).join("");
+    const formattedText = result.systemPrompt + result.messages.map((msg) => msg.text).join("");
 
     // Assert
     expect(formattedText).toBe(expectedOutput);
@@ -64,7 +64,7 @@ describe("applyInferenceTemplate", () => {
     const result = await applyInferenceTemplate({ systemPrompt, inferenceTemplate, messages, chatConfig: {} });
 
     // Combine system prompt and messages to get the full formatted text
-    const formattedText = result.systemPrompt + result.messages.map(msg => msg.text).join("");
+    const formattedText = result.systemPrompt + result.messages.map((msg) => msg.text).join("");
 
     // Assert
     expect(formattedText).toBe("<sys>System instructions.</sys>\n<user>Hello there.</user>\n<asst>Hi!");

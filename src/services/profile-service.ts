@@ -105,10 +105,10 @@ export async function getProfileById(id: string): Promise<ProfileResponse | null
   const profile = result[0];
   profile.settings = typeof profile.settings === "string" ? JSON.parse(profile.settings) : profile.settings;
   profile.quick_actions = typeof profile.quick_actions === "string" ? JSON.parse(profile.quick_actions) : profile.quick_actions;
-  
+
   // Ensure hasPassword is a boolean
   profile.hasPassword = !!profile.hasPassword;
-  
+
   // Validate with ProfileResponseSchema
   return profile;
 }
@@ -265,4 +265,3 @@ export async function updateProfilePassword(id: string, currentPassword: string,
 
 // Export type definitions
 export type { Profile, ProfileResponse };
-

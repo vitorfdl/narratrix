@@ -42,7 +42,7 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
           </SelectContent>
         </Select>
       </SettingItem>
-      
+
       <Separator />
 
       <SettingItem icon={<ALargeSmallIcon className="w-4 h-4" />} label="Font Size">

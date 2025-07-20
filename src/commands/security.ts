@@ -44,7 +44,6 @@ async function decryptApiKey(encryptedApiKey: string): Promise<string> {
   try {
     return await invoke<string>("decrypt_api_key", { encryptedApiKey });
   } catch (error) {
-    
     throw new Error(`Failed to decrypt API key: ${error}`);
   }
 }

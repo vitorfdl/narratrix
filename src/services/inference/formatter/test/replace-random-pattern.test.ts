@@ -6,7 +6,7 @@ describe("replaceRandomPattern", () => {
     const input = "A {{house|apartment|lodge|cottage}} in {{summer|winter|autumn|spring}} by {{2$$artist1|artist2|artist3}}";
     const result = replaceRandomPattern(input);
 
-  // Define expected parts and options
+    // Define expected parts and options
     const buildingOptions = ["house", "apartment", "lodge", "cottage"];
     const seasonOptions = ["summer", "winter", "autumn", "spring"];
     const artistOptions = ["artist1", "artist2", "artist3"];

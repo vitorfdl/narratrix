@@ -1,6 +1,6 @@
 import type { SchemaDefinition, SchemaProperty } from "./types";
 export const parseBoolean = (value: any) => value === 1 || value === true || value === "true";
-export const generateId = (): string => Math.random().toString(36).substr(2, 9)
+export const generateId = (): string => Math.random().toString(36).substr(2, 9);
 
 export const convertToProperties = (props: Record<string, any>, required: string[] = []): SchemaProperty[] => {
   return Object.entries(props).map(([name, prop]) => {
@@ -19,10 +19,10 @@ export const convertToProperties = (props: Record<string, any>, required: string
       default: prop.default,
       examples: prop.examples,
       enum: prop.enum,
-    }
+    };
 
     if (prop.type === "object" && prop.properties) {
-      property.properties = convertToProperties(prop.properties, prop.required || [])
+      property.properties = convertToProperties(prop.properties, prop.required || []);
     }
 
     if (prop.type === "array" && prop.items) {
@@ -40,12 +40,12 @@ export const convertToProperties = (props: Record<string, any>, required: string
         default: prop.items.default,
         examples: prop.items.examples,
         enum: prop.items.enum,
-      }
+      };
     }
 
-    return property
-  })
-}
+    return property;
+  });
+};
 
 export const convertPropertyToSchema = (prop: SchemaProperty): any => {
   const schema: any = {
@@ -60,42 +60,39 @@ export const convertPropertyToSchema = (prop: SchemaProperty): any => {
     ...(prop.default !== undefined && { default: prop.default }),
     ...(prop.examples && { examples: prop.examples }),
     ...(prop.enum && { enum: prop.enum }),
-  }
+  };
 
   if (prop.type === "object" && prop.properties) {
-    schema.properties = {}
-    schema.required = []
+    schema.properties = {};
+    schema.required = [];
 
     for (const childProp of prop.properties) {
-      schema.properties[childProp.name] = convertPropertyToSchema(childProp)
+      schema.properties[childProp.name] = convertPropertyToSchema(childProp);
       if (childProp.required) {
-        schema.required.push(childProp.name)
+        schema.required.push(childProp.name);
       }
     }
 
     if (schema.required.length === 0) {
-      delete schema.required
+      delete schema.required;
     }
   }
 
   if (prop.type === "array" && prop.items) {
-    schema.items = convertPropertyToSchema(prop.items)
+    schema.items = convertPropertyToSchema(prop.items);
   }
 
-  return schema
-}
+  return schema;
+};
 
-export const generateSchemaFromProperties = (
-  properties: SchemaProperty[],
-  baseSchema: SchemaDefinition
-): SchemaDefinition => {
-  const schemaProperties: Record<string, any> = {}
-  const required: string[] = []
+export const generateSchemaFromProperties = (properties: SchemaProperty[], baseSchema: SchemaDefinition): SchemaDefinition => {
+  const schemaProperties: Record<string, any> = {};
+  const required: string[] = [];
 
   for (const prop of properties) {
-    schemaProperties[prop.name] = convertPropertyToSchema(prop)
+    schemaProperties[prop.name] = convertPropertyToSchema(prop);
     if (prop.required) {
-      required.push(prop.name)
+      required.push(prop.name);
     }
   }
 
@@ -103,5 +100,5 @@ export const generateSchemaFromProperties = (
     ...baseSchema,
     properties: schemaProperties,
     required: required.length > 0 ? required : undefined,
-  }
-} 
+  };
+};

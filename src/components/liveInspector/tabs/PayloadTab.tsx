@@ -194,13 +194,13 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
       const newIndex = Math.max(0, messageCount - PAYLOAD_RENDER_BUFFER_MULTIPLIER * PAYLOAD_PAGE_SIZE);
       setMsgRenderIndex(newIndex);
     }
-  }, [selectedRequest.messages?.length, autoScrollEnabled]);
+  }, [selectedRequest.messages, autoScrollEnabled]);
 
   // Initialize collapsed state for all messages when request changes
   useEffect(() => {
     const allMessageIndices: Set<number> = new Set(selectedRequest.messages.map((_: any, index: number) => index));
     setCollapsedMessages(allMessageIndices);
-  }, [selectedRequestId, selectedRequest.messages]);
+  }, [selectedRequest.messages]);
 
   // Calculate which messages to render based on pagination
   const getVisibleMessages = () => {

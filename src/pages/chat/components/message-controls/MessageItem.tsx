@@ -133,7 +133,6 @@ const MessageItem = ({
     }
   }, [message.messages, message.message_index, isStreaming, message.id, isEditingID]);
 
-
   const onExcludeFromPrompt = useCallback(async () => {
     try {
       await updateChatMessage(message.id, { disabled: !isDisabled });
@@ -168,11 +167,14 @@ const MessageItem = ({
   };
 
   // Helper function to start editing with immediate content initialization
-  const startEditing = useCallback((messageId: string) => {
-    const currentContent = displayContent;
-    setEditedContent(currentContent);
-    setIsEditingID(messageId);
-  }, [displayContent, setEditedContent, setIsEditingID]);
+  const startEditing = useCallback(
+    (messageId: string) => {
+      const currentContent = displayContent;
+      setEditedContent(currentContent);
+      setIsEditingID(messageId);
+    },
+    [displayContent, setEditedContent, setIsEditingID],
+  );
 
   // Memoize computed values
   const avatarPath = React.useMemo(() => {

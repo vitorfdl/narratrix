@@ -146,9 +146,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {filteredHints.length > 0 && isOpen && (
           <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-sm shadow-md max-h-[200px] overflow-y-auto">
             <div className="px-3 py-1 text-[10px] text-muted-foreground/70 bg-muted/30 border-b border-border">Suggestions (or type your own)</div>
-            {filteredHints.map((hint, index) => (
+            {filteredHints.map((hint) => (
               <div
-                key={index}
+                key={hint}
                 className="px-3 py-2 text-xs cursor-pointer hover:bg-accent transition-colors flex items-center gap-2"
                 onClick={() => handleHintSelect(hint)}
               >
