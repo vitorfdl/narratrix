@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Send GitHub Release to Discord
         uses: SethCohen/github-releases-to-discord@v1.16.2
