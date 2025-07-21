@@ -32,9 +32,9 @@ tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 base64 = "0.22.1"
 aes-gcm = "0.10.3"
-tokio = { version = "1.45.1", features = ["full"] }
-aws-sdk-bedrockruntime = "1.90.0"
-aws-config = "1.6.3"
+tokio = { version = "1.46.1", features = ["full"] }
+aws-sdk-bedrockruntime = "1.97.0"
+aws-config = "1.8.2"
 anyhow = "1.0.98"
 # async-openai = { path = "../../async-openai-narratrix/async-openai", features = ["byot"] }  # Local development
 async-openai = { git = "https://github.com/vitorfdl/async-openai-narratrix", features = [
