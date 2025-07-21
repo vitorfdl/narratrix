@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/UIStore"; // Import the store
 import {
   Book,
-  Bot,
+  // Bot,
   BoxIcon, // for Models
   Heart, // for Patreon
   Menu,
@@ -127,12 +127,12 @@ const Sidebar: React.FC<SidebarProps> = () => {
       icon: <Users className="w-5 h-5" />,
       isMainNav: true,
     },
-    {
-      id: "agents",
-      label: "Agents",
-      icon: <Bot className="w-5 h-5" />,
-      isMainNav: true,
-    },
+    // {
+    //   id: "agents",
+    //   label: "Agents",
+    //   icon: <Bot className="w-5 h-5" />,
+    //   isMainNav: true,
+    // },
     { id: "lorebooks", label: "Lorebooks", icon: <Book className="w-5 h-5" />, isMainNav: true },
     {
       id: "chat",
