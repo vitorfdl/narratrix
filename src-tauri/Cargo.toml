@@ -18,13 +18,13 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset"] }
-tauri-plugin-opener = "2"
+tauri-plugin-opener = "2.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-window-state = "2"
 # uuid = { version = "1.15.1", features = ["v4"] }
 argon2 = { version = "0.5.3" }
-tauri-plugin-single-instance = "2"
+tauri-plugin-single-instance = "2.3"
 # time = { version = "0.3.38", features = ["serde"] }
 rand = "0.8"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
@@ -34,7 +34,7 @@ base64 = "0.22.1"
 aes-gcm = "0.10.3"
 tokio = { version = "1.46.1", features = ["full"] }
 aws-sdk-bedrockruntime = "1.97.0"
-aws-config = "1.8.2"
+aws-config = "1.8"
 anyhow = "1.0.98"
 # async-openai = { path = "../../async-openai-narratrix/async-openai", features = ["byot"] }  # Local development
 async-openai = { git = "https://github.com/vitorfdl/async-openai-narratrix", features = [
