@@ -102,7 +102,7 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.1.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tauri-apps/cli": "^2.7.1",
     "@types/hast": "^3.0.4",
