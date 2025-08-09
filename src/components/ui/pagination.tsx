@@ -4,9 +4,7 @@ import * as React from "react";
 import { ButtonProps, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
-  <nav aria-label="pagination" className={cn("mx-auto flex w-full justify-center", className)} {...props} />
-);
+const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => <nav aria-label="pagination" className={cn("mx-auto flex w-full justify-center", className)} {...props} />;
 Pagination.displayName = "Pagination";
 
 const PaginationContent = React.forwardRef<HTMLUListElement, React.ComponentProps<"ul">>(({ className, ...props }, ref) => (
@@ -14,9 +12,7 @@ const PaginationContent = React.forwardRef<HTMLUListElement, React.ComponentProp
 ));
 PaginationContent.displayName = "PaginationContent";
 
-const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li">>(({ className, ...props }, ref) => (
-  <li ref={ref} className={cn("", className)} {...props} />
-));
+const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li">>(({ className, ...props }, ref) => <li ref={ref} className={cn("", className)} {...props} />);
 PaginationItem.displayName = "PaginationItem";
 
 type PaginationLinkProps = {

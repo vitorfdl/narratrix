@@ -62,12 +62,7 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
                   </button>
                 </div>
                 <hr className="mb-1 mt-0.2 border-t border-border" />
-                <ResizablePopoverContent
-                  className="w-full"
-                  minWidth={450}
-                  maxHeight={maxPopoverHeight}
-                  minHeight={widget.id === "expressions" ? 400 : 200}
-                >
+                <ResizablePopoverContent className="w-full" minWidth={450} maxHeight={maxPopoverHeight} minHeight={widget.id === "expressions" ? 400 : 200}>
                   <div className="w-full h-full">{renderWidget(widget.id as WidgetId, tabId)}</div>
                 </ResizablePopoverContent>
               </PopoverContent>

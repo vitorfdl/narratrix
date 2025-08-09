@@ -87,9 +87,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
                     <Separator className="my-2" />
                     <div
                       className={`px-3 py-2.5 cursor-pointer transition-colors rounded-md hover:bg-accent ${
-                        selectedRequestId === request.id
-                          ? "bg-accent text-accent-foreground font-semibold border-l-2 border-primary"
-                          : "border-l-2 border-transparent"
+                        selectedRequestId === request.id ? "bg-accent text-accent-foreground font-semibold border-l-2 border-primary" : "border-l-2 border-transparent"
                       }`}
                       onClick={() => setSelectedRequestId(request.id)}
                     >
@@ -100,9 +98,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
                         </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{request.fullResponse}</div>
-                      <div className="text-xs text-muted-foreground/80 mt-1 italic">
-                        {formatDistanceToNow(new Date(request.timestamp), { addSuffix: true })}
-                      </div>
+                      <div className="text-xs text-muted-foreground/80 mt-1 italic">{formatDistanceToNow(new Date(request.timestamp), { addSuffix: true })}</div>
                     </div>
                   </React.Fragment>
                 ))}

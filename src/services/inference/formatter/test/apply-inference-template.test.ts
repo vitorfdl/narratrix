@@ -38,8 +38,7 @@ describe("applyInferenceTemplate", () => {
 
     // Any \\n must be replaced by \n in the applyinferencetempalte.
     // The last string must always be the prefix of assistant, so LLM knows it must auto complete for the assistant.
-    const expectedOutput =
-      "<sys>System instructions.</sys>\n<user>Hello there.</user>\n<asst>Hi!</asst>\n<user>How are you doing?</user>\n<asst>Assistant:";
+    const expectedOutput = "<sys>System instructions.</sys>\n<user>Hello there.</user>\n<asst>Hi!</asst>\n<user>How are you doing?</user>\n<asst>Assistant:";
 
     const result = await applyInferenceTemplate({ systemPrompt, inferenceTemplate, messages, chatConfig: {} });
 

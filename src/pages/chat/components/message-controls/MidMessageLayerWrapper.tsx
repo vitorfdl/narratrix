@@ -10,13 +10,7 @@ interface MidMessageLayerWrapperProps {
 }
 
 const MidMessageLayerWrapper = ({ messageBefore, messageAfter, onSummarize }: MidMessageLayerWrapperProps) => {
-  return (
-    <MidMessageLayerControl
-      messageBefore={messageBefore}
-      messageAfter={messageAfter}
-      onSummarize={(messageId, settings) => onSummarize(messageId, settings)}
-    />
-  );
+  return <MidMessageLayerControl messageBefore={messageBefore} messageAfter={messageAfter} onSummarize={(messageId, settings) => onSummarize(messageId, settings)} />;
 };
 
 // Memoize component to prevent unnecessary re-renders

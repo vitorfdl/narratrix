@@ -73,12 +73,7 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
             <Label htmlFor={`${idPrefix}title`} descriptionTag={"{{chapter.title}}"} className="flex items-center gap-1">
               Title
             </Label>
-            <Input
-              id={`${idPrefix}title`}
-              value={chapterData.title}
-              onChange={(e) => updateField("title", e.target.value)}
-              placeholder="Chapter Title"
-            />
+            <Input id={`${idPrefix}title`} value={chapterData.title} onChange={(e) => updateField("title", e.target.value)} placeholder="Chapter Title" />
           </div>
 
           <div className="grid gap-2">
@@ -99,11 +94,7 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
 
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              {chapterData.custom.auto_start_message ? (
-                <Label htmlFor={`${idPrefix}start-message`}>Instruction to AI</Label>
-              ) : (
-                <Label htmlFor={`${idPrefix}start-message`}>Chat Start Message</Label>
-              )}
+              {chapterData.custom.auto_start_message ? <Label htmlFor={`${idPrefix}start-message`}>Instruction to AI</Label> : <Label htmlFor={`${idPrefix}start-message`}>Chat Start Message</Label>}
               <span className="text-xs text-muted-foreground">{estimateTokens(chapterData.start_message || "", 0)} tokens</span>
             </div>
             <MarkdownTextArea
@@ -112,20 +103,12 @@ const ChapterForm = ({ chapterData, onChapterDataChange, isEditMode = false }: C
               editable={true}
               suggestions={promptReplacementSuggestionList}
               onChange={(value) => updateField("start_message", value)}
-              placeholder={
-                chapterData.custom.auto_start_message
-                  ? "Enter User instruction to generate the start message"
-                  : "Enter the User's first message to begin the chapter."
-              }
+              placeholder={chapterData.custom.auto_start_message ? "Enter User instruction to generate the start message" : "Enter the User's first message to begin the chapter."}
             />
           </div>
 
           <div className="flex items-center space-x-2">
-            <Switch
-              id={`${idPrefix}auto-start`}
-              checked={chapterData.custom.auto_start_message}
-              onCheckedChange={(checked) => updateCustomField("auto_start_message", checked)}
-            />
+            <Switch id={`${idPrefix}auto-start`} checked={chapterData.custom.auto_start_message} onCheckedChange={(checked) => updateCustomField("auto_start_message", checked)} />
             <Label htmlFor={`${idPrefix}auto-start`}>Use AI to generate the start message</Label>
           </div>
         </div>
@@ -205,11 +188,7 @@ const WidgetChapters = () => {
   const [editingChapter, setEditingChapter] = useState<ChapterFormData | null>(null);
 
   // Filter chapters based on search query
-  const filteredChapters =
-    chapters?.filter(
-      (chapter) =>
-        chapter.title.toLowerCase().includes(searchQuery.toLowerCase()) || chapter.scenario?.toLowerCase().includes(searchQuery.toLowerCase()),
-    ) || [];
+  const filteredChapters = chapters?.filter((chapter) => chapter.title.toLowerCase().includes(searchQuery.toLowerCase()) || chapter.scenario?.toLowerCase().includes(searchQuery.toLowerCase())) || [];
 
   // Sort chapters
   const sortedChapters = [...filteredChapters].sort((a, b) => {
@@ -361,11 +340,7 @@ const WidgetChapters = () => {
     };
 
     return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className={cn("flex items-center py-0 px-1 rounded-lg border", chapter.id === activeChapterId ? "bg-primary/10 border-primary" : "bg-card")}
-      >
+      <div ref={setNodeRef} style={style} className={cn("flex items-center py-0 px-1 rounded-lg border", chapter.id === activeChapterId ? "bg-primary/10 border-primary" : "bg-card")}>
         <div className="mr-2 cursor-grab" {...attributes} {...listeners} tabIndex={0} aria-label="Drag to reorder chapter">
           <GripVertical className="!h-5 !w-5 text-muted-foreground" />
         </div>
@@ -375,11 +350,7 @@ const WidgetChapters = () => {
             <span className="font-medium text-xs text-muted-foreground">#{chapter.sequence}</span>
             <h3 className="font-semibold text-xs truncate">{chapter.title}</h3>
           </div>
-          {chapter.scenario && (
-            <p className="leading-tight text-xxs italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">
-              {chapter.scenario.slice(0, 200)}
-            </p>
-          )}
+          {chapter.scenario && <p className="leading-tight text-xxs italic font-light text-muted-foreground overflow-hidden text-ellipsis line-clamp-1">{chapter.scenario.slice(0, 200)}</p>}
         </div>
 
         <div className="flex items-center gap-2 ml-4">
@@ -415,10 +386,7 @@ const WidgetChapters = () => {
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleClearMessages(chapter.id, chapter.title)}
-                className="text-orange-600 focus:text-orange-600 dark:text-orange-400 dark:focus:text-orange-400"
-              >
+              <DropdownMenuItem onClick={() => handleClearMessages(chapter.id, chapter.title)} className="text-orange-600 focus:text-orange-600 dark:text-orange-400 dark:focus:text-orange-400">
                 <MessageSquareX className="h-4 w-4 mr-2" />
                 Clear Messages
               </DropdownMenuItem>
@@ -441,13 +409,7 @@ const WidgetChapters = () => {
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 z-10 text-muted-foreground pointer-events-none" />
-              <Input
-                type="search"
-                placeholder="Search chapters..."
-                className="w-48 pl-8 border-x-transparent/20 border-x-2"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <Input type="search" placeholder="Search chapters..." className="w-48 pl-8 border-x-transparent/20 border-x-2" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
 
             <DropdownMenu>
@@ -522,9 +484,7 @@ const WidgetChapters = () => {
               <BookOpen className="h-6 w-6 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-semibold mb-2">No chapters yet</h3>
-            <p className="text-muted-foreground mb-4 max-w-md">
-              Create your first chapter to start organizing your story. Each chapter can have its own settings and configurations.
-            </p>
+            <p className="text-muted-foreground mb-4 max-w-md">Create your first chapter to start organizing your story. Each chapter can have its own settings and configurations.</p>
             <Button onClick={() => setIsCreatingChapter(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create First Chapter
@@ -532,13 +492,7 @@ const WidgetChapters = () => {
           </div>
         ) : (
           <ScrollArea className="h-full">
-            <DndContext
-              autoScroll={false}
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-            >
+            <DndContext autoScroll={false} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
               <SortableContext items={sortedChapters.map((chapter) => chapter.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
                   {sortedChapters.map((chapter) => (
@@ -559,9 +513,7 @@ const WidgetChapters = () => {
             <DialogDescription>Update your chapter settings and configuration.</DialogDescription>
           </DialogHeader>
 
-          <DialogBody>
-            {editingChapter && <ChapterForm chapterData={editingChapter} onChapterDataChange={setEditingChapter} isEditMode={true} />}
-          </DialogBody>
+          <DialogBody>{editingChapter && <ChapterForm chapterData={editingChapter} onChapterDataChange={setEditingChapter} isEditMode={true} />}</DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditingChapter(false)}>

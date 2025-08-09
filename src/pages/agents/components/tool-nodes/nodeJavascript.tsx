@@ -29,9 +29,7 @@ const JAVASCRIPT_NODE_METADATA = {
   theme: createNodeTheme("orange"),
   deletable: true,
   category: "Code Runner",
-  inputs: [
-    { id: "in-code-params", label: "Any", edgeType: "any" as const, targetRef: "code-section", allowMultipleConnections: true },
-  ] as NodeInput[],
+  inputs: [{ id: "in-code-params", label: "Any", edgeType: "any" as const, targetRef: "code-section", allowMultipleConnections: true }] as NodeInput[],
   outputs: [
     { id: "out-toolset", label: "Toolset", edgeType: "toolset" },
     { id: "out-string", label: "Text", edgeType: "string" },
@@ -124,21 +122,13 @@ export const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProp
                             <Button type="button" variant="ghost" size="sm" onClick={() => setSchemaDialogOpen(true)} className="h-6 px-2 text-xs">
                               Edit
                             </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={removeInputSchema}
-                              className="h-6 px-2 text-xs text-destructive hover:text-destructive"
-                            >
+                            <Button type="button" variant="ghost" size="sm" onClick={removeInputSchema} className="h-6 px-2 text-xs text-destructive hover:text-destructive">
                               Remove
                             </Button>
                           </div>
                         </div>
                         {currentInputSchema.description && <p className="text-xs text-muted-foreground mb-2">{currentInputSchema.description}</p>}
-                        <div className="text-xs text-muted-foreground">
-                          {Object.keys(currentInputSchema.properties || {}).length} properties defined
-                        </div>
+                        <div className="text-xs text-muted-foreground">{Object.keys(currentInputSchema.properties || {}).length} properties defined</div>
                       </div>
                     ) : (
                       <div className="p-3 bg-muted/20 rounded-md border-dashed border">
@@ -184,13 +174,7 @@ export const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProp
         </DialogContent>
       </Dialog>
 
-      <JsonSchemaCreator
-        open={schemaDialogOpen}
-        onOpenChange={setSchemaDialogOpen}
-        initialSchema={currentInputSchema}
-        onSave={handleSchemaConfigSave}
-        onCancel={handleSchemaConfigCancel}
-      />
+      <JsonSchemaCreator open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen} initialSchema={currentInputSchema} onSave={handleSchemaConfigSave} onCancel={handleSchemaConfigCancel} />
     </>
   );
 };
@@ -216,22 +200,14 @@ const JavascriptContent = memo<{ config: JavascriptNodeConfig; onConfigureCode: 
       <div className="space-y-2">
         <div className="flex items-center justify-between ">
           <label className="text-xs font-medium">Tool Schema</label>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-primary/10"
-            onClick={handleCodeButtonClick}
-            title="Configure JavaScript code"
-          >
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleCodeButtonClick} title="Configure JavaScript code">
             <Settings className="h-3 w-3" />
           </Button>
         </div>
         <div className="space-y-1 ">
           <div className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-md border-l-2 border-orange-400 dark:border-orange-500">
             <span className="text-xs text-muted-foreground">
-              {config.inputSchema
-                ? `${config.inputSchema.title || "Input Schema"} (${Object.keys(config.inputSchema.properties || {}).length} props)`
-                : "JSON Data (No schema)"}
+              {config.inputSchema ? `${config.inputSchema.title || "Input Schema"} (${Object.keys(config.inputSchema.properties || {}).length} props)` : "JSON Data (No schema)"}
             </span>
           </div>
         </div>
@@ -243,13 +219,8 @@ const JavascriptContent = memo<{ config: JavascriptNodeConfig; onConfigureCode: 
           <label className="text-xs font-medium">Code</label>
         </div>
         <div className="p-2 bg-muted/50 rounded-md max-h-16 custom-scrollbar overflow-y-auto font-mono border-l-2 border-orange-400 dark:border-orange-500 overflow-x-hidden">
-          <span
-            className="text-xxs text-muted-foreground whitespace-pre-line leading-tight break-words"
-            style={{ lineHeight: "1.1", display: "block", wordBreak: "break-all" }}
-          >
-            {config.code
-              ? config.code.split("\n").slice(0, 3).join("\n") + (config.code.split("\n").length > 3 ? "\n..." : "")
-              : "// No code configured"}
+          <span className="text-xxs text-muted-foreground whitespace-pre-line leading-tight break-words" style={{ lineHeight: "1.1", display: "block", wordBreak: "break-all" }}>
+            {config.code ? config.code.split("\n").slice(0, 3).join("\n") + (config.code.split("\n").length > 3 ? "\n..." : "") : "// No code configured"}
           </span>
         </div>
       </div>
@@ -304,13 +275,7 @@ export const JavascriptNode = memo(({ id, data, selected }: NodeProps) => {
 
       <JavascriptNodeConfigDialog open={configDialogOpen} initialConfig={config} onSave={handleConfigSave} onCancel={handleConfigCancel} />
 
-      <JsonSchemaCreator
-        open={schemaDialogOpen}
-        onOpenChange={setSchemaDialogOpen}
-        initialSchema={config.inputSchema || null}
-        onSave={handleSchemaConfigSave}
-        onCancel={handleSchemaConfigCancel}
-      />
+      <JsonSchemaCreator open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen} initialSchema={config.inputSchema || null} onSave={handleSchemaConfigSave} onCancel={handleSchemaConfigCancel} />
     </>
   );
 });

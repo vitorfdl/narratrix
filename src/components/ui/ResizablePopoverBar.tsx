@@ -109,15 +109,10 @@ const ResizablePopoverContent: React.FC<ResizablePopoverContentProps> = ({
         {children}
       </div>
       {/* Resize handle on the right */}
-      <div
-        onMouseDown={handleMouseDown}
-        className="absolute right-[-1rem] top-0 h-full w-2 cursor-ew-resize rounded-full bg-transparent/40 opacity-50 hover:opacity-100"
-      />
+      <div onMouseDown={handleMouseDown} className="absolute right-[-1rem] top-0 h-full w-2 cursor-ew-resize rounded-full bg-transparent/40 opacity-50 hover:opacity-100" />
 
       {/* Global overlay to capture events during resize */}
-      {isResizingState && (
-        <div className="fixed inset-0 z-50 cursor-ew-resize" style={{ pointerEvents: "all" }} onClick={(e) => e.stopPropagation()} />
-      )}
+      {isResizingState && <div className="fixed inset-0 z-50 cursor-ew-resize" style={{ pointerEvents: "all" }} onClick={(e) => e.stopPropagation()} />}
     </div>
   );
 };

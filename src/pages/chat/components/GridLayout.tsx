@@ -389,12 +389,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
           >
             {visibleWidgets.map((widget) => (
               <div key={widget.id}>
-                <GridCard
-                  id={widget.id}
-                  title={widgetTitles[widget.id as WidgetId]}
-                  onClose={() => toggleCard(widget.id)}
-                  dragHandleClassName={dragHandleClass}
-                >
+                <GridCard id={widget.id} title={widgetTitles[widget.id as WidgetId]} onClose={() => toggleCard(widget.id)} dragHandleClassName={dragHandleClass}>
                   {renderWidget(widget.id as WidgetId, tabId)}
                 </GridCard>
               </div>

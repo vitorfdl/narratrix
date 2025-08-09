@@ -14,18 +14,7 @@ import { WidgetHelp } from "../components/WidgetHelp";
 
 // Import types for props if available
 
-export type WidgetId =
-  | "messages"
-  | "config"
-  | "generate"
-  | "participants"
-  | "scripts"
-  | "character_sheet"
-  | "memory"
-  | "database"
-  | "chapters"
-  | "expressions"
-  | "help";
+export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "character_sheet" | "memory" | "database" | "chapters" | "expressions" | "help";
 
 export const widgetTitles: Record<WidgetId, string> = {
   messages: "Messages",

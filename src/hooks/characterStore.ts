@@ -25,11 +25,7 @@ interface CharacterState {
     // CRUD Operations
     createCharacter: (characterData: Character) => Promise<Character>;
     getCharacterById: (id: string) => Promise<Character | null>;
-    updateCharacter: (
-      profile_id: string,
-      id: string,
-      updateData: Partial<Omit<Character, "id" | "profile_id" | "created_at" | "updated_at">>,
-    ) => Promise<Character | null>;
+    updateCharacter: (profile_id: string, id: string, updateData: Partial<Omit<Character, "id" | "profile_id" | "created_at" | "updated_at">>) => Promise<Character | null>;
     deleteCharacter: (id: string) => Promise<boolean>;
 
     // List Operations

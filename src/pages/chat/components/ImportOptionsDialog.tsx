@@ -18,15 +18,7 @@ export interface ImportOptions {
   includeLorebooks: boolean;
 }
 
-export function ImportOptionsDialog({
-  open,
-  onOpenChange,
-  onConfirm,
-  templateName,
-  hasFormatTemplate,
-  hasLorebooks,
-  lorebookCount = 0,
-}: ImportOptionsDialogProps) {
+export function ImportOptionsDialog({ open, onOpenChange, onConfirm, templateName, hasFormatTemplate, hasLorebooks, lorebookCount = 0 }: ImportOptionsDialogProps) {
   const [includeFormatTemplate, setIncludeFormatTemplate] = useState(hasFormatTemplate);
   const [includeLorebooks, setIncludeLorebooks] = useState(hasLorebooks);
 
@@ -47,19 +39,13 @@ export function ImportOptionsDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Import Options</DialogTitle>
-          <DialogDescription>
-            The template "{templateName}" contains additional resources. Choose what to import along with the template.
-          </DialogDescription>
+          <DialogDescription>The template "{templateName}" contains additional resources. Choose what to import along with the template.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {hasFormatTemplate && (
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="format-template"
-                checked={includeFormatTemplate}
-                onCheckedChange={(checked) => setIncludeFormatTemplate(checked === true)}
-              />
+              <Checkbox id="format-template" checked={includeFormatTemplate} onCheckedChange={(checked) => setIncludeFormatTemplate(checked === true)} />
               <label htmlFor="format-template" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 Import Format Template
               </label>
@@ -75,9 +61,7 @@ export function ImportOptionsDialog({
             </div>
           )}
 
-          {!hasFormatTemplate && !hasLorebooks && (
-            <p className="text-sm text-muted-foreground">This template doesn't contain any additional resources to import.</p>
-          )}
+          {!hasFormatTemplate && !hasLorebooks && <p className="text-sm text-muted-foreground">This template doesn't contain any additional resources to import.</p>}
         </div>
 
         <DialogFooter>

@@ -23,10 +23,7 @@ interface ChatTemplateState {
     // Chat Template Operations
     createChatTemplate: (templateData: NewChatTemplateParams) => Promise<ChatTemplate>;
     getChatTemplateById: (id: string) => Promise<ChatTemplate | null>;
-    updateChatTemplate: (
-      id: string,
-      updateData: Partial<Omit<ChatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
-    ) => Promise<ChatTemplate | null>;
+    updateChatTemplate: (id: string, updateData: Partial<Omit<ChatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>) => Promise<ChatTemplate | null>;
     deleteChatTemplate: (id: string) => Promise<boolean>;
     fetchChatTemplates: (filter?: ChatTemplateFilter) => Promise<void>;
     getChatTemplatesByProfile: (profileId: string) => Promise<ChatTemplate[]>;

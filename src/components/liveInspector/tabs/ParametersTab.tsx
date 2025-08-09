@@ -18,20 +18,12 @@ export const Parameters: React.FC<ParametersProps> = ({ selectedRequest }) => {
         <div className="p-4 space-y-4">
           <div>
             <div className="text-sm font-medium mb-1 text-foreground/80">Model Specs</div>
-            <MarkdownTextArea
-              editable={false}
-              className={markdownClass}
-              initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.modelSpecs, null, 2))}
-            />
+            <MarkdownTextArea editable={false} className={markdownClass} initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.modelSpecs, null, 2))} />
           </div>
 
           <div>
             <div className="text-sm font-medium mb-1 text-foreground/80">Parameters</div>
-            <MarkdownTextArea
-              editable={false}
-              className={markdownClass}
-              initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.parameters, null, 2))}
-            />
+            <MarkdownTextArea editable={false} className={markdownClass} initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.parameters, null, 2))} />
           </div>
         </div>
       </ScrollArea>

@@ -16,7 +16,7 @@ interface FormattedPromptCutResult extends FormattedPromptResult {
  */
 export function estimateTokens(text: string, padding = 32): number {
   const wordCount = text.split(/\s+/).filter((w) => w.length > 0).length;
-  const punctCount = (text.match(/[.,!?;:()[\]{}'"\/\\<>@#$%^&*_\-+=|~`]/g) || []).length;
+  const punctCount = (text.match(/[.,!?;:()[\]{}'"/\\<>@#$%^&*_\-+=|~`]/g) || []).length;
   const accentedCount = (text.match(/[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/g) || []).length;
   const contractionCount = (text.match(/\b(d[oa]s?|n[oa]s?|pel[oa]s?|a[oa]s?)\b/gi) || []).length;
   return Math.ceil(wordCount * 1.5 + punctCount * 0.3 + accentedCount * 0.1 + contractionCount * 0.2) + padding;
@@ -52,10 +52,7 @@ export const getTokenCount = async (text: string, useTokenizer = false) => {
  * Applies a context limit to the formatted prompt
  * @returns The formatted prompt with the context limit applied
  */
-export async function applyContextLimit(
-  formattedPrompt: FormattedPromptResult,
-  chatConfig: Pick<ChatTemplate, "config" | "custom_prompts">,
-): Promise<FormattedPromptCutResult> {
+export async function applyContextLimit(formattedPrompt: FormattedPromptResult, chatConfig: Pick<ChatTemplate, "config" | "custom_prompts">): Promise<FormattedPromptCutResult> {
   // Always use the tokenizer for system prompt as it's critical
   const frozenTokens = await getTokenCount(formattedPrompt.systemPrompt || "", USE_TOKENIZER);
   const maxResponseTokens = chatConfig.config.max_tokens as number;

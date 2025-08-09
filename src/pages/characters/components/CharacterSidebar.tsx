@@ -35,8 +35,7 @@ export function CharacterSidebar({
   );
 
   const totalCharacters = characters.length;
-  const filteredCharactersCount =
-    selectedTags.length > 0 ? characters.filter((char) => selectedTags.every((tag) => char.tags?.includes(tag))).length : totalCharacters;
+  const filteredCharactersCount = selectedTags.length > 0 ? characters.filter((char) => selectedTags.every((tag) => char.tags?.includes(tag))).length : totalCharacters;
 
   return (
     <div className="w-44 border-r border-border bg-background/95">
@@ -73,9 +72,7 @@ export function CharacterSidebar({
                   return (
                     <div
                       key={tag}
-                      className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:text-chart-1 transition-colors ${
-                        isSelected ? "bg-accent/30" : ""
-                      }`}
+                      className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:text-chart-1 transition-colors ${isSelected ? "bg-accent/30" : ""}`}
                       onClick={() => onTagSelect(tag)}
                     >
                       {isSelected && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/5 bg-primary rounded-r-sm" />}

@@ -94,11 +94,7 @@ export function validateAndTransformCharacterData(data: any, profileId: string):
   // 4. Unknown format
   return {
     valid: false,
-    errors: [
-      ...internalResult.errors,
-      ...v2Validation.errors,
-      "Unknown or unsupported character file format. Only internal JSON and chara_card_v2 are currently supported.",
-    ],
+    errors: [...internalResult.errors, ...v2Validation.errors, "Unknown or unsupported character file format. Only internal JSON and chara_card_v2 are currently supported."],
     data: null,
     format: "unknown",
   };
@@ -112,11 +108,7 @@ export function validateAndTransformCharacterData(data: any, profileId: string):
  * @returns The imported character.
  * @throws If `transformedData` is null or invalid.
  */
-export async function importCharacter(
-  transformedData: z.infer<typeof CreateCharacterSchema>,
-  chatData?: CharacterSpecV2TransformResult["chatFields"],
-  lorebookData?: any,
-): Promise<Character> {
+export async function importCharacter(transformedData: z.infer<typeof CreateCharacterSchema>, chatData?: CharacterSpecV2TransformResult["chatFields"], lorebookData?: any): Promise<Character> {
   if (!transformedData) {
     throw new Error("No character data provided for import.");
   }

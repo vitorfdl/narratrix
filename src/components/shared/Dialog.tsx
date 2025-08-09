@@ -19,24 +19,22 @@ interface DialogContentProps extends React.ComponentProps<typeof ShadDialog.Dial
  * Use for the main content area of the dialog.
  * By default, prevents closing via ESC key or clicking outside.
  */
-export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className = "", size = "large", allowEscapeKeyClose = true, allowClickOutsideClose = true, ...props }, ref) => {
-    // Merge custom classes with any provided by the user
-    const mergedClassName = ["flex flex-col w-full p-0 bg-background rounded-lg shadow-lg px-6 py-2", className].filter(Boolean).join(" ");
+export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(({ className = "", size = "large", allowEscapeKeyClose = true, allowClickOutsideClose = true, ...props }, ref) => {
+  // Merge custom classes with any provided by the user
+  const mergedClassName = ["flex flex-col w-full p-0 bg-background rounded-lg shadow-lg px-6 py-2", className].filter(Boolean).join(" ");
 
-    return (
-      <ShadDialog.DialogContent
-        showCloseButton={false}
-        ref={ref}
-        className={mergedClassName}
-        size={size}
-        onEscapeKeyDown={allowEscapeKeyClose ? undefined : (e) => e.preventDefault()}
-        onPointerDownOutside={allowClickOutsideClose ? undefined : (e) => e.preventDefault()}
-        {...props}
-      />
-    );
-  },
-);
+  return (
+    <ShadDialog.DialogContent
+      showCloseButton={false}
+      ref={ref}
+      className={mergedClassName}
+      size={size}
+      onEscapeKeyDown={allowEscapeKeyClose ? undefined : (e) => e.preventDefault()}
+      onPointerDownOutside={allowClickOutsideClose ? undefined : (e) => e.preventDefault()}
+      {...props}
+    />
+  );
+});
 DialogContent.displayName = "DialogContent";
 
 /**
@@ -59,9 +57,7 @@ export const DialogTitle = ShadDialog.DialogTitle;
  * Use for the dialog's footer section (actions/buttons).
  */
 export const DialogFooter: React.FC<React.ComponentProps<typeof ShadDialog.DialogFooter>> = ({ className = "", ...props }) => {
-  const mergedClassName = ["sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t border-border px-6 py-4 flex gap-3", className]
-    .filter(Boolean)
-    .join(" ");
+  const mergedClassName = ["sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t border-border px-6 py-4 flex gap-3", className].filter(Boolean).join(" ");
   return <ShadDialog.DialogFooter className={mergedClassName} {...props} />;
 };
 DialogFooter.displayName = "DialogFooter";

@@ -23,9 +23,7 @@ export function CharacterDialogForm({ open, onOpenChange, mode, initialData, onS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="window" onInteractOutside={(e) => isEditing && e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>
-            {title || (mode === "edit" ? `Edit ${initialData?.type === "character" ? "Character" : "Agent"}` : "Add New Character / Agent")}
-          </DialogTitle>
+          <DialogTitle>{title || (mode === "edit" ? `Edit ${initialData?.type === "character" ? "Character" : "Agent"}` : "Add New Character / Agent")}</DialogTitle>
         </DialogHeader>
         <form
           id={formId}

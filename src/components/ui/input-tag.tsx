@@ -14,15 +14,7 @@ interface TagInputProps {
   className?: string;
 }
 
-export function CommandTagInput({
-  value = [],
-  onChange,
-  suggestions = [],
-  placeholder = "Add tags...",
-  maxTags = 10,
-  disabled = false,
-  className,
-}: TagInputProps) {
+export function CommandTagInput({ value = [], onChange, suggestions = [], placeholder = "Add tags...", maxTags = 10, disabled = false, className }: TagInputProps) {
   const [inputValue, setInputValue] = useState<string>("");
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -66,10 +58,7 @@ export function CommandTagInput({
     onChange(value.filter((tag) => tag !== tagToRemove));
   };
 
-  const filteredSuggestions = suggestions.filter(
-    (suggestion) =>
-      !value.map((t) => t.toLowerCase()).includes(suggestion.toLowerCase()) && suggestion.toLowerCase().includes(inputValue.toLowerCase()),
-  );
+  const filteredSuggestions = suggestions.filter((suggestion) => !value.map((t) => t.toLowerCase()).includes(suggestion.toLowerCase()) && suggestion.toLowerCase().includes(inputValue.toLowerCase()));
 
   // Determine if the command list should be shown
   const showCommandList = open && inputValue.length > 0 && filteredSuggestions.length > 0;

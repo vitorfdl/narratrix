@@ -1,11 +1,4 @@
-import {
-  CreateLorebookEntryParams,
-  CreateLorebookParams,
-  Lorebook,
-  LorebookEntry,
-  UpdateLorebookEntryParams,
-  UpdateLorebookParams,
-} from "@/schema/lorebook-schema";
+import { CreateLorebookEntryParams, CreateLorebookParams, Lorebook, LorebookEntry, UpdateLorebookEntryParams, UpdateLorebookParams } from "@/schema/lorebook-schema";
 import * as lorebookService from "@/services/lorebook-service";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
@@ -143,9 +136,7 @@ export const useLorebookStore = create<LorebookState>()(
         loadLorebookEntries: async (profileId, lorebookId) => {
           // Only load entries if the request is for the currently selected lorebook
           if (get().selectedLorebookId !== lorebookId) {
-            console.warn(
-              `Attempted to load entries for lorebook ${lorebookId}, but ${get().selectedLorebookId} is currently selected. Aborting load.`,
-            );
+            console.warn(`Attempted to load entries for lorebook ${lorebookId}, but ${get().selectedLorebookId} is currently selected. Aborting load.`);
             // Ensure loading state is false if the load is aborted early
             set({ isLoadingEntries: false });
             return;

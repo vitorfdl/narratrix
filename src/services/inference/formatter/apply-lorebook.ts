@@ -38,12 +38,7 @@ function matchKeywords(text: string, keywords: string[], caseSensitive: boolean,
   return false; // No keywords matched
 }
 
-export async function getLorebookContent(
-  orderedLorebookIds: string[],
-  budget: number,
-  Messages: InferenceMessage[],
-  lorebookSeparator = "\n---\n",
-): Promise<LorebookContentResponse> {
+export async function getLorebookContent(orderedLorebookIds: string[], budget: number, Messages: InferenceMessage[], lorebookSeparator = "\n---\n"): Promise<LorebookContentResponse> {
   const response: LorebookContentResponse = {
     replacers: {
       lorebook_top: "",

@@ -99,13 +99,7 @@ describe("replaceCommentPattern", () => {
   });
 
   it("should not remove patterns that look similar but aren't comments", () => {
-    const invalidPatterns = [
-      "{{/ not a comment}}",
-      "{{/// triple slash}}",
-      "{{ // space before slashes}}",
-      "{{//comment without space}}but no closing braces",
-      "{{comment without slashes}}",
-    ];
+    const invalidPatterns = ["{{/ not a comment}}", "{{/// triple slash}}", "{{ // space before slashes}}", "{{//comment without space}}but no closing braces", "{{comment without slashes}}"];
 
     invalidPatterns.forEach((pattern) => {
       const result = replaceCommentPattern(pattern);

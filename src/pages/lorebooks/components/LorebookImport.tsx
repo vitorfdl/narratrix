@@ -1,13 +1,4 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { Lorebook } from "@/schema/lorebook-schema";
@@ -146,9 +137,7 @@ export const LorebookImport = forwardRef<LorebookImportHandle, LorebookImportPro
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Duplicate Lorebook Name</AlertDialogTitle>
-          <AlertDialogDescription>
-            A lorebook named "{duplicateConfirm.name}" already exists. Do you want to import this lorebook anyway?
-          </AlertDialogDescription>
+          <AlertDialogDescription>A lorebook named "{duplicateConfirm.name}" already exists. Do you want to import this lorebook anyway?</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

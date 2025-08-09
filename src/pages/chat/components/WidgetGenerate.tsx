@@ -85,9 +85,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     const handleTabFocus = (e: KeyboardEvent) => {
       // Only trigger if not inside an input/textarea/select/button
       const active = document.activeElement;
-      const isInput =
-        active &&
-        (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT" || (active as HTMLElement).isContentEditable);
+      const isInput = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT" || (active as HTMLElement).isContentEditable);
 
       if (!isInput && e.key === "Tab" && !e.shiftKey) {
         markdownRef.current?.focus();
@@ -329,14 +327,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
             Cancel
           </Button>
         ) : (
-          <Button
-            variant="default"
-            size="xs"
-            onClick={() => handleSubmit(text)}
-            title={`Send Message (${sendCommand || "Ctrl+Enter"})`}
-            className="ml-auto"
-            disabled={!text.trim()}
-          >
+          <Button variant="default" size="xs" onClick={() => handleSubmit(text)} title={`Send Message (${sendCommand || "Ctrl+Enter"})`} className="ml-auto" disabled={!text.trim()}>
             <Send className="!w-3.5 !h-3.5 mr-1" />
             Send
           </Button>

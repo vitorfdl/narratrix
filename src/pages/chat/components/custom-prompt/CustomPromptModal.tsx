@@ -92,12 +92,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
               <Label htmlFor="name" className="text-sm font-medium">
                 Prompt Name
               </Label>
-              <Input
-                id="name"
-                placeholder="Enter a descriptive name for this prompt"
-                value={prompt.name}
-                onChange={(e) => setPrompt({ ...prompt, name: e.target.value })}
-              />
+              <Input id="name" placeholder="Enter a descriptive name for this prompt" value={prompt.name} onChange={(e) => setPrompt({ ...prompt, name: e.target.value })} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -154,13 +149,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
             </div>
 
             {prompt.position === "depth" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-2"
-              >
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="depth" className="text-sm font-medium">
                     Depth Position

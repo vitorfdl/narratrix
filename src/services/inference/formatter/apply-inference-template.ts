@@ -17,9 +17,7 @@ function processNewlines(str: string): string {
   return str.replace(/\\n/g, "\n");
 }
 
-async function applyInferenceTemplate(
-  params: ApplyInferenceTemplateConfig,
-): Promise<{ messages: InferenceMessage[]; customStopStrings: string[]; systemPrompt: string }> {
+async function applyInferenceTemplate(params: ApplyInferenceTemplateConfig): Promise<{ messages: InferenceMessage[]; customStopStrings: string[]; systemPrompt: string }> {
   const { systemPrompt, inferenceTemplate, messages, chatConfig, prefixOption } = params;
   const { config } = inferenceTemplate;
 

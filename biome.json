@@ -12,12 +12,14 @@
       "suspicious": {
         "noEmptyInterface": "off",
         "noArrayIndexKey": "warn",
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noImplicitAnyLet": "off"
       },
       "recommended": true,
       "correctness": {
         "noUnusedVariables": "warn",
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "warn"
       },
       "complexity": {
         "noForEach": "warn"
@@ -27,11 +29,7 @@
         "noNonNullAssertion": "off",
         "useImportType": "off"
       },
-      "a11y": {
-        "noRedundantRoles": "warn",
-        "noStaticElementInteractions": "off",
-        "noLabelWithoutControl": "off"
-      },
+      "a11y": "off",
       "performance": {
         "noDelete": "off"
       }

@@ -370,11 +370,4 @@ export async function duplicateAgent(id: string, newName: string): Promise<Agent
 }
 
 // Export types
-export type {
-  AgentType as Agent,
-  CreateAgentParams,
-  CreateCustomNodeParams,
-  CustomNodeType as CustomNode,
-  UpdateAgentParams,
-  UpdateCustomNodeParams,
-};
+export type { AgentType as Agent, CreateAgentParams, CreateCustomNodeParams, CustomNodeType as CustomNode, UpdateAgentParams, UpdateCustomNodeParams };

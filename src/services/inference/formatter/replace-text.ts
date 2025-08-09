@@ -39,7 +39,7 @@ export function applyTextReplacements(text: string, config: PromptFormatterConfi
       if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         const placeholder = `{{${key}}}`;
         // Use a regex with the 'g' flag for global replacement
-        const regex = new RegExp(placeholder.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"), "g");
+        const regex = new RegExp(placeholder.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"), "g");
         processedText = processedText.replace(regex, String(value));
       }
     });
@@ -251,11 +251,7 @@ export function replaceStringPlaceholders(text: string, config: PromptFormatterC
 /**
  * Replace placeholder text in messages and system prompt
  */
-export function replaceTextPlaceholders(
-  messages: InferenceMessage[],
-  systemPrompt: string | undefined,
-  config: PromptFormatterConfig["chatConfig"],
-): FormattedPromptResult {
+export function replaceTextPlaceholders(messages: InferenceMessage[], systemPrompt: string | undefined, config: PromptFormatterConfig["chatConfig"]): FormattedPromptResult {
   const { character, user_character, chapter, extra, censorship } = config || {};
 
   // Skip if no replacements needed

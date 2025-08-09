@@ -46,13 +46,7 @@ const ChatInputContent = memo(() => {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Input Type</label>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-primary/10"
-            onClick={handleConfigButtonClick}
-            title="Configure input settings"
-          >
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigButtonClick} title="Configure input settings">
             <Settings className="h-3 w-3" />
           </Button>
         </div>

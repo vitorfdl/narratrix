@@ -125,10 +125,7 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
                   Chat Template
                 </Label>
                 <div className="border border-input rounded-md">
-                  <WidgetConfig
-                    currentChatTemplateID={currentSettings.chatTemplateID || null}
-                    onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateID", chatTemplateId)}
-                  />
+                  <WidgetConfig currentChatTemplateID={currentSettings.chatTemplateID || null} onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateID", chatTemplateId)} />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for the summary generation</p>
               </div>
@@ -140,19 +137,10 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
           <Button type="button" variant="outline" onClick={handleCancel} className="border-input hover:bg-secondary transition-colors h-8 px-3 py-1">
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleSave(false)}
-            className="border-input hover:bg-secondary transition-colors h-8 px-3 py-1"
-          >
+          <Button type="button" variant="outline" onClick={() => handleSave(false)} className="border-input hover:bg-secondary transition-colors h-8 px-3 py-1">
             Save
           </Button>
-          <Button
-            type="button"
-            onClick={() => handleSave(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors h-8 px-3 py-1"
-          >
+          <Button type="button" onClick={() => handleSave(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors h-8 px-3 py-1">
             Save & Run
           </Button>
         </DialogFooter>

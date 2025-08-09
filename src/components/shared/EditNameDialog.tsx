@@ -68,15 +68,7 @@ export function EditNameDialog({
             <Label htmlFor="edit-name-dialog-input" className="min-w-10">
               {label}
             </Label>
-            <Input
-              id="edit-name-dialog-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="flex-1"
-              placeholder={placeholder}
-              autoFocus
-              onKeyDown={handleKeyDown}
-            />
+            <Input id="edit-name-dialog-input" value={name} onChange={(e) => setName(e.target.value)} className="flex-1" placeholder={placeholder} autoFocus onKeyDown={handleKeyDown} />
           </div>
         </div>
         <DialogFooter className="gap-2">

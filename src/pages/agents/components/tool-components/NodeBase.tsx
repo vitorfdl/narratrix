@@ -295,14 +295,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, selected, children, 
     const currentNodes = getNodes();
 
     // Use centralized validation with fresh data
-    const validation = isValidEdgeConnection(
-      connection.source,
-      connection.sourceHandle || "",
-      connection.target,
-      connection.targetHandle || "",
-      currentNodes as any,
-      currentEdges,
-    );
+    const validation = isValidEdgeConnection(connection.source, connection.sourceHandle || "", connection.target, connection.targetHandle || "", currentNodes as any, currentEdges);
 
     if (!validation.valid && !validation.existingEdge) {
       console.warn(`Handle validation failed for ${nodeId}:${connection.targetHandle || connection.sourceHandle}: ${validation.error}`);
@@ -385,10 +378,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, selected, children, 
               variant="ghost"
               size="sm"
               onClick={handleDelete}
-              className={cn(
-                "h-6 w-6 p-0 hover:bg-destructive/10 transition-opacity duration-200",
-                isHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-              )}
+              className={cn("h-6 w-6 p-0 hover:bg-destructive/10 transition-opacity duration-200", isHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}
             >
               <Trash2 className="h-2 w-2 text-destructive" />
             </Button>

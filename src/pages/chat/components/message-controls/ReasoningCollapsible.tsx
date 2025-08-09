@@ -11,11 +11,7 @@ export const ReasoningSection = ({ content }: { content: string }) => {
         <ChevronDown className="w-4 h-4 ml-auto transition-transform group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent className="overflow-hidden transition-all data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
-        <MarkdownTextArea
-          initialValue={content}
-          editable={false}
-          className="bg-transparent border-none p-0 pt-2 text-sm text-muted-foreground leading-relaxed"
-        />
+        <MarkdownTextArea initialValue={content} editable={false} className="bg-transparent border-none p-0 pt-2 text-sm text-muted-foreground leading-relaxed" />
       </CollapsibleContent>
     </Collapsible>
   );

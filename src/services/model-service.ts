@@ -190,10 +190,7 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
 }
 
 // Update a model
-export async function updateModel(
-  id: string,
-  updateData: Partial<Omit<Model, "id" | "profile_id" | "created_at" | "updated_at">>,
-): Promise<Model | null> {
+export async function updateModel(id: string, updateData: Partial<Omit<Model, "id" | "profile_id" | "created_at" | "updated_at">>): Promise<Model | null> {
   const modelId = uuidUtils.uuid().parse(id);
 
   // Get the current model to ensure it exists

@@ -68,8 +68,7 @@ export default function AgentPage() {
   const filteredAgents = useMemo(() => {
     return agents
       .filter((agent) => {
-        const matchesSearch =
-          search === "" || agent.name.toLowerCase().includes(search.toLowerCase()) || agent.description?.toLowerCase().includes(search.toLowerCase());
+        const matchesSearch = search === "" || agent.name.toLowerCase().includes(search.toLowerCase()) || agent.description?.toLowerCase().includes(search.toLowerCase());
         const matchesTags = settings.selectedTags.length === 0 || (agent.tags && settings.selectedTags.every((tag) => agent.tags?.includes(tag)));
         return matchesSearch && matchesTags;
       })
@@ -242,14 +241,7 @@ export default function AgentPage() {
                   }}
                 >
                   {filteredAgents.map((agent) => (
-                    <AgentCard
-                      key={agent.id}
-                      agent={agent}
-                      cardSize={settings.view.cardSize}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      onToggleFavorite={handleToggleFavorite}
-                    />
+                    <AgentCard key={agent.id} agent={agent} cardSize={settings.view.cardSize} onEdit={handleEdit} onDelete={handleDelete} onToggleFavorite={handleToggleFavorite} />
                   ))}
                 </div>
               </div>
@@ -259,13 +251,9 @@ export default function AgentPage() {
               <div className="rounded-full bg-muted p-4 mb-4">
                 <Bot className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold mb-1">
-                {search || settings.selectedTags.length > 0 ? "No agents match your filters" : "No agents found"}
-              </h3>
+              <h3 className="text-xl font-semibold mb-1">{search || settings.selectedTags.length > 0 ? "No agents match your filters" : "No agents found"}</h3>
               <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
-                {search || settings.selectedTags.length > 0
-                  ? "Try adjusting your search or filter settings."
-                  : "Get started by creating your first AI agent!"}
+                {search || settings.selectedTags.length > 0 ? "Try adjusting your search or filter settings." : "Get started by creating your first AI agent!"}
               </p>
               <Button variant="default" size="lg" onClick={() => setAddDialogOpen(true)} className="bg-primary hover:bg-primary/90">
                 <Cpu size={20} className="mr-2" /> Create Your First Agent

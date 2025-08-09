@@ -89,11 +89,7 @@ export const TextNodeConfigDialog: React.FC<TextNodeConfigDialogProps> = ({ open
             <div className="flex flex-col gap-4 py-2">
               <div>
                 <label className="text-xs font-medium text-foreground mb-1 block">Node Name</label>
-                <Controller
-                  name="name"
-                  control={control}
-                  render={({ field }) => <Input {...field} placeholder="Enter node name" className="text-xs" maxLength={64} autoFocus />}
-                />
+                <Controller name="name" control={control} render={({ field }) => <Input {...field} placeholder="Enter node name" className="text-xs" maxLength={64} autoFocus />} />
               </div>
 
               <div>
@@ -157,9 +153,7 @@ const TextContent = memo<{ config: TextNodeConfig; onConfigure: () => void }>(({
         </div>
         <div className="p-2 bg-muted/50 rounded-md max-h-16 custom-scrollbar overflow-y-auto border-l-2 border-blue-400 dark:border-blue-500">
           <span className="text-xxs  text-muted-foreground whitespace-pre-line leading-tight" style={{ lineHeight: "1.1", display: "block" }}>
-            {config.content
-              ? config.content.split("\n").slice(0, 3).join("\n") + (config.content.split("\n").length > 3 ? "\n..." : "")
-              : "No content configured"}
+            {config.content ? config.content.split("\n").slice(0, 3).join("\n") + (config.content.split("\n").length > 3 ? "\n..." : "") : "No content configured"}
           </span>
         </div>
       </div>

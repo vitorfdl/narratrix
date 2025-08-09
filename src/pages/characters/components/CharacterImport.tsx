@@ -1,13 +1,4 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions } from "@/hooks/chatStore";
 import { Character } from "@/schema/characters-schema";
@@ -153,13 +144,7 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
             const parsedData = parseCharacterContent(fileContentString);
             validationResult = validateAndTransformCharacterData(parsedData, currentProfile.id);
             // Handle avatar URL download for chara_card_v2 and similar formats
-            if (
-              validationResult.valid &&
-              validationResult.data &&
-              typeof parsedData === "object" &&
-              parsedData.data &&
-              typeof parsedData.data.avatar === "string"
-            ) {
+            if (validationResult.valid && validationResult.data && typeof parsedData === "object" && parsedData.data && typeof parsedData.data.avatar === "string") {
               const avatar = parsedData.data.avatar;
               if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
                 try {
@@ -267,11 +252,7 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
       <div
         className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center transition-colors duration-200 min-h-[120px] ${
           isImporting ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-        } ${
-          isImporting
-            ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-background"
-            : "border-border bg-card hover:bg-accent/50 hover:border-accent-foreground/50"
-        }`}
+        } ${isImporting ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-background" : "border-border bg-card hover:bg-accent/50 hover:border-accent-foreground/50"}`}
         onClick={handleBrowseClick}
         role="button"
         tabIndex={isImporting ? -1 : 0}
@@ -307,9 +288,7 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
             <AlertDialogDescription>
               This character file contains chat-related fields (greetings, scenario, etc). Do you want to create a chat for this character as well?
               {chatConfirm.validationResult?.lorebookData && (
-                <span className="block mt-2 text-sm text-muted-foreground">
-                  Note: This file also contains an embedded lorebook that will be imported automatically.
-                </span>
+                <span className="block mt-2 text-sm text-muted-foreground">Note: This file also contains an embedded lorebook that will be imported automatically.</span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -341,11 +320,7 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
               onClick={async () => {
                 setChatConfirm((prev) => ({ ...prev, show: false }));
                 // Proceed with import and pass chatFields to parent
-                const importedCharacter = await importCharacter(
-                  chatConfirm.characterData,
-                  chatConfirm.chatFields,
-                  chatConfirm.validationResult.lorebookData,
-                );
+                const importedCharacter = await importCharacter(chatConfirm.characterData, chatConfirm.chatFields, chatConfirm.validationResult.lorebookData);
                 fetchChatList(currentProfile!.id);
 
                 let successMessage = `${importedCharacter.name} (Format: ${chatConfirm.validationResult.format}) has been imported.`;

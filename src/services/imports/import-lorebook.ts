@@ -94,11 +94,7 @@ export function validateAndTransformLorebookData(data: any, profileId: string, f
   // 3. Unknown format
   return {
     valid: false,
-    errors: [
-      ...internalResult.errors,
-      ...v2Validation.errors,
-      "Unknown or unsupported lorebook file format. Only internal JSON and V2 formats are currently supported.",
-    ],
+    errors: [...internalResult.errors, ...v2Validation.errors, "Unknown or unsupported lorebook file format. Only internal JSON and V2 formats are currently supported."],
     data: null,
     format: "unknown",
   };

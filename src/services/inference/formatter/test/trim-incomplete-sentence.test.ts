@@ -58,10 +58,8 @@ describe("trimToEndSentence", () => {
   });
 
   it("some other tests cases", () => {
-    expect(
-      trimToEndSentence(
-        'Quando o navio inclinava para a esquerda, eu empurrava com toda força, sentindo a resistência da madeira ceder.\n\n"Uurrgh ele rugia com toda força',
-      ),
-    ).toBe("Quando o navio inclinava para a esquerda, eu empurrava com toda força, sentindo a resistência da madeira ceder.");
+    expect(trimToEndSentence('Quando o navio inclinava para a esquerda, eu empurrava com toda força, sentindo a resistência da madeira ceder.\n\n"Uurrgh ele rugia com toda força')).toBe(
+      "Quando o navio inclinava para a esquerda, eu empurrava com toda força, sentindo a resistência da madeira ceder.",
+    );
   });
 });

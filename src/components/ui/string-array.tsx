@@ -65,12 +65,7 @@ export function StringArray({ values = [""], placeholder = "Enter text...", onCh
         <div key={index} className="flex gap-2">
           <Input value={str} onChange={(e) => updateString(index, e.target.value)} className="flex-1" placeholder={placeholder} />
           {strings.length > 1 && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => removeString(index)}
-              className="h-5 w-5 hover:bg-destructive hover:text-destructive-foreground"
-            >
+            <Button variant="outline" size="icon" onClick={() => removeString(index)} className="h-5 w-5 hover:bg-destructive hover:text-destructive-foreground">
               <Minus className="h-4 w-4" />
             </Button>
           )}

@@ -29,15 +29,7 @@ export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps
         return <StepButton id={`prop-${config.id}`} value={value} onValueChange={handleChange} placeholder={config.placeholder} />;
 
       case "textarea":
-        return (
-          <ResizableTextarea
-            id={`prop-${config.id}`}
-            value={value}
-            onChange={(e) => handleChange(e.target.value)}
-            placeholder={config.placeholder}
-            rows={config.rows}
-          />
-        );
+        return <ResizableTextarea id={`prop-${config.id}`} value={value} onChange={(e) => handleChange(e.target.value)} placeholder={config.placeholder} rows={config.rows} />;
 
       case "select":
         return (
@@ -79,23 +71,11 @@ export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label htmlFor={`prop-${config.id}-min`}>{config.id === "length" ? "Min Length" : "Minimum"}</Label>
-              <StepButton
-                id={`prop-${config.id}-min`}
-                value={value.min}
-                min={-9999}
-                max={9999}
-                onValueChange={(e) => handleChange({ ...value, min: e })}
-              />
+              <StepButton id={`prop-${config.id}-min`} value={value.min} min={-9999} max={9999} onValueChange={(e) => handleChange({ ...value, min: e })} />
             </div>
             <div>
               <Label htmlFor={`prop-${config.id}-max`}>{config.id === "length" ? "Max Length" : "Maximum"}</Label>
-              <StepButton
-                id={`prop-${config.id}-max`}
-                value={value.max}
-                min={-9999}
-                max={9999}
-                onValueChange={(e) => handleChange({ ...value, max: e })}
-              />
+              <StepButton id={`prop-${config.id}-max`} value={value.max} min={-9999} max={9999} onValueChange={(e) => handleChange({ ...value, max: e })} />
             </div>
           </div>
         );

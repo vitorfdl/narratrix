@@ -13,23 +13,7 @@ import { exportLorebook } from "@/services/imports/shared/lorebook-export";
 import { useLocalLorebookPageSettings } from "@/utils/local-storage";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import {
-  ArrowLeft,
-  Download,
-  Edit,
-  Filter,
-  Globe,
-  HeartIcon,
-  Plus,
-  RefreshCw,
-  ScrollText,
-  Search,
-  SortAsc,
-  Trash2,
-  Upload,
-  User,
-  View,
-} from "lucide-react";
+import { ArrowLeft, Download, Edit, Filter, Globe, HeartIcon, Plus, RefreshCw, ScrollText, Search, SortAsc, Trash2, Upload, User, View } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { LorebookEntries } from "./components/LorebookEntries";
@@ -304,10 +288,7 @@ export default function LorebooksPage() {
               </Button>
 
               {/* List Width Settings */}
-              <Select
-                value={settings.listWidth}
-                onValueChange={(value) => setSettings((prev) => ({ ...prev, listWidth: value as LorebookPageSettings["listWidth"] }))}
-              >
+              <Select value={settings.listWidth} onValueChange={(value) => setSettings((prev) => ({ ...prev, listWidth: value as LorebookPageSettings["listWidth"] }))}>
                 <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="List Width">
                   <View className="h-5 w-5 mr-1" />
                 </SelectTrigger>
@@ -498,10 +479,7 @@ export default function LorebooksPage() {
                               }}
                               title={lorebook.favorite ? "Remove from favorites" : "Add to favorites"}
                             >
-                              <HeartIcon
-                                size={16}
-                                className={`${lorebook.favorite ? "text-primary fill-primary" : "text-muted-foreground"} transition-colors`}
-                              />
+                              <HeartIcon size={16} className={`${lorebook.favorite ? "text-primary fill-primary" : "text-muted-foreground"} transition-colors`} />
                             </Button>
                             <span className="truncate" title={lorebook.name}>
                               {lorebook.name}
@@ -590,13 +568,9 @@ export default function LorebooksPage() {
                 <div className="rounded-full bg-muted p-4 mb-4">
                   <Search className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold mb-1">
-                  {searchQuery || selectedCategory || showFavoritesOnly ? "No lorebooks match your filters" : "No lorebooks found"}
-                </h3>
+                <h3 className="text-xl font-semibold mb-1">{searchQuery || selectedCategory || showFavoritesOnly ? "No lorebooks match your filters" : "No lorebooks found"}</h3>
                 <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
-                  {searchQuery || selectedCategory || showFavoritesOnly
-                    ? "Try adjusting your search or filter settings."
-                    : "Get started by creating your first lorebook collection!"}
+                  {searchQuery || selectedCategory || showFavoritesOnly ? "Try adjusting your search or filter settings." : "Get started by creating your first lorebook collection!"}
                 </p>
                 <Button variant="default" size="default" onClick={() => setIsFormDialogOpen(true)}>
                   <Plus size={18} className="mr-1.5" /> Create New Lorebook
@@ -631,14 +605,7 @@ export default function LorebooksPage() {
         </>
       )}
 
-      {currentProfile?.id && (
-        <LorebookFormDialog
-          open={isFormDialogOpen}
-          onOpenChange={setIsFormDialogOpen}
-          profileId={currentProfile.id}
-          initialLorebook={lorebookToEdit}
-        />
-      )}
+      {currentProfile?.id && <LorebookFormDialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen} profileId={currentProfile.id} initialLorebook={lorebookToEdit} />}
 
       {lorebookToDelete && currentProfile?.id && (
         <DestructiveConfirmDialog

@@ -122,10 +122,7 @@ export async function listInferenceTemplates(filter?: InferenceTemplateFilter): 
 }
 
 // Update an inference template
-export async function updateInferenceTemplate(
-  id: string,
-  updateData: Partial<Omit<InferenceTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
-): Promise<InferenceTemplate | null> {
+export async function updateInferenceTemplate(id: string, updateData: Partial<Omit<InferenceTemplate, "id" | "profile_id" | "created_at" | "updated_at">>): Promise<InferenceTemplate | null> {
   const validId = uuidUtils.uuid().parse(id);
 
   // Get the current template to ensure it exists

@@ -57,10 +57,7 @@ export async function getChatChapterById(id: string): Promise<ChatChapter | null
   // Validate ID input
   const validId = uuidUtils.uuid().parse(id);
 
-  const result = await selectDBQuery<any[]>(
-    "SELECT id, chat_id, title, sequence, scenario, instructions, start_message, custom, created_at, updated_at FROM chat_chapters WHERE id = $1",
-    [validId],
-  );
+  const result = await selectDBQuery<any[]>("SELECT id, chat_id, title, sequence, scenario, instructions, start_message, custom, created_at, updated_at FROM chat_chapters WHERE id = $1", [validId]);
 
   if (result.length === 0) {
     return null;

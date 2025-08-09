@@ -46,10 +46,7 @@ export const VersionControls = ({
         variant="ghost"
         size="icon"
         disabled={isLeftDisabled}
-        className={cn(
-          "h-6 w-6 opacity-0 group-hover/message:opacity-100 transition-opacity",
-          isLeftDisabled && "group-hover/message:opacity-40 disabled:opacity-0",
-        )}
+        className={cn("h-6 w-6 opacity-0 group-hover/message:opacity-100 transition-opacity", isLeftDisabled && "group-hover/message:opacity-40 disabled:opacity-0")}
         onClick={() => handleSwipe("left")}
         title="Previous Version"
       >
@@ -59,10 +56,7 @@ export const VersionControls = ({
         variant="ghost"
         size="icon"
         disabled={isRightDisabled}
-        className={cn(
-          "h-6 w-6 opacity-0 group-hover/message:opacity-100 transition-opacity",
-          isRightDisabled && "group-hover/message:opacity-40 disabled:opacity-0",
-        )}
+        className={cn("h-6 w-6 opacity-0 group-hover/message:opacity-100 transition-opacity", isRightDisabled && "group-hover/message:opacity-40 disabled:opacity-0")}
         onClick={() => handleSwipe("right")}
         title="Next Version"
       >

@@ -332,11 +332,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
   let processedMessages = processCustomPrompts(chatHistory, config.chatTemplate?.custom_prompts);
 
   // Get the order of lorebooks to be used (Character > User > Template)
-  const LoreBookOrder = [
-    config.chatConfig?.character?.lorebook_id,
-    config.chatConfig?.user_character?.lorebook_id,
-    ...(config.chatTemplate?.lorebook_list || []),
-  ].filter((id) => id) as string[];
+  const LoreBookOrder = [config.chatConfig?.character?.lorebook_id, config.chatConfig?.user_character?.lorebook_id, ...(config.chatTemplate?.lorebook_list || [])].filter((id) => id) as string[];
 
   const LorebookBudget = config.chatTemplate?.config?.lorebook_token_budget || 400;
 

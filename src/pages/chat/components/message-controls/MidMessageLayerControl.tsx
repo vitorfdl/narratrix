@@ -98,11 +98,7 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
   };
 
   return (
-    <div
-      className={cn("group relative flex justify-center items-center h-0 -mt-0 -mb-1 z-10")}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div className={cn("group relative flex justify-center items-center h-0 -mt-0 -mb-1 z-10")} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
       {/* Central dot indicator - always visible but more prominent on hover */}
       <div
         className={cn(
@@ -128,22 +124,10 @@ export const MidMessageLayerControl: React.FC<MidMessageLayerControlProps> = ({ 
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsMergeDialogOpen(true)} title="Combine with previous message">
           <MergeIcon className="h-4 w-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => setIsSummaryDialogOpen(true)}
-          title="Transform previous content into a summary"
-        >
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsSummaryDialogOpen(true)} title="Transform previous content into a summary">
           <BookUp2 className="h-4 w-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-destructive"
-          onClick={() => setIsDeleteDialogOpen(true)}
-          title="Remove all following messages"
-        >
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setIsDeleteDialogOpen(true)} title="Remove all following messages">
           <ScissorsIcon className="h-4 w-4" />
         </Button>
       </div>

@@ -200,10 +200,7 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
 }
 
 // Update a chat template
-export async function updateChatTemplate(
-  id: string,
-  updateData: Partial<Omit<ChatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
-): Promise<ChatTemplate | null> {
+export async function updateChatTemplate(id: string, updateData: Partial<Omit<ChatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>): Promise<ChatTemplate | null> {
   const validId = uuidUtils.uuid().parse(id);
 
   // Get the current template to ensure it exists

@@ -4,11 +4,7 @@ import { DEFAULT_THINKING_CONFIG, StreamingState } from "./types";
 /**
  * Enhanced chunk processor with buffer for handling streaming text with reasoning tags
  */
-export const processStreamChunk = (
-  chunk: string,
-  streamingState: StreamingState,
-  formatTemplate: FormatTemplate | null,
-): { textToAdd: string; reasoningToAdd: string } => {
+export const processStreamChunk = (chunk: string, streamingState: StreamingState, formatTemplate: FormatTemplate | null): { textToAdd: string; reasoningToAdd: string } => {
   const { prefix = "<think>", suffix = "</think>" } = formatTemplate?.config.reasoning || DEFAULT_THINKING_CONFIG;
 
   // If thinking is disabled (empty prefix or suffix), treat all content as regular text

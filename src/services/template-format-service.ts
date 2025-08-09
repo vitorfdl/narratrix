@@ -130,10 +130,7 @@ export async function listFormatTemplates(profileID: string): Promise<FormatTemp
 }
 
 // Update a format template
-export async function updateFormatTemplate(
-  id: string,
-  updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
-): Promise<FormatTemplate | null> {
+export async function updateFormatTemplate(id: string, updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>): Promise<FormatTemplate | null> {
   const validId = uuidUtils.uuid().parse(id);
 
   // Get the current template to ensure it exists
@@ -154,12 +151,8 @@ export async function updateFormatTemplate(
         ...currentTemplate.config,
         ...newConfig,
         // Handle nested updates for settings and reasoning
-        settings: updateData.config.settings
-          ? { ...currentTemplate.config.settings, ...updateData.config.settings }
-          : currentTemplate.config.settings,
-        reasoning: updateData.config.reasoning
-          ? { ...currentTemplate.config.reasoning, ...updateData.config.reasoning }
-          : currentTemplate.config.reasoning,
+        settings: updateData.config.settings ? { ...currentTemplate.config.settings, ...updateData.config.settings } : currentTemplate.config.settings,
+        reasoning: updateData.config.reasoning ? { ...currentTemplate.config.reasoning, ...updateData.config.reasoning } : currentTemplate.config.reasoning,
       };
     }
 

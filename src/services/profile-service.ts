@@ -1,15 +1,6 @@
 import { formatDateTime } from "@/utils/date-time.ts";
 import { hashPassword, verifyPassword } from "../commands/security.ts";
-import {
-  type AppSettings,
-  LoginPasswordParams,
-  LoginPasswordSchema,
-  NewProfileParams,
-  type Profile,
-  type ProfileResponse,
-  ProfileSchema,
-  updateProfileSchema,
-} from "../schema/profiles-schema.ts";
+import { type AppSettings, LoginPasswordParams, LoginPasswordSchema, NewProfileParams, type Profile, type ProfileResponse, ProfileSchema, updateProfileSchema } from "../schema/profiles-schema.ts";
 import { uuidUtils } from "../schema/utils-schema.ts";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database.ts";
 
@@ -29,17 +20,7 @@ export async function createProfile(profileData: NewProfileParams): Promise<Prof
   await executeDBQuery(
     `INSERT INTO profiles (id, name, password, avatar_path, settings, quick_actions, version, created_at, updated_at) 
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-    [
-      id,
-      profile.name,
-      hashedPassword,
-      profile.avatar_path,
-      JSON.stringify(settings),
-      JSON.stringify(profile.quick_actions),
-      profile.version,
-      profile.created_at,
-      profile.updated_at,
-    ],
+    [id, profile.name, hashedPassword, profile.avatar_path, JSON.stringify(settings), JSON.stringify(profile.quick_actions), profile.version, profile.created_at, profile.updated_at],
   );
 
   // Return a validated ProfileResponse

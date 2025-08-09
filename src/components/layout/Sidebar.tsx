@@ -1,4 +1,3 @@
-import { useUIStore } from "@/hooks/UIStore"; // Import the store
 import {
   Book,
   // Bot,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 // src/components/layout/Sidebar.tsx
 import { useEffect, useRef, useState } from "react";
+import { useUIStore } from "@/hooks/UIStore"; // Import the store
 
 interface SidebarProps {
   // Remove props: setActiveSection and activeSection
@@ -37,15 +37,7 @@ interface NavGroupProps {
   wrapIcon?: boolean;
 }
 
-const NavGroup: React.FC<NavGroupProps> = ({
-  navItems,
-  activeSection,
-  onItemClick,
-  isCollapsed,
-  containerClassName = "",
-  indicatorClassName = "",
-  wrapIcon = false,
-}) => {
+const NavGroup: React.FC<NavGroupProps> = ({ navItems, activeSection, onItemClick, isCollapsed, containerClassName = "", indicatorClassName = "", wrapIcon = false }) => {
   const buttonRefs = useRef<(HTMLElement | null)[]>([]);
   const [indicatorTop, setIndicatorTop] = useState<number | null>(null);
   const [indicatorHeight, setIndicatorHeight] = useState<number | null>(null);
@@ -107,9 +99,7 @@ const NavGroup: React.FC<NavGroupProps> = ({
           </button>
         );
       })}
-      {indicatorTop !== null && indicatorHeight !== null && (
-        <div style={{ top: `${indicatorTop}px`, height: `${indicatorHeight}px` }} className={indicatorClassName} />
-      )}
+      {indicatorTop !== null && indicatorHeight !== null && <div style={{ top: `${indicatorTop}px`, height: `${indicatorHeight}px` }} className={indicatorClassName} />}
     </div>
   );
 };

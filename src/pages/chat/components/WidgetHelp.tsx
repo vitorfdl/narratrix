@@ -49,8 +49,7 @@ const RenderKey: React.FC<{ shortcutKey: ShortcutKey; kbdClass: string }> = ({ s
  */
 export const WidgetHelp: React.FC = () => {
   const currentProfile = useCurrentProfile();
-  const kbdClass =
-    "px-2 py-1 text-xs font-sans font-semibold text-muted-foreground bg-muted border border-border rounded-md min-w-[2.5rem] h-[1.75rem] inline-flex items-center justify-center";
+  const kbdClass = "px-2 py-1 text-xs font-sans font-semibold text-muted-foreground bg-muted border border-border rounded-md min-w-[2.5rem] h-[1.75rem] inline-flex items-center justify-center";
 
   const sendShortcut = currentProfile?.settings.chat.sendShortcut || "Ctrl+Enter"; // Default to Ctrl+Enter
   // Helper to generate keys for Send Message dynamically
@@ -100,11 +99,7 @@ export const WidgetHelp: React.FC = () => {
                 <span className="mr-2 whitespace-nowrap text-foreground/80">{shortcut.label}</span>
                 <div className="flex items-center gap-2 shrink-0">
                   {shortcut.keys.map((key, keyIndex) => (
-                    <RenderKey
-                      key={`${section.title}-${shortcut.label}-${key.type}-${key.value}-${keyIndex}`}
-                      shortcutKey={key}
-                      kbdClass={kbdClass}
-                    />
+                    <RenderKey key={`${section.title}-${shortcut.label}-${key.type}-${key.value}-${keyIndex}`} shortcutKey={key} kbdClass={kbdClass} />
                   ))}
                 </div>
               </div>

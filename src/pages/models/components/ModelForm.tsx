@@ -639,9 +639,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
               <AlertCircle className="h-3 w-3" />
               <span>Error verifying connection</span>
             </div>
-            {testResult.errorDetails && (
-              <div className="text-xs mt-1 space-y-1">{testResult.errorDetails.details && <div>{testResult.errorDetails.details}</div>}</div>
-            )}
+            {testResult.errorDetails && <div className="text-xs mt-1 space-y-1">{testResult.errorDetails.details && <div>{testResult.errorDetails.details}</div>}</div>}
           </Badge>
         </div>
       )}

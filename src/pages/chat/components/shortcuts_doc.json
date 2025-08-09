@@ -4,39 +4,19 @@
     "shortcuts": [
       {
         "label": "Toggle Live Inspector",
-        "keys": [
-          { "type": "key", "value": "Ctrl" },
-          { "type": "separator", "value": "/" },
-          { "type": "icon", "value": "Command" },
-          { "type": "key", "value": "'" }
-        ]
+        "keys": [{ "type": "key", "value": "Ctrl" }, { "type": "separator", "value": "/" }, { "type": "icon", "value": "Command" }, { "type": "key", "value": "'" }]
       },
       {
         "label": "Close Current Tab",
-        "keys": [
-          { "type": "key", "value": "Ctrl" },
-          { "type": "separator", "value": "/" },
-          { "type": "icon", "value": "Command" },
-          { "type": "key", "value": "W" }
-        ]
+        "keys": [{ "type": "key", "value": "Ctrl" }, { "type": "separator", "value": "/" }, { "type": "icon", "value": "Command" }, { "type": "key", "value": "W" }]
       },
       {
         "label": "Create New Tab",
-        "keys": [
-          { "type": "key", "value": "Ctrl" },
-          { "type": "separator", "value": "/" },
-          { "type": "icon", "value": "Command" },
-          { "type": "key", "value": "T" }
-        ]
+        "keys": [{ "type": "key", "value": "Ctrl" }, { "type": "separator", "value": "/" }, { "type": "icon", "value": "Command" }, { "type": "key", "value": "T" }]
       },
       {
         "label": "Switch to Next Tab",
-        "keys": [
-          { "type": "key", "value": "Ctrl" },
-          { "type": "separator", "value": "/" },
-          { "type": "icon", "value": "Command" },
-          { "type": "key", "value": "Tab" }
-        ]
+        "keys": [{ "type": "key", "value": "Ctrl" }, { "type": "separator", "value": "/" }, { "type": "icon", "value": "Command" }, { "type": "key", "value": "Tab" }]
       }
     ]
   },

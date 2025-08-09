@@ -53,13 +53,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
   const IconComponent = displayInfo.icon;
 
   return (
-    <TableRow
-      ref={setNodeRef}
-      style={style}
-      className={cn("transition-colors cursor-pointer hover:bg-muted", isDragging && "bg-accent opacity-80")}
-      {...attributes}
-      onClick={() => onEdit(entry)}
-    >
+    <TableRow ref={setNodeRef} style={style} className={cn("transition-colors cursor-pointer hover:bg-muted", isDragging && "bg-accent opacity-80")} {...attributes} onClick={() => onEdit(entry)}>
       <TableCell className="p-0 pl-2 w-10">
         <div {...listeners} className="cursor-grab py-2 px-1 inline-block">
           <GripVertical size={16} className="text-muted-foreground" />
@@ -100,10 +94,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
         </div>
       </TableCell>
       <TableCell className="w-[4%] max-w-[50px] text-center">
-        <div
-          className={cn("inline-block h-2.5 w-2.5 rounded-full", entry.constant ? "bg-primary" : "bg-muted")}
-          title={entry.constant ? "Constant" : "Not Constant"}
-        />
+        <div className={cn("inline-block h-2.5 w-2.5 rounded-full", entry.constant ? "bg-primary" : "bg-muted")} title={entry.constant ? "Constant" : "Not Constant"} />
       </TableCell>
       <TableCell className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>
         <div className="flex flex-wrap gap-1 justify-center">
@@ -408,62 +399,33 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                       </Button>
                     </TableHead>
                     <TableHead className="w-[25%] max-w-[200px]">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn("-ml-3 font-medium", compact && "text-xs h-8")}
-                        onClick={() => handleSort("comment")}
-                      >
+                      <Button variant="ghost" size="sm" className={cn("-ml-3 font-medium", compact && "text-xs h-8")} onClick={() => handleSort("comment")}>
                         Title
-                        {sortField === "comment" &&
-                          (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
+                        {sortField === "comment" && (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="max-w-[100px] text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn("mx-auto font-medium", compact && "text-xs h-8")}
-                        onClick={() => handleSort("group_key")}
-                      >
+                      <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "text-xs h-8")} onClick={() => handleSort("group_key")}>
                         Group
-                        {sortField === "group_key" &&
-                          (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
+                        {sortField === "group_key" && (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="max-w-[50px] text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn("mx-auto font-medium", compact && "text-xs h-8")}
-                        onClick={() => handleSort("insertion_type")}
-                      >
+                      <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "text-xs h-8")} onClick={() => handleSort("insertion_type")}>
                         Insert Type
-                        {sortField === "insertion_type" &&
-                          (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
+                        {sortField === "insertion_type" && (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="w-[10%] max-w-[100px] text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn("mx-auto font-medium", compact && "h-8")}
-                        onClick={() => handleSort("constant")}
-                      >
+                      <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "h-8")} onClick={() => handleSort("constant")}>
                         <span className="text-xs">Constant</span>
                       </Button>
                     </TableHead>
                     <TableHead className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>Keywords</TableHead>
                     <TableHead className="w-[10%] text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn("mx-auto font-medium", compact && "text-xs h-8")}
-                        onClick={() => handleSort("priority")}
-                      >
+                      <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "text-xs h-8")} onClick={() => handleSort("priority")}>
                         Priority
-                        {sortField === "priority" &&
-                          (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
+                        {sortField === "priority" && (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="w-10" />
@@ -472,14 +434,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                 <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
                   <TableBody>
                     {entries.map((entry) => (
-                      <SortableEntryRow
-                        key={entry.id}
-                        entry={entry}
-                        onToggleEnabled={handleToggleEnabled}
-                        onEdit={handleEditEntry}
-                        onDelete={setEntryToDelete}
-                        compact={compact}
-                      />
+                      <SortableEntryRow key={entry.id} entry={entry} onToggleEnabled={handleToggleEnabled} onEdit={handleEditEntry} onDelete={setEntryToDelete} compact={compact} />
                     ))}
                   </TableBody>
                 </SortableContext>
@@ -510,13 +465,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         )}
       </div>
 
-      <LorebookEntryDialog
-        open={isEntryDialogOpen}
-        onOpenChange={setIsEntryDialogOpen}
-        lorebookId={lorebookId}
-        entry={entryToEdit}
-        groupKeys={groupKeys}
-      />
+      <LorebookEntryDialog open={isEntryDialogOpen} onOpenChange={setIsEntryDialogOpen} lorebookId={lorebookId} entry={entryToEdit} groupKeys={groupKeys} />
 
       {entryToDelete && currentProfile && (
         <DestructiveConfirmDialog

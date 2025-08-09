@@ -1,12 +1,5 @@
 import { cancelInferenceRequest, listenForInferenceResponses, queueInferenceRequest } from "@/commands/inference";
-import type {
-  InferenceCancelledResponse,
-  InferenceCompletedResponse,
-  InferenceMessage,
-  InferenceResponse,
-  InferenceStreamingResponse,
-  ModelSpecs,
-} from "@/schema/inference-engine-schema";
+import type { InferenceCancelledResponse, InferenceCompletedResponse, InferenceMessage, InferenceResponse, InferenceStreamingResponse, ModelSpecs } from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
 import { parseEngineParameters } from "@/services/inference/formatter/parse-engine-parameters";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -267,10 +260,7 @@ export function useInference(options: UseInferenceOptions = {}) {
 
         // Clean up requests older than 10 minutes that are no longer active
         Object.entries(updated).forEach(([id, request]) => {
-          if (
-            (request.status === "completed" || request.status === "error" || request.status === "cancelled") &&
-            now - request.timestamp > 10 * 60 * 1000
-          ) {
+          if ((request.status === "completed" || request.status === "error" || request.status === "cancelled") && now - request.timestamp > 10 * 60 * 1000) {
             delete updated[id];
             // Also clean up any stream tracking for this request
             delete lastStreamChunks.current[id];

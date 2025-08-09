@@ -36,11 +36,7 @@ export interface MarkdownEditorRef {
  * Creates a CodeMirror keymap extension for handling send shortcuts
  * This integrates directly with CodeMirror's event system for reliable keyboard handling
  */
-const createSendShortcutKeymap = (
-  sendShortcut: string | undefined,
-  onSubmit: ((text: string) => void) | undefined,
-  editorRef: React.MutableRefObject<EditorView | null>,
-) => {
+const createSendShortcutKeymap = (sendShortcut: string | undefined, onSubmit: ((text: string) => void) | undefined, editorRef: React.MutableRefObject<EditorView | null>) => {
   if (!sendShortcut || !onSubmit) {
     return [];
   }
@@ -111,21 +107,7 @@ const createSendShortcutKeymap = (
  * I probably should have integrated CodeMirror directly.
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
-  (
-    {
-      initialValue = "",
-      enableHistory = false,
-      onChange,
-      className,
-      placeholder,
-      sendShortcut,
-      onSubmit,
-      suggestions = [],
-      editable = true,
-      autofocus = false,
-    },
-    ref,
-  ) => {
+  ({ initialValue = "", enableHistory = false, onChange, className, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true, autofocus = false }, ref) => {
     const editorRef = useRef<EditorView | null>(null);
     const isInitialMount = useRef(true);
     const isUserEditing = useRef(false);
@@ -177,12 +159,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
 
       // Only update if the user is NOT editing
       // Ensure editorRef.current is an EditorView instance before calling dispatch
-      if (
-        !isUserEditing.current &&
-        initialValue !== editorRef.current?.state?.doc.toString() &&
-        editorRef.current &&
-        typeof (editorRef.current as any).dispatch === "function"
-      ) {
+      if (!isUserEditing.current && initialValue !== editorRef.current?.state?.doc.toString() && editorRef.current && typeof (editorRef.current as any).dispatch === "function") {
         const view = editorRef.current;
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: initialValue },

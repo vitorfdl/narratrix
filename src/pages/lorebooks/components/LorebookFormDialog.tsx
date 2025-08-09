@@ -135,9 +135,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
       <DialogContent size="default">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Lorebook" : "Create New Lorebook"}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? "Update the details for this lorebook." : "Create a new lorebook to organize your world-building content."}
-          </DialogDescription>
+          <DialogDescription>{isEditing ? "Update the details for this lorebook." : "Create a new lorebook to organize your world-building content."}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -189,12 +187,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      className="input-fields hover:bo"
-                      placeholder="A brief description of this lorebook"
-                      {...field}
-                      value={field.value || ""}
-                    />
+                    <Textarea className="input-fields hover:bo" placeholder="A brief description of this lorebook" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -223,14 +216,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                   <FormItem>
                     <FormLabel>Max Tokens</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={10000}
-                        {...field}
-                        onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 1000)}
-                        value={field.value}
-                      />
+                      <Input type="number" min={1} max={10000} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 1000)} value={field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -244,14 +230,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                   <FormItem>
                     <FormLabel>Max Depth</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={100}
-                        {...field}
-                        onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 25)}
-                        value={field.value}
-                      />
+                      <Input type="number" min={1} max={100} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 25)} value={field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

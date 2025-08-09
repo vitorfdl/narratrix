@@ -3,16 +3,7 @@ import { baseTemplateSchema } from "./template-base-schema";
 
 // Define the enum values for SystemPromptType since it's only a type in the schema
 
-const SYSTEM_PROMPT_TYPES = [
-  "context",
-  "chapter-context",
-  "character-context",
-  "user-context",
-  "character-memory",
-  "lorebook-top",
-  "lorebook-bottom",
-  "custom-field",
-] as const;
+const SYSTEM_PROMPT_TYPES = ["context", "chapter-context", "character-context", "user-context", "character-memory", "lorebook-top", "lorebook-bottom", "custom-field"] as const;
 
 const SYSTEM_PROMPT_DEFAULT_CONTENT: Record<SystemPromptType, string> = {
   context: "You are a helpful assistant that can answer questions and help with tasks.",
@@ -74,14 +65,7 @@ const newFormatTemplateSchema = formatTemplateSchema.omit({
   updated_at: true,
 });
 
-export {
-  formatTemplateSchema,
-  newFormatTemplateSchema,
-  SYSTEM_PROMPT_DEFAULT_CONTENT,
-  SYSTEM_PROMPT_TYPES,
-  templateFormattingSchema,
-  templateSettingsSchema,
-};
+export { formatTemplateSchema, newFormatTemplateSchema, SYSTEM_PROMPT_DEFAULT_CONTENT, SYSTEM_PROMPT_TYPES, templateFormattingSchema, templateSettingsSchema };
 
 export type TemplateFormatting = z.infer<typeof templateFormattingSchema>;
 export type TemplateSettings = z.infer<typeof templateSettingsSchema>;

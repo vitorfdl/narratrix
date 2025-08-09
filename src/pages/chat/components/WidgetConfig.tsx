@@ -452,18 +452,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [
-    selectedModelId,
-    selectedFormatTemplateId,
-    selectedLorebookList,
-    contextSize,
-    responseLength,
-    maxDepth,
-    lorebookTokenBudget,
-    values,
-    customPrompts,
-    currentChatTemplateID,
-  ]);
+  }, [selectedModelId, selectedFormatTemplateId, selectedLorebookList, contextSize, responseLength, maxDepth, lorebookTokenBudget, values, customPrompts, currentChatTemplateID]);
 
   // Custom prompts handlers
   const handleAddCustomPrompt = () => {
@@ -723,11 +712,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
         if (lorebooksData && Array.isArray(lorebooksData)) {
           for (const lorebookData of lorebooksData) {
             try {
-              const lorebookValidationResult = validateAndTransformLorebookData(
-                lorebookData,
-                profileId,
-                `${fileName}_${lorebookData.name || "unnamed"}`,
-              );
+              const lorebookValidationResult = validateAndTransformLorebookData(lorebookData, profileId, `${fileName}_${lorebookData.name || "unnamed"}`);
               if (lorebookValidationResult.valid && lorebookValidationResult.data) {
                 const importedLorebook = await importLorebook(lorebookValidationResult.data);
                 importedLorebookIds.push(importedLorebook.id);
@@ -832,14 +817,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
               selectedValue={selectedModelId}
               placeholder="Search a model..."
               trigger={
-                <Button
-                  variant={selectedFormatTemplateId ? "outline" : "destructive"}
-                  className="w-full justify-between text-xs px-2"
-                  disabled={isDisabled}
-                >
-                  {selectedModelId
-                    ? modelOptions.find((model) => model.value === selectedModelId)?.label || "Select a model..."
-                    : "Select a model..."}
+                <Button variant={selectedFormatTemplateId ? "outline" : "destructive"} className="w-full justify-between text-xs px-2" disabled={isDisabled}>
+                  {selectedModelId ? modelOptions.find((model) => model.value === selectedModelId)?.label || "Select a model..." : "Select a model..."}
                   <ChevronDown className="ml-auto !h-3 !w-3" />
                 </Button>
               }
@@ -861,28 +840,15 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
                 placeholder="Search a format..."
                 selectedValue={selectedFormatTemplateId}
                 trigger={
-                  <Button
-                    variant={selectedFormatTemplateId ? "outline" : "destructive"}
-                    className="w-full justify-between text-xs px-2"
-                    disabled={isDisabled}
-                  >
-                    {selectedFormatTemplateId
-                      ? formatTemplates.find((template) => template.id === selectedFormatTemplateId)?.name || "Select a format..."
-                      : "Select a format..."}
+                  <Button variant={selectedFormatTemplateId ? "outline" : "destructive"} className="w-full justify-between text-xs px-2" disabled={isDisabled}>
+                    {selectedFormatTemplateId ? formatTemplates.find((template) => template.id === selectedFormatTemplateId)?.name || "Select a format..." : "Select a format..."}
                     <ChevronDown className="ml-auto !h-3 !w-3" />
                   </Button>
                 }
               />
             </div>
             {selectedFormatTemplateId && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0"
-                onClick={() => setIsFormatTemplateModalOpen(true)}
-                disabled={isDisabled}
-                aria-label="Edit Format Template"
-              >
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setIsFormatTemplateModalOpen(true)} disabled={isDisabled} aria-label="Edit Format Template">
                 <Pencil className="!h-3 !w-3" />
               </Button>
             )}
@@ -962,16 +928,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
             <h3 className="text-xs font-normal  truncate">Context Size:</h3>
           </div>
           <div className="flex-1">
-            <StepButton
-              value={contextSize}
-              showSlider
-              onValueChange={setContextSize}
-              min={512}
-              max={32768 * 10}
-              step={512}
-              className="h-7"
-              disabled={isDisabled}
-            />
+            <StepButton value={contextSize} showSlider onValueChange={setContextSize} min={512} max={32768 * 10} step={512} className="h-7" disabled={isDisabled} />
           </div>
         </div>
 
@@ -983,15 +940,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
               <h3 className="text-xs font-norma  truncate">Lorebook Budget:</h3>
             </div>
             <div className="flex-1">
-              <StepButton
-                value={lorebookTokenBudget}
-                onValueChange={setLorebookTokenBudget}
-                min={0}
-                max={contextSize}
-                step={64}
-                className="h-7"
-                disabled={isDisabled}
-              />
+              <StepButton value={lorebookTokenBudget} onValueChange={setLorebookTokenBudget} min={0} max={contextSize} step={64} className="h-7" disabled={isDisabled} />
             </div>
           </div>
         )}
@@ -1003,15 +952,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
             <h3 className="text-xs font-normal truncate">Response Length:</h3>
           </div>
           <div className="flex-1">
-            <StepButton
-              value={responseLength}
-              onValueChange={setResponseLength}
-              min={1}
-              max={99999}
-              step={50}
-              className="h-7"
-              disabled={isDisabled}
-            />
+            <StepButton value={responseLength} onValueChange={setResponseLength} min={1} max={99999} step={50} className="h-7" disabled={isDisabled} />
           </div>
         </div>
 
@@ -1061,12 +1002,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
           disabled={isDisabled}
         />
 
-        <CustomPromptModal
-          open={isCustomPromptModalOpen}
-          onClose={() => setIsCustomPromptModalOpen(false)}
-          onSave={handleSaveCustomPrompt}
-          initialData={getCustomPromptToEdit()}
-        />
+        <CustomPromptModal open={isCustomPromptModalOpen} onClose={() => setIsCustomPromptModalOpen(false)} onSave={handleSaveCustomPrompt} initialData={getCustomPromptToEdit()} />
       </div>
 
       <Separator className="my-2" />

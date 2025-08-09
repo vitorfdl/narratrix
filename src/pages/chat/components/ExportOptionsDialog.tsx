@@ -22,16 +22,7 @@ export interface ExportOptions {
   exportFormat: "json" | "png";
 }
 
-export function ExportOptionsDialog({
-  open,
-  onOpenChange,
-  onConfirm,
-  templateName,
-  hasFormatTemplate,
-  hasLorebooks,
-  hasAvatar = false,
-  isCharacterExport = false,
-}: ExportOptionsDialogProps) {
+export function ExportOptionsDialog({ open, onOpenChange, onConfirm, templateName, hasFormatTemplate, hasLorebooks, hasAvatar = false, isCharacterExport = false }: ExportOptionsDialogProps) {
   const [includeFormatTemplate, setIncludeFormatTemplate] = useState(true);
   const [includeLorebooks, setIncludeLorebooks] = useState(true);
   const [exportFormat, setExportFormat] = useState<"json" | "png">("png");
@@ -54,9 +45,7 @@ export function ExportOptionsDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Export Options</DialogTitle>
-          <DialogDescription>
-            Choose what to include when exporting "{templateName}". Additional resources will be embedded in the export file.
-          </DialogDescription>
+          <DialogDescription>Choose what to include when exporting "{templateName}". Additional resources will be embedded in the export file.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -82,11 +71,7 @@ export function ExportOptionsDialog({
 
           {hasFormatTemplate && (
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="format-template"
-                checked={includeFormatTemplate}
-                onCheckedChange={(checked) => setIncludeFormatTemplate(checked === true)}
-              />
+              <Checkbox id="format-template" checked={includeFormatTemplate} onCheckedChange={(checked) => setIncludeFormatTemplate(checked === true)} />
               <label htmlFor="format-template" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 Include Format Template
               </label>
@@ -102,9 +87,7 @@ export function ExportOptionsDialog({
             </div>
           )}
 
-          {!isCharacterExport && !hasFormatTemplate && !hasLorebooks && (
-            <p className="text-sm text-muted-foreground">This template doesn't have any format template or lorebooks to include.</p>
-          )}
+          {!isCharacterExport && !hasFormatTemplate && !hasLorebooks && <p className="text-sm text-muted-foreground">This template doesn't have any format template or lorebooks to include.</p>}
         </div>
 
         <DialogFooter>

@@ -387,10 +387,7 @@ export default function ChatPage() {
           onOpenChange={setIsDeleteDialogOpen}
           title="Are you absolutely sure?"
           description={
-            <>
-              This action cannot be undone. This will permanently delete the chat "
-              {allChats.find((c) => c.id === chatToDeleteId)?.name || "this chat"}" and all associated messages and chapters.
-            </>
+            <>This action cannot be undone. This will permanently delete the chat "{allChats.find((c) => c.id === chatToDeleteId)?.name || "this chat"}" and all associated messages and chapters.</>
           }
           onConfirm={handleDeleteConfirm}
           onCancel={() => {

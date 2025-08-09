@@ -43,10 +43,7 @@ describe("applyContextLimit", () => {
 
     // Since 221 > 275 * 0.9 (247.5), no second pass is triggered with tokenizer based on mock
 
-    const result = await applyContextLimit(
-      { inferenceMessages: messages, systemPrompt },
-      { config: { max_context: 500, max_tokens: 180, max_depth: 100 }, custom_prompts: [] },
-    );
+    const result = await applyContextLimit({ inferenceMessages: messages, systemPrompt }, { config: { max_context: 500, max_tokens: 180, max_depth: 100 }, custom_prompts: [] });
 
     expect(result).toEqual({
       inferenceMessages: messages, // All messages should fit with adjusted context
@@ -68,10 +65,7 @@ describe("applyContextLimit", () => {
     ];
     const systemPrompt = "Sys"; // 3 chars -> 35 sys tokens (tokenizer)
 
-    const result = await applyContextLimit(
-      { inferenceMessages: messages, systemPrompt },
-      { config: { max_context: 200, max_tokens: 50, max_depth: 100 }, custom_prompts: [] },
-    );
+    const result = await applyContextLimit({ inferenceMessages: messages, systemPrompt }, { config: { max_context: 200, max_tokens: 50, max_depth: 100 }, custom_prompts: [] });
 
     expect(result.inferenceMessages).toHaveLength(2);
     expect(result.inferenceMessages[0].text).toBe("Msg 3 User");
@@ -92,10 +86,7 @@ describe("applyContextLimit", () => {
     const systemPrompt = "Sys";
 
     // Config: max_context: 1000 (large), max_tokens: 50, max_depth: 2
-    const result = await applyContextLimit(
-      { inferenceMessages: messages, systemPrompt },
-      { config: { max_context: 1000, max_tokens: 50, max_depth: 2 }, custom_prompts: [] },
-    );
+    const result = await applyContextLimit({ inferenceMessages: messages, systemPrompt }, { config: { max_context: 1000, max_tokens: 50, max_depth: 2 }, custom_prompts: [] });
 
     // Expect only the last 2 messages due to max_depth
     expect(result.inferenceMessages).toHaveLength(2);
@@ -116,10 +107,7 @@ describe("applyContextLimit", () => {
 
     const systemPrompt = "System prompt is to big".repeat(19);
 
-    const result = await applyContextLimit(
-      { inferenceMessages: messages, systemPrompt },
-      { config: { max_context: 100, max_tokens: 260, max_depth: 1 }, custom_prompts: [] },
-    );
+    const result = await applyContextLimit({ inferenceMessages: messages, systemPrompt }, { config: { max_context: 100, max_tokens: 260, max_depth: 1 }, custom_prompts: [] });
 
     expect(result.inferenceMessages).toHaveLength(0); // Adjusted: No messages should fit
 

@@ -46,18 +46,7 @@ interface BorderBeamProps {
   initialOffset?: number;
 }
 
-export const BorderBeam = ({
-  className,
-  size = 50,
-  delay = 0,
-  duration = 6,
-  colorFrom = "#ffaa40",
-  colorTo = "#9c40ff",
-  transition,
-  style,
-  reverse = false,
-  initialOffset = 0,
-}: BorderBeamProps) => {
+export const BorderBeam = ({ className, size = 50, delay = 0, duration = 6, colorFrom = "#ffaa40", colorTo = "#9c40ff", transition, style, reverse = false, initialOffset = 0 }: BorderBeamProps) => {
   return (
     <div className="pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]">
       <motion.div

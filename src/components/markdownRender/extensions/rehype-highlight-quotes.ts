@@ -11,11 +11,7 @@ const createStyledSpan = (className: string, children: (Element | Text)[]): Elem
 });
 
 // Helper function to recursively process phrasing content for highlighting
-const processPhrasingContent = (
-  nodes: (Element | Text)[],
-  inSpan: Element | null = null,
-  inSpanType: "quote" | "brace" | null = null,
-): (Element | Text)[] => {
+const processPhrasingContent = (nodes: (Element | Text)[], inSpan: Element | null = null, inSpanType: "quote" | "brace" | null = null): (Element | Text)[] => {
   const newChildren: (Element | Text)[] = [];
   let currentSpan = inSpan;
   let currentSpanType = inSpanType;

@@ -29,11 +29,7 @@ export class AgentWorkflowService {
   /**
    * Execute an agent workflow
    */
-  async executeWorkflow(
-    agent: AgentType,
-    initialInput?: string,
-    onNodeExecuted?: (nodeId: string, result: NodeExecutionResult) => void,
-  ): Promise<string | null> {
+  async executeWorkflow(agent: AgentType, initialInput?: string, onNodeExecuted?: (nodeId: string, result: NodeExecutionResult) => void): Promise<string | null> {
     console.log(`Starting workflow execution for agent: ${agent.name} (${agent.id})`);
     console.log(`Agent has ${agent.nodes.length} nodes and ${agent.edges.length} edges`);
 
@@ -182,11 +178,7 @@ export class AgentWorkflowService {
   /**
    * Execute a chat history node
    */
-  private async executeChatHistoryNode(
-    _node: AgentNodeType,
-    _inputs: Record<string, any>,
-    _context: WorkflowExecutionContext,
-  ): Promise<NodeExecutionResult> {
+  private async executeChatHistoryNode(_node: AgentNodeType, _inputs: Record<string, any>, _context: WorkflowExecutionContext): Promise<NodeExecutionResult> {
     // TODO: Implement chat history retrieval
     return {
       success: true,
@@ -197,11 +189,7 @@ export class AgentWorkflowService {
   /**
    * Execute a chat output node
    */
-  private async executeChatOutputNode(
-    _node: AgentNodeType,
-    inputs: Record<string, any>,
-    _context: WorkflowExecutionContext,
-  ): Promise<NodeExecutionResult> {
+  private async executeChatOutputNode(_node: AgentNodeType, inputs: Record<string, any>, _context: WorkflowExecutionContext): Promise<NodeExecutionResult> {
     const response = inputs.response || "";
     return {
       success: true,
@@ -212,11 +200,7 @@ export class AgentWorkflowService {
   /**
    * Execute a chat input node
    */
-  private async executeChatInputNode(
-    _node: AgentNodeType,
-    _inputs: Record<string, any>,
-    context: WorkflowExecutionContext,
-  ): Promise<NodeExecutionResult> {
+  private async executeChatInputNode(_node: AgentNodeType, _inputs: Record<string, any>, context: WorkflowExecutionContext): Promise<NodeExecutionResult> {
     // Get initial input from context
     const workflowInput = context.nodeValues.get("workflow-input") || "";
     return {

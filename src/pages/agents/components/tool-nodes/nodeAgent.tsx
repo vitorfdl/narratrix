@@ -131,9 +131,7 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ op
                     onChange={(value) => handleFieldChange("inputPrompt", value)}
                     placeholder="{{input}}"
                   />
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Template for processing input data. Use {"{{input}}"} to reference the input value.
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Template for processing input data. Use {"{{input}}"} to reference the input value.</p>
                 </div>
               </div>
 
@@ -142,14 +140,9 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ op
                   Chat Template
                 </Label>
                 <div className="border border-input rounded-md">
-                  <WidgetConfig
-                    currentChatTemplateID={currentConfig.chatTemplateID || null}
-                    onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateID", chatTemplateId)}
-                  />
+                  <WidgetConfig currentChatTemplateID={currentConfig.chatTemplateID || null} onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateID", chatTemplateId)} />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Select the chat template that defines the model and inference settings for this agent
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Select the chat template that defines the model and inference settings for this agent</p>
               </div>
             </div>
           </div>
@@ -159,11 +152,7 @@ export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ op
           <Button type="button" variant="outline" onClick={handleCancel} className="border-input hover:bg-secondary transition-colors h-8 px-3 py-1">
             Cancel
           </Button>
-          <Button
-            type="button"
-            onClick={() => handleSave()}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors h-8 px-3 py-1"
-          >
+          <Button type="button" onClick={() => handleSave()} className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors h-8 px-3 py-1">
             Save Configuration
           </Button>
         </DialogFooter>

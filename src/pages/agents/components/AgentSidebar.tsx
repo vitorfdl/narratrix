@@ -35,8 +35,7 @@ export function AgentSidebar({
   );
 
   const totalAgents = agents.length;
-  const filteredAgentsCount =
-    selectedTags.length > 0 ? agents.filter((agent) => selectedTags.every((tag) => agent.tags?.includes(tag))).length : totalAgents;
+  const filteredAgentsCount = selectedTags.length > 0 ? agents.filter((agent) => selectedTags.every((tag) => agent.tags?.includes(tag))).length : totalAgents;
 
   return (
     <div className="w-44 border-r border-border bg-background/95">
@@ -73,9 +72,7 @@ export function AgentSidebar({
                   return (
                     <div
                       key={tag}
-                      className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:text-primary transition-colors ${
-                        isSelected ? "bg-primary/20" : ""
-                      }`}
+                      className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:text-primary transition-colors ${isSelected ? "bg-primary/20" : ""}`}
                       onClick={() => onTagSelect(tag)}
                     >
                       {isSelected && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/5 bg-primary rounded-r-sm" />}

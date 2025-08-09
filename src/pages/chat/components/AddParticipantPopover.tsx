@@ -104,11 +104,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
     };
 
     return (
-      <div
-        key={participant.id}
-        className="flex items-center gap-1.5 hover:bg-accent/30 rounded-md cursor-pointer py-1 px-2"
-        onClick={() => handleSelect(participant)}
-      >
+      <div key={participant.id} className="flex items-center gap-1.5 hover:bg-accent/30 rounded-md cursor-pointer py-1 px-2" onClick={() => handleSelect(participant)}>
         {avatarUrl ? (
           <img src={avatarUrl} alt={participant.name} className="w-6 h-6 rounded-full object-cover" />
         ) : (
@@ -136,13 +132,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
 
         <div className="relative mb-1">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 z-10 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Search participants..."
-            className="pl-7 text-xs"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            autoFocus
-          />
+          <Input placeholder="Search participants..." className="pl-7 text-xs" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} autoFocus />
         </div>
 
         <Tabs defaultValue="all" value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "characters" | "agents")}>

@@ -105,9 +105,7 @@ export default function Models() {
 
     // Apply search filter
     if (search) {
-      filtered = filtered.filter(
-        (model) => model.name.toLowerCase().includes(search.toLowerCase()) || model.manifest_id.toLowerCase().includes(search.toLowerCase()),
-      );
+      filtered = filtered.filter((model) => model.name.toLowerCase().includes(search.toLowerCase()) || model.manifest_id.toLowerCase().includes(search.toLowerCase()));
     }
 
     // Apply type filter
@@ -366,10 +364,7 @@ export default function Models() {
 
         {/* Type Filter Tabs */}
         <div className="px-4 pb-3">
-          <Tabs
-            value={settings.filter.type}
-            onValueChange={(value) => setSettings((prev: ModelsPageSettings) => ({ ...prev, filter: { type: value as ModelType | "all" } }))}
-          >
+          <Tabs value={settings.filter.type} onValueChange={(value) => setSettings((prev: ModelsPageSettings) => ({ ...prev, filter: { type: value as ModelType | "all" } }))}>
             <TabsList className="w-full justify-start h-auto p-1 bg-muted/50">
               <TabsTrigger value="all" className="gap-2">
                 All Models
@@ -377,27 +372,19 @@ export default function Models() {
               </TabsTrigger>
               <TabsTrigger value="llm" className="gap-2">
                 {getModelTypeIcon("llm")} Language
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">
-                  {modelGroups.find((g) => g.type === "llm")?.models.length || 0}
-                </span>
+                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "llm")?.models.length || 0}</span>
               </TabsTrigger>
               <TabsTrigger value="image" className="gap-2">
                 {getModelTypeIcon("image")} Image
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">
-                  {modelGroups.find((g) => g.type === "image")?.models.length || 0}
-                </span>
+                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "image")?.models.length || 0}</span>
               </TabsTrigger>
               <TabsTrigger value="audio" className="gap-2">
                 {getModelTypeIcon("audio")} Audio
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">
-                  {modelGroups.find((g) => g.type === "audio")?.models.length || 0}
-                </span>
+                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "audio")?.models.length || 0}</span>
               </TabsTrigger>
               <TabsTrigger value="database" className="gap-2">
                 {getModelTypeIcon("database")} Database
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">
-                  {modelGroups.find((g) => g.type === "database")?.models.length || 0}
-                </span>
+                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "database")?.models.length || 0}</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -430,14 +417,7 @@ export default function Models() {
                     }}
                   >
                     {group.models.map((model) => (
-                      <ModelCard
-                        key={model.id}
-                        model={model}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                        onDuplicate={handleDuplicate}
-                        setConfigDialogOpen={() => handleConfigOpen(model)}
-                      />
+                      <ModelCard key={model.id} model={model} onEdit={handleEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} setConfigDialogOpen={() => handleConfigOpen(model)} />
                     ))}
                   </div>
                 </div>
@@ -449,13 +429,9 @@ export default function Models() {
             <div className="rounded-full bg-muted p-4 mb-4">
               <Search className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold mb-1">
-              {search || settings.filter.type !== "all" ? "No models match your filters" : "No models found"}
-            </h3>
+            <h3 className="text-xl font-semibold mb-1">{search || settings.filter.type !== "all" ? "No models match your filters" : "No models found"}</h3>
             <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
-              {search || settings.filter.type !== "all"
-                ? "Try adjusting your search or filter settings."
-                : "Get started by adding your first model to this profile."}
+              {search || settings.filter.type !== "all" ? "Try adjusting your search or filter settings." : "Get started by adding your first model to this profile."}
             </p>
             <Button variant="default" size="lg" onClick={() => setAddDialogOpen(true)}>
               <Plus size={20} className="mr-2" /> Create Model
@@ -513,15 +489,7 @@ export default function Models() {
         onConfirm={confirmDelete}
       />
 
-      {selectedModel && (
-        <ModelConfigDialog
-          model={selectedModel}
-          open={configDialogOpen}
-          onOpenChange={setConfigDialogOpen}
-          onSave={handleConfigSave}
-          isUpdating={isUpdating}
-        />
-      )}
+      {selectedModel && <ModelConfigDialog model={selectedModel} open={configDialogOpen} onOpenChange={setConfigDialogOpen} onSave={handleConfigSave} isUpdating={isUpdating} />}
     </div>
   );
 }

@@ -64,34 +64,15 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ handleExecuteAction,
       {/* Add Button with Dialog properly nested */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <Button
-            tabIndex={-1}
-            variant="ghost"
-            size="sm"
-            onClick={handleOpenAddDialog}
-            title="Add Quick Action / Right Click on existing actions to edit"
-          >
+          <Button tabIndex={-1} variant="ghost" size="sm" onClick={handleOpenAddDialog} title="Add Quick Action / Right Click on existing actions to edit">
             <Plus className={iconSize} />
           </Button>
         </DialogTrigger>
-        <QuickActionDialog
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          isEditMode={!!editingAction}
-          initialData={editingAction ?? undefined}
-          onSave={handleSaveAction}
-        />
+        <QuickActionDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} isEditMode={!!editingAction} initialData={editingAction ?? undefined} onSave={handleSaveAction} />
       </Dialog>
       {/* Render Action Buttons */}
       {actions.map((action) => (
-        <QuickActionButton
-          key={action.id}
-          action={action}
-          disabled={disableActions}
-          onExecute={handleExecuteAction}
-          onEdit={handleOpenEditDialog}
-          onDelete={handleDeleteAction}
-        />
+        <QuickActionButton key={action.id} action={action} disabled={disableActions} onExecute={handleExecuteAction} onEdit={handleOpenEditDialog} onDelete={handleDeleteAction} />
       ))}
     </div>
   );

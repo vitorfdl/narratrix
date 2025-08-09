@@ -5,14 +5,7 @@ import { DragArray } from "@/components/ui/drag-array";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { RandomButton } from "@/components/ui/random-button";
 import { StepButton } from "@/components/ui/step-button";
-import type {
-  ConfigField,
-  DragArrayField,
-  NumericField,
-  RandomNumberField,
-  SectionField,
-  StringArrayField,
-} from "@/schema/template-chat-settings-types";
+import type { ConfigField, DragArrayField, NumericField, RandomNumberField, SectionField, StringArrayField } from "@/schema/template-chat-settings-types";
 import { Trash } from "lucide-react";
 
 interface ConfigItemProps {
@@ -31,16 +24,7 @@ export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false,
       case "stepbutton_slider": {
         const numericField = field as NumericField;
         const numericValue = typeof value === "number" ? value : (numericField.default ?? 0);
-        return (
-          <StepButton
-            value={numericValue}
-            min={numericField.min}
-            max={numericField.max}
-            step={numericField.step}
-            showSlider={field.type === "stepbutton_slider"}
-            onValueChange={onChange}
-          />
-        );
+        return <StepButton value={numericValue} min={numericField.min} max={numericField.max} step={numericField.step} showSlider={field.type === "stepbutton_slider"} onValueChange={onChange} />;
       }
       case "random_number": {
         const numericField = field as RandomNumberField;

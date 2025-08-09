@@ -25,15 +25,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AgentSidebar } from "./tool-components/EditorSidebar";
 import { ConnectionStateProvider, NodeDeleteProvider } from "./tool-components/NodeBase";
 import { NodePicker } from "./tool-components/NodePicker";
-import {
-  convertCoreEdgeToReactFlow,
-  convertReactFlowEdgeToCore,
-  getEdgeStyle,
-  getEdgeTypeFromHandle,
-  isValidEdgeConnection,
-  updateEdgeStyles,
-  validateAndFixEdge,
-} from "./tool-components/edge-utils";
+import { convertCoreEdgeToReactFlow, convertReactFlowEdgeToCore, getEdgeStyle, getEdgeTypeFromHandle, isValidEdgeConnection, updateEdgeStyles, validateAndFixEdge } from "./tool-components/edge-utils";
 import { NodeRegistry } from "./tool-components/node-registry";
 import { convertCoreNodeToReactFlow, convertReactFlowNodeToCore, getNodeConfig, getNodeId } from "./tool-components/node-utils";
 import { ToolEditorProps, ToolNodeData } from "./tool-components/types";
@@ -69,9 +61,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     }
 
     // Validate and fix edges before loading
-    const validatedEdges = toolConfig.edges
-      .map((edge) => validateAndFixEdge(edge, toolConfig.nodes || []))
-      .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
+    const validatedEdges = toolConfig.edges.map((edge) => validateAndFixEdge(edge, toolConfig.nodes || [])).filter((edge): edge is NonNullable<typeof edge> => edge !== null);
 
     // Log any corrections made
     if (validatedEdges.length !== toolConfig.edges.length) {
@@ -100,19 +90,14 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
       const newNodes = toolConfig.nodes?.map(convertCoreNodeToReactFlow) || [];
 
       // Validate and fix edges before loading
-      const validatedEdges =
-        toolConfig.edges
-          ?.map((edge) => validateAndFixEdge(edge, toolConfig.nodes || []))
-          .filter((edge): edge is NonNullable<typeof edge> => edge !== null) || [];
+      const validatedEdges = toolConfig.edges?.map((edge) => validateAndFixEdge(edge, toolConfig.nodes || [])).filter((edge): edge is NonNullable<typeof edge> => edge !== null) || [];
       const newEdges = validatedEdges.map(convertCoreEdgeToReactFlow);
 
       // Only update if the nodes/edges have actually changed
       const nodesChanged =
-        JSON.stringify(nodes.map((n) => ({ id: n.id, position: n.position, type: n.type }))) !==
-        JSON.stringify(newNodes.map((n) => ({ id: n.id, position: n.position, type: n.type })));
+        JSON.stringify(nodes.map((n) => ({ id: n.id, position: n.position, type: n.type }))) !== JSON.stringify(newNodes.map((n) => ({ id: n.id, position: n.position, type: n.type })));
       const edgesChanged =
-        JSON.stringify(edges.map((e) => ({ id: e.id, source: e.source, target: e.target }))) !==
-        JSON.stringify(newEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })));
+        JSON.stringify(edges.map((e) => ({ id: e.id, source: e.source, target: e.target }))) !== JSON.stringify(newEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })));
 
       if (nodesChanged) {
         setNodes(newNodes);
@@ -198,9 +183,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
 
       const newEdge: Edge = {
         ...params,
-        id:
-          ("id" in params && params.id) ||
-          `edge-${params.source}-${params.sourceHandle || "default"}-${params.target}-${params.targetHandle || "default"}`,
+        id: ("id" in params && params.id) || `edge-${params.source}-${params.sourceHandle || "default"}-${params.target}-${params.targetHandle || "default"}`,
         style: edgeStyle,
         data: { edgeType },
         animated: false,
@@ -259,12 +242,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         // Update the reconnected edge with proper edge type and style
         return updateEdgeStyles(
           reconnectedEdges.map((edge) => {
-            if (
-              edge.source === newConnection.source &&
-              edge.target === newConnection.target &&
-              edge.sourceHandle === newConnection.sourceHandle &&
-              edge.targetHandle === newConnection.targetHandle
-            ) {
+            if (edge.source === newConnection.source && edge.target === newConnection.target && edge.sourceHandle === newConnection.sourceHandle && edge.targetHandle === newConnection.targetHandle) {
               return {
                 ...edge,
                 data: { edgeType },
@@ -280,21 +258,18 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   );
 
   // Handle connection start for visual feedback
-  const onConnectStart = useCallback(
-    (_event: any, { nodeId, handleId, handleType }: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
-      if (nodeId && handleId && handleType) {
-        // Get the actual edge type from the handle instead of hardcoding
-        const sourceEdgeType = handleType === "source" ? getEdgeTypeFromHandle(nodeId, handleId) : undefined;
-        setConnectionState({
-          isConnecting: true,
-          sourceNodeId: nodeId,
-          sourceHandleId: handleId,
-          sourceEdgeType,
-        });
-      }
-    },
-    [],
-  );
+  const onConnectStart = useCallback((_event: any, { nodeId, handleId, handleType }: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
+    if (nodeId && handleId && handleType) {
+      // Get the actual edge type from the handle instead of hardcoding
+      const sourceEdgeType = handleType === "source" ? getEdgeTypeFromHandle(nodeId, handleId) : undefined;
+      setConnectionState({
+        isConnecting: true,
+        sourceNodeId: nodeId,
+        sourceHandleId: handleId,
+        sourceEdgeType,
+      });
+    }
+  }, []);
 
   // Handle connection end to reset visual feedback
   const onConnectEnd = useCallback(
@@ -483,11 +458,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         }
 
         // Don't delete if the target is within a modal/dialog
-        const isInModal =
-          target.closest('[role="dialog"]') ||
-          target.closest("[data-radix-dialog-content]") ||
-          target.closest(".modal") ||
-          target.closest('[aria-modal="true"]');
+        const isInModal = target.closest('[role="dialog"]') || target.closest("[data-radix-dialog-content]") || target.closest(".modal") || target.closest('[aria-modal="true"]');
 
         if (isInModal) {
           return;
@@ -552,14 +523,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   // Global connection validation for ReactFlow
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
-      const validation = isValidEdgeConnection(
-        connection.source!,
-        connection.sourceHandle || "",
-        connection.target!,
-        connection.targetHandle || "",
-        nodes,
-        edges,
-      );
+      const validation = isValidEdgeConnection(connection.source!, connection.sourceHandle || "", connection.target!, connection.targetHandle || "", nodes, edges);
 
       if (!validation.valid && !validation.existingEdge) {
         console.error(`❌ Global validation BLOCKED connection: ${validation.error}`);
@@ -624,9 +588,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
           </ConnectionStateProvider>
         </NodeDeleteProvider>
 
-        {!readOnly && nodePicker?.show && (
-          <NodePicker position={nodePicker.position} onSelect={handleNodeTypeSelect} onCancel={handleCancelNodePicker} />
-        )}
+        {!readOnly && nodePicker?.show && <NodePicker position={nodePicker.position} onSelect={handleNodeTypeSelect} onCancel={handleCancelNodePicker} />}
       </div>
     </div>
   );

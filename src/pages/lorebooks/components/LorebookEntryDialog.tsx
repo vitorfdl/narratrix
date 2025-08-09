@@ -271,22 +271,13 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             <FormLabel>Insertion Depth</FormLabel>
                             <HelpTooltip>
                               <p>
-                                How many messages back the entry should be inserted relative to the current message. Only applicable for 'User' or
-                                'Assistant' insertion types. 1 means the last message.
+                                How many messages back the entry should be inserted relative to the current message. Only applicable for 'User' or 'Assistant' insertion types. 1 means the last
+                                message.
                               </p>
                             </HelpTooltip>
                           </div>
                           <FormControl>
-                            <StepButton
-                              min={1}
-                              max={100}
-                              step={1}
-                              value={field.value ?? 1}
-                              onValueChange={(val) => field.onChange(val)}
-                              showSlider={true}
-                              ticks={10}
-                              disabled={!isDepthRelevant}
-                            />
+                            <StepButton min={1} max={100} step={1} value={field.value ?? 1} onValueChange={(val) => field.onChange(val)} showSlider={true} ticks={10} disabled={!isDepthRelevant} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -369,10 +360,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                           <div className="flex items-center gap-1">
                             <FormLabel>Group</FormLabel>
                             <HelpTooltip>
-                              <p>
-                                Categorize this entry into a group. Entries in the same group might have specific interaction rules (depending on
-                                implementation).
-                              </p>
+                              <p>Categorize this entry into a group. Entries in the same group might have specific interaction rules (depending on implementation).</p>
                             </HelpTooltip>
                           </div>
                           <FormControl>
@@ -432,15 +420,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             </HelpTooltip>
                           </div>
                           <FormControl>
-                            <StepButton
-                              min={1}
-                              max={100}
-                              step={1}
-                              value={field.value ?? 100}
-                              onValueChange={(val) => field.onChange(Math.floor(val))}
-                              showSlider={true}
-                              ticks={11}
-                            />
+                            <StepButton min={1} max={100} step={1} value={field.value ?? 100} onValueChange={(val) => field.onChange(Math.floor(val))} showSlider={true} ticks={11} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -459,15 +439,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             </HelpTooltip>
                           </div>
                           <FormControl>
-                            <StepButton
-                              min={1}
-                              max={100}
-                              step={1}
-                              value={field.value ?? 1}
-                              onValueChange={(val) => field.onChange(Math.floor(val))}
-                              showSlider={true}
-                              ticks={5}
-                            />
+                            <StepButton min={1} max={100} step={1} value={field.value ?? 1} onValueChange={(val) => field.onChange(Math.floor(val))} showSlider={true} ticks={5} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -506,10 +478,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             <div className="flex items-center gap-1">
                               <FormLabel>Match Partial Words</FormLabel>
                               <HelpTooltip>
-                                <p>
-                                  If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word
-                                  matches occur.
-                                </p>
+                                <p>If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word matches occur.</p>
                               </HelpTooltip>
                             </div>
                             <FormDescription>Allow keywords within larger words.</FormDescription>

@@ -1,15 +1,6 @@
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -248,23 +239,14 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
             <div className="py-4">
               <div className="space-y-2">
                 <Label htmlFor="profile-name">Profile Name</Label>
-                <Input
-                  id="profile-name"
-                  value={newProfileName}
-                  onChange={(e) => setNewProfileName(e.target.value)}
-                  placeholder="New profile name"
-                  onKeyDown={handleProfileNameKeyDown}
-                />
+                <Input id="profile-name" value={newProfileName} onChange={(e) => setNewProfileName(e.target.value)} placeholder="New profile name" onKeyDown={handleProfileNameKeyDown} />
               </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="secondary">Cancel</Button>
               </DialogClose>
-              <Button
-                onClick={handleProfileNameChange}
-                disabled={isChangingName || !newProfileName.trim() || newProfileName === currentProfile?.name}
-              >
+              <Button onClick={handleProfileNameChange} disabled={isChangingName || !newProfileName.trim() || newProfileName === currentProfile?.name}>
                 {isChangingName ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>
@@ -294,12 +276,7 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
                 <div className="space-y-2">
                   <div className="flex justify-center">
                     <div className="w-24 h-24 rounded-full overflow-hidden">
-                      <AvatarCrop
-                        onCropComplete={handleAvatarChange}
-                        existingImage={currentProfileAvatarUrl || ""}
-                        cropShape="round"
-                        className="w-full h-full"
-                      />
+                      <AvatarCrop onCropComplete={handleAvatarChange} existingImage={currentProfileAvatarUrl || ""} cropShape="round" className="w-full h-full" />
                     </div>
                   </div>
                 </div>
@@ -324,11 +301,7 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{currentProfile?.hasPassword ? "Change" : "Set"} Password</DialogTitle>
-              <DialogDescription>
-                {currentProfile?.hasPassword
-                  ? "Enter your current password to change it or remove it entirely."
-                  : "Create a new password for your profile."}
-              </DialogDescription>
+              <DialogDescription>{currentProfile?.hasPassword ? "Enter your current password to change it or remove it entirely." : "Create a new password for your profile."}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               {currentProfile?.hasPassword && (
@@ -371,12 +344,7 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
             <DialogFooter className="gap-2 sm:justify-between">
               <div>
                 {currentProfile?.hasPassword && (
-                  <Button
-                    variant="destructive"
-                    onClick={handleRemovePassword}
-                    disabled={isRemovingPassword || isChangingPassword || !currentPassword}
-                    className="flex items-center gap-1"
-                  >
+                  <Button variant="destructive" onClick={handleRemovePassword} disabled={isRemovingPassword || isChangingPassword || !currentPassword} className="flex items-center gap-1">
                     {isRemovingPassword ? (
                       <>
                         <Trash className="w-4 h-4 animate-spin" /> Removing...
@@ -395,13 +363,7 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
                 </DialogClose>
                 <Button
                   onClick={handlePasswordChange}
-                  disabled={
-                    isChangingPassword ||
-                    isRemovingPassword ||
-                    !newPassword ||
-                    newPassword !== confirmPassword ||
-                    (currentProfile?.hasPassword && !currentPassword)
-                  }
+                  disabled={isChangingPassword || isRemovingPassword || !newPassword || newPassword !== confirmPassword || (currentProfile?.hasPassword && !currentPassword)}
                 >
                   {isChangingPassword ? "Saving..." : "Save"}
                 </Button>

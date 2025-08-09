@@ -91,15 +91,7 @@ export const GeneralSection: React.FC<GeneralSectionProps> = ({ settings, onSett
                 <SelectItem value="longbeep3">Alt. 3</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              aria-label="Preview beep sound"
-              onClick={handlePreviewBeep}
-              className="h-7 ml-1"
-              disabled={settings.chat.beepSound === "none"}
-            >
+            <Button type="button" size="icon" variant="outline" aria-label="Preview beep sound" onClick={handlePreviewBeep} className="h-7 ml-1" disabled={settings.chat.beepSound === "none"}>
               <Play className="!w-4 !h-4" />
             </Button>
           </div>
@@ -125,11 +117,7 @@ export const GeneralSection: React.FC<GeneralSectionProps> = ({ settings, onSett
       <SettingCollapsible icon={<EyeOff className="w-4 h-4" />} label="Censorship Settings">
         <Separator />
         <SettingItem label="Censored Words" labelClassName="w-40">
-          <CommandTagInput
-            value={settings.censorship.customWords}
-            maxTags={50}
-            onChange={(value) => onSettingChange("censorship", "customWords", value)}
-          />
+          <CommandTagInput value={settings.censorship.customWords} maxTags={50} onChange={(value) => onSettingChange("censorship", "customWords", value)} />
         </SettingItem>
       </SettingCollapsible>
     </SettingSection>

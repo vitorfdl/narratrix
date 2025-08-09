@@ -29,22 +29,7 @@ interface MarkdownTextAreaProps {
 }
 
 export const MarkdownTextArea = forwardRef<MarkdownEditorRef, MarkdownTextAreaProps>(
-  (
-    {
-      initialValue = "",
-      enableHistory = false,
-      onChange,
-      className,
-      label,
-      placeholder,
-      editable = true,
-      suggestions,
-      sendShortcut,
-      onSubmit,
-      useEditorOnly = false,
-    },
-    ref,
-  ) => {
+  ({ initialValue = "", enableHistory = false, onChange, className, label, placeholder, editable = true, suggestions, sendShortcut, onSubmit, useEditorOnly = false }, ref) => {
     const [nonEditableContent, setNonEditableContent] = useState(initialValue);
 
     useEffect(() => {

@@ -274,17 +274,7 @@ export const useProfileSynchronization = () => {
     } else {
       console.log("No current profile or settings, skipping data synchronization.");
     }
-  }, [
-    currentProfile,
-    fetchManifests,
-    fetchFormatTemplates,
-    fetchInferenceTemplates,
-    fetchChatTemplates,
-    fetchCharacters,
-    fetchChatList,
-    loadLorebooks,
-    setTheme,
-  ]);
+  }, [currentProfile, fetchManifests, fetchFormatTemplates, fetchInferenceTemplates, fetchChatTemplates, fetchCharacters, fetchChatList, loadLorebooks, setTheme]);
 
   return null;
 };

@@ -60,13 +60,7 @@ export function ModelInputFields({ field, form, showSecrets, toggleSecretVisibil
                       }
                     }}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full"
-                    onClick={() => toggleSecretVisibility(field.key)}
-                  >
+                  <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full" onClick={() => toggleSecretVisibility(field.key)}>
                     {showSecrets[field.key] ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </Button>
                 </div>
@@ -76,13 +70,7 @@ export function ModelInputFields({ field, form, showSecrets, toggleSecretVisibil
                   <Globe className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 </div>
               ) : (
-                <Input
-                  placeholder={field.placeholder}
-                  type={field.field_type === "number" ? "number" : "text"}
-                  hints={field.hints}
-                  defaultValue={field.default as string}
-                  {...formField}
-                />
+                <Input placeholder={field.placeholder} type={field.field_type === "number" ? "number" : "text"} hints={field.hints} defaultValue={field.default as string} {...formField} />
               )}
             </FormControl>
             <FormMessage />

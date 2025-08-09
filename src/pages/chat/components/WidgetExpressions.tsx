@@ -80,9 +80,7 @@ const WidgetExpressions = () => {
 
   // Memoize active characters list
   const activeCharacters = useMemo(() => {
-    return characterList?.filter(
-      (character) => character.type === "character" && participantList?.some((p) => p.id === character.id && p.enabled),
-    ) as Character[];
+    return characterList?.filter((character) => character.type === "character" && participantList?.some((p) => p.id === character.id && p.enabled)) as Character[];
   }, [characterList, participantList]);
 
   // Memoize last message and speaker information
@@ -184,9 +182,7 @@ const WidgetExpressions = () => {
       setAnimateLastSpeaker(true);
       setTimeout(() => setAnimateLastSpeaker(false), 1000);
 
-      const availableExpressions = targetCharacter.expressions?.length
-        ? targetCharacter.expressions.filter((exp) => exp.image_path).map((exp) => exp.name)
-        : EXPRESSION_LIST;
+      const availableExpressions = targetCharacter.expressions?.length ? targetCharacter.expressions.filter((exp) => exp.image_path).map((exp) => exp.name) : EXPRESSION_LIST;
       const availableExpressionNames = targetCharacter.expressions?.length ? targetCharacter.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
 
       try {
@@ -295,9 +291,7 @@ const WidgetExpressions = () => {
   // Memoize single character and display character
   const singleCharacter = useMemo(() => (activeCharacters && activeCharacters.length === 1 ? activeCharacters[0] : null), [activeCharacters]);
   const displayCharacter = useMemo(() => {
-    return (lastSpeakerCharacter ||
-      singleCharacter ||
-      (activeCharacters && activeCharacters.length > 0 ? activeCharacters[0] : null)) as Character | null;
+    return (lastSpeakerCharacter || singleCharacter || (activeCharacters && activeCharacters.length > 0 ? activeCharacters[0] : null)) as Character | null;
   }, [lastSpeakerCharacter, singleCharacter, activeCharacters]);
 
   // Fill entire available space - using flex-1 to ensure the component properly fills available space in any container
@@ -380,10 +374,7 @@ const WidgetExpressions = () => {
                     <div className="space-y-1 overflow-y-auto max-h-[60vh]">
                       <Label htmlFor="chat-template">Chat Template</Label>
                       <div className="border border-input rounded-md">
-                        <WidgetConfig
-                          currentChatTemplateID={tempChatTemplateId || null}
-                          onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)}
-                        />
+                        <WidgetConfig currentChatTemplateID={tempChatTemplateId || null} onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for expression generation.</p>
                     </div>
@@ -411,18 +402,12 @@ const WidgetExpressions = () => {
                   <div
                     className={cn(
                       "w-full h-full relative transition-transform duration-150 ease-in-out",
-                      animateLastSpeaker && displayCharacter.id === (selectedText ? selectedMessageCharacterId : lastSpeakerId)
-                        ? "scale-[1.03]"
-                        : "scale-100",
+                      animateLastSpeaker && displayCharacter.id === (selectedText ? selectedMessageCharacterId : lastSpeakerId) ? "scale-[1.03]" : "scale-100",
                     )}
                     style={{ minHeight: "200px", height: "100%" }}
                   >
                     <Avatar className="w-full h-full shadow-lg" style={{ aspectRatio: "1/1", minHeight: "100px" }}>
-                      <AvatarImage
-                        src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
-                        alt={displayCharacter.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <AvatarImage src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined} alt={displayCharacter.name} className="w-full h-full object-cover" />
                       <AvatarFallback>
                         <Loader2Icon className="w-[50%] h-[50%] animate-spin" />
                       </AvatarFallback>
@@ -434,9 +419,7 @@ const WidgetExpressions = () => {
                         {displayCharacter.name}
                         {/* Show expression if it's the last speaker OR if text was selected for this character */}
                         {(displayCharacter.id === lastSpeakerId || (selectedText && displayCharacter.id === selectedMessageCharacterId)) && (
-                          <span className="block text-sm font-normal text-primary-foreground/90 mt-0.5">
-                            {getCharacterExpression(displayCharacter.id)}
-                          </span>
+                          <span className="block text-sm font-normal text-primary-foreground/90 mt-0.5">{getCharacterExpression(displayCharacter.id)}</span>
                         )}
                       </p>
                     </div>

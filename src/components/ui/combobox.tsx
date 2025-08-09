@@ -91,18 +91,10 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search...", 
                     {item.onFavoriteToggle && (
                       <button
                         onClick={(e) => handleFavoriteClick(e, item.onFavoriteToggle)}
-                        className={cn(
-                          "p-0 mr-2 rounded-sm transition-colors hover:bg-accent/50 opacity-0 group-hover:opacity-100",
-                          item.favorite && "opacity-100",
-                        )}
+                        className={cn("p-0 mr-2 rounded-sm transition-colors hover:bg-accent/50 opacity-0 group-hover:opacity-100", item.favorite && "opacity-100")}
                         title={item.favorite ? "Remove from favorites" : "Add to favorites"}
                       >
-                        <Star
-                          className={cn(
-                            "h-3 w-3 transition-colors",
-                            item.favorite ? "fill-muted-foreground text-muted-foreground" : "text-muted-foreground hover:text-foreground",
-                          )}
-                        />
+                        <Star className={cn("h-3 w-3 transition-colors", item.favorite ? "fill-muted-foreground text-muted-foreground" : "text-muted-foreground hover:text-foreground")} />
                       </button>
                     )}
                     <div className="flex flex-col flex-1 min-w-0">

@@ -135,12 +135,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
             return (
               <div key={category} className="space-y-1">
                 {/* Category Header */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start h-8 px-2 text-xs font-medium hover:bg-accent/50"
-                  onClick={() => toggleCategory(category)}
-                >
+                <Button variant="ghost" size="sm" className="w-full justify-start h-8 px-2 text-xs font-medium hover:bg-accent/50" onClick={() => toggleCategory(category)}>
                   {isExpanded ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
                   {category}
                   <span className="ml-auto text-muted-foreground">({nodes.length})</span>
@@ -200,9 +195,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
 
       {/* Footer */}
       <div className="p-3 border-t border-border">
-        <div className="text-xs text-muted-foreground text-center">
-          {categorizedNodes.reduce((total, cat) => total + cat.nodes.length, 0)} nodes available
-        </div>
+        <div className="text-xs text-muted-foreground text-center">{categorizedNodes.reduce((total, cat) => total + cat.nodes.length, 0)} nodes available</div>
       </div>
     </div>
   );

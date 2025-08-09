@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  DndContext,
-  DragEndEvent,
-  DragStartEvent,
-  KeyboardSensor,
-  PointerSensor,
-  UniqueIdentifier,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, KeyboardSensor, PointerSensor, UniqueIdentifier, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -40,11 +30,7 @@ const SortableItem = ({ id, children }: SortableItemProps) => {
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`flex items-center gap-2 p-1 mb-2 bg-card rounded-md border ${isDragging ? "shadow-lg opacity-50" : ""}`}
-    >
+    <div ref={setNodeRef} style={style} className={`flex items-center gap-2 p-1 mb-2 bg-card rounded-md border ${isDragging ? "shadow-lg opacity-50" : ""}`}>
       <button className="cursor-grab touch-none" {...attributes} {...listeners}>
         <GripVertical className="h-5 w-5 text-muted-foreground" />
       </button>
@@ -81,13 +67,7 @@ export function DragArray({ items, onChange, className = "" }: DragArrayProps) {
 
   return (
     <div className={`w-full ${className}`}>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis]}
-      >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
         <SortableContext items={items} strategy={verticalListSortingStrategy}>
           <div className="space-y-1">
             {items.map((item) => (

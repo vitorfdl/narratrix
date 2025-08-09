@@ -218,12 +218,7 @@ const MessageItem = ({
   }, [message.type, isStreaming, isDisabled]);
 
   const contentClassName = React.useMemo(() => {
-    return cn(
-      MESSAGE_BASE_CLASSES.content,
-      message.type === "user" && isEditingID !== message.id && "flex justify-end",
-      message.type === "system" && "text-center",
-      isDisabled && "relative",
-    );
+    return cn(MESSAGE_BASE_CLASSES.content, message.type === "user" && isEditingID !== message.id && "flex justify-end", message.type === "system" && "text-center", isDisabled && "relative");
   }, [message.type, isEditingID, message.id, isDisabled]);
 
   const markdownClassName = React.useMemo(() => {
@@ -297,9 +292,7 @@ const MessageItem = ({
         )}
 
         {/* Avatar section */}
-        {(message.type === "user" || message.type === "character") && (
-          <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />
-        )}
+        {(message.type === "user" || message.type === "character") && <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />}
 
         {/* Message content */}
         <div onMouseUp={() => handleMessageSelection(message.character_id || undefined)} className={contentClassName}>

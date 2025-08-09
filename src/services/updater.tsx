@@ -28,12 +28,7 @@ export async function checkForUpdates(): Promise<void> {
         description: (
           <div>
             Released on: {releaseDateString}. <br />
-            <a
-              href="https://github.com/vitorfdl/Narratrix/releases"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: "underline" }}
-            >
+            <a href="https://github.com/vitorfdl/Narratrix/releases" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>
               View full release notes
             </a>
           </div>

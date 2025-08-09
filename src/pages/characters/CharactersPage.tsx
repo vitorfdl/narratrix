@@ -285,13 +285,7 @@ export default function Characters() {
             </div>
 
             {/* Refresh */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isLoadingCharacters || isLoadingAvatars}
-              title="Refresh Characters"
-            >
+            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoadingCharacters || isLoadingAvatars} title="Refresh Characters">
               <RefreshCw className={`h-4 w-4 ${isLoadingCharacters || isLoadingAvatars ? "animate-spin" : ""}`} />
             </Button>
 
@@ -418,13 +412,9 @@ export default function Characters() {
               <div className="rounded-full bg-muted p-4 mb-4">
                 <Search className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold mb-1">
-                {search || settings.selectedTags.length > 0 ? "No characters match your filters" : "No characters found"}
-              </h3>
+              <h3 className="text-xl font-semibold mb-1">{search || settings.selectedTags.length > 0 ? "No characters match your filters" : "No characters found"}</h3>
               <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
-                {search || settings.selectedTags.length > 0
-                  ? "Try adjusting your search or filter settings."
-                  : "Get started by creating your first character!"}
+                {search || settings.selectedTags.length > 0 ? "Try adjusting your search or filter settings." : "Get started by creating your first character!"}
               </p>
               <Button variant="default" size="lg" onClick={() => setCreateDialogOpen(true)}>
                 <Plus size={20} className="mr-2" /> Create Character

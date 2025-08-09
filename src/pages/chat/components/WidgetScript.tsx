@@ -42,9 +42,7 @@ const WidgetScript = () => {
 
           <div className="text-center space-y-2 max-w-md">
             <h3 className="text-lg font-medium">Script Management Coming Soon</h3>
-            <p className="text-muted-foreground text-sm">
-              We're crafting powerful script tools to help you write, organize, and structure your narrative content with ease.
-            </p>
+            <p className="text-muted-foreground text-sm">We're crafting powerful script tools to help you write, organize, and structure your narrative content with ease.</p>
           </div>
         </div>
       </CardContent>

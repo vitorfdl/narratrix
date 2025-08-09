@@ -275,17 +275,13 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
             <Checkbox
               id="trimAssistant"
               checked={memoizedSettings.trim_assistant_incomplete}
-              onCheckedChange={useCallback(
-                (checked: boolean | "indeterminate") => handleSettingChange("trim_assistant_incomplete", checked as boolean),
-                [handleSettingChange],
-              )}
+              onCheckedChange={useCallback((checked: boolean | "indeterminate") => handleSettingChange("trim_assistant_incomplete", checked as boolean), [handleSettingChange])}
               disabled={!currentTemplate}
             />
             <Label htmlFor="trimAssistant">Trim Incomplete Sequences</Label>
             <HelpTooltip>
               <p>
-                Removes any text following the last sentence-ending punctuation (e.g., '.', '?', '!') or emoji. Helps clean up responses that trail
-                off mid-sentence.
+                Removes any text following the last sentence-ending punctuation (e.g., '.', '?', '!') or emoji. Helps clean up responses that trail off mid-sentence.
                 <br />
                 <br />
                 <strong>Example:</strong> <i>"The story ends here. And th"</i> becomes <i>"The story ends here."</i>
@@ -296,10 +292,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
             <Checkbox
               id="trimSpaces"
               checked={memoizedSettings.trim_double_spaces}
-              onCheckedChange={useCallback(
-                (checked: boolean | "indeterminate") => handleSettingChange("trim_double_spaces", checked as boolean),
-                [handleSettingChange],
-              )}
+              onCheckedChange={useCallback((checked: boolean | "indeterminate") => handleSettingChange("trim_double_spaces", checked as boolean), [handleSettingChange])}
               disabled={!currentTemplate}
             />
             <Label htmlFor="trimSpaces">Trim Double Spaces</Label>
@@ -308,10 +301,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
             <Checkbox
               id="collapseLines"
               checked={memoizedSettings.collapse_consecutive_lines}
-              onCheckedChange={useCallback(
-                (checked: boolean | "indeterminate") => handleSettingChange("collapse_consecutive_lines", checked as boolean),
-                [handleSettingChange],
-              )}
+              onCheckedChange={useCallback((checked: boolean | "indeterminate") => handleSettingChange("collapse_consecutive_lines", checked as boolean), [handleSettingChange])}
               disabled={!currentTemplate}
             />
             <Label htmlFor="collapseLines">Collapse Consecutive Lines</Label>
@@ -325,10 +315,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
             <Checkbox
               id="mergeMessages"
               checked={memoizedSettings.merge_messages_on_user}
-              onCheckedChange={useCallback(
-                (checked: boolean | "indeterminate") => handleSettingChange("merge_messages_on_user", checked as boolean),
-                [handleSettingChange],
-              )}
+              onCheckedChange={useCallback((checked: boolean | "indeterminate") => handleSettingChange("merge_messages_on_user", checked as boolean), [handleSettingChange])}
               disabled={!currentTemplate}
             />
             <div className="flex items-center space-x-1">
@@ -347,10 +334,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
             <Checkbox
               id="applyCensorship"
               checked={memoizedSettings.apply_censorship}
-              onCheckedChange={useCallback(
-                (checked: boolean | "indeterminate") => handleSettingChange("apply_censorship", checked as boolean),
-                [handleSettingChange],
-              )}
+              onCheckedChange={useCallback((checked: boolean | "indeterminate") => handleSettingChange("apply_censorship", checked as boolean), [handleSettingChange])}
               disabled={!currentTemplate}
             />
             <div className="flex items-center space-x-1">
@@ -364,10 +348,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
             <Checkbox
               id="mergeSubsequent"
               checked={memoizedSettings.merge_subsequent_messages}
-              onCheckedChange={useCallback(
-                (checked: boolean | "indeterminate") => handleSettingChange("merge_subsequent_messages", checked as boolean),
-                [handleSettingChange],
-              )}
+              onCheckedChange={useCallback((checked: boolean | "indeterminate") => handleSettingChange("merge_subsequent_messages", checked as boolean), [handleSettingChange])}
               disabled={!currentTemplate}
             />
             <div className="flex items-center space-x-1">
@@ -387,10 +368,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
             <Label className="font-medium text-muted-foreground">Prefix Messages with Character Names</Label>
             <RadioGroup
               value={memoizedSettings.prefix_messages}
-              onValueChange={useCallback(
-                (value: string) => handleSettingChange("prefix_messages", value as "never" | "always" | "characters"),
-                [handleSettingChange],
-              )}
+              onValueChange={useCallback((value: string) => handleSettingChange("prefix_messages", value as "never" | "always" | "characters"), [handleSettingChange])}
               className="flex flex-col space-y-0"
               disabled={!currentTemplate}
             >

@@ -141,23 +141,12 @@ const WidgetCharacterSheet = () => {
       <Separator className="my-1" />
       <CardFooter className="flex justify-between pt-3">
         {currentCharacter && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRemoveCharacter}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
+          <Button variant="ghost" size="sm" onClick={handleRemoveCharacter} className="text-destructive hover:text-destructive hover:bg-destructive/10">
             <X className="mr-1 h-4 w-4" />
             Remove
           </Button>
         )}
-        <AddParticipantPopover
-          isOpen={isSelectingCharacter}
-          onOpenChange={setIsSelectingCharacter}
-          onSelectCharacter={handleSelectCharacter}
-          existingParticipantIds={[]}
-          title="Change Character"
-        >
+        <AddParticipantPopover isOpen={isSelectingCharacter} onOpenChange={setIsSelectingCharacter} onSelectCharacter={handleSelectCharacter} existingParticipantIds={[]} title="Change Character">
           <Button variant="outline" size="sm" className="ml-auto">
             <UserPlus className="mr-2 h-4 w-4" />
             Change Character

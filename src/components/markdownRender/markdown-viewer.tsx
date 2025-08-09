@@ -56,12 +56,7 @@ export function MarkdownViewer({ content, className, label }: MarkdownViewerProp
   return (
     <div className="flex flex-col">
       {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
-      <div
-        className={cn(
-          "custom-scrollbar font-sans rounded-sm markdown-body h-full w-full px-3 py-2 overflow-auto prose prose-sm dark:prose-invert max-w-none",
-          className,
-        )}
-      >
+      <div className={cn("custom-scrollbar font-sans rounded-sm markdown-body h-full w-full px-3 py-2 overflow-auto prose prose-sm dark:prose-invert max-w-none", className)}>
         <ReactMarkdown
           remarkPlugins={[RemarkGfm, RemarkBreaks]}
           rehypePlugins={[

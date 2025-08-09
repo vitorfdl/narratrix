@@ -74,11 +74,7 @@ export function validateAndTransformChatTemplateData(data: any, profileId: strin
   // 3. Unknown format
   return {
     valid: false,
-    errors: [
-      ...internalResult.errors,
-      ...sillyTavernValidation.errors,
-      "Unknown or unsupported chat template file format. Only internal JSON and SillyTavern formats are currently supported.",
-    ],
+    errors: [...internalResult.errors, ...sillyTavernValidation.errors, "Unknown or unsupported chat template file format. Only internal JSON and SillyTavern formats are currently supported."],
     data: null,
     format: "unknown",
   };

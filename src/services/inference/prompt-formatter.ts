@@ -1,12 +1,5 @@
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import {
-  useChatActions,
-  useCurrentChatActiveChapterID,
-  useCurrentChatChapters,
-  useCurrentChatId,
-  useCurrentChatMessages,
-  useCurrentChatParticipants,
-} from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { Character } from "@/schema/characters-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
@@ -121,9 +114,7 @@ export function usePromptFormatter() {
         memoizedDataFetchers.getInferenceTemplates(),
       ]);
 
-      const chatTemplate = chatTemplateID
-        ? chatTemplateList.find((template) => template.id === chatTemplateID)!
-        : chatTemplateList.find((template) => template.id === currentChat?.chat_template_id)!;
+      const chatTemplate = chatTemplateID ? chatTemplateList.find((template) => template.id === chatTemplateID)! : chatTemplateList.find((template) => template.id === currentChat?.chat_template_id)!;
 
       if (!chatTemplate) {
         throw new Error("Chat template not found");
@@ -197,16 +188,7 @@ export function usePromptFormatter() {
         isChat: !inferenceTemplate,
       };
     },
-    [
-      currentChatId,
-      memoizedDataFetchers,
-      modelManifestList,
-      currentProfile,
-      chapterList,
-      currentChapterID,
-      localSummarySettings,
-      processMessagesWithNames,
-    ],
+    [currentChatId, memoizedDataFetchers, modelManifestList, currentProfile, chapterList, currentChapterID, localSummarySettings, processMessagesWithNames],
   );
 
   return {

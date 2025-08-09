@@ -135,14 +135,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
             )}
           </div>
           {participant.type !== "user" && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-5 h-5"
-              disabled={!participant.isEnabled}
-              onClick={() => onTriggerMessage?.(participant.id)}
-              title="Trigger Message"
-            >
+            <Button variant="ghost" size="icon" className="w-5 h-5" disabled={!participant.isEnabled} onClick={() => onTriggerMessage?.(participant.id)} title="Trigger Message">
               {inInferenceQueue ? (
                 <motion.div
                   initial={{ scale: 1 }}
@@ -176,24 +169,11 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
                 aria-label={participant.isEnabled ? "Disable" : "Enable"}
                 size={"xs"}
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-4 h-4 hover:text-destructive"
-                onClick={() => onRemoveParticipant?.(participant.id)}
-                title="Remove"
-              >
+              <Button variant="ghost" size="icon" className="w-4 h-4 hover:text-destructive" onClick={() => onRemoveParticipant?.(participant.id)} title="Remove">
                 <Trash2 className="!h-3 !w-3" />
               </Button>
             </div>
-            <div
-              className={cn(
-                "text-xxs capitalize truncate flex items-center gap-1",
-                participant.type === "agent" ? "text-primary/80 font-medium" : "text-muted-foreground",
-              )}
-            >
-              {participant.type}
-            </div>
+            <div className={cn("text-xxs capitalize truncate flex items-center gap-1", participant.type === "agent" ? "text-primary/80 font-medium" : "text-muted-foreground")}>{participant.type}</div>
           </div>
         )}
 
@@ -425,8 +405,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
   const isInQueue = (participantId: string) => {
     // Check if character is in inference queue
     const inCharacterQueue =
-      (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") ||
-      (participantId === "user" && streamingState.messageId === "generate-input-area");
+      (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") || (participantId === "user" && streamingState.messageId === "generate-input-area");
 
     // Check if agent is in workflow execution
     const agent = agentList.find((a) => a.id === participantId);
@@ -467,12 +446,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
 
       {/* Footer */}
       <div className="py-0 px-1 border-t flex justify-start gap-2">
-        <AddParticipantPopover
-          isOpen={isAddParticipantOpen}
-          onOpenChange={setIsAddParticipantOpen}
-          onSelectCharacter={handleAddParticipant}
-          existingParticipantIds={participants.map((p) => p.id)}
-        >
+        <AddParticipantPopover isOpen={isAddParticipantOpen} onOpenChange={setIsAddParticipantOpen} onSelectCharacter={handleAddParticipant} existingParticipantIds={participants.map((p) => p.id)}>
           <Button variant="ghost" size="icon" title="Add Participant">
             <UserPlus className="h-4 w-4" />
           </Button>

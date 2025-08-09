@@ -204,9 +204,7 @@ export function TemplatePicker({
                 )}
                 disabled={!hasTemplates || disabled}
               >
-                <span className="truncate text-left flex-1 min-w-0 text-ellipsis">
-                  {selectedTemplate ? selectedTemplate.name : hasTemplates ? "Select Template" : "No templates available"}
-                </span>
+                <span className="truncate text-left flex-1 min-w-0 text-ellipsis">{selectedTemplate ? selectedTemplate.name : hasTemplates ? "Select Template" : "No templates available"}</span>
                 <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
               </Button>
             }

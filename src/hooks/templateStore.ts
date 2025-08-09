@@ -32,10 +32,7 @@ interface TemplateState {
   actions: {
     createFormatTemplate: (templateData: NewFormatTemplate) => Promise<FormatTemplate>;
     getFormatTemplateById: (id: string) => Promise<FormatTemplate | null>;
-    updateFormatTemplate: (
-      id: string,
-      updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
-    ) => Promise<FormatTemplate | null>;
+    updateFormatTemplate: (id: string, updateData: Partial<Omit<FormatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>) => Promise<FormatTemplate | null>;
     deleteFormatTemplate: (id: string) => Promise<boolean>;
     fetchFormatTemplates: (profileId: string) => Promise<void>;
     getFormatTemplatesByProfile: (profileId: string) => Promise<FormatTemplate[]>;
@@ -43,10 +40,7 @@ interface TemplateState {
     // Inference Template Operations
     createInferenceTemplate: (templateData: CreateInferenceTemplateParams) => Promise<InferenceTemplate>;
     getInferenceTemplateById: (id: string) => Promise<InferenceTemplate | null>;
-    updateInferenceTemplate: (
-      id: string,
-      updateData: Partial<Omit<InferenceTemplate, "id" | "profile_id" | "created_at" | "updated_at">>,
-    ) => Promise<InferenceTemplate | null>;
+    updateInferenceTemplate: (id: string, updateData: Partial<Omit<InferenceTemplate, "id" | "profile_id" | "created_at" | "updated_at">>) => Promise<InferenceTemplate | null>;
     deleteInferenceTemplate: (id: string) => Promise<boolean>;
     fetchInferenceTemplates: (filter?: InferenceTemplateFilter) => Promise<void>;
     getInferenceTemplatesByProfile: (profileId: string) => Promise<InferenceTemplate[]>;

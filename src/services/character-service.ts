@@ -33,8 +33,7 @@ export async function createCharacter(characterData: z.infer<typeof CreateCharac
   // Convert objects to JSON strings for database storage
   const settings = validatedCharacter.settings ? JSON.stringify(validatedCharacter.settings) : null;
   const custom = validatedCharacter.custom ? JSON.stringify(validatedCharacter.custom) : null;
-  const expressions =
-    validatedCharacter.type === "character" && validatedCharacter.expressions ? JSON.stringify(validatedCharacter.expressions) : null;
+  const expressions = validatedCharacter.type === "character" && validatedCharacter.expressions ? JSON.stringify(validatedCharacter.expressions) : null;
   const tags = validatedCharacter.tags ? JSON.stringify(validatedCharacter.tags) : JSON.stringify([]);
 
   await executeDBQuery(
@@ -167,11 +166,7 @@ export async function updateCharacter(id: string, updateData: z.infer<typeof Upd
   };
 
   // Use type assertion with the correct type based on current character
-  const { updates, values, whereClause } = buildUpdateParams<typeof currentCharacter>(
-    characterId,
-    updateData as Partial<typeof currentCharacter>,
-    fieldMapping,
-  );
+  const { updates, values, whereClause } = buildUpdateParams<typeof currentCharacter>(characterId, updateData as Partial<typeof currentCharacter>, fieldMapping);
 
   if (updates.length > 0) {
     await executeDBQuery(`UPDATE characters SET ${updates.join(", ")}${whereClause}`, values);

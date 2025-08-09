@@ -41,9 +41,7 @@ const WidgetMemory = () => {
 
           <div className="text-center space-y-2 max-w-md">
             <h3 className="text-lg font-medium">Memory Management Coming Soon</h3>
-            <p className="text-muted-foreground text-sm">
-              We're working on an intelligent memory system that will help your AI assistant remember important details from your conversations.
-            </p>
+            <p className="text-muted-foreground text-sm">We're working on an intelligent memory system that will help your AI assistant remember important details from your conversations.</p>
           </div>
         </div>
       </CardContent>

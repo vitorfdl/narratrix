@@ -44,7 +44,7 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
       const actualPassword = hasPassword ? password : undefined;
 
       // If avatar exists, save it to the filesystem
-      let avatarPath = undefined;
+      let avatarPath;
       if (avatar) {
         try {
           // Generate a normalized ID from the profile name for better identification
@@ -117,26 +117,12 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
             <Label htmlFor="name">
               Profile Name <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter profile name"
-              maxLength={30}
-              required
-              disabled={isProcessing}
-            />
+            <Input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter profile name" maxLength={30} required disabled={isProcessing} />
           </div>
 
           {/* Password Protection */}
           <div className="flex items-center space-x-2">
-            <Checkbox
-              id="hasPassword"
-              checked={hasPassword}
-              onCheckedChange={(checked) => setHasPassword(checked as boolean)}
-              disabled={isProcessing}
-            />
+            <Checkbox id="hasPassword" checked={hasPassword} onCheckedChange={(checked) => setHasPassword(checked as boolean)} disabled={isProcessing} />
             <Label htmlFor="hasPassword" className="text-sm font-medium">
               Password protect this profile
             </Label>
@@ -148,15 +134,7 @@ const NewProfileDialog: React.FC<NewProfileDialogProps> = ({ open, onClose, canC
               <Label htmlFor="password">
                 Password <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                required
-                disabled={isProcessing}
-              />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" required disabled={isProcessing} />
             </div>
           )}
 

@@ -168,10 +168,7 @@ export async function listChats(filter?: ChatFilter): Promise<Chat[]> {
 }
 
 // Update a chat
-export async function updateChat(
-  id: string,
-  updateData: Partial<Omit<Chat, "id" | "profile_id" | "created_at" | "updated_at">>,
-): Promise<Chat | null> {
+export async function updateChat(id: string, updateData: Partial<Omit<Chat, "id" | "profile_id" | "created_at" | "updated_at">>): Promise<Chat | null> {
   const chatId = uuidUtils.uuid().parse(id);
 
   // Get the current chat to ensure it exists

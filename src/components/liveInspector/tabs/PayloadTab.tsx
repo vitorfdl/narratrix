@@ -253,12 +253,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <MarkdownTextArea
-                      useEditorOnly={true}
-                      editable={false}
-                      className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
-                      initialValue={getConcatenatedContent()}
-                    />
+                    <MarkdownTextArea useEditorOnly={true} editable={false} className="text-sm font-mono bg-transparent border-0 p-0 min-h-0" initialValue={getConcatenatedContent()} />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -275,12 +270,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                         <span>System Prompt</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)}
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
                           {systemPromptCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
                         </Button>
                       </div>
@@ -295,9 +285,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                         initialValue={selectedRequest.systemPrompt || "No system prompt provided"}
                       />
                     ) : (
-                      <div className="text-sm text-muted-foreground italic">
-                        {getMessagePreview(selectedRequest.systemPrompt || "No system prompt provided", 150)}
-                      </div>
+                      <div className="text-sm text-muted-foreground italic">{getMessagePreview(selectedRequest.systemPrompt || "No system prompt provided", 150)}</div>
                     )}
                   </CardContent>
                 </Card>
@@ -324,11 +312,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                     {msgRenderIndex > 0 && (
                       <div className="flex justify-center py-2 text-sm text-muted-foreground">
                         <div className="bg-muted rounded-lg px-3 py-1 text-center">
-                          {isLoadingMore ? (
-                            <span className="text-xs">Loading earlier messages...</span>
-                          ) : (
-                            <span className="text-xs">Scroll up to load earlier messages</span>
-                          )}
+                          {isLoadingMore ? <span className="text-xs">Loading earlier messages...</span> : <span className="text-xs">Scroll up to load earlier messages</span>}
                         </div>
                       </div>
                     )}
@@ -356,12 +340,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                             </div>
                             <div className="flex items-center gap-1">
                               {shouldShowCollapse && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => toggleMessageCollapse(actualIndex)}
-                                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                                >
+                                <Button variant="ghost" size="sm" onClick={() => toggleMessageCollapse(actualIndex)} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
                                   {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
                                 </Button>
                               )}
@@ -369,25 +348,13 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                           </div>
 
                           {/* Message Content */}
-                          <div
-                            className={`rounded-lg border ${isCollapsed ? "p-4" : "p-0"} ${isUser ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"}`}
-                          >
+                          <div className={`rounded-lg border ${isCollapsed ? "p-4" : "p-0"} ${isUser ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"}`}>
                             {!isCollapsed ? (
-                              <MarkdownTextArea
-                                editable={false}
-                                useEditorOnly={true}
-                                className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
-                                initialValue={messageText}
-                              />
+                              <MarkdownTextArea editable={false} useEditorOnly={true} className="text-sm font-mono bg-transparent border-0 p-0 min-h-0" initialValue={messageText} />
                             ) : (
                               <div className="text-sm text-muted-foreground">
                                 {getMessagePreview(messageText, 200)}
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  onClick={() => toggleMessageCollapse(actualIndex)}
-                                  className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80"
-                                >
+                                <Button variant="link" size="sm" onClick={() => toggleMessageCollapse(actualIndex)} className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80">
                                   Show more
                                 </Button>
                               </div>
@@ -401,11 +368,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                     {msgRenderIndex + getVisibleMessages().length < selectedRequest.messages.length && (
                       <div className="flex justify-center py-2 text-sm text-muted-foreground">
                         <div className="bg-muted rounded-lg px-3 py-1 text-center">
-                          {isLoadingMore ? (
-                            <span className="text-xs">Loading more recent messages...</span>
-                          ) : (
-                            <span className="text-xs">Scroll down to load more recent messages</span>
-                          )}
+                          {isLoadingMore ? <span className="text-xs">Loading more recent messages...</span> : <span className="text-xs">Scroll down to load more recent messages</span>}
                         </div>
                       </div>
                     )}
@@ -427,12 +390,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                       <span>System Prompt</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)}
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
                         {systemPromptCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
@@ -447,9 +405,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                       initialValue={selectedRequest.systemPrompt || "No system prompt provided"}
                     />
                   ) : (
-                    <div className="text-sm text-muted-foreground italic">
-                      {getMessagePreview(selectedRequest.systemPrompt || "No system prompt provided", 150)}
-                    </div>
+                    <div className="text-sm text-muted-foreground italic">{getMessagePreview(selectedRequest.systemPrompt || "No system prompt provided", 150)}</div>
                   )}
                 </CardContent>
               </Card>
@@ -476,11 +432,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                   {msgRenderIndex > 0 && (
                     <div className="flex justify-center py-2 text-sm text-muted-foreground">
                       <div className="bg-muted rounded-lg px-3 py-1 text-center">
-                        {isLoadingMore ? (
-                          <span className="text-xs">Loading earlier messages...</span>
-                        ) : (
-                          <span className="text-xs">Scroll up to load earlier messages</span>
-                        )}
+                        {isLoadingMore ? <span className="text-xs">Loading earlier messages...</span> : <span className="text-xs">Scroll up to load earlier messages</span>}
                       </div>
                     </div>
                   )}
@@ -508,12 +460,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                           </div>
                           <div className="flex items-center gap-1">
                             {shouldShowCollapse && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleMessageCollapse(actualIndex)}
-                                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                              >
+                              <Button variant="ghost" size="sm" onClick={() => toggleMessageCollapse(actualIndex)} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
                                 {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
                               </Button>
                             )}
@@ -521,25 +468,13 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                         </div>
 
                         {/* Message Content */}
-                        <div
-                          className={`rounded-lg border ${isCollapsed ? "p-4" : "p-0"} ${isUser ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"}`}
-                        >
+                        <div className={`rounded-lg border ${isCollapsed ? "p-4" : "p-0"} ${isUser ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border"}`}>
                           {!isCollapsed ? (
-                            <MarkdownTextArea
-                              editable={false}
-                              useEditorOnly={true}
-                              className="text-sm font-mono bg-transparent border-0 p-0 min-h-0"
-                              initialValue={messageText}
-                            />
+                            <MarkdownTextArea editable={false} useEditorOnly={true} className="text-sm font-mono bg-transparent border-0 p-0 min-h-0" initialValue={messageText} />
                           ) : (
                             <div className="text-sm text-muted-foreground">
                               {getMessagePreview(messageText, 200)}
-                              <Button
-                                variant="link"
-                                size="sm"
-                                onClick={() => toggleMessageCollapse(actualIndex)}
-                                className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80"
-                              >
+                              <Button variant="link" size="sm" onClick={() => toggleMessageCollapse(actualIndex)} className="ml-2 h-auto p-0 text-xs text-primary hover:text-primary/80">
                                 Show more
                               </Button>
                             </div>
@@ -553,11 +488,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                   {msgRenderIndex + getVisibleMessages().length < selectedRequest.messages.length && (
                     <div className="flex justify-center py-2 text-sm text-muted-foreground">
                       <div className="bg-muted rounded-lg px-3 py-1 text-center">
-                        {isLoadingMore ? (
-                          <span className="text-xs">Loading more recent messages...</span>
-                        ) : (
-                          <span className="text-xs">Scroll down to load more recent messages</span>
-                        )}
+                        {isLoadingMore ? <span className="text-xs">Loading more recent messages...</span> : <span className="text-xs">Scroll down to load more recent messages</span>}
                       </div>
                     </div>
                   )}

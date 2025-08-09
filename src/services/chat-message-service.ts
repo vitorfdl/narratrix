@@ -263,10 +263,10 @@ export async function getNextMessagePosition(chatId: string, chapterId: string):
   const validChatId = uuidUtils.uuid().parse(chatId);
   const validChapterId = chapterId ? uuidUtils.uuid().parse(chapterId) : null;
 
-  const result = await selectDBQuery<{ max_position: number | null }[]>(
-    "SELECT MAX(position) as max_position FROM chat_messages WHERE chat_id = $1 AND chapter_id = $2",
-    [validChatId, validChapterId],
-  );
+  const result = await selectDBQuery<{ max_position: number | null }[]>("SELECT MAX(position) as max_position FROM chat_messages WHERE chat_id = $1 AND chapter_id = $2", [
+    validChatId,
+    validChapterId,
+  ]);
 
   // If no messages yet, start at 100, otherwise add 100 to the last position
   const lastPosition = result[0]?.max_position || 0;
@@ -331,10 +331,7 @@ export async function deleteChatMessagesByFilter(filter: ChatMessageFilterWithCo
  * @param updateData Object containing the fields to update
  * @returns Number of affected rows
  */
-export async function updateChatMessagesUsingFilter(
-  filter: ChatMessageFilterWithComparison,
-  updateData: Partial<UpdateChatMessageParams>,
-): Promise<number> {
+export async function updateChatMessagesUsingFilter(filter: ChatMessageFilterWithComparison, updateData: Partial<UpdateChatMessageParams>): Promise<number> {
   // Ensure we have at least one filter condition to prevent updating all messages
   if (Object.keys(filter).length === 0) {
     throw new Error("At least one filter condition must be provided");

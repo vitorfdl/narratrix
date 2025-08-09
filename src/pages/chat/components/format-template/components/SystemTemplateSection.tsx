@@ -193,13 +193,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
                     )}
                   </div>
                   {!disabled && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={handleLabelEdit}
-                      title="Edit label"
-                    >
+                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleLabelEdit} title="Edit label">
                       <Edit className="h-3 w-3" />
                     </Button>
                   )}
@@ -475,14 +469,11 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
           <div className="flex items-center gap-1">
             <Paperclip className="h-5 w-5" /> System Prompts
             <HelpTooltip>
-              <p>
-                Define the AI's core behavior and instructions using System Prompts. Multiple prompts added here are automatically combined into a
-                single system message sent to the AI.
-              </p>
+              <p>Define the AI's core behavior and instructions using System Prompts. Multiple prompts added here are automatically combined into a single system message sent to the AI.</p>
               <br />
               <p>
-                <strong>Context-specific prompts</strong> (like 'character-context', 'chapter-context', 'user-context') are only included if the
-                relevant information (e.g., active character, chapter scenario, user persona) is available in the current chat configuration.
+                <strong>Context-specific prompts</strong> (like 'character-context', 'chapter-context', 'user-context') are only included if the relevant information (e.g., active character, chapter
+                scenario, user persona) is available in the current chat configuration.
               </p>
             </HelpTooltip>
           </div>

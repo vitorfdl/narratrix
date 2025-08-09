@@ -73,14 +73,7 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({ open, onClose, onSubmit
           </p>
 
           <div className="space-y-2">
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              autoFocus
-              disabled={isLoading}
-            />
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" autoFocus disabled={isLoading} />
 
             {error && (
               <Alert variant="destructive" className="py-2">

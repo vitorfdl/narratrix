@@ -184,9 +184,7 @@ export default function JsonSchemaCreator({ open, onOpenChange, initialSchema, o
     return (
       <div key={property.id} className="select-none">
         <div
-          className={`flex items-center gap-1 p-1 rounded-md cursor-pointer hover:bg-accent/50 transition-colors ${
-            isSelected ? "bg-primary/10 border border-primary/20" : ""
-          }`}
+          className={`flex items-center gap-1 p-1 rounded-md cursor-pointer hover:bg-accent/50 transition-colors ${isSelected ? "bg-primary/10 border border-primary/20" : ""}`}
           style={{ marginLeft: `${level * 2}px` }}
           onClick={() => setSelectedProperty(property)}
           draggable
@@ -338,12 +336,7 @@ export default function JsonSchemaCreator({ open, onOpenChange, initialSchema, o
                   <ScrollArea className="max-h-[45vh] overflow-y-auto custom-scrollbar pr-1">
                     <div className="space-y-4">
                       {PROPERTY_FIELD_CONFIGS.map((config) => (
-                        <PropertyField
-                          key={config.id}
-                          config={config}
-                          property={selectedProperty}
-                          onUpdate={(updates) => updateProperty(selectedProperty.id, updates)}
-                        />
+                        <PropertyField key={config.id} config={config} property={selectedProperty} onUpdate={(updates) => updateProperty(selectedProperty.id, updates)} />
                       ))}
                     </div>
                   </ScrollArea>
@@ -379,12 +372,7 @@ export default function JsonSchemaCreator({ open, onOpenChange, initialSchema, o
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="schema-title">Tool Name</Label>
-                        <Input
-                          id="schema-title"
-                          value={schema.title || ""}
-                          onChange={(e) => setSchema((prev) => ({ ...prev, title: e.target.value }))}
-                          placeholder="My Tool"
-                        />
+                        <Input id="schema-title" value={schema.title || ""} onChange={(e) => setSchema((prev) => ({ ...prev, title: e.target.value }))} placeholder="My Tool" />
                       </div>
 
                       <div>
@@ -402,11 +390,7 @@ export default function JsonSchemaCreator({ open, onOpenChange, initialSchema, o
 
                   <TabsContent value="schema" className="mt-4">
                     <ScrollArea className="h-[400px]">
-                      <MarkdownTextArea
-                        initialValue={`\`\`\`json\n${JSON.stringify(generateSchema(), null, 2)}\n\`\`\``}
-                        editable={false}
-                        className="text-xxs rounded-md overflow-auto"
-                      />
+                      <MarkdownTextArea initialValue={`\`\`\`json\n${JSON.stringify(generateSchema(), null, 2)}\n\`\`\``} editable={false} className="text-xxs rounded-md overflow-auto" />
                     </ScrollArea>
                   </TabsContent>
                 </Tabs>

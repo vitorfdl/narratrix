@@ -163,8 +163,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
     );
   }
 
-  const { tokenBreakdown, totalTokens, contextUtilizationPercentage, responseUtilizationPercentage, avgTokensPerHistory, totalMessageCount } =
-    chartData;
+  const { tokenBreakdown, totalTokens, contextUtilizationPercentage, responseUtilizationPercentage, avgTokensPerHistory, totalMessageCount } = chartData;
 
   const maxContext = selectedRequest.parameters.max_context || 1;
   const maxResponseTokens = selectedRequest.parameters.max_tokens || 1;
@@ -229,8 +228,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
                       </Tooltip>
                     </span>
                     <span className="font-mono text-sm">
-                      {tokenStats.historyTokens.toLocaleString()} /{" "}
-                      <span className="text-xs text-muted-foreground">{tokenStats.historyTokenEstimation.toLocaleString()}</span>
+                      {tokenStats.historyTokens.toLocaleString()} / <span className="text-xs text-muted-foreground">{tokenStats.historyTokenEstimation.toLocaleString()}</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-md bg-muted/20 border border-[hsl(var(--chart-3))]/50">
@@ -245,8 +243,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
                       </Tooltip>
                     </span>
                     <span className="font-mono text-sm">
-                      {tokenStats.responseTokens.toLocaleString()} /{" "}
-                      <span className="text-xs text-muted-foreground">{maxResponseTokens.toLocaleString()}</span>
+                      {tokenStats.responseTokens.toLocaleString()} / <span className="text-xs text-muted-foreground">{maxResponseTokens.toLocaleString()}</span>
                     </span>
                   </div>
                 </div>

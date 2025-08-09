@@ -82,13 +82,7 @@ const SortablePromptItem = ({ prompt, onEdit, onDelete, onToggleEnabled, disable
       </div>
 
       <div className="flex items-center gap-1">
-        <Switch
-          checked={prompt.enabled}
-          onCheckedChange={(checked) => onToggleEnabled?.(prompt.id, checked)}
-          disabled={disabled}
-          size="sm"
-          className="mr-1"
-        />
+        <Switch checked={prompt.enabled} onCheckedChange={(checked) => onToggleEnabled?.(prompt.id, checked)} disabled={disabled} size="sm" className="mr-1" />
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(prompt.id)} disabled={disabled}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
@@ -144,24 +138,11 @@ export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder, onTogg
 
   return (
     <div className={`w-full ${disabled ? "opacity-70" : ""}`}>
-      <DndContext
-        autoScroll={false}
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-      >
+      <DndContext autoScroll={false} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
         <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-1">
             {items.map((prompt) => (
-              <SortablePromptItem
-                key={prompt.id}
-                prompt={prompt}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onToggleEnabled={onToggleEnabled}
-                disabled={disabled}
-              />
+              <SortablePromptItem key={prompt.id} prompt={prompt} onEdit={onEdit} onDelete={onDelete} onToggleEnabled={onToggleEnabled} disabled={disabled} />
             ))}
           </div>
         </SortableContext>

@@ -45,11 +45,7 @@ export function useInferenceService() {
       const currentChunk = response.result.text || response.result.full_response || "";
 
       // Process chunk with buffer
-      const { textToAdd, reasoningToAdd } = processStreamChunk(
-        currentChunk,
-        streamingManager.streamingState.current,
-        streamingManager.streamingState.current.formatTemplate,
-      );
+      const { textToAdd, reasoningToAdd } = processStreamChunk(currentChunk, streamingManager.streamingState.current, streamingManager.streamingState.current.formatTemplate);
 
       // Batch update streaming state for better performance
       streamingManager.batchUpdateStreamingState((currentState) => ({
@@ -84,11 +80,7 @@ export function useInferenceService() {
         }));
 
         // Final update to the message
-        messageManager.updateMessageById(
-          streamingManager.streamingState.current.messageId,
-          finalText,
-          streamingManager.streamingState.current.messageIndex || 0,
-        );
+        messageManager.updateMessageById(streamingManager.streamingState.current.messageId, finalText, streamingManager.streamingState.current.messageIndex || 0);
 
         // Reset streaming state (this will notify subscribers)
         streamingManager.resetStreamingState();
@@ -151,22 +143,13 @@ export function useInferenceService() {
         const freshMessages = messageHistoryOverride || (await promptFormatter.fetchChatMessages(currentChatId, currentChapterID));
 
         // Prepare messages for inference
-        const promptResult = await promptFormatter.formatPrompt(
-          userMessage,
-          characterId,
-          systemPromptOverride,
-          chatTemplateID,
-          freshMessages,
-          extraSuggestions,
-          existingMessageId || undefined,
-        );
+        const promptResult = await promptFormatter.formatPrompt(userMessage, characterId, systemPromptOverride, chatTemplateID, freshMessages, extraSuggestions, existingMessageId || undefined);
 
         if (!promptResult) {
           throw new Error("Failed to format prompt");
         }
 
-        const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate, formatTemplate, isChat, customStopStrings } =
-          promptResult;
+        const { inferenceMessages, systemPrompt, manifestSettings, modelSettings, chatTemplate, formatTemplate, isChat, customStopStrings } = promptResult;
 
         if (!modelSettings || !manifestSettings) {
           console.error("Model or manifest settings not available. Check chat template configuration.");
@@ -241,11 +224,7 @@ export function useInferenceService() {
           onStreamingStateChange(streamingManager.streamingState.current);
         }
 
-        messageManager.updateMessageById(
-          streamingManager.streamingState.current.messageId!,
-          streamingManager.streamingState.current.accumulatedText ?? "...",
-          messageIndex,
-        );
+        messageManager.updateMessageById(streamingManager.streamingState.current.messageId!, streamingManager.streamingState.current.accumulatedText ?? "...", messageIndex);
 
         return confirmID;
       } catch (error) {

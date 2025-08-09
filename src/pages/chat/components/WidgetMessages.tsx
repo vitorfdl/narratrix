@@ -1,12 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  useChatActions,
-  useCurrentChatActiveChapterID,
-  useCurrentChatId,
-  useCurrentChatMessages,
-  useCurrentChatParticipants,
-  useCurrentChatUserCharacterID,
-} from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { ChevronDown } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -347,9 +340,7 @@ const WidgetMessages: React.FC = () => {
       const targetMessage = messageUpdatedList[targetIndex];
 
       // Find the last system message with summary script if any
-      const lastSummaryIndex = structuredClone(messageUpdatedList).findIndex(
-        (msg) => msg.type === "system" && msg.extra?.script === "summary" && msg.position <= targetMessage.position,
-      );
+      const lastSummaryIndex = structuredClone(messageUpdatedList).findIndex((msg) => msg.type === "system" && msg.extra?.script === "summary" && msg.position <= targetMessage.position);
 
       // Determine the start position (either after the last summary or from the beginning)
       const startIndex = lastSummaryIndex !== -1 ? lastSummaryIndex + 1 : 0;
@@ -487,15 +478,12 @@ const WidgetMessages: React.FC = () => {
 
         // Mid-message layer control for messages that aren't first or disabled
         // We need to check against the actual index, not the visible index
-        const showMidLayer =
-          actualIndex > 0 && !message.disabled && actualIndex > 0 && messages[actualIndex - 1] && !messages[actualIndex - 1].disabled;
+        const showMidLayer = actualIndex > 0 && !message.disabled && actualIndex > 0 && messages[actualIndex - 1] && !messages[actualIndex - 1].disabled;
 
         return (
           <div key={`message-wrapper-${message.id}`} className={MESSAGE_GROUP_STYLES}>
             {/* Add MidMessageLayerControl before each message except the first */}
-            {showMidLayer && index > 0 && (
-              <MidMessageLayerWrapper messageBefore={messages[actualIndex - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />
-            )}
+            {showMidLayer && index > 0 && <MidMessageLayerWrapper messageBefore={messages[actualIndex - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
 
             <MessageItem
               message={message}

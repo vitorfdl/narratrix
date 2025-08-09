@@ -87,27 +87,15 @@ export function ExtraSections({ formatTemplateID }: ExtraSectionsProps) {
                     Define the markers used to identify reasoning text within the assistant's response.
                     <br />
                     <br />
-                    The content between the specified <strong>Prefix</strong> and <strong>Suffix</strong> will be automatically extracted from the
-                    main chat message and displayed in a separate reasoning section.
+                    The content between the specified <strong>Prefix</strong> and <strong>Suffix</strong> will be automatically extracted from the main chat message and displayed in a separate
+                    reasoning section.
                   </p>
                 </HelpTooltip>
               </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <LabeledInput
-                label="Prefix"
-                value={prefix}
-                placeholder=""
-                disabled={!currentTemplate}
-                onChange={(val) => handleFieldChange("prefix", val)}
-              />
-              <LabeledInput
-                label="Suffix"
-                value={suffix}
-                placeholder=""
-                disabled={!currentTemplate}
-                onChange={(val) => handleFieldChange("suffix", val)}
-              />
+              <LabeledInput label="Prefix" value={prefix} placeholder="" disabled={!currentTemplate} onChange={(val) => handleFieldChange("prefix", val)} />
+              <LabeledInput label="Suffix" value={suffix} placeholder="" disabled={!currentTemplate} onChange={(val) => handleFieldChange("suffix", val)} />
             </CardContent>
           </Card>
         </CardContent>

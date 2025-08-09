@@ -82,13 +82,4 @@ type ModelSpecs = z.infer<typeof ModelSpecsSchema>;
 
 export { InferenceMessageSchema, InferenceRequestSchema, InferenceResponseSchema, InferenceToolCallSchema, ModelSpecsSchema };
 
-export type {
-  InferenceCancelledResponse,
-  InferenceCompletedResponse,
-  InferenceMessage,
-  InferenceRequest,
-  InferenceResponse,
-  InferenceStreamingResponse,
-  InferenceToolCall,
-  ModelSpecs,
-};
+export type { InferenceCancelledResponse, InferenceCompletedResponse, InferenceMessage, InferenceRequest, InferenceResponse, InferenceStreamingResponse, InferenceToolCall, ModelSpecs };

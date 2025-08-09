@@ -1,9 +1,5 @@
 import { FormatTemplate, formatTemplateSchema } from "@/schema/template-format-schema";
-import {
-  SillyTavernFormatTemplate,
-  transformSillyTavernFormatTemplate,
-  validateSillyTavernFormatTemplate,
-} from "./formats/sillytavern_format_template";
+import { SillyTavernFormatTemplate, transformSillyTavernFormatTemplate, validateSillyTavernFormatTemplate } from "./formats/sillytavern_format_template";
 
 /**
  * Supported format template import formats.
@@ -79,11 +75,7 @@ export function validateAndTransformFormatTemplateData(data: any, profileId: str
   // 3. Unknown format
   return {
     valid: false,
-    errors: [
-      ...internalResult.errors,
-      ...sillyTavernValidation.errors,
-      "Unknown or unsupported format template file format. Only internal JSON and SillyTavern formats are currently supported.",
-    ],
+    errors: [...internalResult.errors, ...sillyTavernValidation.errors, "Unknown or unsupported format template file format. Only internal JSON and SillyTavern formats are currently supported."],
     data: null,
     format: "unknown",
   };

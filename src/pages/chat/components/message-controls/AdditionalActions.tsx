@@ -3,22 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { cn } from "@/lib/utils";
 import { getChatMessageById } from "@/services/chat-message-service";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import {
-  BookmarkMinus,
-  BookmarkPlus,
-  Check,
-  Copy,
-  Flag,
-  Image,
-  Languages,
-  Loader2,
-  MoreHorizontal,
-  Pencil,
-  RefreshCw,
-  Scissors,
-  Trash2,
-  X,
-} from "lucide-react";
+import { BookmarkMinus, BookmarkPlus, Check, Copy, Flag, Image, Languages, Loader2, MoreHorizontal, Pencil, RefreshCw, Scissors, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -66,31 +51,12 @@ export const MessageActions = ({
   const isRegenerateDisabled = isStreaming || isRegenerating;
 
   return (
-    <div
-      className={cn(
-        "flex gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1",
-        isDropdownOpen && "opacity-100",
-      )}
-    >
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 hover:bg-accent"
-        onClick={() => onEdit(messageId)}
-        title="Edit Message"
-        disabled={isRegenerateDisabled}
-      >
+    <div className={cn("flex gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1", isDropdownOpen && "opacity-100")}>
+      <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" onClick={() => onEdit(messageId)} title="Edit Message" disabled={isRegenerateDisabled}>
         <Pencil className="w-4 h-4" />
       </Button>
       {messageType === "character" && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 hover:bg-accent"
-          onClick={handleRegenerate}
-          title="Regenerate Message"
-          disabled={isRegenerateDisabled || !isLastMessage}
-        >
+        <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" onClick={handleRegenerate} title="Regenerate Message" disabled={isRegenerateDisabled || !isLastMessage}>
           <RefreshCw className={cn("w-4 h-4", (isStreaming || isRegenerating) && "animate-spin")} />
         </Button>
       )}

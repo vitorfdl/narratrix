@@ -129,9 +129,7 @@ const ProfilePicker: React.FC = () => {
             {profiles.map((profile) => (
               <div key={profile.id} className="relative">
                 <Card
-                  className={`w-32 border-none transition-all ${
-                    isManageMode ? "cursor-default opacity-80" : "hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"
-                  }`}
+                  className={`w-32 border-none transition-all ${isManageMode ? "cursor-default opacity-80" : "hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"}`}
                   onClick={() => handleProfileClick(profile.id)}
                 >
                   <CardContent className="flex flex-col items-center p-3 pt-3">
@@ -167,10 +165,7 @@ const ProfilePicker: React.FC = () => {
             ))}
 
             {profiles.length < MAX_PROFILES && isManageMode && (
-              <Card
-                className={"w-32 border-none transition-all hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"}
-                onClick={() => setShowNewProfileDialog(true)}
-              >
+              <Card className={"w-32 border-none transition-all hover:shadow hover:shadow-primary/20 hover:scale-105 hover:cursor-pointer"} onClick={() => setShowNewProfileDialog(true)}>
                 <CardContent className="flex flex-col items-center p-3 pt-3">
                   <div className="w-24 h-24 mb-3 rounded-full flex items-center justify-center">
                     <PlusCircleIcon className="w-12 h-12 text-primary" />
@@ -204,9 +199,7 @@ const ProfilePicker: React.FC = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this profile and all associated data. This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete this profile and all associated data. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

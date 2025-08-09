@@ -93,15 +93,7 @@ interface ChatListDisplayProps {
   setOpen: (open: boolean) => void;
 }
 
-function ChatListDisplay({
-  chats,
-  showTimestamp,
-  onSelectChat,
-  onRenameRequest,
-  onDuplicateRequest,
-  onDeleteRequest,
-  setOpen,
-}: ChatListDisplayProps) {
+function ChatListDisplay({ chats, showTimestamp, onSelectChat, onRenameRequest, onDuplicateRequest, onDeleteRequest, setOpen }: ChatListDisplayProps) {
   return (
     <CommandGroup>
       {chats.map((chat) => (
@@ -132,16 +124,7 @@ interface ChatMenuDropdownProps {
   children: React.ReactNode;
 }
 
-export function ChatMenuDropdown({
-  allChats,
-  openChatIds,
-  onSelectChat,
-  onCreateChat,
-  onRenameRequest,
-  onDuplicateRequest,
-  onDeleteRequest,
-  children,
-}: ChatMenuDropdownProps) {
+export function ChatMenuDropdown({ allChats, openChatIds, onSelectChat, onCreateChat, onRenameRequest, onDuplicateRequest, onDeleteRequest, children }: ChatMenuDropdownProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("recent");

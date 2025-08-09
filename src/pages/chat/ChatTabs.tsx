@@ -91,19 +91,7 @@ function SortableTab({ tab, index, activeTab, onTabChange, onCloseTab, onRenameR
   );
 }
 
-export function ChatTabs({
-  tabs,
-  allChats,
-  profileId,
-  activeTab,
-  onTabChange,
-  onNewChat,
-  onCloseTab,
-  onRenameRequest,
-  onDuplicateRequest,
-  onDeleteRequest,
-  onTabReorder,
-}: ChatTabsProps) {
+export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, onNewChat, onCloseTab, onRenameRequest, onDuplicateRequest, onDeleteRequest, onTabReorder }: ChatTabsProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedTab, setDraggedTab] = useState<ChatTab | null>(null);
 

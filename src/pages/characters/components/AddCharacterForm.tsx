@@ -71,8 +71,8 @@ function CharacterInfoContent({
                     <p>These expressions are automatically displayed during chats based on the conversation flow.</p>
                     <br />
                     <p>
-                      <strong>How to Add:</strong> Drag & drop image files or use the 'Add' button. The filename (without extension) becomes the
-                      expression name (e.g., <code>happy.png</code> becomes "happy").
+                      <strong>How to Add:</strong> Drag & drop image files or use the 'Add' button. The filename (without extension) becomes the expression name (e.g., <code>happy.png</code> becomes
+                      "happy").
                     </p>
                     <br />
                   </HelpTooltip>
@@ -147,15 +147,7 @@ function CharacterInfoContent({
 }
 
 // Empty Lorebook content
-function LorebookContent({
-  selectedLorebookId,
-  onLorebookSelect,
-  profileId,
-}: {
-  selectedLorebookId: string | null;
-  onLorebookSelect: (id: string | null) => void;
-  profileId: string;
-}) {
+function LorebookContent({ selectedLorebookId, onLorebookSelect, profileId }: { selectedLorebookId: string | null; onLorebookSelect: (id: string | null) => void; profileId: string }) {
   const allLorebooks = useLorebooks();
   const { createLorebook, deleteLorebook, updateLorebook } = useLorebookStoreActions();
 
@@ -229,233 +221,219 @@ function LorebookContent({
   );
 }
 
-export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(
-  ({ onSuccess, initialData, mode = "create", setIsEditing, open = false, onOpenChange, title }, ref) => {
-    const isEditMode = mode === "edit";
-    const { createCharacter, updateCharacter } = useCharacterActions();
-    const currentProfile = useCurrentProfile();
-    const profileId = currentProfile!.id;
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const tagList = useCharacterTagList();
-    const [activeTab, setActiveTab] = useState("info");
+export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(({ onSuccess, initialData, mode = "create", setIsEditing, open = false, onOpenChange, title }, ref) => {
+  const isEditMode = mode === "edit";
+  const { createCharacter, updateCharacter } = useCharacterActions();
+  const currentProfile = useCurrentProfile();
+  const profileId = currentProfile!.id;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const tagList = useCharacterTagList();
+  const [activeTab, setActiveTab] = useState("info");
 
-    // Form state
-    const [name, setName] = useState(initialData?.name || "");
-    const [version, setVersion] = useState(initialData?.version || "1.0.0");
-    const [avatarImage, setAvatarImage] = useState<string | null>(initialData?.avatar_path || null);
-    const [tags, setTags] = useState<string[]>(initialData?.tags || []);
-    const [personality, setPersonality] = useState((initialData?.custom?.personality as string) || "");
-    const [systemPrompt, setSystemPrompt] = useState(initialData?.system_override || "");
-    const [selectedLorebookId, setSelectedLorebookId] = useState<string | null>(initialData?.lorebook_id || null);
+  // Form state
+  const [name, setName] = useState(initialData?.name || "");
+  const [version, setVersion] = useState(initialData?.version || "1.0.0");
+  const [avatarImage, setAvatarImage] = useState<string | null>(initialData?.avatar_path || null);
+  const [tags, setTags] = useState<string[]>(initialData?.tags || []);
+  const [personality, setPersonality] = useState((initialData?.custom?.personality as string) || "");
+  const [systemPrompt, setSystemPrompt] = useState(initialData?.system_override || "");
+  const [selectedLorebookId, setSelectedLorebookId] = useState<string | null>(initialData?.lorebook_id || null);
 
-    // Load avatar image with the hook for consistent loading behavior
-    const { url: avatarUrl, isLoading: isLoadingAvatar } = useImageUrl(avatarImage);
+  // Load avatar image with the hook for consistent loading behavior
+  const { url: avatarUrl, isLoading: isLoadingAvatar } = useImageUrl(avatarImage);
 
-    // Set author from profile settings or use a default
-    const [author, setAuthor] = useState((initialData?.settings?.author as string) || currentProfile?.name);
+  // Set author from profile settings or use a default
+  const [author, setAuthor] = useState((initialData?.settings?.author as string) || currentProfile?.name);
 
-    // Reset form state when editing a different character
-    React.useEffect(() => {
-      setName(initialData?.name || "");
-      setVersion(initialData?.version || "1.0.0");
-      setAvatarImage(initialData?.avatar_path || null);
-      setTags(initialData?.tags || []);
-      setPersonality((initialData?.custom?.personality as string) || "");
+  // Reset form state when editing a different character
+  React.useEffect(() => {
+    setName(initialData?.name || "");
+    setVersion(initialData?.version || "1.0.0");
+    setAvatarImage(initialData?.avatar_path || null);
+    setTags(initialData?.tags || []);
+    setPersonality((initialData?.custom?.personality as string) || "");
 
-      setSystemPrompt(initialData?.system_override || "");
-      setSelectedLorebookId(initialData?.lorebook_id || null);
-      setAuthor((initialData?.settings?.author as string) || currentProfile?.name);
-    }, [initialData?.id]);
+    setSystemPrompt(initialData?.system_override || "");
+    setSelectedLorebookId(initialData?.lorebook_id || null);
+    setAuthor((initialData?.settings?.author as string) || currentProfile?.name);
+  }, [initialData?.id]);
 
-    useEffect(() => {
-      return () => {
-        setIsEditing(false); // Reset editing state when component unmounts
-      };
-    }, [setIsEditing]);
-
-    /* Just to prevent the form from being closed when the user is editing */
-    useEffect(() => {
-      // Check if any form field has been modified
-      const isNameChanged = (initialData?.name && name !== initialData.name) || (mode === "create" && name !== "");
-      const isPersonalityChanged =
-        (initialData?.custom?.personality && personality !== (initialData.custom.personality as string)) || (mode === "create" && personality !== "");
-      const isSystemPromptChanged =
-        (initialData?.system_override !== systemPrompt && systemPrompt !== "") || (mode === "create" && systemPrompt !== "");
-      const isTagsChanged =
-        (initialData?.tags && JSON.stringify(tags) !== JSON.stringify(initialData.tags)) || (mode === "create" && tags.length > 0);
-      const isAvatarChanged = (initialData?.avatar_path !== avatarImage && avatarImage !== null) || (mode === "create" && avatarImage !== null);
-      const isLorebookChanged =
-        (initialData?.lorebook_id !== selectedLorebookId && selectedLorebookId !== null) || (mode === "create" && selectedLorebookId !== null);
-
-      if (isNameChanged || isPersonalityChanged || isSystemPromptChanged || isTagsChanged || isAvatarChanged || isLorebookChanged) {
-        setIsEditing(true);
-      }
-    }, [version, name, personality, systemPrompt, author, tags, avatarImage, selectedLorebookId, initialData, setIsEditing]);
-
-    const handleSubmit = async (e?: React.FormEvent) => {
-      if (e) {
-        e.preventDefault();
-      }
-      setIsSubmitting(true);
-
-      try {
-        const settings: Record<string, unknown> = {
-          author,
-        };
-
-        const custom: Record<string, unknown> = {
-          personality,
-        };
-
-        const avatar_path = avatarImage ? await saveImage(avatarImage, name, "characters") : initialData?.avatar_path;
-        const formData: Partial<Character> = {
-          name,
-          type: "character",
-          version,
-          avatar_path: avatar_path || null,
-          profile_id: profileId,
-          tags,
-          settings,
-          system_override: systemPrompt || null,
-          external_update_link: null,
-          auto_update: true,
-          custom,
-          character_manifest_id: null,
-          lorebook_id: selectedLorebookId,
-        };
-
-        let characterId: string | undefined = initialData?.id;
-        if (isEditMode && initialData) {
-          await updateCharacter(profileId, initialData.id, formData);
-          toast.success("Character updated successfully!");
-        } else {
-          ({ id: characterId } = await createCharacter(formData as any));
-          toast.success("Character created successfully!");
-        }
-
-        setIsEditing(false); // Explicitly reset editing state after successful submission
-        onSuccess(characterId);
-      } catch (error) {
-        toast.error(`Failed to ${isEditMode ? "update" : "create"} character: ${error instanceof Error ? error.message : String(error)}`);
-      } finally {
-        setIsSubmitting(false);
-      }
+  useEffect(() => {
+    return () => {
+      setIsEditing(false); // Reset editing state when component unmounts
     };
+  }, [setIsEditing]);
 
-    useImperativeHandle(ref, () => ({
-      submit: () => handleSubmit(),
-    }));
+  /* Just to prevent the form from being closed when the user is editing */
+  useEffect(() => {
+    // Check if any form field has been modified
+    const isNameChanged = (initialData?.name && name !== initialData.name) || (mode === "create" && name !== "");
+    const isPersonalityChanged = (initialData?.custom?.personality && personality !== (initialData.custom.personality as string)) || (mode === "create" && personality !== "");
+    const isSystemPromptChanged = (initialData?.system_override !== systemPrompt && systemPrompt !== "") || (mode === "create" && systemPrompt !== "");
+    const isTagsChanged = (initialData?.tags && JSON.stringify(tags) !== JSON.stringify(initialData.tags)) || (mode === "create" && tags.length > 0);
+    const isAvatarChanged = (initialData?.avatar_path !== avatarImage && avatarImage !== null) || (mode === "create" && avatarImage !== null);
+    const isLorebookChanged = (initialData?.lorebook_id !== selectedLorebookId && selectedLorebookId !== null) || (mode === "create" && selectedLorebookId !== null);
 
-    const formContent = (
-      <div className="space-y-4">
-        <div className="flex flex-row gap-8">
-          <div className="flex-1 grid grid-cols-2 gap-1">
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="name">
-                Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Character name"
-                className="w-full"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="author">Author</Label>
-              <Input id="author" placeholder="Your Name" required value={author} onChange={(e) => setAuthor(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="version">Version</Label>
-              <Input
-                id="version"
-                type="text"
-                placeholder="1.0.0"
-                pattern="\d+\.\d+\.\d+"
-                title="Version must be in format: major.minor.patch"
-                required
-                value={version}
-                onChange={(e) => setVersion(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="tags">Tags</Label>
-              <CommandTagInput value={tags} onChange={setTags} suggestions={tagList} placeholder="Add a tag..." maxTags={10} />
-            </div>
-          </div>
-          <div className="md:w-[15vw] flex flex-col items-center justify-center">
-            <Label htmlFor="avatar" className="mb-2">
-              Avatar
+    if (isNameChanged || isPersonalityChanged || isSystemPromptChanged || isTagsChanged || isAvatarChanged || isLorebookChanged) {
+      setIsEditing(true);
+    }
+  }, [version, name, personality, systemPrompt, author, tags, avatarImage, selectedLorebookId, initialData, setIsEditing]);
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    setIsSubmitting(true);
+
+    try {
+      const settings: Record<string, unknown> = {
+        author,
+      };
+
+      const custom: Record<string, unknown> = {
+        personality,
+      };
+
+      const avatar_path = avatarImage ? await saveImage(avatarImage, name, "characters") : initialData?.avatar_path;
+      const formData: Partial<Character> = {
+        name,
+        type: "character",
+        version,
+        avatar_path: avatar_path || null,
+        profile_id: profileId,
+        tags,
+        settings,
+        system_override: systemPrompt || null,
+        external_update_link: null,
+        auto_update: true,
+        custom,
+        character_manifest_id: null,
+        lorebook_id: selectedLorebookId,
+      };
+
+      let characterId: string | undefined = initialData?.id;
+      if (isEditMode && initialData) {
+        await updateCharacter(profileId, initialData.id, formData);
+        toast.success("Character updated successfully!");
+      } else {
+        ({ id: characterId } = await createCharacter(formData as any));
+        toast.success("Character created successfully!");
+      }
+
+      setIsEditing(false); // Explicitly reset editing state after successful submission
+      onSuccess(characterId);
+    } catch (error) {
+      toast.error(`Failed to ${isEditMode ? "update" : "create"} character: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  useImperativeHandle(ref, () => ({
+    submit: () => handleSubmit(),
+  }));
+
+  const formContent = (
+    <div className="space-y-4">
+      <div className="flex flex-row gap-8">
+        <div className="flex-1 grid grid-cols-2 gap-1">
+          <div className="space-y-2 col-span-2">
+            <Label htmlFor="name">
+              Name <span className="text-destructive">*</span>
             </Label>
-            <Card className="relative w-32 h-32 ring-2 ring-border overflow-hidden rounded-full">
-              <AvatarCrop
-                onCropComplete={(image) => setAvatarImage(image)}
-                cropShape="round"
-                existingImage={avatarUrl || avatarImage}
-                className={`overflow-hidden h-full w-full rounded-full ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
-              />
-            </Card>
+            <Input id="name" type="text" placeholder="Character name" className="w-full" required value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="author">Author</Label>
+            <Input id="author" placeholder="Your Name" required value={author} onChange={(e) => setAuthor(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="version">Version</Label>
+            <Input
+              id="version"
+              type="text"
+              placeholder="1.0.0"
+              pattern="\d+\.\d+\.\d+"
+              title="Version must be in format: major.minor.patch"
+              required
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2 col-span-2">
+            <Label htmlFor="tags">Tags</Label>
+            <CommandTagInput value={tags} onChange={setTags} suggestions={tagList} placeholder="Add a tag..." maxTags={10} />
           </div>
         </div>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 w-full mt-4">
-            <TabsTrigger value="info">Character Information</TabsTrigger>
-            <TabsTrigger value="lorebook">Character Lorebook</TabsTrigger>
-          </TabsList>
-          <TabsContent value="info" className="pt-4">
-            <CharacterInfoContent
-              personality={personality}
-              systemPrompt={systemPrompt}
-              characterId={initialData?.id || "none"}
-              expressions={initialData?.expressions || []}
-              onPersonalityChange={setPersonality}
-              onSystemPromptChange={setSystemPrompt}
+        <div className="md:w-[15vw] flex flex-col items-center justify-center">
+          <Label htmlFor="avatar" className="mb-2">
+            Avatar
+          </Label>
+          <Card className="relative w-32 h-32 ring-2 ring-border overflow-hidden rounded-full">
+            <AvatarCrop
+              onCropComplete={(image) => setAvatarImage(image)}
+              cropShape="round"
+              existingImage={avatarUrl || avatarImage}
+              className={`overflow-hidden h-full w-full rounded-full ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
             />
-          </TabsContent>
-          <TabsContent value="lorebook" className="pt-4">
-            <LorebookContent selectedLorebookId={selectedLorebookId} onLorebookSelect={setSelectedLorebookId} profileId={profileId} />
-          </TabsContent>
-        </Tabs>
+          </Card>
+        </div>
       </div>
-    );
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-2 w-full mt-4">
+          <TabsTrigger value="info">Character Information</TabsTrigger>
+          <TabsTrigger value="lorebook">Character Lorebook</TabsTrigger>
+        </TabsList>
+        <TabsContent value="info" className="pt-4">
+          <CharacterInfoContent
+            personality={personality}
+            systemPrompt={systemPrompt}
+            characterId={initialData?.id || "none"}
+            expressions={initialData?.expressions || []}
+            onPersonalityChange={setPersonality}
+            onSystemPromptChange={setSystemPrompt}
+          />
+        </TabsContent>
+        <TabsContent value="lorebook" className="pt-4">
+          <LorebookContent selectedLorebookId={selectedLorebookId} onLorebookSelect={setSelectedLorebookId} profileId={profileId} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 
-    const formId = `character-dialog-form-${mode}`;
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent size="large">
-          <DialogHeader>
-            <DialogTitle className="flex gap-2 items-center text-lg font-semibold">
-              <UserRoundPenIcon className="h-5 w-5" />
-              {title || (mode === "edit" ? `Edit ${initialData?.type === "character" ? "Character" : "Agent"}` : "Add New Character / Agent")}
-            </DialogTitle>
-          </DialogHeader>
-          <form
-            id={formId}
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSubmit();
-            }}
-            className="flex flex-col h-full"
-          >
-            <DialogBody>
-              <div className="flex-1">{formContent}</div>
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="ghost" type="button" onClick={() => onOpenChange?.(false)} disabled={isSubmitting}>
-                <XCircleIcon className="h-4 w-4" />
-                Cancel
-              </Button>
-              <Button type="submit" size="dialog">
-                <CheckCircleIcon className="h-4 w-4" />
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    );
-  },
-);
+  const formId = `character-dialog-form-${mode}`;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="large">
+        <DialogHeader>
+          <DialogTitle className="flex gap-2 items-center text-lg font-semibold">
+            <UserRoundPenIcon className="h-5 w-5" />
+            {title || (mode === "edit" ? `Edit ${initialData?.type === "character" ? "Character" : "Agent"}` : "Add New Character / Agent")}
+          </DialogTitle>
+        </DialogHeader>
+        <form
+          id={formId}
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          className="flex flex-col h-full"
+        >
+          <DialogBody>
+            <div className="flex-1">{formContent}</div>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="ghost" type="button" onClick={() => onOpenChange?.(false)} disabled={isSubmitting}>
+              <XCircleIcon className="h-4 w-4" />
+              Cancel
+            </Button>
+            <Button type="submit" size="dialog">
+              <CheckCircleIcon className="h-4 w-4" />
+              Save
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+});

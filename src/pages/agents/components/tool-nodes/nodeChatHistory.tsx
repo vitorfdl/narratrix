@@ -92,11 +92,7 @@ export const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogPr
             <div className="flex flex-col gap-4 py-2">
               <div>
                 <Label className="text-xs font-medium text-foreground mb-1 block">Node Name</Label>
-                <Controller
-                  name="name"
-                  control={control}
-                  render={({ field }) => <Input {...field} placeholder="Enter node name" className="text-xs" maxLength={64} autoFocus />}
-                />
+                <Controller name="name" control={control} render={({ field }) => <Input {...field} placeholder="Enter node name" className="text-xs" maxLength={64} autoFocus />} />
               </div>
 
               <div>
@@ -203,13 +199,7 @@ const ChatHistoryContent = memo<{ config: ChatHistoryNodeConfig; onConfigure: ()
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Configuration</label>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-primary/10"
-            onClick={handleConfigureClick}
-            title="Configure chat history settings"
-          >
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} title="Configure chat history settings">
             <Settings className="h-3 w-3" />
           </Button>
         </div>

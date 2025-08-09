@@ -7,11 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceTemplate, useInferenceTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
-import {
-  importInferenceTemplate,
-  parseInferenceTemplateContent,
-  validateAndTransformInferenceTemplateData,
-} from "@/services/imports/import-inference-template";
+import { importInferenceTemplate, parseInferenceTemplateContent, validateAndTransformInferenceTemplateData } from "@/services/imports/import-inference-template";
 import { getInferenceTemplateById } from "@/services/template-inference-service";
 import { ExportType, exportSingleToJsonFile } from "@/utils/export-utils";
 import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
@@ -374,8 +370,8 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
         <CardContent className="space-y-2">
           <div className="bg-foreground/5 p-3 rounded-md text-sm mb-4">
             <p className="text-muted-foreground mb-2">
-              Inference templates control how messages are formatted when sent to text completion models. Each section below allows you to customize
-              prefixes, suffixes, and other formatting options that will be applied to different message types in the conversation.
+              Inference templates control how messages are formatted when sent to text completion models. Each section below allows you to customize prefixes, suffixes, and other formatting options
+              that will be applied to different message types in the conversation.
             </p>
           </div>
           <div className="flex items-center gap-4 mb-2 bg-foreground/5 p-2 rounded-md">
@@ -518,22 +514,14 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
                     label="Prefix"
                     value={templateState.config.agentMessageFormatting.prefix}
                     placeholder="<|function|>"
-                    disabled={
-                      isDisabled ||
-                      templateState.config.agentMessageFormatting.useSameAsUser ||
-                      templateState.config.agentMessageFormatting.useSameAsSystemPrompt
-                    }
+                    disabled={isDisabled || templateState.config.agentMessageFormatting.useSameAsUser || templateState.config.agentMessageFormatting.useSameAsSystemPrompt}
                     onChange={(val) => handleUpdate(["agentMessageFormatting", "prefix"], val)}
                   />
                   <LabeledInput
                     label="Suffix"
                     value={templateState.config.agentMessageFormatting.suffix}
                     placeholder="</|function|>"
-                    disabled={
-                      isDisabled ||
-                      templateState.config.agentMessageFormatting.useSameAsUser ||
-                      templateState.config.agentMessageFormatting.useSameAsSystemPrompt
-                    }
+                    disabled={isDisabled || templateState.config.agentMessageFormatting.useSameAsUser || templateState.config.agentMessageFormatting.useSameAsSystemPrompt}
                     onChange={(val) => handleUpdate(["agentMessageFormatting", "suffix"], val)}
                   />
                 </div>

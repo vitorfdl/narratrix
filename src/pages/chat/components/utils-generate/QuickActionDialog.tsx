@@ -70,10 +70,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
     onOpenChange(false);
   };
 
-  const handleFieldChange = (
-    field: keyof QuickAction,
-    value: string | IconName | "textarea" | "userMessage" | "participantMessage" | "new" | "swap",
-  ) => {
+  const handleFieldChange = (field: keyof QuickAction, value: string | IconName | "textarea" | "userMessage" | "participantMessage" | "new" | "swap") => {
     setCurrentAction((prev: Partial<QuickAction>) => ({ ...prev, [field]: value }));
   };
 
@@ -107,13 +104,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                     <Label htmlFor="label" className="text-sm font-medium">
                       Action Name
                     </Label>
-                    <Input
-                      id="label"
-                      placeholder="Enter a descriptive name"
-                      value={currentAction.label || ""}
-                      onChange={(e) => handleFieldChange("label", e.target.value)}
-                      className="h-8"
-                    />
+                    <Input id="label" placeholder="Enter a descriptive name" value={currentAction.label || ""} onChange={(e) => handleFieldChange("label", e.target.value)} className="h-8" />
                   </div>
 
                   <div className="space-y-1">
@@ -121,12 +112,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                       Icon
                     </Label>
                     <div className="mt-1">
-                      <IconPicker
-                        categorized={false}
-                        value={currentAction.icon as IconName}
-                        onValueChange={(icon) => handleFieldChange("icon", icon)}
-                        className="w-full"
-                      />
+                      <IconPicker categorized={false} value={currentAction.icon as IconName} onValueChange={(icon) => handleFieldChange("icon", icon)} className="w-full" />
                     </div>
                   </div>
                 </div>
@@ -171,10 +157,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                         <Label htmlFor="participantMessageType" className="text-sm font-medium">
                           Participant Message Type
                         </Label>
-                        <Select
-                          value={currentAction.participantMessageType || "new"}
-                          onValueChange={(value: "new" | "swap") => handleFieldChange("participantMessageType", value)}
-                        >
+                        <Select value={currentAction.participantMessageType || "new"} onValueChange={(value: "new" | "swap") => handleFieldChange("participantMessageType", value)}>
                           <SelectTrigger className="w-full h-8">
                             <SelectValue placeholder="Select message type" />
                           </SelectTrigger>
@@ -221,10 +204,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
                   <Label htmlFor="templateId" className="text-sm font-medium">
                     Chat Template
                   </Label>
-                  <WidgetConfig
-                    currentChatTemplateID={currentAction.chatTemplateId || null}
-                    onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateId", chatTemplateId)}
-                  />
+                  <WidgetConfig currentChatTemplateID={currentAction.chatTemplateId || null} onChatTemplateChange={(chatTemplateId) => handleFieldChange("chatTemplateId", chatTemplateId)} />
                 </div>
 
                 <div className="space-y-1">

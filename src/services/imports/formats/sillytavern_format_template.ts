@@ -196,11 +196,7 @@ function parseStoryString(storyString: string): SystemPromptSection[] {
 /**
  * Transform a SillyTavern format template JSON to the internal FormatTemplate format.
  */
-export function transformSillyTavernFormatTemplate(
-  data: SillyTavernFormatTemplate,
-  profileId: string,
-  fileName: string,
-): SillyTavernFormatTransformResult {
+export function transformSillyTavernFormatTemplate(data: SillyTavernFormatTemplate, profileId: string, fileName: string): SillyTavernFormatTransformResult {
   // Extract template name from context.name, instruct.name, or fileName
   const templateName = data.context?.name || data.instruct?.name || fileName.replace(/\.[^/.]+$/, "");
 

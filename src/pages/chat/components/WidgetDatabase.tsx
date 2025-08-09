@@ -41,9 +41,7 @@ const WidgetDatabase = () => {
 
           <div className="text-center space-y-2 max-w-md">
             <h3 className="text-lg font-medium">Database Integration Coming Soon</h3>
-            <p className="text-muted-foreground text-sm">
-              We're building powerful database tools to help you store, organize, and retrieve your narrative data efficiently.
-            </p>
+            <p className="text-muted-foreground text-sm">We're building powerful database tools to help you store, organize, and retrieve your narrative data efficiently.</p>
           </div>
         </div>
       </CardContent>

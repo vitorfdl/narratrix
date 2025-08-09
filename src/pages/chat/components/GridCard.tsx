@@ -43,12 +43,7 @@ export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, bu
           {buttons.map((button, index) => (
             <div key={index}>{button}</div>
           ))}
-          <button
-            tabIndex={-1}
-            onClick={toggleDecorations}
-            className="p-1 hover:bg-accent rounded"
-            title={isDecorated ? "Hide Decorations" : "Show Decorations"}
-          >
+          <button tabIndex={-1} onClick={toggleDecorations} className="p-1 hover:bg-accent rounded" title={isDecorated ? "Hide Decorations" : "Show Decorations"}>
             {isDecorated ? <EyeOffIcon className="w-3 h-3" /> : <EyeIcon className="w-3 h-3" />}
           </button>
           {onClose && (

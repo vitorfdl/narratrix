@@ -68,10 +68,7 @@ export function CharacterCard({ model, avatarUrl, isLoadingAvatar, onEdit, onDel
                 {/* Badges overlay */}
                 <div className=" gap-1">
                   {hasExpressions && (
-                    <Badge
-                      variant="outline"
-                      className="bg-primary/90 text-primary-foreground border-primary/50 flex items-center gap-1 backdrop-blur-sm"
-                    >
+                    <Badge variant="outline" className="bg-primary/90 text-primary-foreground border-primary/50 flex items-center gap-1 backdrop-blur-sm">
                       <Palette className="h-3 w-3" />
                     </Badge>
                   )}

@@ -20,10 +20,7 @@ interface AppearanceSectionProps {
  */
 export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, onSettingChange }) => {
   // Ensure fontSize is always a valid number within allowed range (12-24), fallback to 16 if invalid
-  const fontSize: number =
-    typeof settings.appearance.fontSize === "number" && !Number.isNaN(settings.appearance.fontSize)
-      ? Math.min(24, Math.max(12, settings.appearance.fontSize))
-      : 16;
+  const fontSize: number = typeof settings.appearance.fontSize === "number" && !Number.isNaN(settings.appearance.fontSize) ? Math.min(24, Math.max(12, settings.appearance.fontSize)) : 16;
 
   // Get the original browser font size from ThemeContext
   const originalFontSize = useThemeStore((state) => state.originalFontSize);
@@ -54,14 +51,7 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
           >
             Default ({originalFontSize}px)
           </span>
-          <StepButton
-            className="w-24"
-            min={12}
-            max={24}
-            step={1}
-            value={fontSize}
-            onValueChange={(value) => onSettingChange("appearance", "fontSize", value)}
-          />
+          <StepButton className="w-24" min={12} max={24} step={1} value={fontSize} onValueChange={(value) => onSettingChange("appearance", "fontSize", value)} />
         </div>
       </SettingItem>
     </SettingSection>
