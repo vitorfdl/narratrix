@@ -86,7 +86,7 @@ pub fn openai_prepare_messages(
     // Add system prompt if provided
     if let Some(system_prompt) = &request.system_prompt {
         // Use developer message if engine is "openai" and model starts with 'o'
-        if engine == "openai" && model.starts_with('o') {
+        if engine == "openai" && (model.starts_with('o') || model.starts_with("gpt-5")) {
             let developer_message = ChatCompletionRequestDeveloperMessage {
                 content: ChatCompletionRequestDeveloperMessageContent::Text(system_prompt.clone()),
                 name: None,

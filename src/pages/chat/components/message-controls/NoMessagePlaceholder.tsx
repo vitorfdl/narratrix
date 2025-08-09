@@ -1,18 +1,12 @@
-import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
-import { Button } from "@/components/ui/button";
-import {
-  useChatActions,
-  useCurrentChatActiveChapterID,
-  useCurrentChatChapters,
-  useCurrentChatParticipants,
-  useCurrentChatUserCharacterID,
-} from "@/hooks/chatStore";
-import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
-import { getCharacterById } from "@/services/character-service";
-import { replaceStringPlaceholders } from "@/services/inference/formatter/replace-text";
 import { LayoutTemplateIcon, PencilLine, SendIcon, UserPlus } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { Button } from "@/components/ui/button";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
+import { getCharacterById } from "@/services/character-service";
+import { replaceStringPlaceholders } from "@/services/inference/formatter/replace-text";
 
 export const NoMessagePlaceholder: React.FC = () => {
   const currentChatChapters = useCurrentChatChapters();
@@ -112,12 +106,7 @@ export const NoMessagePlaceholder: React.FC = () => {
           <div className="w-full bg-card border border-border rounded-xl shadow-sm p-4 mb-3 flex flex-col items-start">
             <span className="text-xs font-semibold text-primary/80 mb-1">{currentChapter.title}</span>
             {/* Render the chapter intro preview using MarkdownTextArea in non-editable mode */}
-            <MarkdownTextArea
-              initialValue={getPreviewLines(currentChapter.start_message)}
-              editable={false}
-              className=" text-sm leading-relaxed line-clamp-3 w-full"
-              label={undefined}
-            />
+            <MarkdownTextArea initialValue={getPreviewLines(currentChapter.start_message)} editable={false} className=" text-sm leading-relaxed line-clamp-3 w-full" label={undefined} />
           </div>
           {/* Action Buttons */}
           <div className="flex flex-row gap-3 w-full justify-center">

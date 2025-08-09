@@ -2,12 +2,12 @@
   "$schema": "../../../../json_schema/model-schema.json",
   "id": "openai",
   "name": "OpenAI",
-  "description": "Integration with OpenAI models like GPT-4",
+  "description": "Integration with OpenAI models like GPT-5",
   "website": "https://openai.com/",
   "type": "llm",
   "inference_type": ["chat"],
   "engine": "openai",
-  "inference_fields": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "reasoning"],
+  "inference_fields": ["temperature", "verbosity", "top_p", "frequency_penalty", "presence_penalty", "reasoning"],
   "fields": [
     {
       "key": "api_key",
@@ -22,7 +22,7 @@
       "placeholder": "The OpenAI model to use",
       "required": true,
       "field_type": "string",
-      "hints": ["gpt-4.5-preview","gpt-4o", "gpt-4o-mini", "o3-mini", "o1-mini"],
+      "hints": ["gpt-5", "gpt-5-chat","gpt-5-mini","gpt-5-nano","gpt-4o", "gpt-4o-mini", "o3-mini", "o1-mini"],
       "request": {
         "label": "Get Models",
         "method": "GET",

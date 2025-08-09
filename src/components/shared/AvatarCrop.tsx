@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
 import { Check, Edit, RefreshCw, RotateCcw, Upload, X } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import Cropper, { Area } from "react-easy-crop";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 
 interface AvatarCropProps {
   onCropComplete: (croppedImage: string) => void;

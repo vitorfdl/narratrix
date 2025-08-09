@@ -35,7 +35,13 @@
     "engine": {
       "type": "string",
       "description": "Engine type for the model integration",
-      "enum": ["openai_compatible", "aws_bedrock", "anthropic", "google", "openrouter"]
+      "enum": [
+        "openai_compatible",
+        "aws_bedrock",
+        "anthropic",
+        "google",
+        "openrouter"
+      ]
     },
     "inference_type": {
       "type": "array",
@@ -59,6 +65,7 @@
           "min_p",
           "top_a",
           "frequency_penalty",
+          "verbosity",
           "presence_penalty",
           "stop_sequences",
           "sampling_order",
@@ -101,7 +108,15 @@
           "field_type": {
             "type": "string",
             "description": "Type of the field",
-            "enum": ["string", "number", "boolean", "secret", "select", "url", "hidden"]
+            "enum": [
+              "string",
+              "number",
+              "boolean",
+              "secret",
+              "select",
+              "url",
+              "hidden"
+            ]
           },
           "hints": {
             "type": "array",

@@ -35,22 +35,47 @@ function parseOpenRouterParameters(rawParameters: Record<string, any>) {
   return parameters;
 }
 
+function parseReasoningParameters(model: string, reasoning?: number) {
+  if (!reasoning || reasoning === 1) {
+    return "low";
+  }
+
+  if (reasoning === -1) {
+    if (model?.startsWith("gpt-5")) {
+      return "minimal";
+    }
+
+    return "low";
+  }
+
+  if (reasoning === 2) {
+    return "medium";
+  }
+
+  return "high"; // 3
+}
+
+function isOpenAINewModel(model: string) {
+  return model?.startsWith("o3-") || model?.startsWith("o4-") || model?.startsWith("gpt-5");
+}
+
 function parseOpenAIParameters(rawParameters: Record<string, any>, { model }: Model["config"]) {
   const newParameters: any = {};
 
   const { reasoning_temperature } = rawParameters;
 
   // Reasoning Models
-  if (model?.startsWith("o3-") || model?.startsWith("o4-")) {
-    const temperatureLabel = reasoning_temperature === 3 ? "high" : reasoning_temperature === 2 ? "medium" : "low";
-    if (model?.startsWith("o3")) {
-      newParameters.reasoning = {
-        effort: temperatureLabel,
-      };
-    }
-
-    if (model?.startsWith("o4")) {
-      newParameters.reasoning_effort = temperatureLabel;
+  if (isOpenAINewModel(model)) {
+    if (!model?.includes("chat")) {
+      console.log("Adding reasoning to non-chat model");
+      const temperatureLabel = parseReasoningParameters(model, reasoning_temperature);
+      if (!model?.startsWith("o4")) {
+        newParameters.reasoning = {
+          effort: temperatureLabel,
+        };
+      } else {
+        newParameters.reasoning_effort = temperatureLabel;
+      }
     }
 
     const { max_tokens } = rawParameters;
@@ -70,12 +95,17 @@ function parseOpenAIParameters(rawParameters: Record<string, any>, { model }: Mo
     newParameters.top_p = top_p;
   }
 
-  const { frequency_penalty, presence_penalty } = rawParameters;
+  const { frequency_penalty, presence_penalty, verbosity } = rawParameters;
   if (frequency_penalty) {
     newParameters.frequency_penalty = frequency_penalty;
   }
   if (presence_penalty) {
     newParameters.presence_penalty = presence_penalty;
+  }
+
+  if (verbosity) {
+    // !Reusing reasoning parameters for verbosity
+    newParameters.verbosity = parseReasoningParameters(model, verbosity);
   }
 
   return newParameters;

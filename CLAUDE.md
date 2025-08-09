@@ -1,21 +1,11 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with
-code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Development Commands
 
 ### Build and Development
-
-- **Development**: `pnpm run dev` - Starts Vite development server
-- **Build**: `pnpm run build` - TypeScript compilation + Vite build
-- **Preview**: `pnpm run preview` - Preview built application
 - **Test**: `pnpm run test` - Run Vitest tests
-
-### Tauri Commands
-
-- **Development**: `cargo tauri dev` - Start Tauri development environment
-- **Build**: `cargo tauri build` - Build Tauri application for production
 
 ### Code Quality
 
@@ -26,9 +16,7 @@ code in this repository.
 
 ### Important Testing Note
 
-⚠️ **NEVER** run the program using `pnpm run start` or `cargo tauri dev`. All
-realtime tests must be done exclusively by asking the user to perform these
-actions.
+⚠️ **NEVER** run the program using `pnpm run start` or `cargo tauri dev`. All realtime tests must be done exclusively by asking the user to perform these actions.
 
 ## Project Architecture
 
