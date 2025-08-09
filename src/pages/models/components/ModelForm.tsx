@@ -1,22 +1,22 @@
-import { encryptApiKey } from "@/commands/security";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useModelManifests, useModelManifestsActions, useModelManifestsLoading } from "@/hooks/manifestStore";
-import { useModelsActions } from "@/hooks/modelsStore";
-import { useInference } from "@/hooks/useInference";
-import { ModelSpecsSchema } from "@/schema/inference-engine-schema";
-import { Manifest } from "@/schema/model-manifest-schema";
-import { Model, ModelType } from "@/schema/models-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
+import { encryptApiKey } from "@/commands/security";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useModelManifests, useModelManifestsActions, useModelManifestsLoading } from "@/hooks/manifestStore";
+import { useModelsActions } from "@/hooks/modelsStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useInference } from "@/hooks/useInference";
+import { ModelSpecsSchema } from "@/schema/inference-engine-schema";
+import { Manifest } from "@/schema/model-manifest-schema";
+import { Model, ModelType } from "@/schema/models-schema";
 import { ModelInputFields } from "./ModelInputFields";
 
 // Define model types

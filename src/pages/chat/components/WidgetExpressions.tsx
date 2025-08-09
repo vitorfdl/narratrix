@@ -1,3 +1,7 @@
+import { Loader2Icon, Pause, Play, RefreshCw, Settings, User } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useThrottledCallback } from "use-debounce";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,14 +14,10 @@ import { useMultipleImageUrls } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
-import { ChatMessage, basicPromptSuggestionList } from "@/schema/chat-message-schema";
+import { basicPromptSuggestionList, ChatMessage } from "@/schema/chat-message-schema";
 import { useBackgroundInference } from "@/services/background-inference-service";
 import { findClosestExpressionMatch } from "@/utils/fuzzy-search";
 import { useLocalExpressionGenerationSettings } from "@/utils/local-storage";
-import { Loader2Icon, Pause, Play, RefreshCw, Settings, User } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
-import { useThrottledCallback } from "use-debounce";
 
 export type ExpressionGenerateSettings = {
   chatTemplateId: string;

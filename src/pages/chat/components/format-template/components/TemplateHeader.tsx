@@ -1,3 +1,6 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useDebouncedCallback } from "use-debounce";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,9 +10,6 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { FormatTemplate, NewFormatTemplate, SYSTEM_PROMPT_DEFAULT_CONTENT, TemplateSettings } from "@/schema/template-format-schema";
 import { exportSingleToJsonFile } from "@/utils/export-utils";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { useDebouncedCallback } from "use-debounce";
 
 interface TemplateHeaderProps {
   formatTemplateID: string | null;

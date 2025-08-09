@@ -1,16 +1,16 @@
-import { AgentPageSettings } from "@/pages/agents/AgentPage";
-import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
-import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
-import { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
-import { LorebookPageSettings, defaultLorebookPageSettings } from "@/pages/lorebooks/LorebooksPage";
-import { ModelsPageSettings } from "@/pages/models/ModelsPage";
-import { GridPosition, defaultPositions } from "@/schema/grid";
-import { QuickAction } from "@/schema/profiles-schema";
 import { Theme } from "@tauri-apps/api/window";
 import { produce } from "immer";
 import { useAtom } from "jotai";
 import { atomFamily, atomWithStorage } from "jotai/utils";
 import { useMemo } from "react";
+import { AgentPageSettings } from "@/pages/agents/AgentPage";
+import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
+import { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
+import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
+import { defaultLorebookPageSettings, LorebookPageSettings } from "@/pages/lorebooks/LorebooksPage";
+import { ModelsPageSettings } from "@/pages/models/ModelsPage";
+import { defaultPositions, GridPosition } from "@/schema/grid";
+import { QuickAction } from "@/schema/profiles-schema";
 
 /**
  * Local storage for characters pages settings

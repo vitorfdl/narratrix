@@ -1,10 +1,10 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { ChevronDown } from "lucide-react";
 import React, { createContext, useContext } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
 
 const SettingCollapsibleContext = createContext<boolean>(false);
 

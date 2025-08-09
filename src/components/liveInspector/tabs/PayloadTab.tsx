@@ -1,3 +1,5 @@
+import { Bot, ChevronDown, ChevronUp, Merge, Settings, Split, User } from "lucide-react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -5,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bot, ChevronDown, ChevronUp, Merge, Settings, Split, User } from "lucide-react";
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 // Pagination constants for PayloadTab
 const PAYLOAD_PAGE_SIZE = 15; // Number of messages per page

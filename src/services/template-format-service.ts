@@ -1,5 +1,5 @@
 import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils";
-import { FormatTemplate, NewFormatTemplate, formatTemplateSchema } from "@/schema/template-format-schema.ts";
+import { FormatTemplate, formatTemplateSchema, NewFormatTemplate } from "@/schema/template-format-schema.ts";
 import { uuidUtils } from "@/schema/utils-schema.ts";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "@/utils/database.ts";
 import { formatDateTime } from "@/utils/date-time.ts";

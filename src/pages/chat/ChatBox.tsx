@@ -1,7 +1,7 @@
+import { FC } from "react";
 import { Button } from "@/components/ui/button";
 import type { Chat } from "@/schema/chat-schema";
 import { ChatTab } from "@/schema/chat-schema";
-import { FC } from "react";
 import { ChatTabs } from "./ChatTabs";
 import { ChatMenuDropdown } from "./components/ChatMenuDropdown";
 import { GridLayout } from "./components/GridLayout";

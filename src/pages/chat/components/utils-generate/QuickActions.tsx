@@ -1,9 +1,9 @@
+import { Plus } from "lucide-react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useCurrentProfile, useProfileActions } from "@/hooks/ProfileStore";
 import { QuickAction } from "@/schema/profiles-schema";
-import { Plus } from "lucide-react";
-import React, { useState } from "react";
 import { QuickActionButton } from "./QuickActionButton";
 import { QuickActionDialog } from "./QuickActionDialog";
 

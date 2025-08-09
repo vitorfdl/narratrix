@@ -1,6 +1,6 @@
+import { useCallback, useMemo } from "react";
 import { useChatActions, useCurrentChatMessages } from "@/hooks/chatStore";
 import { ChatMessage, ChatMessageType } from "@/schema/chat-message-schema";
-import { useCallback, useMemo } from "react";
 
 /**
  * Hook for managing chat messages during inference

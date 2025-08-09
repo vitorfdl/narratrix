@@ -1,6 +1,6 @@
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { Command } from "lucide-react";
 import React from "react";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import shortcutsDoc from "./shortcuts_doc.json";
 
 // Define types for better structure

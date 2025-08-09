@@ -1,13 +1,13 @@
-import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
-import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useAgentActions } from "@/hooks/agentStore";
-import { AgentType } from "@/schema/agent-schema";
 import { Bot, CheckCircleIcon, XCircleIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
+import { useAgentActions } from "@/hooks/agentStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { AgentType } from "@/schema/agent-schema";
 
 interface AddAgentDialogProps {
   open: boolean;

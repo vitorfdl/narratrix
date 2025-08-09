@@ -1,3 +1,4 @@
+import { Trash } from "lucide-react";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,7 +7,6 @@ import { CommandTagInput } from "@/components/ui/input-tag";
 import { RandomButton } from "@/components/ui/random-button";
 import { StepButton } from "@/components/ui/step-button";
 import type { ConfigField, DragArrayField, NumericField, RandomNumberField, SectionField, StringArrayField } from "@/schema/template-chat-settings-types";
-import { Trash } from "lucide-react";
 
 interface ConfigItemProps {
   field: ConfigField;

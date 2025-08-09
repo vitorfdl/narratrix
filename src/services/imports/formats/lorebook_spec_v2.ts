@@ -1,8 +1,6 @@
-import { LorebookEntry } from "@/schema/lorebook-schema";
 import { z } from "zod";
-
 // Import the schema from the main import file
-import { createLorebookEntrySchema, createLorebookSchema } from "@/schema/lorebook-schema";
+import { createLorebookEntrySchema, createLorebookSchema, LorebookEntry } from "@/schema/lorebook-schema";
 import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
 // Define the entry type without lorebook_id

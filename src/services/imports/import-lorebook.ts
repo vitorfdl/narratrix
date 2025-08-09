@@ -1,5 +1,5 @@
-import { CreateLorebookEntryParams, CreateLorebookParams, Lorebook, createLorebookEntrySchema, createLorebookSchema } from "@/schema/lorebook-schema";
 import { z } from "zod";
+import { CreateLorebookEntryParams, CreateLorebookParams, createLorebookEntrySchema, createLorebookSchema, Lorebook } from "@/schema/lorebook-schema";
 import { createLorebook, createLorebookEntry } from "../lorebook-service";
 import { LorebookSpecV2, transformLorebookSpecV2, validateLorebookSpecV2 } from "./formats/lorebook_spec_v2";
 

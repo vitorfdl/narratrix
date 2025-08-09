@@ -1,7 +1,7 @@
-import { AgentType } from "@/schema/agent-schema";
-import { NodeExecutionResult, agentWorkflowService } from "@/services/agent-workflow-service";
-import { useInferenceService } from "@/services/inference-service";
 import { useCallback, useState } from "react";
+import { AgentType } from "@/schema/agent-schema";
+import { agentWorkflowService, NodeExecutionResult } from "@/services/agent-workflow-service";
+import { useInferenceService } from "@/services/inference-service";
 
 export interface AgentWorkflowState {
   isRunning: boolean;

@@ -1,8 +1,9 @@
 // src/components/GridCard.tsx
-import { CardProps } from "@/schema/grid";
-import { useLocalGridLayout } from "@/utils/local-storage";
+
 import { EyeIcon, EyeOffIcon, Grip, PinOffIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { CardProps } from "@/schema/grid";
+import { useLocalGridLayout } from "@/utils/local-storage";
 
 export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, buttons = [], dragHandleClassName }) => {
   const [positions, setPositions] = useLocalGridLayout();

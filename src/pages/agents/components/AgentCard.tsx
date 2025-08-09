@@ -1,8 +1,8 @@
+import { Bot, Code2, GitBranch, Heart, HeartOff, Network, Trash2, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { AgentType } from "@/schema/agent-schema";
-import { Bot, Code2, GitBranch, Heart, HeartOff, Network, Trash2, Zap } from "lucide-react";
 
 interface AgentCardProps {
   agent: AgentType;

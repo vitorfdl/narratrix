@@ -1,3 +1,6 @@
+import { motion } from "framer-motion";
+import { CheckCircleIcon, MessageSquarePlus, PersonStanding, Sparkles, UserRound, XCircleIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
@@ -8,9 +11,6 @@ import { Slider } from "@/components/ui/slider";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
-import { motion } from "framer-motion";
-import { CheckCircleIcon, MessageSquarePlus, PersonStanding, Sparkles, UserRound, XCircleIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 
 interface CustomPromptModalProps {
   open: boolean;

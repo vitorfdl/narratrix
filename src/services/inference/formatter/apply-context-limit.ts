@@ -1,7 +1,7 @@
+import { countTokens } from "@/commands/inference";
 import { ChatTemplate } from "@/schema/template-chat-schema";
 import { FormattedPromptResult } from "../formatter";
 
-import { countTokens } from "@/commands/inference";
 interface FormattedPromptCutResult extends FormattedPromptResult {
   statistics: {
     systemTokens: number;

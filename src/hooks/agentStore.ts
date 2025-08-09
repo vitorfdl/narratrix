@@ -1,7 +1,7 @@
+import { create, StoreApi, UseBoundStore } from "zustand";
 import { AgentType, CreateAgentParams, UpdateAgentParams } from "@/schema/agent-schema";
 import * as agentService from "@/services/agent-service";
 import { AgentFilter } from "@/services/agent-service";
-import { StoreApi, UseBoundStore, create } from "zustand";
 
 interface AgentState {
   // State

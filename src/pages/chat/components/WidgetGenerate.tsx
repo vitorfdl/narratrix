@@ -1,16 +1,16 @@
+import { Loader2, Send, StopCircle } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { MarkdownEditorRef } from "@/components/markdownRender/markdown-editor";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { cn } from "@/lib/utils";
 import type { GenerationOptions, StreamingState } from "@/providers/inferenceChatProvider";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { QuickAction } from "@/schema/profiles-schema";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
-import { Loader2, Send, StopCircle } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import QuickActions from "./utils-generate/QuickActions";
 
 interface WidgetGenerateProps {

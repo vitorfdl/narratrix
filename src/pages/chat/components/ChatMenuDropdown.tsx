@@ -1,3 +1,5 @@
+import { Clock, PlusIcon, Trash2, UsersRound } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandGroup, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
@@ -8,8 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Chat } from "@/schema/chat-schema";
 import { formatRelativeTime } from "@/utils/date-format";
-import { Clock, PlusIcon, Trash2, UsersRound } from "lucide-react";
-import { useState } from "react";
 
 interface ChatListItemProps {
   chat: Chat;

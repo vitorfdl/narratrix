@@ -1,5 +1,5 @@
-import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { applyContextLimit, estimateTokens } from "../apply-context-limit";
 
 // Mock the countTokens function

@@ -1,8 +1,8 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cancelInferenceRequest, listenForInferenceResponses, queueInferenceRequest } from "@/commands/inference";
 import type { InferenceCancelledResponse, InferenceCompletedResponse, InferenceMessage, InferenceResponse, InferenceStreamingResponse, ModelSpecs } from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
 import { parseEngineParameters } from "@/services/inference/formatter/parse-engine-parameters";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useConsoleStoreActions } from "./consoleStore";
 
 // Define types needed for inference

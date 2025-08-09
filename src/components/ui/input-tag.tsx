@@ -1,8 +1,8 @@
+import { Tag as TagIcon, X } from "lucide-react";
+import { KeyboardEvent, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { Tag as TagIcon, X } from "lucide-react";
-import { KeyboardEvent, useRef, useState } from "react";
 
 interface TagInputProps {
   value: string[];

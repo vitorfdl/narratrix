@@ -1,7 +1,7 @@
-import { CharacterManifest, characterManifestSchema } from "@/schema/character-manifest-schema";
-import { Manifest, ManifestSchema } from "@/schema/model-manifest-schema";
 import { BaseDirectory, readDir, readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
+import { CharacterManifest, characterManifestSchema } from "@/schema/character-manifest-schema";
+import { Manifest, ManifestSchema } from "@/schema/model-manifest-schema";
 
 /**
  * Manifest types supported by the service

@@ -1,11 +1,10 @@
-import { runProfileMigrations } from "@/services/update-profile";
-import { useSessionProfile } from "@/utils/session-storage";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { create } from "zustand";
+import { runProfileMigrations } from "@/services/update-profile";
+import { useSessionProfile } from "@/utils/session-storage";
 import { ProfileListItem, ProfileResponse, UpdateProfileParams } from "../schema/profiles-schema";
 import { createProfile, deleteProfile, getProfileById, getProfiles, loginProfile, updateProfile } from "../services/profile-service";
-import { useThemeStore } from "./ThemeContext";
 import { useAgentActions } from "./agentStore";
 import { useCharacterActions } from "./characterStore";
 import { useChatActions } from "./chatStore";
@@ -13,6 +12,7 @@ import { useChatTemplateActions } from "./chatTemplateStore";
 import { useLorebookStoreActions } from "./lorebookStore";
 import { useModelManifestsActions } from "./manifestStore";
 import { useModelsActions } from "./modelsStore";
+import { useThemeStore } from "./ThemeContext";
 import { useTemplateActions } from "./templateStore";
 
 export const MAX_PROFILES = 5;

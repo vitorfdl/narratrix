@@ -1,3 +1,5 @@
+import { Bot, Search, User, UserRound } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
@@ -7,8 +9,6 @@ import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { AgentType } from "@/schema/agent-schema";
 import { Character } from "@/schema/characters-schema";
 import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
-import { Bot, Search, User, UserRound } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
 
 // Unified participant type for the popover
 type ParticipantItem = {

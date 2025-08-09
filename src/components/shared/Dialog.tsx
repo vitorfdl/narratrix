@@ -1,5 +1,5 @@
-import * as ShadDialog from "@/components/ui/dialog";
 import React from "react";
+import * as ShadDialog from "@/components/ui/dialog";
 
 /**
  * Dialog component for displaying modal dialogs with Narratrix custom styles.

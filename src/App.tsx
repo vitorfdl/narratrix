@@ -1,5 +1,5 @@
-import { InferenceServiceProvider } from "@/providers/inferenceChatProvider";
 import React, { useEffect } from "react";
+import { InferenceServiceProvider } from "@/providers/inferenceChatProvider";
 import Content from "./components/layout/Content";
 import Sidebar from "./components/layout/Sidebar";
 import { Toaster } from "./components/ui/sonner";

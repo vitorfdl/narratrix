@@ -1,5 +1,5 @@
-import { CreateCharacterSchema } from "@/schema/characters-schema";
 import { z } from "zod";
+import { CreateCharacterSchema } from "@/schema/characters-schema";
 import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
 // Zod schema for chara_card_v2 minimal validation

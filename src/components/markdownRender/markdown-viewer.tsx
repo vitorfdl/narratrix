@@ -1,5 +1,3 @@
-import rehypeHighlightQuotes from "@/components/markdownRender/extensions/rehype-highlight-quotes";
-import { cn } from "@/lib/utils";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { Copy } from "lucide-react";
 import { useRef } from "react";
@@ -9,6 +7,8 @@ import RehypeHighlight from "rehype-highlight";
 import RemarkBreaks from "remark-breaks";
 import RemarkGfm from "remark-gfm";
 import { toast } from "sonner";
+import rehypeHighlightQuotes from "@/components/markdownRender/extensions/rehype-highlight-quotes";
+import { cn } from "@/lib/utils";
 import "./styles/highlight.css";
 import "./styles/markdown.css";
 

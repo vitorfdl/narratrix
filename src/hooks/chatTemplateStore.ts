@@ -1,15 +1,15 @@
+import { create } from "zustand";
 import { ChatTemplate } from "@/schema/template-chat-schema";
 import {
   ChatTemplateFilter,
-  NewChatTemplateParams,
   createChatTemplate as createChatTemplateAPI,
   deleteChatTemplate as deleteChatTemplateAPI,
   getChatTemplateById as getChatTemplateByIdAPI,
   getChatTemplatesByProfile as getChatTemplatesByProfileAPI,
   listChatTemplates as listChatTemplatesAPI,
+  NewChatTemplateParams,
   updateChatTemplate as updateChatTemplateAPI,
 } from "@/services/template-chat-service";
-import { create } from "zustand";
 
 interface ChatTemplateState {
   // Loading and error states

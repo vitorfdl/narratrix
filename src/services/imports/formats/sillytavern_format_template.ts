@@ -1,5 +1,5 @@
-import { FormatTemplate, SYSTEM_PROMPT_DEFAULT_CONTENT, SystemPromptSection } from "@/schema/template-format-schema";
 import { z } from "zod";
+import { FormatTemplate, SYSTEM_PROMPT_DEFAULT_CONTENT, SystemPromptSection } from "@/schema/template-format-schema";
 import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
 // Zod schema for SillyTavern instruct section

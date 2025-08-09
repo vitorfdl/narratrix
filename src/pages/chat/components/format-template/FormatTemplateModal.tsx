@@ -1,10 +1,10 @@
+import { HelpCircle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions, useTemplateError } from "@/hooks/templateStore";
-import { HelpCircle } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
 import { ExtraSections } from "./components/ExtrasSection";
 import { SystemPromptTemplateSection } from "./components/SystemTemplateSection";
 import { TemplateHeader } from "./components/TemplateHeader";

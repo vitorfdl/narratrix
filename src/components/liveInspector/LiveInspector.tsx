@@ -1,3 +1,6 @@
+import { formatDistanceToNow } from "date-fns";
+import { Inbox, SearchX, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useConsoleStoreActions, useConsoleStoreRequests } from "@/hooks/consoleStore";
 import { useModels } from "@/hooks/modelsStore";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
-import { Inbox, SearchX, Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
 import { Separator } from "../ui/separator";
 import { Parameters } from "./tabs/ParametersTab";
 import { Payload } from "./tabs/PayloadTab";

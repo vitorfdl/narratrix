@@ -1,3 +1,7 @@
+import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useDebouncedCallback } from "use-debounce";
 import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,10 +14,7 @@ import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/templ
 import { importInferenceTemplate, parseInferenceTemplateContent, validateAndTransformInferenceTemplateData } from "@/services/imports/import-inference-template";
 import { getInferenceTemplateById } from "@/services/template-inference-service";
 import { ExportType, exportSingleToJsonFile } from "@/utils/export-utils";
-import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { useDebouncedCallback } from "use-debounce";
+
 // Helper component for labeled input to reduce nesting
 interface LabeledInputProps {
   label: string;

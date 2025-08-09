@@ -1,5 +1,5 @@
-import { Character, CreateCharacterSchema } from "@/schema/characters-schema";
 import { z } from "zod";
+import { Character, CreateCharacterSchema } from "@/schema/characters-schema";
 import { createCharacter } from "../character-service";
 import { createChatChapter } from "../chat-chapter-service";
 import { createChat, updateChat } from "../chat-service";

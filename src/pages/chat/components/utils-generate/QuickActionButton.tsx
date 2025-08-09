@@ -1,9 +1,9 @@
+import { Edit, Trash } from "lucide-react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Icon, IconName } from "@/components/ui/icon-picker";
 import { QuickAction } from "@/schema/profiles-schema";
-import { Edit, Trash } from "lucide-react";
-import React from "react";
 
 interface QuickActionButtonProps {
   action: QuickAction;

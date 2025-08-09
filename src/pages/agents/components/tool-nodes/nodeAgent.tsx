@@ -1,3 +1,6 @@
+import { useReactFlow, useStore } from "@xyflow/react";
+import { Bot, MessageCircle, Settings } from "lucide-react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
@@ -6,11 +9,8 @@ import { useChatTemplate } from "@/hooks/chatTemplateStore";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
-import { useReactFlow, useStore } from "@xyflow/react";
-import { Bot, MessageCircle, Settings } from "lucide-react";
-import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
-import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
+import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 export interface AgentNodeConfig {

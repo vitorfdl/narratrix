@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { create } from "zustand";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
 import { ChatMessage, ChatMessageType, CreateChatMessageParams, UpdateChatMessageParams } from "@/schema/chat-message-schema";
 import { Chat, ChatParticipant, CreateChatParams } from "@/schema/chat-schema";
@@ -17,8 +19,6 @@ import {
   updateChatMessagesUsingFilter,
 } from "@/services/chat-message-service";
 import { createChat as apiCreateChat, deleteChat as apiDeleteChat, updateChat as apiUpdateChat, getChatById, listChats } from "@/services/chat-service";
-import { toast } from "sonner";
-import { create } from "zustand";
 
 // Create a type that omits chat_id and makes position optional for store use
 type AddChatMessageParams = Omit<CreateChatMessageParams, "chat_id" | "chapter_id" | "disabled" | "position" | "message_index"> & {

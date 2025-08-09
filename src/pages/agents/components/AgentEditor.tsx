@@ -1,7 +1,5 @@
-import { useThemeStore } from "@/hooks/ThemeContext";
-import { deepEqual } from "@/lib/utils";
-import { AgentType } from "@/schema/agent-schema";
 import {
+  addEdge,
   Background,
   BackgroundVariant,
   Connection,
@@ -13,19 +11,21 @@ import {
   NodeTypes,
   ReactFlow,
   ReactFlowProvider,
-  XYPosition,
-  addEdge,
   reconnectEdge,
   useEdgesState,
   useNodesState,
   useReactFlow,
+  XYPosition,
 } from "@xyflow/react";
+import { useThemeStore } from "@/hooks/ThemeContext";
+import { deepEqual } from "@/lib/utils";
+import { AgentType } from "@/schema/agent-schema";
 import "@xyflow/react/dist/style.css";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentSidebar } from "./tool-components/EditorSidebar";
+import { convertCoreEdgeToReactFlow, convertReactFlowEdgeToCore, getEdgeStyle, getEdgeTypeFromHandle, isValidEdgeConnection, updateEdgeStyles, validateAndFixEdge } from "./tool-components/edge-utils";
 import { ConnectionStateProvider, NodeDeleteProvider } from "./tool-components/NodeBase";
 import { NodePicker } from "./tool-components/NodePicker";
-import { convertCoreEdgeToReactFlow, convertReactFlowEdgeToCore, getEdgeStyle, getEdgeTypeFromHandle, isValidEdgeConnection, updateEdgeStyles, validateAndFixEdge } from "./tool-components/edge-utils";
 import { NodeRegistry } from "./tool-components/node-registry";
 import { convertCoreNodeToReactFlow, convertReactFlowNodeToCore, getNodeConfig, getNodeId } from "./tool-components/node-utils";
 import { ToolEditorProps, ToolNodeData } from "./tool-components/types";

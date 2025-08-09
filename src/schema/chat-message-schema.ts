@@ -1,5 +1,5 @@
-import { SuggestionItem } from "@/components/markdownRender/markdown-textarea";
 import { z } from "zod";
+import { SuggestionItem } from "@/components/markdownRender/markdown-textarea";
 import { uuidUtils } from "./utils-schema";
 
 const functionSuggestionList: SuggestionItem[] = [

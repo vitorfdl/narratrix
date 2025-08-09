@@ -1,5 +1,5 @@
-import { AgentType } from "@/schema/agent-schema";
 import { XYPosition } from "@xyflow/react";
+import { AgentType } from "@/schema/agent-schema";
 
 // Node type keys - updated to match Langflow style
 export type ToolNodeType = "agent" | "chatInput" | "chatOutput" | "javascript" | "message";

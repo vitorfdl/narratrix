@@ -1,4 +1,4 @@
-import { ChatChapter, CreateChatChapterParams, UpdateChatChapterParams, chatChapterSchema } from "@/schema/chat-chapter-schema";
+import { ChatChapter, CreateChatChapterParams, chatChapterSchema, UpdateChatChapterParams } from "@/schema/chat-chapter-schema";
 import { formatDateTime } from "@/utils/date-time";
 import { uuidUtils } from "../schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database";

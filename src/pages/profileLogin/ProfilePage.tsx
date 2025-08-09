@@ -1,7 +1,7 @@
-import { ProfileListItem } from "@/schema/profiles-schema";
 import { Loader2, LockIcon, PlusCircleIcon, TrashIcon, UserCircleIcon } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ProfileListItem } from "@/schema/profiles-schema";
 import {
   AlertDialog,
   AlertDialogAction,

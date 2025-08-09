@@ -1,5 +1,5 @@
-import { AgentNodeType } from "@/schema/agent-schema";
 import { Node } from "@xyflow/react";
+import { AgentNodeType } from "@/schema/agent-schema";
 import { NodeRegistry } from "./node-registry";
 import { ToolNodeData } from "./types";
 

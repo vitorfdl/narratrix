@@ -1,3 +1,6 @@
+import { create } from "zustand";
+import { FormatTemplate, NewFormatTemplate } from "@/schema/template-format-schema";
+import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
 import {
   createFormatTemplate as createFormatTemplateAPI,
   deleteFormatTemplate as deleteFormatTemplateAPI,
@@ -5,20 +8,15 @@ import {
   listFormatTemplates as listFormatTemplatesAPI,
   updateFormatTemplate as updateFormatTemplateAPI,
 } from "@/services/template-format-service";
-import { create } from "zustand";
-
 import {
-  InferenceTemplateFilter,
   createInferenceTemplate as createInferenceTemplateAPI,
   deleteInferenceTemplate as deleteInferenceTemplateAPI,
   getInferenceTemplateById as getInferenceTemplateByIdAPI,
   getInferenceTemplatesByProfile as getInferenceTemplatesByProfileAPI,
+  InferenceTemplateFilter,
   listInferenceTemplates as listInferenceTemplatesAPI,
   updateInferenceTemplate as updateInferenceTemplateAPI,
 } from "@/services/template-inference-service";
-
-import { FormatTemplate, NewFormatTemplate } from "@/schema/template-format-schema";
-import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
 
 interface TemplateState {
   // Loading and error states

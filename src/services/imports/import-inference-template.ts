@@ -1,5 +1,5 @@
-import { CreateInferenceTemplateParams, createInferenceTemplateSchema } from "@/schema/template-inferance-schema";
 import { z } from "zod";
+import { CreateInferenceTemplateParams, createInferenceTemplateSchema } from "@/schema/template-inferance-schema";
 import { createInferenceTemplate } from "../template-inference-service";
 
 /**

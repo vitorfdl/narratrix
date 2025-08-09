@@ -1,7 +1,7 @@
-import { CreateLorebookEntryParams, CreateLorebookParams, Lorebook, LorebookEntry, UpdateLorebookEntryParams, UpdateLorebookParams } from "@/schema/lorebook-schema";
-import * as lorebookService from "@/services/lorebook-service";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { CreateLorebookEntryParams, CreateLorebookParams, Lorebook, LorebookEntry, UpdateLorebookEntryParams, UpdateLorebookParams } from "@/schema/lorebook-schema";
+import * as lorebookService from "@/services/lorebook-service";
 
 /**
  * Interface for the Lorebook store state

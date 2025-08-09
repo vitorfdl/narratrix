@@ -1,12 +1,12 @@
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
-import { Lorebook } from "@/schema/lorebook-schema";
-import { importLorebook, parseLorebookContent, validateAndTransformLorebookData } from "@/services/imports/import-lorebook";
 import { basename } from "@tauri-apps/api/path";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { Lorebook } from "@/schema/lorebook-schema";
+import { importLorebook, parseLorebookContent, validateAndTransformLorebookData } from "@/services/imports/import-lorebook";
 
 interface LorebookImportProps {
   onImportComplete?: (lorebook: Lorebook) => void;

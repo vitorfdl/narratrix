@@ -1,3 +1,5 @@
+import { BookUp2, LinkIcon, MergeIcon, ScissorsIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId } from "@/hooks/chatStore";
@@ -5,8 +7,6 @@ import { cn } from "@/lib/utils";
 import { SummaryDialog, SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
 import { ChatMessage, deleteChatMessagesByFilter } from "@/services/chat-message-service";
 import { useLocalSummarySettings } from "@/utils/local-storage";
-import { BookUp2, LinkIcon, MergeIcon, ScissorsIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 
 interface MidMessageLayerControlProps {
   messageBefore: ChatMessage;

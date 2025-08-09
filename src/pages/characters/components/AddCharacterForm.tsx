@@ -1,29 +1,28 @@
+import { CheckCircleIcon, ChevronDown, CircleCheckBig, UserRoundPenIcon, XCircleIcon } from "lucide-react";
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
+import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacterActions, useCharacterTagList } from "@/hooks/characterStore";
 import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { LorebookEntries } from "@/pages/lorebooks/components/LorebookEntries";
 import { Character } from "@/schema/characters-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { saveImage } from "@/services/file-system-service";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
-import { CheckCircleIcon, ChevronDown, CircleCheckBig, UserRoundPenIcon, XCircleIcon } from "lucide-react";
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { toast } from "sonner";
 import { ExpressionPackPreview } from "./ExpressionPackPreview";
 
 interface CharacterFormProps {

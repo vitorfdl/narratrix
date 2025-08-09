@@ -1,14 +1,14 @@
+import { useReactFlow } from "@xyflow/react";
+import { MessageSquare, Settings } from "lucide-react";
+import React, { memo, useCallback, useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useReactFlow } from "@xyflow/react";
-import { MessageSquare, Settings } from "lucide-react";
-import React, { memo, useCallback, useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
 import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
-import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
+import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 /**

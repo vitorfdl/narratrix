@@ -1,9 +1,9 @@
-import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useCurrentChatActiveChapterID, useCurrentChatId } from "@/hooks/chatStore";
-import { useInference } from "@/hooks/useInference";
-import { ModelSpecs } from "@/schema/inference-engine-schema";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { useCurrentChatActiveChapterID, useCurrentChatId } from "@/hooks/chatStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useInference } from "@/hooks/useInference";
+import { ModelSpecs } from "@/schema/inference-engine-schema";
 import { formatFinalText } from "./inference/formatter/format-response";
 import { removeNestedFields } from "./inference/formatter/remove-nested-fields";
 

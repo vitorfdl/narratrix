@@ -1,3 +1,8 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { BookDown, BookUp, Bot, CheckCircleIcon, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
@@ -9,16 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StepButton } from "@/components/ui/step-button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useLorebookStoreActions } from "@/hooks/lorebookStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { basicPromptSuggestionList } from "@/schema/chat-message-schema";
-import { CreateLorebookEntryParams, LorebookEntry, UpdateLorebookEntryParams, createLorebookEntrySchema } from "@/schema/lorebook-schema";
+import { CreateLorebookEntryParams, createLorebookEntrySchema, LorebookEntry, UpdateLorebookEntryParams } from "@/schema/lorebook-schema";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { BookDown, BookUp, Bot, CheckCircleIcon, User } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 
 interface LorebookEntryDialogProps {
   open: boolean;

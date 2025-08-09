@@ -1,5 +1,5 @@
-import { AgentEdgeType, AgentNodeType } from "@/schema/agent-schema";
 import { Edge, Node } from "@xyflow/react";
+import { AgentEdgeType, AgentNodeType } from "@/schema/agent-schema";
 import { EdgeRegistry, EdgeType } from "./edge-registry";
 import { NodeRegistry } from "./node-registry";
 import { ToolNodeData } from "./types";

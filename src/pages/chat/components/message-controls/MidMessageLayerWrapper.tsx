@@ -1,5 +1,5 @@
-import { ChatMessage } from "@/schema/chat-message-schema";
 import { memo } from "react";
+import { ChatMessage } from "@/schema/chat-message-schema";
 import { MidMessageLayerControl } from "./MidMessageLayerControl";
 import { SummarySettings } from "./SummaryDialog";
 

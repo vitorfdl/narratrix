@@ -1,11 +1,11 @@
+import { Eye, EyeOff, Globe } from "lucide-react";
+import { useEffect, useState } from "react";
+import { UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ManifestField } from "@/schema/model-manifest-schema";
-import { Eye, EyeOff, Globe } from "lucide-react";
-import { useEffect, useState } from "react";
-import { UseFormReturn } from "react-hook-form";
 
 interface ModelInputFieldsProps {
   field: ManifestField;

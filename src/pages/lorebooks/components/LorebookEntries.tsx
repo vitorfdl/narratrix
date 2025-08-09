@@ -1,3 +1,8 @@
+import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { BookDown, BookOpenIcon, BookUp, Bot, Filter, GripVertical, Plus, Search, SortAsc, SortDesc, Trash2, User } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,15 +11,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useIsLoadingEntries, useLorebookStoreActions, useSelectedLorebookEntries } from "@/hooks/lorebookStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { cn } from "@/lib/utils";
 import { LorebookEntry } from "@/schema/lorebook-schema";
-import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { BookDown, BookOpenIcon, BookUp, Bot, Filter, GripVertical, Plus, Search, SortAsc, SortDesc, Trash2, User } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
 import { LorebookEntryDialog } from "./LorebookEntryDialog";
 
 interface LorebookEntriesProps {

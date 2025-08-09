@@ -1,11 +1,11 @@
-import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useCallback, useMemo } from "react";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useModelManifests } from "@/hooks/manifestStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { Character } from "@/schema/characters-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
 import { formatPrompt as formatPromptUtil } from "@/services/inference/formatter";
 import { useLocalSummarySettings } from "@/utils/local-storage";
-import { useCallback, useMemo } from "react";
 import { listCharacters } from "../character-service";
 import { ChatParticipant, getChatById } from "../chat-service";
 import { listModels } from "../model-service";

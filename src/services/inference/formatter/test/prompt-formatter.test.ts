@@ -1,5 +1,5 @@
-import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { describe, expect, it } from "vitest";
+import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { replaceTextPlaceholders } from "../replace-text";
 
 describe("replaceTextPlaceholders", () => {

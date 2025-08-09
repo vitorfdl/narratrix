@@ -1,5 +1,5 @@
-import { ManifestContent, ManifestType, getAllManifests, getCharacterManifestById, getModelManifestById } from "@/services/manifest-service";
 import { create } from "zustand";
+import { getAllManifests, getCharacterManifestById, getModelManifestById, ManifestContent, ManifestType } from "@/services/manifest-service";
 
 // Generic interface for manifest stores
 interface ManifestState<T extends ManifestType> {

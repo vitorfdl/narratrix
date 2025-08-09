@@ -1,6 +1,6 @@
-import type { AppSettings } from "@/schema/profiles-schema";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { AppSettings } from "@/schema/profiles-schema";
 
 // Type definition for theme
 export type Theme = AppSettings["appearance"]["theme"];

@@ -1,5 +1,5 @@
-import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { z } from "zod";
+import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
 // Zod schema for SillyTavern prompt structure

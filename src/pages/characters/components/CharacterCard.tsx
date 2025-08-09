@@ -1,8 +1,8 @@
+import { Download, LoaderIcon, Palette, Trash2, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Character } from "@/schema/characters-schema";
-import { Download, LoaderIcon, Palette, Trash2, User } from "lucide-react";
 
 interface CharacterCardProps {
   model: Character;

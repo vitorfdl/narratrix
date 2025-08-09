@@ -1,15 +1,15 @@
+import { create } from "zustand";
 import { Model, ModelType } from "@/schema/models-schema";
 import {
-  ModelFilter,
-  NewModelParams,
   createModel as createModelAPI,
   deleteModel as deleteModelAPI,
   getModelById as getModelByIdAPI,
   getModelsByProfileGroupedByType as getModelsByProfileGroupedByTypeAPI,
   listModels as listModelsAPI,
+  ModelFilter,
+  NewModelParams,
   updateModel as updateModelAPI,
 } from "@/services/model-service";
-import { create } from "zustand";
 
 interface ModelsState {
   // State

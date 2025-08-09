@@ -1,3 +1,10 @@
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ArrowUpDown, BookOpen, Copy, GripVertical, MessageSquareX, MoreHorizontal, Plus, Search, Settings, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Badge } from "@/components/ui/badge";
@@ -16,13 +23,6 @@ import { ChatChapter } from "@/schema/chat-chapter-schema";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { deleteChatMessagesByFilter } from "@/services/chat-message-service";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
-import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
-import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { ArrowUpDown, BookOpen, Copy, GripVertical, MessageSquareX, MoreHorizontal, Plus, Search, Settings, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
 
 // Define a type for the chapter data structure used in forms
 type ChapterFormData = {

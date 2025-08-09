@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
 import { useStore } from "@xyflow/react";
 import { Bot, MessageCircle, Settings } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { NodeBase, NodeInput, useNodeRef } from "../tool-components/NodeBase";
-import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
+import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 // Define the node's metadata and properties

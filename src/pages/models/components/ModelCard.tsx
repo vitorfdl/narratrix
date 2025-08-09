@@ -1,10 +1,10 @@
+import { Brain, Clock, Copy, Cpu, Edit, GitBranch, Network, Server, Trash2, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useInferenceTemplate } from "@/hooks/templateStore";
-import { Brain, Clock, Copy, Cpu, Edit, GitBranch, Network, Server, Trash2, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Model } from "../../../schema/models-schema";
 
 interface ModelCardProps {

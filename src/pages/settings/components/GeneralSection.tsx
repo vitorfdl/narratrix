@@ -1,11 +1,11 @@
+import { Howl } from "howler";
+import { EyeOff, Globe, MessageSquare, Play } from "lucide-react";
+import React, { useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { AppSettings } from "@/schema/profiles-schema";
-import { Howl } from "howler";
-import { EyeOff, Globe, MessageSquare, Play } from "lucide-react";
-import React, { useCallback, useRef } from "react";
 import { SettingCollapsible, SettingItem, SettingSection } from "./ui/setting-section";
 
 /**

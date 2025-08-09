@@ -1,12 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
-import { useExpressionStore } from "@/hooks/expressionStore";
 import { ChevronDown } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useStickToBottom } from "use-stick-to-bottom";
-
+import { Button } from "@/components/ui/button";
 import { useCharacters } from "@/hooks/characterStore";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useExpressionStore } from "@/hooks/expressionStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { ChatMessage, updateChatMessagesUsingFilter } from "@/services/chat-message-service";
 import MessageItem from "./message-controls/MessageItem";

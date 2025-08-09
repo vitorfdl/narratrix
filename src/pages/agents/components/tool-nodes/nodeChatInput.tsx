@@ -1,8 +1,8 @@
-import { Button } from "@/components/ui/button";
 import { MessageSquare, Settings, User } from "lucide-react";
 import { memo, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
-import { NodeRegistry, createNodeTheme } from "../tool-components/node-registry";
+import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 // Define the node's metadata and properties

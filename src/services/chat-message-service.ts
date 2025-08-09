@@ -1,4 +1,4 @@
-import { ChatMessage, ChatMessageType, CreateChatMessageParams, UpdateChatMessageParams, chatMessageSchema } from "@/schema/chat-message-schema";
+import { ChatMessage, ChatMessageType, CreateChatMessageParams, chatMessageSchema, UpdateChatMessageParams } from "@/schema/chat-message-schema";
 import { formatDateTime } from "@/utils/date-time";
 import { uuidUtils } from "../schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "../utils/database";

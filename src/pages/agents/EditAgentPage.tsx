@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useAgentActions } from "@/hooks/agentStore";
-import { AgentType } from "@/schema/agent-schema";
 import { ArrowLeft } from "lucide-react";
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useAgentActions } from "@/hooks/agentStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { AgentType } from "@/schema/agent-schema";
 import ToolEditor from "./components/AgentEditor";
 
 // Props for EditAgentPage

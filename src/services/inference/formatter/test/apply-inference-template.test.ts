@@ -1,6 +1,6 @@
+import { describe, expect, it } from "vitest";
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
-import { describe, expect, it } from "vitest";
 import { applyInferenceTemplate } from "../apply-inference-template";
 
 // @ts-expect-error - Test template

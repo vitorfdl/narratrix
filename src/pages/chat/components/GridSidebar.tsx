@@ -1,12 +1,12 @@
-import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { GridPosition } from "@/schema/grid";
 import { PopoverArrow } from "@radix-ui/react-popover";
 import { Pin } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
-import { WidgetId, renderWidget, widgetConfigurations, widgetTitles } from "../hooks/registry";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
+import { Separator } from "@/components/ui/separator";
+import { GridPosition } from "@/schema/grid";
+import { renderWidget, WidgetId, widgetConfigurations, widgetTitles } from "../hooks/registry";
 
 interface GridSidebarProps {
   hiddenWidgets: GridPosition[];

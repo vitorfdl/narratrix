@@ -1,19 +1,19 @@
+import { Bot, Cpu, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useAgentActions, useAgentError, useAgentLoading, useAgents } from "@/hooks/agentStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { AgentType } from "@/schema/agent-schema";
 import { useLocalAgentPageSettings } from "@/utils/local-storage";
-import { Bot, Cpu, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import EditAgentPage from "./EditAgentPage";
 import AddAgentDialog from "./components/AddAgentDialog";
 import { AgentCard } from "./components/AgentCard";
 import { AgentSidebar } from "./components/AgentSidebar";
+import EditAgentPage from "./EditAgentPage";
 
 export type AgentPageSettings = {
   view: {

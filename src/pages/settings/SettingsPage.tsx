@@ -1,12 +1,12 @@
+import { getVersion } from "@tauri-apps/api/app";
+import { Save } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useCurrentProfile, useProfileActions } from "@/hooks/ProfileStore";
 import { useThemeStore } from "@/hooks/ThemeContext";
 import { defaultSettings } from "@/schema/default-settings";
 import { AppSettings } from "@/schema/profiles-schema";
 import { updateProfileSettings } from "@/services/profile-service";
-import { getVersion } from "@tauri-apps/api/app";
-import { Save } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { AppearanceSection } from "./components/AppearanceSection";
 import { GeneralSection } from "./components/GeneralSection";
 import { ProfileSection } from "./components/ProfileSection";

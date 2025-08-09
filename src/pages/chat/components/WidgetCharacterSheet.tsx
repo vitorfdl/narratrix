@@ -1,3 +1,6 @@
+import { motion } from "framer-motion";
+import { UserCircle, UserPlus, UserRound, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useCharacters } from "@/hooks/characterStore";
@@ -5,9 +8,6 @@ import { useChatActions, useCurrentChatUserCharacterID } from "@/hooks/chatStore
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import { Character } from "@/schema/characters-schema";
-import { motion } from "framer-motion";
-import { UserCircle, UserPlus, UserRound, X } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card";
 import AddParticipantPopover from "./AddParticipantPopover";

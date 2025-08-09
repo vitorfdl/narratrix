@@ -1,8 +1,8 @@
+import { Check, Star, X } from "lucide-react";
+import * as React from "react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Check, Star, X } from "lucide-react";
-import * as React from "react";
 
 export interface ComboboxItem {
   label: string;

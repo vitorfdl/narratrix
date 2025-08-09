@@ -1,5 +1,5 @@
-import { getImageUrl } from "@/services/file-system-service";
 import { useCallback, useEffect, useState } from "react";
+import { getImageUrl } from "@/services/file-system-service";
 
 // Module-level in-memory cache for image data URLs
 const imageUrlCache: Map<string, string> = new Map();

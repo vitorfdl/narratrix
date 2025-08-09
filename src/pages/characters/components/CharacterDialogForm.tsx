@@ -1,8 +1,8 @@
+import { CheckCircleIcon, XCircleIcon } from "lucide-react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Character } from "@/schema/characters-schema";
-import { CheckCircleIcon, XCircleIcon } from "lucide-react";
-import { useRef, useState } from "react";
 import { CharacterForm, CharacterFormRef } from "./AddCharacterForm";
 
 interface CharacterDialogFormProps {

@@ -1,6 +1,6 @@
+import { Brain, ChevronDown } from "lucide-react";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Brain, ChevronDown } from "lucide-react";
 
 export const ReasoningSection = ({ content }: { content: string }) => {
   return (

@@ -1,6 +1,6 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import React from "react";
 import { NodeRegistry } from "./node-registry";
 import { NodePickerProps } from "./types";
 

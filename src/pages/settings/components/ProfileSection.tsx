@@ -1,3 +1,6 @@
+import { KeyIcon, LogOut, Trash, User, UserCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -10,9 +13,6 @@ import { ProfileListItem, ProfileResponse } from "@/schema/profiles-schema";
 import { saveImage } from "@/services/file-system-service";
 import { deleteProfile as deleteProfileService, updateProfile, updateProfilePassword } from "@/services/profile-service";
 import { useSessionProfile } from "@/utils/session-storage";
-import { KeyIcon, LogOut, Trash, User, UserCircle } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { SettingItem, SettingSection } from "./ui/setting-section";
 
 interface ProfileSectionProps {

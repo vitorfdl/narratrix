@@ -1,17 +1,18 @@
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useChatActions } from "@/hooks/chatStore";
-import { Character } from "@/schema/characters-schema";
-import { saveImage } from "@/services/file-system-service";
-import { extractCharacterSpecV2FromPng } from "@/services/imports/formats/character_spec_png";
-import { importCharacter, parseCharacterContent, validateAndTransformCharacterData } from "@/services/imports/import-character";
-import { fetchImageAsDataUrl } from "@/utils/image-utils";
 import { basename } from "@tauri-apps/api/path";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Upload } from "lucide-react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useChatActions } from "@/hooks/chatStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { Character } from "@/schema/characters-schema";
+import { saveImage } from "@/services/file-system-service";
+import { extractCharacterSpecV2FromPng } from "@/services/imports/formats/character_spec_png";
+import { importCharacter, parseCharacterContent, validateAndTransformCharacterData } from "@/services/imports/import-character";
+import { fetchImageAsDataUrl } from "@/utils/image-utils";
+
 interface CharacterImportProps {
   onImportComplete?: (character: Character, chatFields?: any) => void;
   className?: string;

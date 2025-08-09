@@ -1,8 +1,7 @@
+import { AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Avatar } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-
-import { AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 
 // Extracted MessageAvatar component
 export const MessageAvatar = ({ avatarPath, messageType, isStreaming }: { avatarPath?: string; messageType: string; isStreaming: boolean }) => (

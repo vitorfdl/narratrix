@@ -1,7 +1,7 @@
-import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
+import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StepButton } from "@/components/ui/step-button";
 import { Switch } from "@/components/ui/switch";

@@ -1,16 +1,16 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { LiveInspector } from "@/components/liveInspector/LiveInspector";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { EditNameDialog } from "@/components/shared/EditNameDialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useChatActions, useChatList, useChatStore, useCurrentChatId } from "@/hooks/chatStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import type { Chat } from "@/schema/chat-schema";
 import { ChatTab, CreateChatParams } from "@/schema/chat-schema";
 import { createChatChapter, listChatChapters } from "@/services/chat-chapter-service";
 import { getChatById, listChats, updateChat } from "@/services/chat-service";
 import { useLocalChatTabs } from "@/utils/local-storage";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { Chatbox } from "./ChatBox";
 
 export default function ChatPage() {

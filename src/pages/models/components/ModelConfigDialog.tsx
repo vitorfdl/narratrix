@@ -1,3 +1,5 @@
+import { CheckCircleIcon, Settings2Icon, XCircleIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -6,8 +8,6 @@ import { StepButton } from "@/components/ui/step-button";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { InstructTemplateSection } from "@/pages/models/components/InferenceTemplateSection";
 import { Model } from "@/schema/models-schema";
-import { CheckCircleIcon, Settings2Icon, XCircleIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 
 interface ModelConfigDialogProps {
   model: Model;

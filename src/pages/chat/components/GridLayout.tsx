@@ -1,12 +1,11 @@
-import { useLocalGridLayout } from "@/utils/local-storage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Layout, Responsive, WidthProvider } from "react-grid-layout";
-import { WidgetId, renderWidget, widgetTitles } from "../hooks/registry";
-import { GridCard } from "./GridCard";
-import { GridSidebar } from "./GridSidebar";
-
 // Import the grid layout CSS
 import { GridPosition } from "@/schema/grid";
+import { useLocalGridLayout } from "@/utils/local-storage";
+import { renderWidget, WidgetId, widgetTitles } from "../hooks/registry";
+import { GridCard } from "./GridCard";
+import { GridSidebar } from "./GridSidebar";
 import "react-grid-layout/css/styles.css";
 import "../styles/react-grid-overrides.css";
 

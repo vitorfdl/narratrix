@@ -1,12 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useCharacterActions, useCharacterById } from "@/hooks/characterStore";
-import { useMultipleImageUrls } from "@/hooks/useImageUrl";
-import { cn } from "@/lib/utils";
-import { Character, Expression } from "@/schema/characters-schema";
-import { saveExpressionImage } from "@/services/file-system-service";
 import { appDataDir, basename, join } from "@tauri-apps/api/path";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
@@ -15,6 +6,16 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { Edit, Folder, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useCharacterActions, useCharacterById } from "@/hooks/characterStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useMultipleImageUrls } from "@/hooks/useImageUrl";
+import { cn } from "@/lib/utils";
+import { Character, Expression } from "@/schema/characters-schema";
+import { saveExpressionImage } from "@/services/file-system-service";
+
 // Helper function to convert binary array to data URL
 function binaryToDataUrl(binaryData: Uint8Array, mimeType: string): string {
   let binaryString = "";

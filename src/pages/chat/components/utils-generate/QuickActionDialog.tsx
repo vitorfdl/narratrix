@@ -1,3 +1,6 @@
+import { motion } from "framer-motion";
+import { MessageCircle, MessageSquarePlus, Settings, Wand2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
@@ -11,9 +14,6 @@ import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { QuickAction } from "@/schema/profiles-schema";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
-import { motion } from "framer-motion";
-import { MessageCircle, MessageSquarePlus, Settings, Wand2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
 
 interface QuickActionDialogProps {
   isOpen: boolean;

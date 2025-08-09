@@ -1,5 +1,5 @@
-import { FormatTemplate } from "@/schema/template-format-schema";
 import { describe, expect, it } from "vitest";
+import { FormatTemplate } from "@/schema/template-format-schema";
 import { formatFinalText } from "../format-response";
 
 describe("formatFinalText", () => {

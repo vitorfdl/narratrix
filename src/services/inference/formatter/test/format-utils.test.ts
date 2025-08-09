@@ -1,5 +1,5 @@
-import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { describe, expect, it } from "vitest";
+import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { FormattedPromptResult } from "../../formatter";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "../format-template-utils";
 

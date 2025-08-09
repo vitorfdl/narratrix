@@ -1,3 +1,9 @@
+import { basename, extname } from "@tauri-apps/api/path";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { readFile } from "@tauri-apps/plugin-fs";
+import { ChevronsUpDown, CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { EditNameDialog } from "@/components/shared/EditNameDialog";
 import { Button } from "@/components/ui/button";
@@ -8,12 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
-import { basename, extname } from "@tauri-apps/api/path";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { readFile } from "@tauri-apps/plugin-fs";
-import { ChevronsUpDown, CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
-import { useCallback, useState } from "react";
-import { toast } from "sonner";
 
 export interface Template {
   id: string;

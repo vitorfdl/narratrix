@@ -1,21 +1,20 @@
+import { Braces, ChevronDown, ChevronRight, Copy, Grip, Plus, Save, Trash2, Type, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+// Import from separated modules
+import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
-import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ResizableTextarea } from "@/components/ui/ResizableTextarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Braces, ChevronDown, ChevronRight, Copy, Grip, Plus, Save, Trash2, Type, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-
-// Import from separated modules
-import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { SCHEMA_TYPES } from "./constants";
-import { PropertyField } from "./property-fields/PropertyField";
 import { PROPERTY_FIELD_CONFIGS } from "./property-fields/field-configs";
+import { PropertyField } from "./property-fields/PropertyField";
 import { convertToProperties, generateId, generateSchemaFromProperties } from "./schema-utils";
 import type { JsonSchemaCreatorProps, SchemaDefinition, SchemaProperty } from "./types";
 

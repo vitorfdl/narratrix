@@ -1,6 +1,4 @@
-import { cn } from "@/lib/utils";
-import { useLocalGenerationInputHistory } from "@/utils/local-storage";
-import { CompletionContext, CompletionResult, autocompletion } from "@codemirror/autocomplete";
+import { autocompletion, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
 // import { createHistoryCompletionSource, historyExtension } from "./codemirror-history";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -8,6 +6,8 @@ import { Prec } from "@codemirror/state";
 import { EditorView, keymap, tooltips } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { cn } from "@/lib/utils";
+import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { highlightBracketsExtension } from "./extensions/codemirror-highlight-brackets";
 import { createHistoryCompletionSource, historyExtension } from "./extensions/codemirror-history";
 import { markdownFormatKeymap } from "./extensions/markdown-format-keymap";

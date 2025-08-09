@@ -1,7 +1,7 @@
 "use client";
 
-import { useThemeStore } from "@/hooks/ThemeContext";
 import { Toaster as Sonner } from "sonner";
+import { useThemeStore } from "@/hooks/ThemeContext";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 

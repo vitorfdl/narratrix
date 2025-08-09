@@ -1,3 +1,7 @@
+import { nanoid } from "nanoid";
+import { useEffect } from "react";
+import { create, StoreApi, UseBoundStore } from "zustand";
+import { useShallow } from "zustand/shallow";
 import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
 import {
   CharacterFilter,
@@ -8,10 +12,6 @@ import {
   updateCharacter as updateCharacterAPI,
 } from "@/services/character-service";
 import { getImageUrl } from "@/services/file-system-service";
-import { nanoid } from "nanoid";
-import { useEffect } from "react";
-import { StoreApi, UseBoundStore, create } from "zustand";
-import { useShallow } from "zustand/shallow";
 
 interface CharacterState {
   // State

@@ -1,3 +1,5 @@
+import { BookOpen, Brain, Contact, Database, FileTextIcon, HelpCircle, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
+import React from "react";
 import WidgetChapters from "@/pages/chat/components/WidgetChapters";
 import WidgetCharacterSheet from "@/pages/chat/components/WidgetCharacterSheet";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
@@ -7,8 +9,6 @@ import WidgetMemory from "@/pages/chat/components/WidgetMemory";
 import WidgetMessages from "@/pages/chat/components/WidgetMessages";
 import WidgetParticipants from "@/pages/chat/components/WidgetParticipants";
 import WidgetScript from "@/pages/chat/components/WidgetScript";
-import { BookOpen, Brain, Contact, Database, FileTextIcon, HelpCircle, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
-import React from "react";
 import WidgetExpressions from "../components/WidgetExpressions";
 import { WidgetHelp } from "../components/WidgetHelp";
 

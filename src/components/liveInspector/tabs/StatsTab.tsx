@@ -1,12 +1,12 @@
+import { BarChart, Info, PieChart as PieChartIcon, Target } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Label, Pie, PieChart } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ConsoleRequest } from "@/hooks/consoleStore";
-import { USE_TOKENIZER, getTokenCount } from "@/services/inference/formatter/apply-context-limit";
-import { BarChart, Info, PieChart as PieChartIcon, Target } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Label, Pie, PieChart } from "recharts";
+import { getTokenCount, USE_TOKENIZER } from "@/services/inference/formatter/apply-context-limit";
 
 interface StatsProps {
   selectedRequest: ConsoleRequest;

@@ -1,6 +1,6 @@
+import React from "react";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import React from "react";
 import { markdownClass } from "../LiveInspector";
 
 interface ParametersProps {

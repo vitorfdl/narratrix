@@ -1,6 +1,6 @@
+import { create } from "zustand";
 import { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
-import { create } from "zustand";
 
 /**
  * Represents a single inference request with all relevant data

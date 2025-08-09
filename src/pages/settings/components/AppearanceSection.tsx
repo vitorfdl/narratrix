@@ -1,10 +1,10 @@
+import { ALargeSmallIcon, Palette } from "lucide-react";
+import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
 import { useThemeStore } from "@/hooks/ThemeContext";
 import { AppSettings } from "@/schema/profiles-schema";
-import { ALargeSmallIcon, Palette } from "lucide-react";
-import React from "react";
 import { SettingItem, SettingSection } from "./ui/setting-section";
 
 /**

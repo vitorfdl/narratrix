@@ -1,6 +1,6 @@
-import { AppSettings } from "@/schema/profiles-schema";
 import { Download } from "lucide-react";
 import React from "react";
+import { AppSettings } from "@/schema/profiles-schema";
 import { SettingItem, SettingSection } from "./ui/setting-section";
 
 /**

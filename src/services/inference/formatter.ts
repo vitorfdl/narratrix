@@ -8,7 +8,7 @@ import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
 import { applyContextLimit } from "./formatter/apply-context-limit";
 import { applyInferenceTemplate } from "./formatter/apply-inference-template";
-import { LorebookContentResponse, getLorebookContent, processLorebookMessages } from "./formatter/apply-lorebook";
+import { getLorebookContent, LorebookContentResponse, processLorebookMessages } from "./formatter/apply-lorebook";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./formatter/format-template-utils";
 import { replaceTextPlaceholders } from "./formatter/replace-text";
 

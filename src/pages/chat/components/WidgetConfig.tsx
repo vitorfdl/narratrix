@@ -1,3 +1,7 @@
+import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, XIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { TemplatePicker } from "@/components/shared/TemplatePicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,37 +11,32 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
-import type { SectionField } from "@/schema/template-chat-settings-types";
-import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, XIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
-
-import { HelpTooltip } from "@/components/shared/HelpTooltip";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatParticipants, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
 import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useModelManifestById } from "@/hooks/manifestStore";
 import { useModels, useModelsActions } from "@/hooks/modelsStore";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
+import type { SectionField } from "@/schema/template-chat-settings-types";
 import { parseChatTemplateContent, validateAndTransformChatTemplateData } from "@/services/imports/import-chat-template";
 import { validateAndTransformFormatTemplateData } from "@/services/imports/import-format-template";
 import { importLorebook, validateAndTransformLorebookData } from "@/services/imports/import-lorebook";
 import { prepareLorebooksForEmbedding } from "@/services/imports/shared/lorebook-export";
-import { NewChatTemplateParams, getChatTemplateById } from "@/services/template-chat-service";
+import { getChatTemplateById, NewChatTemplateParams } from "@/services/template-chat-service";
 import { createFormatTemplate, getFormatTemplateById } from "@/services/template-format-service";
 import { ExportType, exportSingleToJsonFile } from "@/utils/export-utils";
 import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
 import { configFields } from "../manifests/configFields";
-import { ExportOptions, ExportOptionsDialog } from "./ExportOptionsDialog";
-import { ImportOptions, ImportOptionsDialog } from "./ImportOptionsDialog";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
+import { ExportOptions, ExportOptionsDialog } from "./ExportOptionsDialog";
 import { ConfigItem } from "./fields/ConfigItems";
 import FormatTemplateModal from "./format-template/FormatTemplateModal";
+import { ImportOptions, ImportOptionsDialog } from "./ImportOptionsDialog";
 
 const bigScreenBreakpoints = "@[18rem]:flex";
 
