@@ -72,7 +72,7 @@ const WidgetExpressions = () => {
   const characterList = useCharacters();
   const messages = useCurrentChatMessages();
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
-  const [animateLastSpeaker, setAnimateLastSpeaker] = useState(false);
+  // const [animateLastSpeaker, setAnimateLastSpeaker] = useState(false);
   const [characterExpressions, setCharacterExpressions] = useState<Record<string, string>>({});
   const lastMessageContentRef = useRef<string>(""); // Ref for latest message content
   const lastSpeakerIdRef = useRef<string | undefined>(undefined); // Ref for latest speaker ID
@@ -179,8 +179,8 @@ const WidgetExpressions = () => {
 
       console.log(`Attempting to generate expression for ${targetCharacter.name} using ${userPickedText ? "!!!!selected text" : "last message"}`);
 
-      setAnimateLastSpeaker(true);
-      setTimeout(() => setAnimateLastSpeaker(false), 1000);
+      // setAnimateLastSpeaker(true);
+      // setTimeout(() => setAnimateLastSpeaker(false), 1000);
 
       const availableExpressions = targetCharacter.expressions?.length ? targetCharacter.expressions.filter((exp) => exp.image_path).map((exp) => exp.name) : EXPRESSION_LIST;
       const availableExpressionNames = targetCharacter.expressions?.length ? targetCharacter.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
@@ -245,7 +245,7 @@ const WidgetExpressions = () => {
   ); // Added characterExpressions and selected text related vars
 
   // Create a throttled version for updates during streaming - Call useThrottledCallback directly
-  const throttledGenerateExpression = useThrottledCallback(generateExpression, 5000, { leading: true, trailing: false });
+  const throttledGenerateExpression = useThrottledCallback(generateExpression, 8000, { leading: true, trailing: false });
 
   // Effect to trigger THROTTLED generation DURING streaming
   useEffect(() => {
@@ -267,7 +267,7 @@ const WidgetExpressions = () => {
   // Simplified Toggle auto-refresh: just update the state
   const toggleAutoRefresh = useCallback(() => {
     setAutoRefreshEnabled(!autoRefreshEnabled);
-  }, [autoRefreshEnabled, setAutoRefreshEnabled]); // Dependencies: current state and its setter
+  }, [autoRefreshEnabled]); // Dependencies: current state and its setter
 
   // Function to handle saving settings from the dialog
   const handleSaveSettings = useCallback(() => {
@@ -297,101 +297,6 @@ const WidgetExpressions = () => {
   // Fill entire available space - using flex-1 to ensure the component properly fills available space in any container
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" style={{ minHeight: "200px" }}>
-      {/* Controls at the top */}
-      <div className="bg-card border-b px-2 py-1">
-        <div className="flex items-center justify-center gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => generateExpression()}
-                // Disable if no model OR (no selected text AND no last speaker)
-                disabled={!expressionSettings.chatTemplateId || (!selectedText && !lastSpeakerId)}
-                title={selectedText ? "Generate expression from selection" : "Generate expression for current speaker"}
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-
-              <Button
-                variant={autoRefreshEnabled ? "default" : "outline"}
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={toggleAutoRefresh}
-                disabled={!expressionSettings.chatTemplateId}
-                title={autoRefreshEnabled ? "Disable auto-refresh" : "Enable auto-refresh"}
-              >
-                {autoRefreshEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-
-              {/* Settings Button */}
-              <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-7 w-7 p-0" title="Configure Prompts">
-                    <Settings className="h-3.5 w-3.5" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent size="window">
-                  <DialogHeader>
-                    <DialogTitle>Configure Expression Prompts</DialogTitle>
-                    <DialogDescription>Customize the prompts used to generate character expressions.</DialogDescription>
-                  </DialogHeader>
-                  {/* Apply two-column grid layout */}
-                  <div className="grid grid-cols-2 gap-4 py-4">
-                    {/* First column for prompts */}
-                    <div className="space-y-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="system-prompt">System Prompt</Label>
-                        <MarkdownTextArea
-                          initialValue={tempSystemPrompt}
-                          onChange={(value) => setTempSystemPrompt(value)}
-                          editable={true}
-                          placeholder={defaultSystemPrompt}
-                          className="min-h-[100px] max-h-[25vh] overflow-y-auto"
-                          suggestions={ExpressionSuggestionList}
-                        />
-                      </div>
-
-                      <div className="grid gap-2">
-                        <Label htmlFor="request-prompt">User Prompt (Request)</Label>
-                        <MarkdownTextArea
-                          initialValue={tempRequestPrompt}
-                          onChange={(value) => setTempRequestPrompt(value)}
-                          editable={true}
-                          placeholder={defaultRequestPrompt}
-                          suggestions={ExpressionSuggestionList}
-                          className="min-h-[100px] max-h-[25vh]"
-                        />
-                        <p className="text-xs italic text-muted-foreground">
-                          Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}
-                          expression.last{"}}"}, {"{{"}chat.message{"}}"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Second column for Chat Template selection */}
-                    <div className="space-y-1 overflow-y-auto max-h-[60vh]">
-                      <Label htmlFor="chat-template">Chat Template</Label>
-                      <div className="border border-input rounded-md">
-                        <WidgetConfig currentChatTemplateID={tempChatTemplateId || null} onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)} />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for expression generation.</p>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSaveSettings}>Save Changes</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 flex items-center justify-center bg-background/50 backdrop-blur-sm relative">
         <div className="w-full h-full flex items-center justify-center">
           {activeCharacters && activeCharacters.length > 0 ? (
@@ -399,15 +304,14 @@ const WidgetExpressions = () => {
               {/* Single Character View */}
               <div className="w-full h-full flex flex-col items-center justify-center">
                 {displayCharacter && (
-                  <div
-                    className={cn(
-                      "w-full h-full relative transition-transform duration-150 ease-in-out",
-                      animateLastSpeaker && displayCharacter.id === (selectedText ? selectedMessageCharacterId : lastSpeakerId) ? "scale-[1.03]" : "scale-100",
-                    )}
-                    style={{ minHeight: "200px", height: "100%" }}
-                  >
+                  <div className={cn("w-full h-full relative")} style={{ minHeight: "200px", height: "100%" }}>
                     <Avatar className="w-full h-full shadow-lg" style={{ aspectRatio: "1/1", minHeight: "100px" }}>
-                      <AvatarImage src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined} alt={displayCharacter.name} className="w-full h-full object-cover" />
+                      <AvatarImage
+                        key={(expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id]) as string}
+                        src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
+                        alt={displayCharacter.name}
+                        className="w-full h-full object-cover transition-opacity duration-200 ease-out opacity-100"
+                      />
                       <AvatarFallback>
                         <Loader2Icon className="w-[50%] h-[50%] animate-spin" />
                       </AvatarFallback>
@@ -434,6 +338,99 @@ const WidgetExpressions = () => {
               <p className="text-sm">Character expressions will appear here once characters are added to the chat.</p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Controls - always visible compact toolbar */}
+      <div className="px-3  mt-2">
+        <div className="mx-auto w-full">
+          <div className="flex items-center justify-between rounded-md border bg-muted/40 px-2 py-1 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={() => generateExpression()}
+                disabled={!expressionSettings.chatTemplateId || (!selectedText && !lastSpeakerId)}
+                aria-label={selectedText ? "Generate expression from selection" : "Generate expression for current speaker"}
+                title={selectedText ? "Generate from selection" : "Generate for speaker"}
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="ml-1 hidden sm:inline text-xs">Generate</span>
+              </Button>
+
+              <Button
+                variant={autoRefreshEnabled ? "default" : "ghost"}
+                size="xs"
+                onClick={toggleAutoRefresh}
+                disabled={!expressionSettings.chatTemplateId}
+                aria-pressed={autoRefreshEnabled}
+                aria-label={autoRefreshEnabled ? "Disable auto-refresh" : "Enable auto-refresh"}
+                title={autoRefreshEnabled ? "Auto-refresh on" : "Auto-refresh off"}
+              >
+                {autoRefreshEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                <span className="ml-1 hidden sm:inline text-xs">Auto</span>
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="xs" className="w-auto" title="Configure Prompts" aria-label="Open expression settings">
+                    <Settings size={1} />
+                    <span className="ml-1 hidden sm:inline text-xs">Settings</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent size="window">
+                  <DialogHeader>
+                    <DialogTitle>Configure Expression Prompts</DialogTitle>
+                    <DialogDescription>Customize the prompts used to generate character expressions.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-2 gap-4 py-4">
+                    <div className="space-y-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="system-prompt">System Prompt</Label>
+                        <MarkdownTextArea
+                          initialValue={tempSystemPrompt}
+                          onChange={(value) => setTempSystemPrompt(value)}
+                          editable={true}
+                          placeholder={defaultSystemPrompt}
+                          className="min-h-[100px] max-h-[25vh] overflow-y-auto"
+                          suggestions={ExpressionSuggestionList}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="request-prompt">User Prompt (Request)</Label>
+                        <MarkdownTextArea
+                          initialValue={tempRequestPrompt}
+                          onChange={(value) => setTempRequestPrompt(value)}
+                          editable={true}
+                          placeholder={defaultRequestPrompt}
+                          suggestions={ExpressionSuggestionList}
+                          className="min-h-[100px] max-h-[25vh]"
+                        />
+                        <p className="text-xs italic text-muted-foreground">
+                          Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}expression.last{"}}"}, {"{{"}chat.message{"}}"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-1 overflow-y-auto max-h-[60vh]">
+                      <Label htmlFor="chat-template">Chat Template</Label>
+                      <div className="border border-input rounded-md">
+                        <WidgetConfig currentChatTemplateID={tempChatTemplateId || null} onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)} />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for expression generation.</p>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveSettings}>Save Changes</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
         </div>
       </div>
     </div>
