@@ -1,11 +1,22 @@
 import { MessageSquare, Settings, User } from "lucide-react";
 import { memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+/**
+ * Node Execution
+ */
+import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
-// Define the node's metadata and properties
+export const executeChatInputNode: NodeExecutor = async (_node, _inputs, context): Promise<NodeExecutionResult> => {
+  const workflowInput = context.nodeValues.get("workflow-input") || "";
+  return { success: true, value: workflowInput };
+};
+
+/**
+ * UI and Node Configuration
+ */
 const CHAT_INPUT_NODE_METADATA = {
   type: "chatInput",
   label: "Chat Input",
@@ -80,4 +91,5 @@ NodeRegistry.register({
   metadata: CHAT_INPUT_NODE_METADATA,
   component: ChatInputNode,
   configProvider: ChatInputNodeConfigProvider,
+  executor: executeChatInputNode,
 });

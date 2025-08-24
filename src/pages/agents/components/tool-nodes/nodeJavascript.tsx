@@ -5,6 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
+import { NodeExecutionResult, NodeExecutor, WorkflowToolDefinition } from "@/services/agent-workflow/types";
 import JsonSchemaCreator from "../json-schema/JsonSchemaCreator";
 import { SchemaDefinition } from "../json-schema/types";
 import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
@@ -12,7 +13,26 @@ import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry"
 import { NodeProps } from "./nodeTypes";
 
 /**
- * JavascriptNode: Node for executing custom JavaScript code
+ * Node Execution
+ */
+export const executeJavascriptNode: NodeExecutor = async (node, _inputs): Promise<NodeExecutionResult> => {
+  const cfg = (node.config as JavascriptNodeConfig) || {};
+  const name = cfg?.name || node.label || "javascriptTool";
+  const tool: WorkflowToolDefinition = {
+    name,
+    description: "Javascript node tool (placeholder)",
+    inputSchema: cfg?.inputSchema || null,
+    invoke: async (args: Record<string, any>) => {
+      return { ok: true, note: "placeholder", args };
+    },
+  };
+
+  const text = typeof cfg?.code === "string" && cfg.code.length > 0 ? cfg.code : "";
+  return { success: true, value: { toolset: [tool], text } } as any;
+};
+
+/**
+ * UI and Node Configuration
  */
 export interface JavascriptNodeConfig {
   name: string;
@@ -287,4 +307,5 @@ NodeRegistry.register({
   metadata: JAVASCRIPT_NODE_METADATA,
   component: JavascriptNode,
   configProvider: JavascriptNodeConfigProvider,
+  executor: executeJavascriptNode,
 });

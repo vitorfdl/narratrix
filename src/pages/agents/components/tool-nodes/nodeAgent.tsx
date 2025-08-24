@@ -5,9 +5,11 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useChatTemplate } from "@/hooks/chatTemplateStore";
+import { useChatStore } from "@/hooks/chatStore";
+import { useChatTemplate, useChatTemplateStore } from "@/hooks/chatTemplateStore";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
+import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -19,7 +21,94 @@ export interface AgentNodeConfig {
   inputPrompt: string;
 }
 
-// Define the node's metadata and properties
+/**
+ * Node Execution
+ */
+export const executeAgentNode: NodeExecutor = async (node, inputs, _ctx, _agent, deps): Promise<NodeExecutionResult> => {
+  const cfg = (node.config as AgentNodeConfig) || {};
+
+  let inputPrompt: string = (cfg.inputPrompt as string) || "{{input}}";
+  if (typeof inputs.input === "string") {
+    inputPrompt = inputPrompt.replace("{{input}}", inputs.input);
+  }
+
+  const chatTemplateId: string | undefined = cfg.chatTemplateID;
+  const systemPrompt: string | undefined = inputs.systemPrompt || cfg.systemPromptOverride || "";
+  // Toolset input reserved for future use
+
+  // Hard fail when required dependencies are unavailable
+  if (!deps || !deps.runInference || !deps.formatPrompt || !deps.getModelById || !deps.getManifestById || !deps.removeNestedFields) {
+    return { success: false, error: "Agent node missing workflow dependencies" };
+  }
+
+  // If no chat template configured, treat as configuration error to stop the workflow
+  if (!chatTemplateId) {
+    return { success: false, error: "Agent node is missing chat template configuration" };
+  }
+
+  try {
+    const chatTemplate = await deps.getChatTemplateById(chatTemplateId);
+    if (!chatTemplate) {
+      return { success: false, error: `Chat template not found: ${chatTemplateId}` };
+    }
+
+    const model = chatTemplate?.model_id ? await deps.getModelById(chatTemplate.model_id) : null;
+    if (!model) {
+      return { success: false, error: `Model not found for chat template ${chatTemplateId}` };
+    }
+
+    const manifest = deps.getManifestById(model.manifest_id);
+    if (!manifest) {
+      return { success: false, error: `Manifest not found for model ${model.id}` };
+    }
+
+    const inferenceTemplate = model.inference_template_id ? await deps.getInferenceTemplateById(model.inference_template_id).catch(() => null) : null;
+    const formatTemplate = chatTemplate.format_template_id ? await deps.getFormatTemplateById(chatTemplate.format_template_id).catch(() => null) : null;
+
+    const promptResult = await deps.formatPrompt({
+      messageHistory: Array.isArray(inputs.history) ? inputs.history : [],
+      userPrompt: inputPrompt,
+      modelSettings: model,
+      inferenceTemplate: inferenceTemplate || undefined,
+      formatTemplate,
+      chatTemplate,
+      systemOverridePrompt: systemPrompt,
+      chatConfig: {
+        character: inputs.characterId && inputs.characterId !== "user" ? ({ id: inputs.characterId } as any) : undefined,
+        user_character: inputs.characterId === "user" ? ({ name: "You", custom: { personality: "" } } as any) : undefined,
+      },
+    });
+
+    const { inferenceMessages, systemPrompt: formattedSystemPrompt, customStopStrings } = promptResult;
+    const paramsBase = deps.removeNestedFields(chatTemplate?.config || {});
+    const fixedParameters = deps.removeNestedFields({ ...(paramsBase || {}), ...((cfg as any).parameters || {}), ...(inputs.parameters || {}) });
+    if (customStopStrings) {
+      (fixedParameters as any).stop = (fixedParameters as any).stop ? [...(fixedParameters as any).stop, ...customStopStrings] : customStopStrings;
+    }
+
+    const modelSpecs = {
+      id: model.id as string,
+      model_type: model.inference_template_id ? ("completion" as const) : ("chat" as const),
+      config: model.config,
+      max_concurrent_requests: model.max_concurrency || 1,
+      engine: manifest.engine as string,
+    };
+
+    const result = await deps.runInference({ messages: inferenceMessages, modelSpecs, systemPrompt: formattedSystemPrompt, parameters: fixedParameters, stream: false });
+    if (typeof result === "string" && result.length > 0) {
+      return { success: true, value: result };
+    }
+
+    return { success: false, error: "Agent inference returned no result" };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Agent background inference failed";
+    return { success: false, error: message };
+  }
+};
+
+/**
+ * UI and Node Configuration
+ */
 const AGENT_NODE_METADATA = {
   type: "agent",
   label: "LLM Agent",
@@ -33,6 +122,7 @@ const AGENT_NODE_METADATA = {
     { id: "in-toolset", label: "Toolset", edgeType: "toolset" as const, targetRef: "tools-section", allowMultipleConnections: true },
     { id: "in-history", label: "History", edgeType: "message-list" as const, targetRef: "history-section" },
     { id: "in-system-prompt", label: "System Prompt Override", edgeType: "string" as const, targetRef: "system-prompt-section" },
+    { id: "in-character", label: "Participant ID", edgeType: "string" as const, targetRef: "participant-section" },
   ] as NodeInput[],
   outputs: [{ id: "response", label: "Message", edgeType: "string" as const }] as NodeOutput[],
   defaultConfig: {
@@ -218,6 +308,11 @@ const AgentContent = memo<{
         <label className="text-xs font-medium">Toolset{connectedToolsCount > 0 && ` (${connectedToolsCount})`}</label>
       </div>
 
+      {/* Participant Section - This aligns with the "in-character" input handle */}
+      <div ref={(el) => registerElementRef?.("participant-section", el)} className="space-y-2">
+        <label className="text-xs font-medium">Participant/Character (optional)</label>
+      </div>
+
       {/* History Section - This aligns with the "history" input handle */}
       <div ref={(el) => registerElementRef?.("history-section", el)} className="space-y-2">
         <label className="text-xs font-medium">Chat History</label>
@@ -276,4 +371,5 @@ NodeRegistry.register({
   metadata: AGENT_NODE_METADATA,
   component: AgentNode,
   configProvider: AgentNodeConfigProvider,
+  executor: executeAgentNode,
 });

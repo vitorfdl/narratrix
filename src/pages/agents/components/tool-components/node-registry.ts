@@ -1,5 +1,6 @@
 import { LucideIcon } from "lucide-react";
 import { ComponentType } from "react";
+import type { NodeExecutor } from "@/services/agent-workflow/types";
 import { NodeInput, NodeOutput } from "./NodeBase";
 import { ToolNodeData } from "./types";
 
@@ -132,6 +133,7 @@ export interface NodeDefinition {
   configProvider?: {
     getDefaultConfig: () => { label: string; config: any };
   };
+  executor?: NodeExecutor;
 }
 
 // Node Registry namespace
@@ -193,6 +195,10 @@ export namespace NodeRegistry {
 
   export function getNodeMetadata(type: string): NodeMetadata | undefined {
     return registry.get(type)?.metadata;
+  }
+
+  export function getExecutor(type: string): NodeExecutor | undefined {
+    return registry.get(type)?.executor;
   }
 
   export function clear(): void {

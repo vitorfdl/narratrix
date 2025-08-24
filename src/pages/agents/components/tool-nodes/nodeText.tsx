@@ -13,7 +13,7 @@ import { NodeProps } from "./nodeTypes";
 /**
  * TextNode: Node for outputting configured text content
  */
-export interface TextNodeConfig {
+interface TextNodeConfig {
   name: string;
   content: string;
 }
@@ -36,7 +36,7 @@ const TEXT_NODE_METADATA = {
 };
 
 // Configuration provider namespace
-export namespace TextNodeConfigProvider {
+namespace TextNodeConfigProvider {
   export function getDefaultConfig() {
     return {
       label: TEXT_NODE_METADATA.label,
@@ -48,14 +48,14 @@ export namespace TextNodeConfigProvider {
 /**
  * TextNodeConfigDialog: Dialog for configuring Text node
  */
-export interface TextNodeConfigDialogProps {
+interface TextNodeConfigDialogProps {
   open: boolean;
   initialConfig: TextNodeConfig;
   onSave: (config: TextNodeConfig) => void;
   onCancel: () => void;
 }
 
-export const TextNodeConfigDialog: React.FC<TextNodeConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
+const TextNodeConfigDialog: React.FC<TextNodeConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
   const {
     control,
     handleSubmit,

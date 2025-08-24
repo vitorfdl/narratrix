@@ -116,6 +116,7 @@ export function useBackgroundInference() {
           max_concurrent_requests: model.max_concurrency,
           engine: manifest?.engine || "",
         };
+
         // Queue the inference request
         runInference({
           messages: prompt,

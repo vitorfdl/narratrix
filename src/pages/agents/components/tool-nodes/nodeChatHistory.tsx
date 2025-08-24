@@ -7,12 +7,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useChatStore } from "@/hooks/chatStore";
+import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 /**
- * ChatHistoryNode: Node for retrieving filtered chat history
+ * Node Execution
+ */
+export const executeChatHistoryNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
+  try {
+    const { selectedChatMessages } = useChatStore.getState();
+    let history = Array.isArray(selectedChatMessages) ? selectedChatMessages : [];
+
+    // Optional participant filter: if inputs.characterId or inputs.participantId is provided
+    const participantId: string | undefined = (inputs.characterId as string) || (inputs.participantId as string);
+    if (participantId) {
+      if (participantId === "user") {
+        history = history.filter((m) => m.type === "user");
+      } else {
+        history = history.filter((m) => m.character_id === participantId);
+      }
+    }
+
+    return { success: true, value: history };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Failed to read chat history";
+    return { success: false, error: message };
+  }
+};
+
+/**
+ * UI and Node Configuration
  */
 export interface ChatHistoryNodeConfig {
   name: string;
@@ -261,4 +288,5 @@ NodeRegistry.register({
   metadata: CHAT_HISTORY_NODE_METADATA,
   component: ChatHistoryNode,
   configProvider: ChatHistoryNodeConfigProvider,
+  executor: executeChatHistoryNode,
 });
