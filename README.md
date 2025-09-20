@@ -24,6 +24,8 @@ experiences.
   <img src="https://github.com/user-attachments/assets/d88144a3-a24b-4d58-82ae-d195af0c9854" alt="Narratrix Interface" width="80%"/>
 </p>
 
+> If you're new to NarratrixAI, follow our documentation at our [Github Wiki](https://github.com/vitorfdl/narratrix/wiki)
+
 ## 🚀 Key Features
 
 ### 💬 Powerful Chat System
