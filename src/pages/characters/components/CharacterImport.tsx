@@ -129,7 +129,7 @@ export const CharacterImport = forwardRef<CharacterImportHandle, CharacterImport
               continue;
             }
             validationResult = validateAndTransformCharacterData(parsedData, currentProfile.id);
-            const blob = new Blob([fileContentBinary], { type: "image/png" });
+            const blob = new Blob([fileContentBinary as any], { type: "image/png" });
             const dataUrl = await new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = () => resolve(reader.result as string);
