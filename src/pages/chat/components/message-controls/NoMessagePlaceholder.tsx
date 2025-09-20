@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { getCharacterById } from "@/services/character-service";
-import { replaceStringPlaceholders } from "@/services/inference/formatter/replace-text";
+import { replaceStringPlaceholders } from "@/services/inference/formatter/replace-text-placeholders";
 
 export const NoMessagePlaceholder: React.FC = () => {
   const currentChatChapters = useCurrentChatChapters();

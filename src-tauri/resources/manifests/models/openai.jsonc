@@ -7,7 +7,7 @@
   "type": "llm",
   "inference_type": ["chat"],
   "engine": "openai",
-  "inference_fields": ["temperature", "verbosity", "top_p", "frequency_penalty", "presence_penalty", "reasoning"],
+  "inference_fields": ["temperature", "verbosity", "top_p", "frequency_penalty", "presence_penalty", "reasoning", "stop"],
   "fields": [
     {
       "key": "api_key",

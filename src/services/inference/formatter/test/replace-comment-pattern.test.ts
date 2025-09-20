@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { replaceCommentPattern } from "../replace-text";
+import { replaceCommentPattern } from "../replace-text-placeholders";
 
 describe("replaceCommentPattern", () => {
   it("should remove simple comment patterns", () => {

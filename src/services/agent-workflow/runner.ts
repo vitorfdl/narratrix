@@ -37,21 +37,40 @@ function getTopologicalOrder(nodes: AgentNodeType[], edges: AgentEdgeType[]): st
 }
 
 async function executeNode(node: AgentNodeType, edges: AgentEdgeType[], context: WorkflowExecutionContext, agent: AgentType, deps: WorkflowDeps): Promise<NodeExecutionResult> {
-  const inputs = getNodeInputs(node, edges, context.nodeValues);
+  const baseInputs = getNodeInputs(node, edges, context.nodeValues);
   const executor = NodeRegistry.getExecutor(node.type);
   if (!executor) {
     return { success: false, error: `No executor registered for node type: ${node.type}` };
   }
 
+  // For javascript node, annotate inputs with which outputs are actually wired
+  let inputs = baseInputs;
+  if (node.type === "javascript") {
+    const outgoing = edges.filter((e) => e.source === node.id);
+    const hasTextOut = outgoing.some((e) => e.sourceHandle === "out-string");
+    const hasToolOut = outgoing.some((e) => e.sourceHandle === "out-toolset");
+    inputs = { ...baseInputs, __wantText: hasTextOut, __wantTool: hasToolOut } as any;
+  }
+
   const res = await executor(node, inputs, context, agent, deps);
-  // Preserve special multi-output behavior for javascript nodes
+  // Preserve multi-output behavior for javascript nodes by reflecting onto handle-scoped keys
   if (node.type === "javascript" && res.success) {
-    const v = res.value || {};
-    const toolset = Array.isArray(v.toolset) ? v.toolset : [];
-    const text = typeof v.text === "string" ? v.text : undefined;
-    context.nodeValues.set(`${node.id}::out-toolset`, toolset);
-    context.nodeValues.set(`${node.id}::out-string`, text);
-    return { success: true, value: toolset };
+    if (typeof res.value === "string") {
+      // Execution mode returned text
+      context.nodeValues.set(`${node.id}::out-string`, res.value);
+      context.nodeValues.set(`${node.id}::out-toolset`, []);
+    } else if (Array.isArray(res.value)) {
+      // Toolset mode returned an array of tools
+      context.nodeValues.set(`${node.id}::out-toolset`, res.value);
+      context.nodeValues.set(`${node.id}::out-string`, undefined);
+    } else if (res.value && typeof res.value === "object") {
+      // Backward compatibility: support { toolset, text }
+      const v: any = res.value;
+      const toolset = Array.isArray(v.toolset) ? v.toolset : [];
+      const text = typeof v.text === "string" ? v.text : undefined;
+      context.nodeValues.set(`${node.id}::out-toolset`, toolset);
+      context.nodeValues.set(`${node.id}::out-string`, text);
+    }
   }
   return res;
 }

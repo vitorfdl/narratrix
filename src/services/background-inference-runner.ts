@@ -1,17 +1,15 @@
-import { ChatMessage } from "@/services/chat-message-service";
-import { getChatTemplateById } from "@/services/template-chat-service";
-import { getModelById, Model } from "@/services/model-service";
-import { getInferenceTemplateById } from "@/services/template-inference-service";
-import { getFormatTemplateById } from "@/services/template-format-service";
-import { formatPrompt } from "@/services/inference/formatter";
-import { removeNestedFields } from "@/services/inference/formatter/remove-nested-fields";
-import type { InferenceMessage } from "@/schema/inference-engine-schema";
-import { listCharacters } from "@/services/character-service";
-import { getChatChapterById } from "@/services/chat-chapter-service";
 import { useCurrentChatActiveChapterID } from "@/hooks/chatStore";
-import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { useInference } from "@/hooks/useInference";
+import type { InferenceMessage } from "@/schema/inference-engine-schema";
+import { getChatChapterById } from "@/services/chat-chapter-service";
+import { ChatMessage } from "@/services/chat-message-service";
+import { formatPrompt } from "@/services/inference/formatter";
+import { removeNestedFields } from "@/services/inference/formatter/remove-nested-fields";
+import { getModelById, Model } from "@/services/model-service";
+import { getChatTemplateById } from "@/services/template-chat-service";
+import { getFormatTemplateById } from "@/services/template-format-service";
+import { getInferenceTemplateById } from "@/services/template-inference-service";
 
 // WARNING: This runner avoids React state, but still relies on hooks to access
 // shared infrastructure. It should be called from React environment lifecycles.
@@ -30,9 +28,9 @@ export async function runBackgroundInference(options: BackgroundRunOptions): Pro
 
   // Hook-based deps (available only in React call sites). We keep it simple here.
   const manifests = useModelManifests();
-  const currentProfile = useCurrentProfile();
+  // const currentProfile = useCurrentProfile();
   const currentChapterID = useCurrentChatActiveChapterID();
-  const { runInference, cancelRequest } = useInference({});
+  const { runInference } = useInference({});
 
   const chatTemplate = await getChatTemplateById(chatTemplateId).catch(() => null);
   if (!chatTemplate) {
@@ -57,7 +55,7 @@ export async function runBackgroundInference(options: BackgroundRunOptions): Pro
 
   const messages: ChatMessage[] = [];
   const activeChapter = await getChatChapterById(currentChapterID || "").catch(() => null);
-  const characterList = await listCharacters(currentProfile!.id);
+  // const characterList = await listCharacters(currentProfile!.id);
 
   const promptResult = await formatPrompt({
     messageHistory: messages,
@@ -90,7 +88,7 @@ export async function runBackgroundInference(options: BackgroundRunOptions): Pro
   };
 
   // Fire and wait (non-streaming)
-  const requestId = await runInference({
+  await runInference({
     messages: inferenceMessages as InferenceMessage[],
     modelSpecs,
     systemPrompt: formattedSystemPrompt,

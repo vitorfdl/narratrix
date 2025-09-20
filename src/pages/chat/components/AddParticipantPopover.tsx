@@ -25,10 +25,11 @@ interface AddParticipantPopoverProps {
   onOpenChange: (open: boolean) => void;
   onSelectCharacter: (characterId: string) => void;
   existingParticipantIds: string[];
+  pickableParticipantIds?: string[];
   title?: string;
 }
 
-const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharacter, existingParticipantIds, title }: AddParticipantPopoverProps) => {
+const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharacter, existingParticipantIds, pickableParticipantIds, title }: AddParticipantPopoverProps) => {
   const characters = useCharacters();
   const agents = useAgents();
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
@@ -64,6 +65,10 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
         return false;
       }
 
+      if (pickableParticipantIds && !pickableParticipantIds.includes(participant.id)) {
+        return false;
+      }
+
       // Filter by search term
       const nameMatches = participant.name.toLowerCase().includes(searchTerm.toLowerCase());
       if (!nameMatches) {
@@ -85,7 +90,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
     });
 
     setFilteredParticipants(filtered);
-  }, [characters, agents, searchTerm, activeTab, existingParticipantIds]);
+  }, [characters, agents, searchTerm, activeTab, existingParticipantIds, pickableParticipantIds]);
 
   const handleSelect = (participant: ParticipantItem) => {
     onSelectCharacter(participant.id);

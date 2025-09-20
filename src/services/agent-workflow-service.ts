@@ -9,7 +9,7 @@ export type { NodeExecutionResult, WorkflowExecutionContext };
 
 export const agentWorkflowService = {
   async executeWorkflow(agent: AgentType, initialInput?: string, onNodeExecuted?: (nodeId: string, result: NodeExecutionResult) => void): Promise<string | null> {
-    return executeWorkflow(agent, initialInput, onNodeExecuted);
+    return executeWorkflow(agent, initialInput, undefined, onNodeExecuted);
   },
 
   cancelWorkflow(agentId: string) {

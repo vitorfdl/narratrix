@@ -26,6 +26,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const [streamingCharacters, setStreamingCharacters] = useState<Record<string, boolean>>({});
   const quietResponseRef = useRef<boolean>(false);
   const [inputStreamingText, setInputStreamingText] = useState<string>("");
+  const rotationAbortRef = useRef<boolean>(false);
   // Track history navigation
 
   const currentProfile = useCurrentProfile();
@@ -113,75 +114,102 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     if (quietResponseRef.current && inputStreamingText) {
       setText(inputStreamingText);
     }
-  }, [inputStreamingText, quietResponseRef.current]);
+  }, [inputStreamingText]);
 
   const handleSubmit = useCallback(
     async (submittedText: string) => {
       if (!submittedText.trim()) {
         return;
       }
-      // Get the next enabled character to respond
-      const nextCharacter = enabledParticipants[0];
-      if (!nextCharacter) {
+
+      if (!enabledParticipants.length) {
         toast.error("No enabled characters found");
         return;
       }
 
-      // Set loading state for this character
-      setStreamingCharacters((prev) => ({ ...prev, [nextCharacter?.id ?? "unknown"]: true }));
-
-      try {
-        // Use the inference service to generate a message
-        await inferenceService.generateMessage({
-          characterId: nextCharacter?.id ?? "",
-          userMessage: structuredClone(submittedText.trim()),
-          stream: true,
-          onStreamingStateChange: (state: StreamingState | null) => {
-            // Handle streaming state changes for both regular and quiet responses
-            handleStreamingStateChange(state);
-
-            if (state?.characterId) {
-              setStreamingCharacters((prev) => ({
-                ...prev,
-                [state.characterId as string]: true,
-              }));
-            } else {
-              // When state is null, streaming has completed or errored
-              setStreamingCharacters((prev) => {
-                const newState = { ...prev };
-                // Clear all streaming characters since we don't track by message ID here
-                if (nextCharacter?.id) {
-                  delete newState[nextCharacter.id];
-                }
-                return newState;
-              });
+      // Promise that resolves when current generation is done (or aborted)
+      const waitForGenerationToFinish = (): Promise<void> => {
+        return new Promise((resolve) => {
+          if (!inferenceService.isStreaming()) {
+            resolve();
+            return;
+          }
+          const unsubscribe = inferenceService.subscribeToStateChanges((state) => {
+            if (rotationAbortRef.current) {
+              unsubscribe();
+              resolve();
+              return;
             }
-          },
+            if (!state?.characterId) {
+              unsubscribe();
+              resolve();
+            }
+          });
         });
+      };
 
-        // Clear the input text if not in quiet mode
-        if (!quietResponseRef.current) {
-          // Add to history if not a duplicate of the most recent entry
-          if (!generationInputHistory.length || generationInputHistory.at(-1) !== submittedText) {
-            // Add to history, limiting entries to X
-            const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
-            setGenerationInputHistory(newHistory);
-          }
+      rotationAbortRef.current = false;
 
-          setText("");
+      for (let i = 0; i < enabledParticipants.length; i++) {
+        if (rotationAbortRef.current) {
+          break;
         }
-      } catch (error) {
-        toast.error(`${error}`);
-        setStreamingCharacters((prev) => {
-          const newState = { ...prev };
-          if (nextCharacter?.id) {
-            delete newState[nextCharacter.id];
+
+        const participant = enabledParticipants[i];
+        if (!participant?.id) {
+          continue;
+        }
+
+        setStreamingCharacters((prev) => ({ ...prev, [participant.id]: true }));
+
+        try {
+          const isFirst = i === 0;
+          const userMsg = isFirst ? structuredClone(submittedText.trim()) : "";
+
+          await inferenceService.generateMessage({
+            characterId: participant.id,
+            userMessage: userMsg,
+            quietUserMessage: !isFirst, // only first attaches user message to chat
+            stream: true,
+            onStreamingStateChange: (state: StreamingState | null) => {
+              handleStreamingStateChange(state);
+              if (state?.characterId) {
+                setStreamingCharacters((prev) => ({ ...prev, [state.characterId as string]: true }));
+              } else {
+                setStreamingCharacters((prev) => {
+                  const newState = { ...prev };
+                  delete newState[participant.id];
+                  return newState;
+                });
+              }
+            },
+          });
+
+          if (isFirst && !quietResponseRef.current) {
+            if (!generationInputHistory.length || generationInputHistory.at(-1) !== submittedText) {
+              const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
+              setGenerationInputHistory(newHistory);
+            }
+            setText("");
           }
-          return newState;
-        });
+
+          await waitForGenerationToFinish();
+
+          if (rotationAbortRef.current) {
+            break;
+          }
+        } catch (error) {
+          toast.error(`${error}`);
+          setStreamingCharacters((prev) => {
+            const newState = { ...prev };
+            delete newState[participant.id];
+            return newState;
+          });
+          break;
+        }
       }
     },
-    [enabledParticipants, inferenceService, handleStreamingStateChange, generationInputHistory],
+    [enabledParticipants, inferenceService, handleStreamingStateChange, generationInputHistory, setGenerationInputHistory],
   );
 
   // Function to check if any character is currently streaming
@@ -192,6 +220,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   // Handle cancellation of ongoing generation
   const handleCancel = useCallback(async () => {
     try {
+      rotationAbortRef.current = true;
       const success = await inferenceService.cancelGeneration();
       if (success) {
         // Reset streaming characters state
@@ -215,15 +244,15 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     }
   }, [text]);
 
-  const executeQuickAction = async (action: QuickAction) => {
-    const nextCharacter = enabledParticipants[0];
+  const executeQuickAction = async (action: QuickAction, participantId?: string) => {
+    const nextCharacter = participantId ? enabledParticipants.find((p) => p.id === participantId) : enabledParticipants[0];
 
     // Determine if the response should be quiet
     const quietResponse = action.streamOption === "textarea";
 
     const generationConfig: GenerationOptions = {
       chatTemplateID: action.chatTemplateId ?? undefined,
-      characterId: nextCharacter?.id ?? "",
+      characterId: nextCharacter?.id ?? participantId ?? "",
       systemPromptOverride: action.systemPromptOverride,
       userMessage: action.userPrompt,
       stream: true,
@@ -255,7 +284,13 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           const newIndex = lastMessage.messages.length;
           generationConfig.messageIndex = newIndex;
           generationConfig.extraSuggestions!.last_message = lastMessage.messages[lastMessage.message_index];
+        } else if (participantId) {
+          // If no previous character message exists but user selected a participant, target that participant
+          generationConfig.characterId = participantId;
         }
+      }
+      if (participantMessageType === "new" && participantId) {
+        generationConfig.characterId = participantId;
       }
     }
 

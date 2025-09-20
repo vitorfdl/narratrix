@@ -112,9 +112,9 @@ export function useMultipleImageUrls<T>(items: T[], pathGetter: (item: T) => str
         const results = await Promise.all(promises);
 
         // Populate the URL map with the results
-        results.forEach(({ key, url }) => {
+        for (const { key, url } of results) {
           newUrlMap[key] = url;
-        });
+        }
 
         setUrlMap(newUrlMap);
       } catch (error) {

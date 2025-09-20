@@ -316,6 +316,7 @@ pre:focus-within .copy-code-button {
 .markdown-body [type="reset"],
 .markdown-body [type="submit"] {
   -webkit-appearance: button;
+  appearance: button;
 }
 
 .markdown-body [type="checkbox"],
@@ -467,13 +468,6 @@ pre:focus-within .copy-code-button {
 
 .markdown-body dd {
   @apply ml-0;
-}
-
-.markdown-body tt,
-.markdown-body code,
-.markdown-body samp {
-  /* font-family handled by .markdown-body code */
-  /* size handled by inline code rule below */
 }
 
 .markdown-body pre {
@@ -826,10 +820,6 @@ pre:focus-within .copy-code-button {
 .markdown-body samp {
   /* font-family handled by .markdown-body code */
   @apply text-[85%];
-}
-
-.markdown-body pre code {
-  /* font-size handled by pre > code */
 }
 
 .markdown-body pre > code {

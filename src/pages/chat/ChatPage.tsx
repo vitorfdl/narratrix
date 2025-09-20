@@ -366,6 +366,8 @@ export default function ChatPage() {
           handleDuplicateRequest={handleDuplicateRequest}
           handleDeleteRequest={handleDeleteRequest}
           handleTabReorder={handleTabReorder}
+          inspectorOpen={isInspectorOpen}
+          onToggleInspector={() => setIsInspectorOpen((prev) => !prev)}
         />
 
         {/* Rename Dialog */}

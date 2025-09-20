@@ -1,4 +1,4 @@
-import { AgentEdgeType, AgentNodeType } from "./types";
+import { AgentEdgeType, AgentNodeType } from "@/schema/agent-schema";
 
 export function mapHandleToInputName(handle: string): string {
   const mapping: Record<string, string> = {
@@ -16,7 +16,8 @@ export function getNodeInputs(node: AgentNodeType, edges: AgentEdgeType[], conte
   const inputs: Record<string, any> = {};
   const incoming = edges.filter((e) => e.target === node.id);
   for (const edge of incoming) {
-    const value = contextValues.get(edge.source);
+    const handleScopedKey = `${edge.source}::${edge.sourceHandle}`;
+    const value = contextValues.has(handleScopedKey) ? contextValues.get(handleScopedKey) : contextValues.get(edge.source);
     if (value !== undefined) {
       const key = mapHandleToInputName(edge.targetHandle);
       if (key === "toolset") {

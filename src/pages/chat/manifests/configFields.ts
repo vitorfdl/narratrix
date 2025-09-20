@@ -296,6 +296,13 @@ export const configFields: ConfigFields = [
     ],
   },
   {
+    name: "stop",
+    type: "string_array",
+    title: "Stop Sequences",
+    description: "Sequences to stop generation when encountered.",
+    default: [],
+  },
+  {
     name: "prompt_cache",
     type: "section",
     title: "Prompt Cache",

@@ -5,8 +5,7 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useChatStore } from "@/hooks/chatStore";
-import { useChatTemplate, useChatTemplateStore } from "@/hooks/chatTemplateStore";
+import { useChatTemplate } from "@/hooks/chatTemplateStore";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";

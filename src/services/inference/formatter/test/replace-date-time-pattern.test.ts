@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { replaceDateTimePattern } from "../replace-text";
+import { replaceDateTimePattern } from "../replace-text-placeholders";
 
 describe("replaceDateTimePattern", () => {
   let mockDate: Date;

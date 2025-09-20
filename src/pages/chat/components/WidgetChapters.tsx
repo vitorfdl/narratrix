@@ -414,9 +414,9 @@ const WidgetChapters = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1">
+                <Button variant="outline" size="sm" className="gap-1 h-8">
                   Sort
-                  <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                  <ArrowUpDown className="!h-4 !w-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[180px]">

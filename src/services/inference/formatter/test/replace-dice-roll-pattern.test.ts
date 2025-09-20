@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { replaceDiceRollPattern } from "../replace-text";
+import { replaceDiceRollPattern } from "../replace-text-placeholders";
 
 describe("replaceDiceRollPattern", () => {
   it("should replace simple dice roll patterns", () => {

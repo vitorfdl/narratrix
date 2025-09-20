@@ -67,7 +67,7 @@
           "frequency_penalty",
           "verbosity",
           "presence_penalty",
-          "stop_sequences",
+          "stop",
           "sampling_order",
           "xtc",
           "repetition_penalty",

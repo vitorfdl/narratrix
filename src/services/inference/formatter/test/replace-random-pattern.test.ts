@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { replaceRandomPattern } from "../replace-text";
+import { replaceRandomPattern } from "../replace-text-placeholders";
 
 describe("replaceRandomPattern", () => {
   it("should replace the random pattern with a random value according to the specified rules", () => {

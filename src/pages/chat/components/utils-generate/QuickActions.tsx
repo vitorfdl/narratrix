@@ -1,25 +1,43 @@
 import { Plus } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useCurrentProfile, useProfileActions } from "@/hooks/ProfileStore";
 import { QuickAction } from "@/schema/profiles-schema";
+import AddParticipantPopover from "../AddParticipantPopover";
 import { QuickActionButton } from "./QuickActionButton";
 import { QuickActionDialog } from "./QuickActionDialog";
 
 interface QuickActionsProps {
   disableActions?: boolean;
-  handleExecuteAction: (action: QuickAction) => void;
+  handleExecuteAction: (action: QuickAction, participantId?: string) => void;
 }
 
 const iconSize = "!w-4.5 !h-4.5";
 
 export const QuickActions: React.FC<QuickActionsProps> = ({ handleExecuteAction, disableActions = false }) => {
   const currentProfile = useCurrentProfile();
+  const participants = useCurrentChatParticipants();
   const { updateProfile } = useProfileActions();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAction, setEditingAction] = useState<QuickAction | null>(null);
   const actions = currentProfile?.quick_actions ?? [];
+  const chatMessages = useCurrentChatMessages() || [];
+
+  const [isParticipantDialogOpen, setIsParticipantDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<QuickAction | null>(null);
+  // Note: selection handled inline via onSelectCharacter; no local selection state needed
+
+  const lastCharacterMessage = useMemo(() => {
+    for (let i = chatMessages.length - 1; i >= 0; i--) {
+      const msg = chatMessages[i];
+      if (msg?.type === "character") {
+        return msg;
+      }
+    }
+    return null;
+  }, [chatMessages]);
 
   const handleOpenAddDialog = () => {
     setEditingAction(null);
@@ -72,8 +90,50 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ handleExecuteAction,
       </Dialog>
       {/* Render Action Buttons */}
       {actions.map((action) => (
-        <QuickActionButton key={action.id} action={action} disabled={disableActions} onExecute={handleExecuteAction} onEdit={handleOpenEditDialog} onDelete={handleDeleteAction} />
+        <QuickActionButton
+          key={action.id}
+          action={action}
+          disabled={disableActions}
+          onExecute={(act) => {
+            const needsParticipantSelection = act.streamOption === "participantMessage" && (act.participantMessageType === "new" || (act.participantMessageType === "swap" && !lastCharacterMessage));
+
+            if (needsParticipantSelection && (participants?.length ?? 0) > 1) {
+              setPendingAction(act);
+              setIsParticipantDialogOpen(true);
+              return;
+            }
+
+            handleExecuteAction(act);
+          }}
+          onEdit={handleOpenEditDialog}
+          onDelete={handleDeleteAction}
+        />
       ))}
+
+      {/* Participant selection popover using existing AddParticipantPopover */}
+      {isParticipantDialogOpen && pendingAction ? (
+        <AddParticipantPopover
+          isOpen={isParticipantDialogOpen}
+          onOpenChange={(open) => {
+            setIsParticipantDialogOpen(open);
+            if (!open) {
+              setPendingAction(null);
+            }
+          }}
+          onSelectCharacter={(id) => {
+            handleExecuteAction(pendingAction, id);
+            setIsParticipantDialogOpen(false);
+            setPendingAction(null);
+          }}
+          existingParticipantIds={[]}
+          pickableParticipantIds={participants?.filter((participant) => participant.enabled)?.map((participant) => participant.id)}
+          title="Select participant"
+        >
+          <Button size="sm" variant="secondary">
+            Select participant
+          </Button>
+        </AddParticipantPopover>
+      ) : null}
     </div>
   );
 };

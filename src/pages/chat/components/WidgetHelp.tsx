@@ -88,8 +88,8 @@ export const WidgetHelp: React.FC = () => {
   }
 
   return (
-    <div className="w-full p-16 @container">
-      <h3 className="text-center mb-5 font-medium text-base text-foreground/70">Keyboard Shortcuts:</h3>
+    <div className="w-full px-16 py-4 @container">
+      <h3 className="text-center mb-2 font-medium text-base text-foreground/70">Keyboard Shortcuts:</h3>
       <div className="grid grid-cols-1 @xl:grid-cols-2 gap-x-10 gap-y-4">
         {sections.map((section) => (
           <div key={section.title} className="flex flex-col space-y-3">

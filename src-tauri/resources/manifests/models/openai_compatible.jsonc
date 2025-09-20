@@ -21,7 +21,7 @@
     "dynamic_temperature",
     "seed",
     "nsigma",
-    "stop_sequences",
+    "stop",
     "sampling_order",
     "reasoning"
   ],

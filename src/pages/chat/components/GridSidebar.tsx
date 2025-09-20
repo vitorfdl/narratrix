@@ -1,5 +1,5 @@
 import { PopoverArrow } from "@radix-ui/react-popover";
-import { Pin } from "lucide-react";
+import { BugIcon, Pin } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,9 +12,11 @@ interface GridSidebarProps {
   hiddenWidgets: GridPosition[];
   toggleCard: (cardId: string) => void;
   tabId: string;
+  inspectorOpen?: boolean;
+  onToggleInspector: () => void;
 }
 
-export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleCard, tabId }) => {
+export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleCard, tabId, onToggleInspector }) => {
   const [maxPopoverHeight, setMaxPopoverHeight] = useState(600);
 
   // Calculate dynamic maxHeight based on viewport
@@ -43,8 +45,8 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  aria-label={`Show ${widgetTitles[widget.id as WidgetId]} widget`}
-                  title={`Show ${widgetTitles[widget.id as WidgetId]} widget`}
+                  aria-label={`${widgetTitles[widget.id as WidgetId]} widget`}
+                  title={`${widgetTitles[widget.id as WidgetId]} widget`}
                   className="m-1 h-auto bg-transparent whitespace-nowrap text-sm p-0.5 pt-1 pb-1 font-light"
                 >
                   <div className="flex items-center gap-1">
@@ -70,6 +72,18 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
             <Separator orientation="horizontal" className="my-0" />
           </Fragment>
         ))}
+
+        <div className="w-full flex items-center justify-center">
+          <Button
+            variant="outline"
+            aria-label="Toggle Live Inspector"
+            title="Live Inspector — Ctrl/Cmd + '"
+            className="m-1 h-auto bg-transparent whitespace-nowrap text-sm p-0.5 pt-1 pb-1 font-light"
+            onClick={() => onToggleInspector()}
+          >
+            <BugIcon className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

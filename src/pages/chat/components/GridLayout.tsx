@@ -22,7 +22,7 @@ const COLUMNS = {
 /**
  * I Think I overcomplicated the layout logic. =D
  */
-export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
+export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void }> = ({ tabId, onToggleInspector }) => {
   const [positions, setPositions] = useLocalGridLayout();
   const [layoutReady, setLayoutReady] = useState(false);
   const [currentBreakpoint, setCurrentBreakpoint] = useState<keyof typeof COLUMNS>("lg");
@@ -359,7 +359,7 @@ export const GridLayout: React.FC<{ tabId: string }> = ({ tabId }) => {
     <div className="flex h-full relative p-0">
       {/* Grid Sidebar - fixed position */}
       <div className="sticky top-0 h-[95vh] flex-shrink-0 overflow-hidden">
-        <GridSidebar hiddenWidgets={hiddenWidgets} toggleCard={toggleCard} tabId={tabId} />
+        <GridSidebar hiddenWidgets={hiddenWidgets} toggleCard={toggleCard} tabId={tabId} onToggleInspector={onToggleInspector} />
       </div>
 
       {/* Grid Container - with independent scrolling */}

@@ -113,7 +113,7 @@
       },
       {
         "type": "chapter-context",
-        "content": "# Scenario\n{{chapter.title}}: {{chapter.scenario}}\n\n# Instructions\n{{chapter.instructions}}"
+        "content": "# Scenario\n{{chapter.title}}: {{chapter.scenario}}"
       },
       {
         "type": "character-context",

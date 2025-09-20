@@ -1,12 +1,12 @@
-import { getChatTemplateById } from "@/services/template-chat-service";
-import { getModelById, Model } from "@/services/model-service";
-import { getInferenceTemplateById } from "@/services/template-inference-service";
-import { getFormatTemplateById } from "@/services/template-format-service";
-import { formatPrompt } from "@/services/inference/formatter";
-import { removeNestedFields } from "@/services/inference/formatter/remove-nested-fields";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { useInference } from "@/hooks/useInference";
 import type { InferenceMessage, ModelSpecs } from "@/schema/inference-engine-schema";
+import { formatPrompt } from "@/services/inference/formatter";
+import { removeNestedFields } from "@/services/inference/formatter/remove-nested-fields";
+import { getModelById, Model } from "@/services/model-service";
+import { getChatTemplateById } from "@/services/template-chat-service";
+import { getFormatTemplateById } from "@/services/template-format-service";
+import { getInferenceTemplateById } from "@/services/template-inference-service";
 
 // Lightweight bridge to run a one-off, non-streaming inference from non-React services.
 // Note: This still relies on hooks; ensure callers are within React render context.
@@ -67,7 +67,7 @@ export async function runBackgroundInference(options: BridgeRunOptions): Promise
     engine: manifest.engine,
   };
 
-  const confirmId = await runInference({
+  await runInference({
     messages: inferenceMessages as InferenceMessage[],
     modelSpecs,
     systemPrompt: formattedSystemPrompt,

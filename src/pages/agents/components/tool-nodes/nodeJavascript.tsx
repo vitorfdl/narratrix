@@ -5,6 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
+import { runJavascript } from "@/services/agent-workflow/javascript-runner";
 import { NodeExecutionResult, NodeExecutor, WorkflowToolDefinition } from "@/services/agent-workflow/types";
 import JsonSchemaCreator from "../json-schema/JsonSchemaCreator";
 import { SchemaDefinition } from "../json-schema/types";
@@ -15,20 +16,51 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-export const executeJavascriptNode: NodeExecutor = async (node, _inputs): Promise<NodeExecutionResult> => {
+export const executeJavascriptNode: NodeExecutor = async (node, inputs, context, _agent, _deps): Promise<NodeExecutionResult> => {
   const cfg = (node.config as JavascriptNodeConfig) || {};
+  const code = typeof cfg?.code === "string" ? cfg.code : "";
+
+  const wantText: boolean = Boolean((inputs as any).__wantText);
+  const wantTool: boolean = Boolean((inputs as any).__wantTool);
+
+  const toolsetHandleKey = `${node.id}::out-toolset`;
+  const textHandleKey = `${node.id}::out-string`;
+
   const name = cfg?.name || node.label || "javascriptTool";
   const tool: WorkflowToolDefinition = {
     name,
-    description: "Javascript node tool (placeholder)",
+    description: "Javascript node tool",
     inputSchema: cfg?.inputSchema || null,
     invoke: async (args: Record<string, any>) => {
-      return { ok: true, note: "placeholder", args };
+      return await runJavascript(code, args);
     },
   };
 
-  const text = typeof cfg?.code === "string" && cfg.code.length > 0 ? cfg.code : "";
-  return { success: true, value: { toolset: [tool], text } } as any;
+  // Execute code if text is desired
+  let textResult: string | undefined;
+  if (wantText) {
+    try {
+      const result = await runJavascript(code, inputs);
+      textResult = typeof result === "string" ? result : JSON.stringify(result ?? "");
+      context.nodeValues.set(textHandleKey, textResult);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Javascript execution failed";
+      return { success: false, error: message };
+    }
+  }
+
+  if (wantTool && wantText) {
+    // Return both in structured form; runner mirrors to handles
+    return { success: true, value: { toolset: [tool], text: textResult } } as any;
+  }
+
+  if (wantTool) {
+    context.nodeValues.set(toolsetHandleKey, [tool]);
+    return { success: true, value: [tool] };
+  }
+
+  // Only text requested
+  return { success: true, value: textResult || "" };
 };
 
 /**

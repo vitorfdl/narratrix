@@ -19,6 +19,8 @@ interface ChatboxProps {
   handleDuplicateRequest: (tabId: string) => void;
   handleDeleteRequest: (tabId: string) => void;
   handleTabReorder: (newTabOrder: string[]) => void;
+  inspectorOpen: boolean;
+  onToggleInspector: () => void;
 }
 
 export const Chatbox: FC<ChatboxProps> = ({
@@ -34,6 +36,7 @@ export const Chatbox: FC<ChatboxProps> = ({
   handleDuplicateRequest,
   handleDeleteRequest,
   handleTabReorder,
+  onToggleInspector,
 }) => {
   if (tabs.length > 0) {
     return (
@@ -51,7 +54,7 @@ export const Chatbox: FC<ChatboxProps> = ({
           onDeleteRequest={handleDeleteRequest}
           onTabReorder={handleTabReorder}
         />
-        <div className="flex-1 overflow-hidden">{selectedChatID && <GridLayout tabId={selectedChatID} />}</div>
+        <div className="flex-1 overflow-hidden">{selectedChatID && <GridLayout tabId={selectedChatID} onToggleInspector={onToggleInspector} />}</div>
       </>
     );
   }

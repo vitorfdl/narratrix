@@ -2,7 +2,8 @@ import {
   Book,
   Bot,
   BoxIcon, // for Models
-  Heart, // for Patreon
+  Heart,
+  HelpCircleIcon, // for Patreon
   Menu,
   MessageCircle, // for Discord
   MessageSquare, // for Chat/Worlds
@@ -144,6 +145,12 @@ const Sidebar: React.FC<SidebarProps> = () => {
       label: "Join Discord Server",
       icon: <MessageCircle className="w-5 h-5" />,
       href: "https://discord.gg/Q69R4aWCFR",
+    },
+    {
+      id: "documentation",
+      label: "Documentation",
+      icon: <HelpCircleIcon className="w-5 h-5" />,
+      href: "https://github.com/vitorfdl/narratrix/wiki",
     },
     { id: "settings", label: "Settings", icon: <Settings className="w-5 h-5" /> },
   ];

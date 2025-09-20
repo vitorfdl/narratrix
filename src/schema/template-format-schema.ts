@@ -7,7 +7,7 @@ const SYSTEM_PROMPT_TYPES = ["context", "chapter-context", "character-context", 
 
 const SYSTEM_PROMPT_DEFAULT_CONTENT: Record<SystemPromptType, string> = {
   context: "You are a helpful assistant that can answer questions and help with tasks.",
-  "chapter-context": "# Scenario\n{{chapter.title}}: {{chapter.scenario}}\n\n# Instructions\n{{chapter.instructions}}",
+  "chapter-context": "# Scenario\n{{chapter.title}}: {{chapter.scenario}}",
   "character-context": "# Character\n{{character.name}}: {{character.personality}}",
   "user-context": "# User\n{{user.name}}: {{user.personality}}",
   "character-memory": "# Character Past Events\n{{character.name}}: {{character.memory}}",

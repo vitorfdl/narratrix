@@ -1,8 +1,7 @@
 import { HelpCircle } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions, useTemplateError } from "@/hooks/templateStore";
 import { ExtraSections } from "./components/ExtrasSection";
@@ -17,7 +16,6 @@ interface FormatTemplateModalProps {
 }
 
 export default function FormatTemplateModal({ open, onOpenChange, selectedTemplateId, onTemplateChange }: FormatTemplateModalProps) {
-  const [isDocOpen, setIsDocOpen] = useState(false);
   const currentProfile = useCurrentProfile();
   const error = useTemplateError();
   const { getFormatTemplatesByProfile } = useTemplateActions();
@@ -66,19 +64,11 @@ export default function FormatTemplateModal({ open, onOpenChange, selectedTempla
         <DialogHeader>
           <div className="flex gap-2 items-center w-full">
             <DialogTitle className="text-lg font-semibold">Format Template Editor</DialogTitle>
-            <Sheet open={isDocOpen} onOpenChange={setIsDocOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="ml-auto">
-                  <HelpCircle className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Documentation</h2>
-                  <p>Select a template to view its documentation.</p>
-                </div>
-              </SheetContent>
-            </Sheet>
+            <Button variant="ghost" size="icon" className="ml-auto" asChild title="Open Format Template Documentation">
+              <a href="https://github.com/vitorfdl/narratrix/wiki/Prompt-Format-Template" target="_blank" rel="noopener noreferrer" aria-label="Open Format Template Documentation">
+                <HelpCircle className="h-5 w-5" />
+              </a>
+            </Button>
           </div>
         </DialogHeader>
 

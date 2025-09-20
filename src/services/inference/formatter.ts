@@ -10,7 +10,7 @@ import { applyContextLimit } from "./formatter/apply-context-limit";
 import { applyInferenceTemplate } from "./formatter/apply-inference-template";
 import { getLorebookContent, LorebookContentResponse, processLorebookMessages } from "./formatter/apply-lorebook";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./formatter/format-template-utils";
-import { replaceTextPlaceholders } from "./formatter/replace-text";
+import { replaceTextPlaceholders } from "./formatter/replace-text-placeholders";
 
 /**
  * Interface for message with character information

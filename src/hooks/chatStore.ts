@@ -36,6 +36,7 @@ interface chatState {
   selectedChat: Chat;
   selectedChatMessages: ChatMessage[];
   selectedChatChapters: ChatChapter[];
+  participantIndex: number;
   isLoading: boolean;
   error: string | null;
   actions: {
@@ -62,6 +63,11 @@ interface chatState {
     updateParticipant: (participantId: string, data: Partial<ChatParticipant>) => Promise<void>;
     toggleParticipantEnabled: (participantId: string) => Promise<void>;
 
+    // Participant index controls (not persisted)
+    setParticipantIndex: (index: number) => void;
+    resetParticipantIndex: () => void;
+    advanceParticipantIndex: (maxExclusive: number) => void;
+
     createChat: (chat: CreateChatParams, skipDefaultChapter?: boolean) => Promise<Chat>;
     deleteChat: (id: string) => Promise<void>;
     clearChatList: () => void;
@@ -76,6 +82,7 @@ export const useChatStore = create<chatState>((set, get) => ({
   selectedChatMessages: [],
   selectedChatReasonings: [],
   selectedChatChapters: [],
+  participantIndex: 0,
   isLoading: false,
   error: null,
 
@@ -117,6 +124,7 @@ export const useChatStore = create<chatState>((set, get) => ({
           selectedChat: chat,
           selectedChatMessages: messages,
           selectedChatChapters: chapters,
+          participantIndex: 0,
           isLoading: false,
         });
       } catch (error) {
@@ -227,6 +235,7 @@ export const useChatStore = create<chatState>((set, get) => ({
           selectedChat: isSelectedChat ? ({} as Chat) : get().selectedChat,
           selectedChatMessages: isSelectedChat ? [] : get().selectedChatMessages,
           selectedChatChapters: isSelectedChat ? [] : get().selectedChatChapters,
+          participantIndex: 0,
           isLoading: false,
         });
       } catch (error) {
@@ -384,6 +393,7 @@ export const useChatStore = create<chatState>((set, get) => ({
         selectedChat: {} as Chat,
         selectedChatMessages: [],
         selectedChatChapters: [],
+        participantIndex: 0,
       });
     },
 
@@ -692,6 +702,7 @@ export const useChatStore = create<chatState>((set, get) => ({
         // Update the messages in the store
         set({
           selectedChatMessages: messages,
+          participantIndex: 0,
           isLoading: false,
         });
       } catch (error) {
@@ -701,6 +712,24 @@ export const useChatStore = create<chatState>((set, get) => ({
           isLoading: false,
         });
         throw error;
+      }
+    },
+
+    // Participant index controls
+    setParticipantIndex: (index: number) => {
+      if (Number.isFinite(index) && index >= 0) {
+        set({ participantIndex: Math.floor(index) });
+      }
+    },
+    resetParticipantIndex: () => {
+      set({ participantIndex: 0 });
+    },
+    advanceParticipantIndex: (maxExclusive: number) => {
+      const current = get().participantIndex;
+      if (Number.isFinite(maxExclusive) && maxExclusive > 0) {
+        const next = current + 1;
+        // Do not wrap; clamp at end
+        set({ participantIndex: next < maxExclusive ? next : maxExclusive - 1 });
       }
     },
   },
@@ -722,6 +751,8 @@ export const useCurrentChatParticipants = () => useChatStore((state) => state.se
 export const useCurrentChatChapters = () => useChatStore((state) => state.selectedChatChapters);
 
 export const useCurrentChatMessages = () => useChatStore((state) => state.selectedChatMessages);
+
+export const useCurrentChatParticipantIndex = () => useChatStore((state) => state.participantIndex);
 
 export const useChatList = () => useChatStore((state) => state.chatList);
 export const useChatActions = () => useChatStore((state) => state.actions);
