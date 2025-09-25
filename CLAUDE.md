@@ -2,22 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Development Commands
-
-### Build and Development
-- **Test**: `pnpm run test` - Run Vitest tests
-
-### Code Quality
-
-- **Linting**: Use Biome for linting and formatting (`@biomejs/biome`)
-- **Type Checking**: TypeScript strict mode is enabled
-- **Auto-formatting**: Biome format and lint are automatically applied after
-  every file edit
-
-### Important Testing Note
-
-⚠️ **NEVER** run the program using `pnpm run start` or `cargo tauri dev`. All realtime tests must be done exclusively by asking the user to perform these actions.
-
 ## Project Architecture
 
 ### Technology Stack

@@ -122,6 +122,8 @@ const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSetti
   autoRefresh: false,
   requestPrompt: "",
   systemPrompt: "",
+  throttleInterval: 8000, // Default 8 seconds
+  disableLogs: false,
 });
 
 export function useLocalExpressionGenerationSettings() {

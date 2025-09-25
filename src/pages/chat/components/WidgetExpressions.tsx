@@ -1,12 +1,16 @@
-import { Loader2Icon, Pause, Play, RefreshCw, Settings, User } from "lucide-react";
+import { Clock, FileText, Loader2Icon, MessageCircle, Pause, Play, RefreshCw, Settings, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useThrottledCallback } from "use-debounce";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
@@ -16,6 +20,7 @@ import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
 import { basicPromptSuggestionList, ChatMessage } from "@/schema/chat-message-schema";
 import { useBackgroundInference } from "@/services/background-inference-service";
+import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { findClosestExpressionMatch } from "@/utils/fuzzy-search";
 import { useLocalExpressionGenerationSettings } from "@/utils/local-storage";
 
@@ -24,6 +29,8 @@ export type ExpressionGenerateSettings = {
   autoRefresh: boolean;
   requestPrompt: string;
   systemPrompt: string;
+  throttleInterval: number; // Auto mode update frequency in milliseconds
+  disableLogs: boolean; // Option to disable logs for background inference
 };
 
 const ExpressionSuggestionList = [
@@ -51,9 +58,12 @@ Return only the single word for the expression.`;
 const WidgetExpressions = () => {
   const { generateQuietly } = useBackgroundInference();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State for dialog visibility
+  const [activeTab, setActiveTab] = useState("basic"); // State for active tab
   const [tempRequestPrompt, setTempRequestPrompt] = useState(""); // Temp state for dialog
   const [tempSystemPrompt, setTempSystemPrompt] = useState(""); // Temp state for dialog
   const [tempChatTemplateId, setTempChatTemplateId] = useState(""); // Temp state for chat template
+  const [tempThrottleInterval, setTempThrottleInterval] = useState(8000); // Temp state for throttle interval
+  const [tempDisableLogs, setTempDisableLogs] = useState(false); // Temp state for disable logs
 
   // Use the hook for settings
   const [expressionSettings, setExpressionSettings] = useLocalExpressionGenerationSettings();
@@ -64,9 +74,12 @@ const WidgetExpressions = () => {
   // Get state and actions from the expression store
   const { selectedText, selectedMessageCharacterId, clearSelection } = useExpressionStore();
 
-  const setAutoRefreshEnabled = (enabled: boolean) => {
-    setExpressionSettings((prev) => ({ ...prev, autoRefresh: enabled }));
-  };
+  const setAutoRefreshEnabled = useCallback(
+    (enabled: boolean) => {
+      setExpressionSettings((prev) => ({ ...prev, autoRefresh: enabled }));
+    },
+    [setExpressionSettings],
+  );
 
   const participantList = useCurrentChatParticipants();
   const characterList = useCharacters();
@@ -111,8 +124,11 @@ const WidgetExpressions = () => {
       setTempRequestPrompt(expressionSettings.requestPrompt);
       setTempSystemPrompt(expressionSettings.systemPrompt);
       setTempChatTemplateId(expressionSettings.chatTemplateId || "");
+      setTempThrottleInterval(expressionSettings.throttleInterval || 8000);
+      setTempDisableLogs(expressionSettings.disableLogs || false);
+      setActiveTab("basic");
     }
-  }, [isSettingsOpen, expressionSettings.requestPrompt, expressionSettings.systemPrompt, expressionSettings.chatTemplateId]);
+  }, [isSettingsOpen, expressionSettings.requestPrompt, expressionSettings.systemPrompt, expressionSettings.chatTemplateId, expressionSettings.throttleInterval, expressionSettings.disableLogs]);
 
   // --- Load Expression Images ---
   const getExpressionForUrlLoading = useCallback(
@@ -137,9 +153,7 @@ const WidgetExpressions = () => {
   const getPathForItem = useCallback((item: { path: string | null }) => item.path, []);
   const getIdForItem = useCallback((item: { id: string }) => item.id, []);
 
-  // Use useMultipleImageUrls hook
   const { urlMap: expressionUrlMap } = useMultipleImageUrls(expressionObjectsToLoad, getPathForItem, getIdForItem);
-  // ------------------------------
 
   // Manual expression generation function (now reads from refs AND selected text)
   const generateExpression = useCallback(
@@ -147,8 +161,6 @@ const WidgetExpressions = () => {
       // Determine the character ID: Use selected character if text is selected, otherwise use the last speaker
       const currentSpeakerId = userPickedText ? selectedMessageCharacterId : lastSpeakerIdRef.current;
       const currentLastMessage = lastMessageRef.current; // Still needed for chapter ID
-
-      // Get modelId from the selected chat template
 
       if (!currentSpeakerId || !expressionSettings.chatTemplateId) {
         if (selectedText) {
@@ -168,6 +180,14 @@ const WidgetExpressions = () => {
         return;
       }
 
+      // Skip expression generation if message content is just "..." three dots
+      if (messageContentToUse.trim() === "...") {
+        if (selectedText) {
+          clearSelection();
+        }
+        return;
+      }
+
       const targetCharacter = activeCharacters?.find((char) => char.id === currentSpeakerId);
       if (!targetCharacter) {
         console.warn(`Target character with ID ${currentSpeakerId} not found in active list.`);
@@ -176,8 +196,6 @@ const WidgetExpressions = () => {
         }
         return;
       }
-
-      console.log(`Attempting to generate expression for ${targetCharacter.name} using ${userPickedText ? "!!!!selected text" : "last message"}`);
 
       // setAnimateLastSpeaker(true);
       // setTimeout(() => setAnimateLastSpeaker(false), 1000);
@@ -200,6 +218,7 @@ const WidgetExpressions = () => {
           },
           prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
           systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
+          disableLogs: expressionSettings.disableLogs || false,
         }).catch((error) => {
           toast.error(`Error generating expression for ${targetCharacter.name}: ${error}`);
           return "neutral";
@@ -236,6 +255,8 @@ const WidgetExpressions = () => {
       generateQuietly,
       expressionSettings.requestPrompt,
       expressionSettings.systemPrompt,
+      expressionSettings.chatTemplateId,
+      expressionSettings.disableLogs,
       characterExpressions,
       // Add selected text state and actions to dependencies
       selectedText,
@@ -245,7 +266,7 @@ const WidgetExpressions = () => {
   ); // Added characterExpressions and selected text related vars
 
   // Create a throttled version for updates during streaming - Call useThrottledCallback directly
-  const throttledGenerateExpression = useThrottledCallback(generateExpression, 8000, { leading: true, trailing: false });
+  const throttledGenerateExpression = useThrottledCallback(generateExpression, expressionSettings.throttleInterval || 8000, { leading: true, trailing: false });
 
   // Effect to trigger THROTTLED generation DURING streaming
   useEffect(() => {
@@ -254,11 +275,11 @@ const WidgetExpressions = () => {
         generateExpression(selectedText);
       }
     }
-  }, [expressionSettings.chatTemplateId, selectedText]);
+  }, [autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, selectedMessageCharacterId, generateExpression]);
 
   useEffect(() => {
     if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
-      if (lastSpeakerId && lastMessageContent) {
+      if (lastSpeakerId && lastMessageContent && lastMessageContent.trim() !== "...") {
         throttledGenerateExpression(); // Call the throttled function directly
       }
     }
@@ -267,7 +288,7 @@ const WidgetExpressions = () => {
   // Simplified Toggle auto-refresh: just update the state
   const toggleAutoRefresh = useCallback(() => {
     setAutoRefreshEnabled(!autoRefreshEnabled);
-  }, [autoRefreshEnabled]); // Dependencies: current state and its setter
+  }, [autoRefreshEnabled, setAutoRefreshEnabled]); // Dependencies: current state and setter
 
   // Function to handle saving settings from the dialog
   const handleSaveSettings = useCallback(() => {
@@ -276,9 +297,11 @@ const WidgetExpressions = () => {
       requestPrompt: tempRequestPrompt,
       systemPrompt: tempSystemPrompt,
       chatTemplateId: tempChatTemplateId,
+      throttleInterval: tempThrottleInterval,
+      disableLogs: tempDisableLogs,
     }));
     setIsSettingsOpen(false);
-  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt, tempChatTemplateId]);
+  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt, tempChatTemplateId, tempThrottleInterval, tempDisableLogs]);
 
   // Function to get expression for a character (stable via useCallback)
   const getCharacterExpression = useCallback(
@@ -380,47 +403,104 @@ const WidgetExpressions = () => {
                     <span className="ml-1 hidden sm:inline text-xs">Settings</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent size="window">
+                <DialogContent size="window" className="max-h-[85vh] overflow-hidden">
                   <DialogHeader>
-                    <DialogTitle>Configure Expression Prompts</DialogTitle>
-                    <DialogDescription>Customize the prompts used to generate character expressions.</DialogDescription>
+                    <DialogTitle className="flex items-center gap-1 text-lg">
+                      <Settings className="h-4 w-4 text-primary" />
+                      Configure Expression Settings
+                    </DialogTitle>
+                    <DialogDescription>Customize the prompts and behavior for character expression generation.</DialogDescription>
                   </DialogHeader>
-                  <div className="grid grid-cols-2 gap-4 py-4">
-                    <div className="space-y-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="system-prompt">System Prompt</Label>
-                        <MarkdownTextArea
-                          initialValue={tempSystemPrompt}
-                          onChange={(value) => setTempSystemPrompt(value)}
-                          editable={true}
-                          placeholder={defaultSystemPrompt}
-                          className="min-h-[100px] max-h-[25vh] overflow-y-auto"
-                          suggestions={ExpressionSuggestionList}
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="request-prompt">User Prompt (Request)</Label>
-                        <MarkdownTextArea
-                          initialValue={tempRequestPrompt}
-                          onChange={(value) => setTempRequestPrompt(value)}
-                          editable={true}
-                          placeholder={defaultRequestPrompt}
-                          suggestions={ExpressionSuggestionList}
-                          className="min-h-[100px] max-h-[25vh]"
-                        />
-                        <p className="text-xs italic text-muted-foreground">
-                          Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}expression.last{"}}"}, {"{{"}chat.message{"}}"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-1 overflow-y-auto max-h-[60vh]">
-                      <Label htmlFor="chat-template">Chat Template</Label>
-                      <div className="border border-input rounded-md">
-                        <WidgetConfig currentChatTemplateID={tempChatTemplateId || null} onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)} />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">Select the chat template to use for expression generation.</p>
-                    </div>
-                  </div>
+
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid grid-cols-3 mb-3">
+                      <TabsTrigger value="basic" className="flex items-center gap-1 py-1">
+                        <MessageCircle className="h-3 w-3" />
+                        <span>Prompts</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="template" className="flex items-center gap-1 py-1">
+                        <FileText className="h-3 w-3" />
+                        <span>Template</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="advanced" className="flex items-center gap-1 py-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Advanced</span>
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <DialogBody>
+                      <TabsContent value="basic" className="space-y-3 mt-2">
+                        <div className="space-y-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="request-prompt">User Prompt (Request)</Label>
+                            <MarkdownTextArea
+                              initialValue={tempRequestPrompt}
+                              onChange={(value) => setTempRequestPrompt(value)}
+                              editable={true}
+                              placeholder={defaultRequestPrompt}
+                              suggestions={ExpressionSuggestionList}
+                              className="min-h-[100px] max-h-[25vh]"
+                            />
+                            <p className="text-xs italic text-muted-foreground">
+                              Available placeholders: {"{{"}character.name{"}}"}, {"{{"}character.personality{"}}"}, {"{{"}expression.list{"}}"}, {"{{"}expression.last{"}}"}, {"{{"}chat.message{"}}"}
+                            </p>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="template" className="space-y-3 mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label htmlFor="templateId">Chat Template</Label>
+                            <WidgetConfig currentChatTemplateID={tempChatTemplateId || null} onChatTemplateChange={(chatTemplateId) => setTempChatTemplateId(chatTemplateId)} />
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor="systemPrompt">System Prompt Override</Label>
+                              <span className="text-xs text-muted-foreground">{estimateTokens(tempSystemPrompt || "", 0)} tokens</span>
+                            </div>
+                            <MarkdownTextArea
+                              key={tempSystemPrompt ? `systemPrompt-${tempSystemPrompt}` : "new-systemPrompt"}
+                              initialValue={tempSystemPrompt || ""}
+                              editable={true}
+                              className="min-h-[100px]"
+                              suggestions={ExpressionSuggestionList}
+                              onChange={(value) => setTempSystemPrompt(value)}
+                              placeholder="Leave empty to use the default system prompt from the selected template"
+                            />
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="advanced" className="space-y-3 mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="throttle-interval">Auto Refresh Interval (ms)</Label>
+                            <Input
+                              id="throttle-interval"
+                              type="number"
+                              min="1000"
+                              max="60000"
+                              step="1000"
+                              value={tempThrottleInterval}
+                              onChange={(e) => setTempThrottleInterval(Number(e.target.value))}
+                              className="h-8"
+                            />
+                            <p className="text-xs text-muted-foreground">How often auto mode will update expressions during streaming. Default: 8000ms (8 seconds)</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="disable-logs">Disable Logs</Label>
+                            <div className="flex items-center space-x-2 h-8">
+                              <Switch id="disable-logs" checked={tempDisableLogs} onCheckedChange={setTempDisableLogs} />
+                            </div>
+                            <p className="text-xs text-muted-foreground">Disable logging for background inference operations</p>
+                          </div>
+                        </div>
+                      </TabsContent>
+                    </DialogBody>
+                  </Tabs>
+
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
                       Cancel

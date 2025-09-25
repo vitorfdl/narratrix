@@ -157,7 +157,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
       if (templateToDuplicate) {
         // Create the new template object based on the found template
         newTemplateObj = {
-          name: `${templateToDuplicate.name} (Copy)`, // Use the duplicated template's name
+          name: name, // Use the provided name from the duplicate dialog
           profile_id: templateToDuplicate.profile_id,
           config: templateToDuplicate.config, // Deep copy config
           prompts: templateToDuplicate.prompts, // Deep copy prompts

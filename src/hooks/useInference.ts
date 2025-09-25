@@ -30,6 +30,7 @@ interface InferenceParams {
   parameters?: Record<string, any>;
   stream?: boolean;
   requestId?: string;
+  disableLogs?: boolean;
 }
 
 // Global listener to ensure it's only initialized once
@@ -178,15 +179,17 @@ export function useInference(options: UseInferenceOptions = {}) {
       const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, modelSpecs.config, parameters);
 
       try {
-        // Add request to console store history
-        consoleActions.addRequest({
-          id: requestId,
-          systemPrompt: systemPrompt || "",
-          messages: messages,
-          modelSpecs: modelSpecs,
-          parameters: { ...parameters, ...parsedParameters },
-          engine: modelSpecs.engine as Engine,
-        });
+        if (!params.disableLogs) {
+          // Add request to console store history
+          consoleActions.addRequest({
+            id: requestId,
+            systemPrompt: systemPrompt || "",
+            messages: messages,
+            modelSpecs: modelSpecs,
+            parameters: { ...parameters, ...parsedParameters },
+            engine: modelSpecs.engine as Engine,
+          });
+        }
 
         // Queue request with backend
         await queueInferenceRequest(

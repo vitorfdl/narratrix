@@ -24,12 +24,20 @@ function parseOpenRouterParameters(rawParameters: Record<string, any>) {
 
   // OpenRouter parameters
   if (reasoning_budget || reasoning_temperature) {
-    const temperatureLabel = reasoning_temperature === 1 ? "low" : reasoning_temperature === 2 ? "medium" : "high";
     parameters.reasoning = {
-      effort: temperatureLabel,
-      max_tokens: reasoning_budget,
       exclude: true,
     };
+
+    // 0 == off
+    if (reasoning_temperature) {
+      const temperatureLabel = reasoning_temperature === 1 ? "low" : reasoning_temperature === 2 ? "medium" : "high";
+      parameters.reasoning.effort = temperatureLabel;
+    }
+
+    // 0 == off
+    if (reasoning_budget) {
+      parameters.reasoning.budget_tokens = reasoning_budget;
+    }
   }
 
   return parameters;

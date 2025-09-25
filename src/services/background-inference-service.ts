@@ -24,6 +24,7 @@ export interface BackgroundInferenceOptions {
   prompt: InferenceMessage[];
   systemPrompt?: string;
   parameters?: Record<string, any>;
+  disableLogs?: boolean;
 }
 
 /**
@@ -36,6 +37,7 @@ export interface QuickInferenceOptions {
   systemPrompt?: string;
   parameters?: Record<string, any>;
   maxResponseTokens?: number;
+  disableLogs?: boolean;
   context?: {
     userCharacterID?: string;
     characterID?: string;
@@ -124,6 +126,7 @@ export function useBackgroundInference() {
           systemPrompt: systemPrompt,
           parameters,
           stream: false, // No streaming for background inference
+          disableLogs: options.disableLogs,
         })
           .then((requestId) => {
             if (!requestId) {
@@ -220,6 +223,7 @@ export function useBackgroundInference() {
           prompt: inferenceMessages,
           systemPrompt: formattedSystemPrompt,
           parameters: fixedParameters,
+          disableLogs: options.disableLogs,
         });
       } catch (error: any) {
         console.error("Background inference error:", typeof error, error);
