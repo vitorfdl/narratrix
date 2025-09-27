@@ -117,14 +117,48 @@ export function useLocalChatTabs(profileId: string) {
 /**
  * Local storage for expression settings
  */
-const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSettings>("expressionGenerationSettings", {
-  chatTemplateId: "",
-  autoRefresh: false,
-  requestPrompt: "",
-  systemPrompt: "",
-  throttleInterval: 8000, // Default 8 seconds
-  disableLogs: false,
-});
+const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSettings>(
+  "expressionGenerationSettings",
+  {
+    chatTemplateId: "",
+    autoRefresh: false,
+    requestPrompt: "",
+    systemPrompt: "",
+    throttleInterval: 8000, // Default 8 seconds
+    disableLogs: false,
+    imageObjectFit: "cover",
+  },
+  {
+    getItem: (key, initialValue) => {
+      const storedValue = localStorage.getItem(key);
+      if (!storedValue) {
+        return initialValue;
+      }
+
+      try {
+        const parsed = JSON.parse(storedValue) as Partial<ExpressionGenerateSettings>;
+        return {
+          chatTemplateId: parsed.chatTemplateId ?? initialValue.chatTemplateId,
+          autoRefresh: parsed.autoRefresh ?? initialValue.autoRefresh,
+          requestPrompt: parsed.requestPrompt ?? initialValue.requestPrompt,
+          systemPrompt: parsed.systemPrompt ?? initialValue.systemPrompt,
+          throttleInterval: parsed.throttleInterval ?? initialValue.throttleInterval,
+          disableLogs: parsed.disableLogs ?? initialValue.disableLogs,
+          imageObjectFit: parsed.imageObjectFit ?? initialValue.imageObjectFit,
+        } satisfies ExpressionGenerateSettings;
+      } catch (error) {
+        console.error("Failed to parse expression generation settings:", error);
+        return initialValue;
+      }
+    },
+    setItem: (key, newValue) => {
+      localStorage.setItem(key, JSON.stringify(newValue));
+    },
+    removeItem: (key) => {
+      localStorage.removeItem(key);
+    },
+  },
+);
 
 export function useLocalExpressionGenerationSettings() {
   return useAtom(expressionGenerationSettingsAtom);

@@ -1,14 +1,17 @@
-import { Clock, FileText, Loader2Icon, MessageCircle, Pause, Play, RefreshCw, Settings, User } from "lucide-react";
+import { Clock, FileText, Image as ImageIcon, Loader2Icon, MessageCircle, Pause, Play, RefreshCw, Settings, Smile, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useThrottledCallback } from "use-debounce";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
@@ -24,6 +27,36 @@ import { estimateTokens } from "@/services/inference/formatter/apply-context-lim
 import { findClosestExpressionMatch } from "@/utils/fuzzy-search";
 import { useLocalExpressionGenerationSettings } from "@/utils/local-storage";
 
+type ExpressionImageFit = "cover" | "contain" | "fill" | "scale-down" | "none";
+
+const EXPRESSION_IMAGE_FIT_OPTIONS: { value: ExpressionImageFit; label: string; helper: string }[] = [
+  {
+    value: "cover",
+    label: "Cover (Default)",
+    helper: "Fill the frame while preserving aspect ratio; may crop edges.",
+  },
+  {
+    value: "contain",
+    label: "Contain",
+    helper: "Show the whole image inside the frame; may add letterboxing.",
+  },
+  {
+    value: "fill",
+    label: "Fill",
+    helper: "Stretch the image to fill the frame; can distort aspect ratio.",
+  },
+  {
+    value: "scale-down",
+    label: "Scale Down",
+    helper: "Keep the image at natural size unless it exceeds the frame.",
+  },
+  {
+    value: "none",
+    label: "None",
+    helper: "Do not scale the image; overflow may be clipped.",
+  },
+];
+
 export type ExpressionGenerateSettings = {
   chatTemplateId: string;
   autoRefresh: boolean;
@@ -31,6 +64,7 @@ export type ExpressionGenerateSettings = {
   systemPrompt: string;
   throttleInterval: number; // Auto mode update frequency in milliseconds
   disableLogs: boolean; // Option to disable logs for background inference
+  imageObjectFit: ExpressionImageFit;
 };
 
 const ExpressionSuggestionList = [
@@ -55,6 +89,13 @@ Based on the character's personality and their last paragraph, choose the most f
 
 Return only the single word for the expression.`;
 
+const formatExpressionLabel = (expression?: string | null): string => {
+  if (!expression) {
+    return "Neutral";
+  }
+  return expression.charAt(0).toUpperCase() + expression.slice(1);
+};
+
 const WidgetExpressions = () => {
   const { generateQuietly } = useBackgroundInference();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State for dialog visibility
@@ -64,6 +105,7 @@ const WidgetExpressions = () => {
   const [tempChatTemplateId, setTempChatTemplateId] = useState(""); // Temp state for chat template
   const [tempThrottleInterval, setTempThrottleInterval] = useState(8000); // Temp state for throttle interval
   const [tempDisableLogs, setTempDisableLogs] = useState(false); // Temp state for disable logs
+  const [tempImageObjectFit, setTempImageObjectFit] = useState<ExpressionImageFit>("cover");
 
   // Use the hook for settings
   const [expressionSettings, setExpressionSettings] = useLocalExpressionGenerationSettings();
@@ -87,9 +129,14 @@ const WidgetExpressions = () => {
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
   // const [animateLastSpeaker, setAnimateLastSpeaker] = useState(false);
   const [characterExpressions, setCharacterExpressions] = useState<Record<string, string>>({});
+  const characterExpressionsRef = useRef<Record<string, string>>({});
   const lastMessageContentRef = useRef<string>(""); // Ref for latest message content
   const lastSpeakerIdRef = useRef<string | undefined>(undefined); // Ref for latest speaker ID
   const lastMessageRef = useRef<ChatMessage | null>(null); // Ref for latest message object
+
+  useEffect(() => {
+    characterExpressionsRef.current = characterExpressions;
+  }, [characterExpressions]);
 
   // Memoize active characters list
   const activeCharacters = useMemo(() => {
@@ -126,9 +173,18 @@ const WidgetExpressions = () => {
       setTempChatTemplateId(expressionSettings.chatTemplateId || "");
       setTempThrottleInterval(expressionSettings.throttleInterval || 8000);
       setTempDisableLogs(expressionSettings.disableLogs || false);
+      setTempImageObjectFit(expressionSettings.imageObjectFit ?? "cover");
       setActiveTab("basic");
     }
-  }, [isSettingsOpen, expressionSettings.requestPrompt, expressionSettings.systemPrompt, expressionSettings.chatTemplateId, expressionSettings.throttleInterval, expressionSettings.disableLogs]);
+  }, [
+    isSettingsOpen,
+    expressionSettings.requestPrompt,
+    expressionSettings.systemPrompt,
+    expressionSettings.chatTemplateId,
+    expressionSettings.throttleInterval,
+    expressionSettings.disableLogs,
+    expressionSettings.imageObjectFit,
+  ]);
 
   // --- Load Expression Images ---
   const getExpressionForUrlLoading = useCallback(
@@ -211,7 +267,7 @@ const WidgetExpressions = () => {
             chapterID: currentLastMessage?.chapter_id, // Use chapter ID from last message context if available
             extra: {
               "expression.list": availableExpressions.join(", "),
-              "expression.last": characterExpressions[currentSpeakerId] || "neutral",
+              "expression.last": characterExpressionsRef.current[currentSpeakerId] || "neutral",
               // Use the determined message content (selected or last)
               "chat.message": messageContentToUse,
             },
@@ -257,25 +313,43 @@ const WidgetExpressions = () => {
       expressionSettings.systemPrompt,
       expressionSettings.chatTemplateId,
       expressionSettings.disableLogs,
-      characterExpressions,
-      // Add selected text state and actions to dependencies
       selectedText,
       selectedMessageCharacterId,
       clearSelection,
     ],
-  ); // Added characterExpressions and selected text related vars
+  );
 
   // Create a throttled version for updates during streaming - Call useThrottledCallback directly
-  const throttledGenerateExpression = useThrottledCallback(generateExpression, expressionSettings.throttleInterval || 8000, { leading: true, trailing: false });
+  const throttleIntervalMs = useMemo(() => {
+    const rawInterval = Number(expressionSettings.throttleInterval);
+    if (!Number.isFinite(rawInterval) || rawInterval <= 0) {
+      return 8000;
+    }
+    return Math.max(rawInterval, 1000);
+  }, [expressionSettings.throttleInterval]);
+
+  const throttledGenerateExpression = useThrottledCallback(generateExpression, throttleIntervalMs, { leading: true, trailing: false });
+
+  useEffect(() => {
+    if (!autoRefreshEnabled) {
+      throttledGenerateExpression.cancel();
+    }
+  }, [autoRefreshEnabled, throttledGenerateExpression]);
+
+  useEffect(() => {
+    return () => {
+      throttledGenerateExpression.cancel();
+    };
+  }, [throttledGenerateExpression]);
 
   // Effect to trigger THROTTLED generation DURING streaming
   useEffect(() => {
     if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
       if (selectedText && selectedMessageCharacterId) {
-        generateExpression(selectedText);
+        throttledGenerateExpression(selectedText);
       }
     }
-  }, [autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, selectedMessageCharacterId, generateExpression]);
+  }, [autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, selectedMessageCharacterId, throttledGenerateExpression]);
 
   useEffect(() => {
     if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
@@ -299,9 +373,10 @@ const WidgetExpressions = () => {
       chatTemplateId: tempChatTemplateId,
       throttleInterval: tempThrottleInterval,
       disableLogs: tempDisableLogs,
+      imageObjectFit: tempImageObjectFit,
     }));
     setIsSettingsOpen(false);
-  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt, tempChatTemplateId, tempThrottleInterval, tempDisableLogs]);
+  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt, tempChatTemplateId, tempThrottleInterval, tempDisableLogs, tempImageObjectFit]);
 
   // Function to get expression for a character (stable via useCallback)
   const getCharacterExpression = useCallback(
@@ -316,6 +391,51 @@ const WidgetExpressions = () => {
   const displayCharacter = useMemo(() => {
     return (lastSpeakerCharacter || singleCharacter || (activeCharacters && activeCharacters.length > 0 ? activeCharacters[0] : null)) as Character | null;
   }, [lastSpeakerCharacter, singleCharacter, activeCharacters]);
+
+  const displayExpression = useMemo(() => {
+    if (!displayCharacter) {
+      return null;
+    }
+    return getCharacterExpression(displayCharacter.id);
+  }, [displayCharacter, getCharacterExpression]);
+
+  const imageObjectFit = expressionSettings.imageObjectFit ?? "cover";
+  const imageObjectFitClass = useMemo(() => {
+    switch (imageObjectFit) {
+      case "contain":
+        return "object-contain";
+      case "fill":
+        return "object-fill";
+      case "scale-down":
+        return "object-scale-down";
+      case "none":
+        return "object-none";
+      case "cover":
+      default:
+        return "object-cover";
+    }
+  }, [imageObjectFit]);
+
+  const selectedImageFitDescription = useMemo(() => {
+    const match = EXPRESSION_IMAGE_FIT_OPTIONS.find((option) => option.value === tempImageObjectFit);
+    return match?.helper ?? "";
+  }, [tempImageObjectFit]);
+
+  const expressionSourceLabel = useMemo(() => {
+    if (!displayCharacter) {
+      return "Select a character to see their expression details.";
+    }
+    if (selectedText && displayCharacter.id === selectedMessageCharacterId) {
+      return "Expression generated from your selected text.";
+    }
+    if (displayCharacter.id === lastSpeakerId) {
+      return "Expression generated from the latest message.";
+    }
+    if (characterExpressions[displayCharacter.id]) {
+      return "Last known expression for this character.";
+    }
+    return "Awaiting expression data.";
+  }, [displayCharacter, selectedText, selectedMessageCharacterId, lastSpeakerId, characterExpressions]);
 
   // Fill entire available space - using flex-1 to ensure the component properly fills available space in any container
   return (
@@ -333,23 +453,12 @@ const WidgetExpressions = () => {
                         key={(expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id]) as string}
                         src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
                         alt={displayCharacter.name}
-                        className="w-full h-full object-cover transition-opacity duration-200 ease-out opacity-100"
+                        className={cn("w-full h-full transition-opacity duration-200 ease-out opacity-100", imageObjectFitClass)}
                       />
                       <AvatarFallback>
                         <Loader2Icon className="w-[50%] h-[50%] animate-spin" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-center">
-                      <p className="text-sm font-medium text-primary-foreground drop-shadow-md">
-                        {/* Add visual indicator for selected text */}
-
-                        {displayCharacter.name}
-                        {/* Show expression if it's the last speaker OR if text was selected for this character */}
-                        {(displayCharacter.id === lastSpeakerId || (selectedText && displayCharacter.id === selectedMessageCharacterId)) && (
-                          <span className="block text-sm font-normal text-primary-foreground/90 mt-0.5">{getCharacterExpression(displayCharacter.id)}</span>
-                        )}
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>
@@ -370,15 +479,16 @@ const WidgetExpressions = () => {
           <div className="flex items-center justify-between rounded-md border bg-muted/40 px-2 py-1 shadow-sm">
             <div className="flex items-center gap-2">
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="xs"
+                className="px-1"
                 onClick={() => generateExpression()}
                 disabled={!expressionSettings.chatTemplateId || (!selectedText && !lastSpeakerId)}
                 aria-label={selectedText ? "Generate expression from selection" : "Generate expression for current speaker"}
                 title={selectedText ? "Generate from selection" : "Generate for speaker"}
               >
-                <RefreshCw className="h-4 w-4" />
-                <span className="ml-1 hidden sm:inline text-xs">Generate</span>
+                <RefreshCw className="!h-3 !w-3" />
+                <span className="ml-0.2 hidden sm:inline text-xs">Generate</span>
               </Button>
 
               <Button
@@ -390,17 +500,41 @@ const WidgetExpressions = () => {
                 aria-label={autoRefreshEnabled ? "Disable auto-refresh" : "Enable auto-refresh"}
                 title={autoRefreshEnabled ? "Auto-refresh on" : "Auto-refresh off"}
               >
-                {autoRefreshEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                <span className="ml-1 hidden sm:inline text-xs">Auto</span>
+                {autoRefreshEnabled ? <Pause className="!h-3 !w-3" /> : <Play className="!h-3 !w-3" />}
+                <span className="ml-0.2 hidden sm:inline text-xs">Auto</span>
               </Button>
             </div>
 
             <div className="flex items-center gap-1">
+              {displayCharacter ? (
+                <HoverCard openDelay={200}>
+                  <HoverCardTrigger asChild>
+                    <Button variant="ghost" size="xs" className="w-auto" title="View current character expression" aria-label="View current character expression">
+                      <Smile className="h-4 w-4" />
+                      <span className="ml-0.2 hidden sm:inline text-xs">Details</span>
+                    </Button>
+                  </HoverCardTrigger>
+                  <HoverCardContent align="end" className="w-56">
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{displayCharacter.name}</p>
+                        <p className="text-xs font-medium text-foreground">{formatExpressionLabel(displayExpression)}</p>
+                        <p className="text-[11px] text-muted-foreground leading-tight">{expressionSourceLabel}</p>
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              ) : (
+                <Button variant="ghost" size="xs" className="w-auto" disabled>
+                  <Smile className="h-4 w-4" />
+                  <span className="ml-0.2 hidden sm:inline text-xs">Details</span>
+                </Button>
+              )}
               <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="xs" className="w-auto" title="Configure Prompts" aria-label="Open expression settings">
-                    <Settings size={1} />
-                    <span className="ml-1 hidden sm:inline text-xs">Settings</span>
+                    <Settings />
+                    <span className="ml-0.2 hidden sm:inline text-xs">Settings</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent size="window" className="max-h-[85vh] overflow-hidden">
@@ -429,7 +563,7 @@ const WidgetExpressions = () => {
                     </TabsList>
 
                     <DialogBody>
-                      <TabsContent value="basic" className="space-y-3 mt-2">
+                      <TabsContent value="basic" className="space-y-3 my-2">
                         <div className="space-y-4">
                           <div className="grid gap-2">
                             <Label htmlFor="request-prompt">User Prompt (Request)</Label>
@@ -448,7 +582,7 @@ const WidgetExpressions = () => {
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="template" className="space-y-3 mt-2">
+                      <TabsContent value="template" className="space-y-3 my-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label htmlFor="templateId">Chat Template</Label>
@@ -473,10 +607,13 @@ const WidgetExpressions = () => {
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="advanced" className="space-y-3 mt-2">
+                      <TabsContent value="advanced" className="space-y-3 my-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="throttle-interval">Auto Refresh Interval (ms)</Label>
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor="throttle-interval">Auto Refresh Interval (ms)</Label>
+                              <HelpTooltip>How often auto mode updates expressions during streaming. Default: 8000ms (8 seconds).</HelpTooltip>
+                            </div>
                             <Input
                               id="throttle-interval"
                               type="number"
@@ -487,14 +624,40 @@ const WidgetExpressions = () => {
                               onChange={(e) => setTempThrottleInterval(Number(e.target.value))}
                               className="h-8"
                             />
-                            <p className="text-xs text-muted-foreground">How often auto mode will update expressions during streaming. Default: 8000ms (8 seconds)</p>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="disable-logs">Disable Logs</Label>
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor="disable-logs">Disable Logs</Label>
+                              <HelpTooltip>Disable logging for background inference operations.</HelpTooltip>
+                            </div>
                             <div className="flex items-center space-x-2 h-8">
                               <Switch id="disable-logs" checked={tempDisableLogs} onCheckedChange={setTempDisableLogs} />
                             </div>
-                            <p className="text-xs text-muted-foreground">Disable logging for background inference operations</p>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor="image-object-fit" className="flex items-center gap-1">
+                                <ImageIcon className="h-3 w-3 text-muted-foreground" />
+                                <span>Image Fit Mode</span>
+                              </Label>
+                              {selectedImageFitDescription ? (
+                                <HelpTooltip>{selectedImageFitDescription}</HelpTooltip>
+                              ) : (
+                                <HelpTooltip>Choose how expression images scale within the avatar frame.</HelpTooltip>
+                              )}
+                            </div>
+                            <Select value={tempImageObjectFit} onValueChange={(value) => setTempImageObjectFit(value as ExpressionImageFit)}>
+                              <SelectTrigger id="image-object-fit" className="h-8">
+                                <SelectValue placeholder="Select image fit" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {EXPRESSION_IMAGE_FIT_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </TabsContent>

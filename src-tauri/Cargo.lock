@@ -3538,7 +3538,7 @@ dependencies = [
 
 [[package]]
 name = "narratrix"
-version = "0.12.7"
+version = "0.12.8"
 dependencies = [
  "aes-gcm",
  "anyhow",
