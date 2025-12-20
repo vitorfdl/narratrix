@@ -225,7 +225,7 @@ const MessageItem = ({
     return cn(
       MESSAGE_BASE_CLASSES.markdown,
       isEditingID !== message.id ? "bg-transparent border-none" : STATE_CLASSES.editing,
-      isStreaming && "animate-pulse duration-500",
+      isStreaming && "",
       message.type === "system" && "text-left",
       isDisabled && "line-through decoration-destructive decoration-2 text-muted-foreground/70",
     );

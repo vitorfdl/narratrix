@@ -13,8 +13,6 @@ import {
 import { Engine } from "@/schema/model-manifest-schema";
 import { callProviderConverseEndpoint } from "@/services/ai-providers/start-inference";
 import type { AIEvent, AIStreamPayload } from "@/services/ai-providers/types/ai-event.type";
-import type { AIProviderParams, InternalAIParameters, OpenAIToolDefinition, ToolSettings } from "@/services/ai-providers/types/request.type";
-import { parseEngineParameters } from "@/services/inference/formatter/parse-engine-parameters";
 
 import { useConsoleStoreActions } from "./consoleStore";
 
@@ -63,33 +61,6 @@ interface ConcurrencyState {
 }
 
 const MAX_COMPLETED_AGE_MS = 10 * 60 * 1000; // 10 minutes
-
-const toAIProviderParams = (modelSpecs: ModelSpecs): AIProviderParams => ({
-  id: modelSpecs.id,
-  model_type: modelSpecs.model_type === "completion" ? "completion" : "chat",
-  engine: modelSpecs.engine as AIProviderParams["engine"],
-  config: modelSpecs.config,
-});
-
-const toToolSettings = (engine: string, tools?: InferenceToolDefinition[]): ToolSettings | undefined => {
-  if (!tools || tools.length === 0) {
-    return undefined;
-  }
-
-  if (engine === "openai") {
-    const formattedTools: OpenAIToolDefinition[] = tools.map((tool) => ({
-      type: "function",
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters || undefined,
-      },
-    }));
-    return { tools: formattedTools };
-  }
-
-  return undefined;
-};
 
 const createStreamingResult = (payload: AIStreamPayload, state: RequestRuntimeState) => ({
   text: payload.text,
@@ -400,19 +371,6 @@ export function useInference(options: UseInferenceOptions = {}) {
         });
       }
 
-      const providerParams = toAIProviderParams(modelSpecs);
-      const toolSettings = toToolSettings(modelSpecs.engine, tools);
-
-      const internalParams: InternalAIParameters = {
-        model: modelSpecs.config.model as string | undefined,
-        parameters: parameters,
-        max_response_tokens: parameters?.max_response_tokens as number | undefined,
-        system_message: systemPrompt,
-        messages,
-        stream,
-        tool_settings: toolSettings,
-      };
-
       const executor = async () => {
         const runtime = runtimeStateRef.current[requestId];
         if (!runtime) {
@@ -422,7 +380,7 @@ export function useInference(options: UseInferenceOptions = {}) {
         const event = createEvent(requestId);
 
         try {
-          await callProviderConverseEndpoint(event, providerParams, internalParams);
+          await callProviderConverseEndpoint(event, params);
 
           if (runtime.cancelled) {
             handleCancellation(requestId);
@@ -498,3 +456,5 @@ export function useInference(options: UseInferenceOptions = {}) {
     },
   };
 }
+
+export type { InferenceParams };

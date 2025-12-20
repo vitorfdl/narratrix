@@ -480,7 +480,7 @@ const WidgetMessages: React.FC = () => {
         const showMidLayer = actualIndex > 0 && !message.disabled && actualIndex > 0 && messages[actualIndex - 1] && !messages[actualIndex - 1].disabled;
 
         return (
-          <div key={`message-wrapper-${message.id}`} className={MESSAGE_GROUP_STYLES}>
+          <div key={`message-wrapper-${message.id}-${index}`} className={MESSAGE_GROUP_STYLES}>
             {/* Add MidMessageLayerControl before each message except the first */}
             {showMidLayer && index > 0 && <MidMessageLayerWrapper messageBefore={messages[actualIndex - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
 

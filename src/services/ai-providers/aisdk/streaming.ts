@@ -1,8 +1,6 @@
-import { type LanguageModel, ModelMessage, stepCountIs, streamText } from "ai";
+import { stepCountIs, streamText } from "ai";
 import { FinalParams } from "../start-inference";
 import type { AIEvent } from "../types/ai-event.type";
-import type { InternalAIParameters } from "../types/request.type";
-import { convertToolsToAISDK } from "./convert-tools";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -39,7 +37,7 @@ async function streamResponse(event: AIEvent, params: FinalParams): Promise<stri
   let fullText = "";
 
   try {
-    const { textStream } = await streamText({
+    const { textStream } = streamText({
       ...params,
       stopWhen: stepCountIs(15),
       abortSignal: abortController.signal,
@@ -57,7 +55,6 @@ async function streamResponse(event: AIEvent, params: FinalParams): Promise<stri
       // Direct streaming
       event.sendStream({
         text: textPart,
-        fullResponse: fullText,
       });
     }
 

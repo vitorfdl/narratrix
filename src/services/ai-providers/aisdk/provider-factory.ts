@@ -3,20 +3,27 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { decryptApiKey } from "@/commands/security";
-import { AIProviderParams } from "../types/request.type";
+import { ModelSpecs } from "@/schema/inference-engine-schema";
 
-async function getAISDKModel(modelProvider: AIProviderParams, modelName?: string) {
+async function getAISDKModel(modelProvider: ModelSpecs) {
   const engineName = modelProvider.engine;
   const authParams = modelProvider.config;
 
-  if (!modelName) {
+  const modelName = modelProvider.config.model;
+  if (!modelName && engineName !== "openai_compatible") {
     throw new Error("Model name is required");
   }
 
+  const fetchOverride = (input: RequestInfo | URL, init?: RequestInit) => tauriFetch(input, init);
+
   if (engineName === "google") {
     const APIKey = authParams?.api_key ? await decryptApiKey(authParams?.api_key) : "None";
-    const google = createGoogleGenerativeAI({ apiKey: APIKey });
+    const google = createGoogleGenerativeAI({
+      apiKey: APIKey,
+      fetch: fetchOverride,
+    });
     return google(modelName);
   }
 
@@ -35,6 +42,7 @@ async function getAISDKModel(modelProvider: AIProviderParams, modelName?: string
     const anthropic = createAnthropic({
       apiKey: APIKey,
       baseURL: authParams?.base_url,
+      fetch: fetchOverride,
     });
     return anthropic(modelName);
   }
@@ -44,6 +52,7 @@ async function getAISDKModel(modelProvider: AIProviderParams, modelName?: string
     const openrouter = createOpenRouter({
       apiKey: APIKey,
       baseURL: authParams?.base_url || "https://openrouter.ai/api/v1",
+      fetch: fetchOverride,
     });
 
     if (modelProvider.model_type === "chat") {
@@ -58,12 +67,13 @@ async function getAISDKModel(modelProvider: AIProviderParams, modelName?: string
     const openai = createOpenAI({
       apiKey: APIKey,
       baseURL: authParams?.base_url,
+      fetch: fetchOverride,
     });
 
     if (modelProvider.model_type === "chat") {
-      return openai.chat(modelName);
+      return openai.chat(modelName || "any");
     } else {
-      return openai.completion(modelName);
+      return openai.completion(modelName || "any");
     }
   }
 
@@ -73,6 +83,7 @@ async function getAISDKModel(modelProvider: AIProviderParams, modelName?: string
     apiKey: APIKey,
     organization: authParams?.apiOrg,
     baseURL: authParams?.base_url,
+    fetch: fetchOverride,
   });
 
   if (modelProvider.model_type === "chat") {

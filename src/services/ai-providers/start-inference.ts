@@ -1,4 +1,6 @@
 import { CallSettings, LanguageModel, Prompt, ToolSet } from "ai";
+import { InferenceParams } from "@/hooks/useInference";
+import { Engine } from "@/schema/model-manifest-schema";
 import { toCoreMessages } from "./aisdk/convert-messages";
 import { convertToolsToAISDK } from "./aisdk/convert-tools";
 import { generateResponse } from "./aisdk/non-streaming";
@@ -6,7 +8,6 @@ import { getAISDKModel } from "./aisdk/provider-factory";
 import { getProviderOptions } from "./aisdk/provider-options";
 import { streamResponse } from "./aisdk/streaming";
 import type { AIEvent } from "./types/ai-event.type";
-import type { AIProviderParams, InternalAIParameters } from "./types/request.type";
 
 type FinalParams = CallSettings & Prompt & { tools?: ToolSet } & { providerOptions?: Record<string, any>; model: LanguageModel };
 
@@ -19,11 +20,10 @@ const DEFAULT_MAX_TOKENS = 4000;
  * @param params - The inference parameters (messages, model name, tools, etc).
  * @returns A Promise that resolves to the generated response text.
  */
-async function callProviderConverseEndpoint(event: AIEvent, modelProvider: AIProviderParams, params: Partial<InternalAIParameters> = {}) {
-  // console.log("callProviderConverseEndpoint", event, modelProvider, params);
-
+async function callProviderConverseEndpoint(event: AIEvent, params: InferenceParams) {
   // 1. Create Model Instance
-  const model = await getAISDKModel(modelProvider, params.model);
+  const model = await getAISDKModel(params.modelSpecs);
+  const isChatModel = params.modelSpecs.model_type === "chat";
 
   // 2. Convert Messages
   // params.messages is InferenceMessage[]
@@ -31,37 +31,40 @@ async function callProviderConverseEndpoint(event: AIEvent, modelProvider: AIPro
   if (!params.messages) {
     throw new Error("No messages provided");
   }
-  const messages = toCoreMessages(modelProvider.model_type !== "chat" ? params.system_message : undefined, params.messages);
-  const tools = params.tool_settings?.tools ? convertToolsToAISDK(params.tool_settings?.tools) : undefined;
+  const messages = toCoreMessages(isChatModel ? params.systemPrompt : undefined, params.messages);
+  const tools = params.tools ? convertToolsToAISDK(params.tools) : undefined;
 
   // 3. Prepare Options
   // Extract provider specific options from params.parameters
-  const providerOptions = getProviderOptions(modelProvider.engine, params.parameters || {});
+  const providerOptions = getProviderOptions(params.modelSpecs.engine as Engine, params.parameters || {});
 
+  const parameters = params.parameters as Record<string, any>;
   // Ensure defaults
   const finalParams: FinalParams = {
     model,
     messages,
     tools,
-    system: modelProvider.model_type === "chat" ? params.system_message : undefined,
+    system: params.systemPrompt,
     providerOptions,
-    maxOutputTokens: params.max_response_tokens || DEFAULT_MAX_TOKENS,
-    temperature: params.parameters?.temperature,
-    topP: params.parameters?.top_p,
-    topK: params.parameters?.top_k,
-    seed: params.parameters?.seed,
-    stopSequences: params.parameters?.stop[0] ? params.parameters?.stop : undefined,
-    frequencyPenalty: params.parameters?.frequency_penalty,
-    presencePenalty: params.parameters?.presence_penalty,
+    maxOutputTokens: parameters.max_tokens || DEFAULT_MAX_TOKENS,
+    temperature: parameters.temperature,
+    topP: parameters.top_p,
+    topK: parameters.top_k,
+    seed: parameters.seed,
+    stopSequences: parameters.stop?.[0] ? parameters.stop : undefined,
+    frequencyPenalty: parameters.frequency_penalty,
+    presencePenalty: parameters.presence_penalty,
   };
 
-  console.log("finalParams", finalParams);
+  // console.log("finalParams", finalParams);
 
   // 4. Execute
   if (params.stream) {
     return streamResponse(event, finalParams);
   } else {
-    return generateResponse(finalParams);
+    const response = await generateResponse(finalParams);
+    event.finish({ fullResponse: response });
+    return response;
   }
 }
 

@@ -2,19 +2,22 @@ import { Engine } from "@/schema/model-manifest-schema";
 import { getAWSBedrockProviderOptions } from "./aws-bedrock";
 import { getGeminiProviderOptions } from "./gemini";
 import { getOpenAIProviderOptions } from "./openai";
+import { getOpenAICompatibleProviderOptions } from "./openai-compatible";
 
 function getProviderOptions(engine: Engine, parameters: Record<string, any>) {
   switch (engine) {
     case "google":
-      return getGeminiProviderOptions(parameters);
+      return { google: getGeminiProviderOptions(parameters) };
     case "aws_bedrock":
-      return getAWSBedrockProviderOptions(parameters);
+      return { bedrock: getAWSBedrockProviderOptions(parameters) };
     case "openai":
-      return getOpenAIProviderOptions(parameters);
+      return { openai: getOpenAIProviderOptions(parameters) };
     // case "openrouter":
-    //   return getOpenRouterProviderOptions(parameters);
+    //   return { openrouter: getOpenRouterProviderOptions(parameters) };
     // case "anthropic":
-    //   return getAnthropicProviderOptions(parameters);
+    //   return { anthropic: getAnthropicProviderOptions(parameters) };
+    case "openai_compatible":
+      return { openai: getOpenAICompatibleProviderOptions(parameters) };
     default:
       return {};
   }
