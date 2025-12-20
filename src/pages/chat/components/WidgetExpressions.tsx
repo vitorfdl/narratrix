@@ -1,6 +1,5 @@
-import { Clock, FileText, Image as ImageIcon, Loader2Icon, MessageCircle, Pause, Play, RefreshCw, Settings, Smile, User } from "lucide-react";
+import { Clock, FileText, Image as ImageIcon, Loader2Icon, MessageCircle, Pause, Play, RefreshCw, Settings, Smile, User, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { useThrottledCallback } from "use-debounce";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -129,6 +128,7 @@ const WidgetExpressions = () => {
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
   // const [animateLastSpeaker, setAnimateLastSpeaker] = useState(false);
   const [characterExpressions, setCharacterExpressions] = useState<Record<string, string>>({});
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const characterExpressionsRef = useRef<Record<string, string>>({});
   const lastMessageContentRef = useRef<string>(""); // Ref for latest message content
   const lastSpeakerIdRef = useRef<string | undefined>(undefined); // Ref for latest speaker ID
@@ -275,9 +275,6 @@ const WidgetExpressions = () => {
           prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
           systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
           disableLogs: expressionSettings.disableLogs || false,
-        }).catch((error) => {
-          toast.error(`Error generating expression for ${targetCharacter.name}: ${error}`);
-          return "neutral";
         });
 
         const rawExpression = expressionResult?.trim().split("\n")[0].split(" ")[0].toLowerCase() || "";
@@ -287,14 +284,15 @@ const WidgetExpressions = () => {
           ...prev,
           [currentSpeakerId]: finalExpression,
         }));
+        setConnectionError(null);
         // Clear selection after successful generation
         // if (selectedText) {
         //   clearSelection();
         // }
       } catch (error) {
-        toast.error(`Error generating expression for ${targetCharacter.name}:`, {
-          description: error instanceof Error ? error.message : "An unknown error occurred",
-        });
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        const formattedMessage = `Expression generation failed for ${targetCharacter.name}: ${errorMessage}`;
+        setConnectionError(formattedMessage);
         console.error(`Error generating expression for ${targetCharacter.name}:`, error);
         setCharacterExpressions((prev) => ({
           ...prev,
@@ -506,7 +504,25 @@ const WidgetExpressions = () => {
             </div>
 
             <div className="flex items-center gap-1">
-              {displayCharacter ? (
+              {connectionError ? (
+                <HoverCard openDelay={200} closeDelay={150}>
+                  <HoverCardTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="w-auto text-destructive focus-visible:ring-destructive"
+                      title="Expression service connection error"
+                      aria-label="Expression service connection error"
+                    >
+                      <WifiOff className="h-4 w-4" aria-hidden="true" />
+                      <span className="ml-0.2 hidden sm:inline text-xs">Connection</span>
+                    </Button>
+                  </HoverCardTrigger>
+                  <HoverCardContent align="end" className="w-56 text-sm">
+                    {connectionError}
+                  </HoverCardContent>
+                </HoverCard>
+              ) : displayCharacter ? (
                 <HoverCard openDelay={200}>
                   <HoverCardTrigger asChild>
                     <Button variant="ghost" size="xs" className="w-auto" title="View current character expression" aria-label="View current character expression">

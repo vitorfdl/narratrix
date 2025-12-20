@@ -39,6 +39,7 @@ export interface WorkflowDeps {
     systemPrompt?: string;
     parameters?: Record<string, any>;
     stream?: boolean;
+    toolset?: WorkflowToolDefinition[];
   }) => Promise<string | null>;
 }
 

@@ -57,7 +57,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const { updateChatTemplate } = useChatTemplateActions();
   const { fetchFormatTemplates, updateFormatTemplate } = useTemplateActions();
   const models = useModels();
-  const { updateModel } = useModelsActions();
+  const { updateModel, fetchModels } = useModelsActions();
   const formatTemplates = useFormatTemplateList();
   const lorebooks = useLorebooks();
   const participants = useCurrentChatParticipants();
@@ -778,6 +778,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     } finally {
       await fetchFormatTemplates(profileId);
       await loadLorebooks(profileId);
+      await fetchModels({ profile_id: profileId });
     }
   };
 

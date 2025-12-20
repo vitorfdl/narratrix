@@ -23,18 +23,10 @@
       "required": true,
       "field_type": "string",
       "hints": [
-        "gemini-2.5-pro-exp-03-25",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-thinking-exp"
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-3-pro-preview"
       ]
-    },
-    {
-      "key": "base_url",
-      "label": "Base URL",
-      "placeholder": "The base URL of the Google Gemini API",
-      "required": true,
-      "default": "https://generativelanguage.googleapis.com/v1beta",
-      "field_type": "url"
     }
   ]
 }

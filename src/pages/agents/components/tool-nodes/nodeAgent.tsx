@@ -93,7 +93,15 @@ export const executeAgentNode: NodeExecutor = async (node, inputs, _ctx, _agent,
       engine: manifest.engine as string,
     };
 
-    const result = await deps.runInference({ messages: inferenceMessages, modelSpecs, systemPrompt: formattedSystemPrompt, parameters: fixedParameters, stream: false });
+    const toolset = Array.isArray(inputs.toolset) ? inputs.toolset : [];
+    const result = await deps.runInference({
+      messages: inferenceMessages,
+      modelSpecs,
+      systemPrompt: formattedSystemPrompt,
+      parameters: fixedParameters,
+      stream: false,
+      toolset,
+    });
     if (typeof result === "string" && result.length > 0) {
       return { success: true, value: result };
     }

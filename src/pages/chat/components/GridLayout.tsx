@@ -87,7 +87,7 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
 
   // Get visible and hidden widgets
   const visibleWidgets = positions.filter((pos) => !pos.hidden);
-  const hiddenWidgets = positions.filter((pos) => pos.hidden && !["database", "memory", "scripts"].includes(pos.id));
+  const hiddenWidgets = positions.filter((pos) => pos.hidden && !["database", "scripts"].includes(pos.id));
 
   // Utility to sanitize widget positions for all breakpoints
   function sanitizeWidgetPositions(positions: GridPosition[], maxRows: number, columns: Record<string, number>): GridPosition[] {

@@ -3,20 +3,26 @@ import { uuidUtils } from "./utils-schema";
 
 // Types for inference messages
 const InferenceToolCallSchema = z.object({
+  id: z.string().optional(),
   name: z.string(),
-  arguments: z.record(z.any()),
+  arguments: z.union([z.string(), z.record(z.any())]),
+});
+
+const InferenceToolDefinitionSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  parameters: z.record(z.any()).optional(),
 });
 
 type InferenceToolCall = z.infer<typeof InferenceToolCallSchema>;
 
+type InferenceToolDefinition = z.infer<typeof InferenceToolDefinitionSchema>;
+
 const InferenceMessageSchema = z.object({
-  role: z.string().refine((val) => val === "assistant" || val === "user", {
-    message: "Role must be either 'assistant' or 'user'",
-  }),
+  role: z.enum(["assistant", "user", "tool"]),
   text: z.string(),
-  system: z.string().optional(),
   tool_calls: z.array(InferenceToolCallSchema).optional(),
-  thinking: z.string().optional(),
+  tool_call_id: z.string().optional(),
 });
 
 type InferenceMessage = z.infer<typeof InferenceMessageSchema>;
@@ -28,6 +34,7 @@ const InferenceRequestSchema = z.object({
   system_prompt: z.string().optional(),
   parameters: z.record(z.any()),
   stream: z.boolean(),
+  tools: z.array(InferenceToolDefinitionSchema).optional(),
 });
 
 type InferenceRequest = z.infer<typeof InferenceRequestSchema>;
@@ -36,6 +43,7 @@ const StreamingResultSchema = z.object({
   text: z.string().optional(),
   reasoning: z.string().optional(),
   full_response: z.string().optional(),
+  tool_calls: z.array(InferenceToolCallSchema).optional(),
 });
 
 const InferenceResponseSchema = z.discriminatedUnion("status", [
@@ -80,6 +88,16 @@ const ModelSpecsSchema = z.object({
 
 type ModelSpecs = z.infer<typeof ModelSpecsSchema>;
 
-export { InferenceMessageSchema, InferenceRequestSchema, InferenceResponseSchema, InferenceToolCallSchema, ModelSpecsSchema };
+export { InferenceMessageSchema, InferenceRequestSchema, InferenceResponseSchema, InferenceToolCallSchema, InferenceToolDefinitionSchema, ModelSpecsSchema };
 
-export type { InferenceCancelledResponse, InferenceCompletedResponse, InferenceMessage, InferenceRequest, InferenceResponse, InferenceStreamingResponse, InferenceToolCall, ModelSpecs };
+export type {
+  InferenceCancelledResponse,
+  InferenceCompletedResponse,
+  InferenceMessage,
+  InferenceRequest,
+  InferenceResponse,
+  InferenceStreamingResponse,
+  InferenceToolCall,
+  InferenceToolDefinition,
+  ModelSpecs,
+};

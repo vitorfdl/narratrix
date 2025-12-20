@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { create } from "zustand";
 import { ChatChapter } from "@/schema/chat-chapter-schema";
+import { ChatMemory, CreateChatMemoryParams, UpdateChatMemoryParams } from "@/schema/chat-memory-schema";
 import { ChatMessage, ChatMessageType, CreateChatMessageParams, UpdateChatMessageParams } from "@/schema/chat-message-schema";
 import { Chat, ChatParticipant, CreateChatParams } from "@/schema/chat-schema";
 import {
@@ -10,6 +11,7 @@ import {
   getChaptersByChatId,
   getNextChapterSequence,
 } from "@/services/chat-chapter-service";
+import { createChatMemory as apiCreateChatMemory, deleteChatMemory as apiDeleteChatMemory, updateChatMemory as apiUpdateChatMemory, getShortTermMemories } from "@/services/chat-memory-service";
 import {
   createChatMessage as apiCreateChatMessage,
   deleteChatMessage as apiDeleteChatMessage,
@@ -31,11 +33,15 @@ type AddChatChapterParams = Omit<ChatChapter, "id" | "chat_id" | "created_at" | 
   sequence?: number;
 };
 
+// Create a type for adding memories through the store
+type AddChatMemoryParams = Omit<CreateChatMemoryParams, "chat_id">;
+
 interface chatState {
   chatList: Pick<Chat, "id" | "name">[];
   selectedChat: Chat;
   selectedChatMessages: ChatMessage[];
   selectedChatChapters: ChatChapter[];
+  selectedChatMemories: ChatMemory[];
   participantIndex: number;
   isLoading: boolean;
   error: string | null;
@@ -56,6 +62,18 @@ interface chatState {
     updateChatChapter: (chapterId: string, chapter: Partial<ChatChapter>) => Promise<ChatChapter | null>;
     fetchChatChapters: (chatId: string) => Promise<ChatChapter[]>;
     switchChatChapter: (chapterId: string) => Promise<void>;
+
+    // Memories
+    addChatMemory: (memory: AddChatMemoryParams) => Promise<ChatMemory>;
+    deleteChatMemory: (memoryId: string) => Promise<boolean>;
+    updateChatMemory: (memoryId: string, memory: Partial<UpdateChatMemoryParams>) => Promise<ChatMemory | null>;
+    fetchChatMemories: (chatId?: string) => Promise<ChatMemory[]>;
+    refreshMemories: () => Promise<void>;
+
+    // High-level memory actions
+    updateShortMemory: (scope: "user" | string, content: string) => Promise<void>;
+    getShortMemoryContent: (scope: "user" | string) => string;
+    getShortMemoryScopes: () => Array<{ scope: "user" | string; label: string; avatarUrl?: string }>;
 
     // Participants
     addParticipant: (participant: ChatParticipant) => Promise<void>;
@@ -82,6 +100,7 @@ export const useChatStore = create<chatState>((set, get) => ({
   selectedChatMessages: [],
   selectedChatReasonings: [],
   selectedChatChapters: [],
+  selectedChatMemories: [],
   participantIndex: 0,
   isLoading: false,
   error: null,
@@ -120,10 +139,14 @@ export const useChatStore = create<chatState>((set, get) => ({
         // Fetch chapters for the selected chat
         const chapters = await getChaptersByChatId(id);
 
+        // Fetch short-term memories for the current chapter only
+        const memories = chat.active_chapter_id ? await getShortTermMemories(id, chat.active_chapter_id) : [];
+
         set({
           selectedChat: chat,
           selectedChatMessages: messages,
           selectedChatChapters: chapters,
+          selectedChatMemories: memories,
           participantIndex: 0,
           isLoading: false,
         });
@@ -235,6 +258,7 @@ export const useChatStore = create<chatState>((set, get) => ({
           selectedChat: isSelectedChat ? ({} as Chat) : get().selectedChat,
           selectedChatMessages: isSelectedChat ? [] : get().selectedChatMessages,
           selectedChatChapters: isSelectedChat ? [] : get().selectedChatChapters,
+          selectedChatMemories: isSelectedChat ? [] : get().selectedChatMemories,
           participantIndex: 0,
           isLoading: false,
         });
@@ -393,6 +417,7 @@ export const useChatStore = create<chatState>((set, get) => ({
         selectedChat: {} as Chat,
         selectedChatMessages: [],
         selectedChatChapters: [],
+        selectedChatMemories: [],
         participantIndex: 0,
       });
     },
@@ -699,9 +724,13 @@ export const useChatStore = create<chatState>((set, get) => ({
         // Fetch messages for the new chapter
         const messages = await getChatMessagesByChatId(currentChat.id, chapterId);
 
-        // Update the messages in the store
+        // Fetch short-term memories for the new chapter
+        const memories = await getShortTermMemories(currentChat.id, chapterId);
+
+        // Update the messages and memories in the store
         set({
           selectedChatMessages: messages,
+          selectedChatMemories: memories,
           participantIndex: 0,
           isLoading: false,
         });
@@ -713,6 +742,207 @@ export const useChatStore = create<chatState>((set, get) => ({
         });
         throw error;
       }
+    },
+
+    // Memory implementations
+    addChatMemory: async (memoryData: AddChatMemoryParams) => {
+      try {
+        set({ isLoading: true, error: null });
+        const currentChat = get().selectedChat;
+
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        const newMemory = await apiCreateChatMemory({
+          ...memoryData,
+          chat_id: currentChat.id,
+        });
+
+        set((state) => ({
+          selectedChatMemories: [...state.selectedChatMemories, newMemory],
+          isLoading: false,
+        }));
+
+        return newMemory;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to add memory");
+        set({
+          error: error instanceof Error ? error.message : "Failed to add memory",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    deleteChatMemory: async (memoryId: string) => {
+      try {
+        set({ isLoading: true, error: null });
+
+        const success = await apiDeleteChatMemory(memoryId);
+
+        if (!success) {
+          throw new Error(`Failed to delete memory with ID ${memoryId}`);
+        }
+
+        set((state) => ({
+          selectedChatMemories: state.selectedChatMemories.filter((memory) => memory.id !== memoryId),
+          isLoading: false,
+        }));
+
+        return true;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to delete memory");
+        set({
+          error: error instanceof Error ? error.message : "Failed to delete memory",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    updateChatMemory: async (memoryId: string, memoryData: Partial<UpdateChatMemoryParams>) => {
+      try {
+        set({ isLoading: true, error: null });
+
+        const updatedMemory = await apiUpdateChatMemory(memoryId, memoryData);
+
+        if (!updatedMemory) {
+          throw new Error(`Failed to update memory with ID ${memoryId}`);
+        }
+
+        set((state) => ({
+          selectedChatMemories: state.selectedChatMemories.map((memory) => (memory.id === updatedMemory.id ? updatedMemory : memory)),
+          isLoading: false,
+        }));
+
+        return updatedMemory;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to update memory");
+        set({
+          error: error instanceof Error ? error.message : "Failed to update memory",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    fetchChatMemories: async (chatId?: string) => {
+      try {
+        set({ isLoading: true, error: null });
+        const currentChat = get().selectedChat;
+        const targetChatId = chatId || currentChat?.id;
+        const activeChapterId = currentChat?.active_chapter_id;
+
+        if (!targetChatId) {
+          throw new Error("No chat selected");
+        }
+
+        // Fetch only short-term memories for the current chapter
+        const memories = activeChapterId ? await getShortTermMemories(targetChatId, activeChapterId) : [];
+
+        set({
+          selectedChatMemories: memories,
+          isLoading: false,
+        });
+
+        return memories;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to fetch chat memories");
+        set({
+          error: error instanceof Error ? error.message : "Failed to fetch chat memories",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    refreshMemories: async () => {
+      const currentChat = get().selectedChat;
+      if (currentChat?.id && currentChat.active_chapter_id) {
+        await get().actions.fetchChatMemories(currentChat.id);
+      }
+    },
+
+    // High-level memory actions
+    updateShortMemory: async (scope: "user" | string, content: string) => {
+      try {
+        const currentChat = get().selectedChat;
+        const activeChapterId = currentChat?.active_chapter_id;
+
+        if (!currentChat || !activeChapterId) {
+          throw new Error("No chat or chapter selected");
+        }
+
+        // Determine character_id based on scope
+        const characterId = scope === "user" ? null : scope;
+
+        // Find existing memory in selectedChatMemories
+        const existingMemory = get().selectedChatMemories.find((m) => (m.character_id === null && characterId === null) || m.character_id === characterId);
+
+        if (existingMemory) {
+          // Update existing memory without setting isLoading
+          const updatedMemory = await apiUpdateChatMemory(existingMemory.id, { content });
+
+          if (updatedMemory) {
+            // Update in store
+            set((state) => ({
+              selectedChatMemories: state.selectedChatMemories.map((m) => (m.id === existingMemory.id ? updatedMemory : m)),
+            }));
+          }
+        } else {
+          // Create new memory without setting isLoading
+          const newMemory = await apiCreateChatMemory({
+            chat_id: currentChat.id,
+            chapter_id: activeChapterId,
+            character_id: characterId,
+            content,
+          });
+
+          // Append to store
+          set((state) => ({
+            selectedChatMemories: [...state.selectedChatMemories, newMemory],
+          }));
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to update memory");
+        throw error;
+      }
+    },
+
+    getShortMemoryContent: (scope: "user" | string) => {
+      const characterId = scope === "user" ? null : scope;
+      const memory = get().selectedChatMemories.find((m) => (m.character_id === null && characterId === null) || m.character_id === characterId);
+      return memory?.content || "";
+    },
+
+    getShortMemoryScopes: () => {
+      const currentChat = get().selectedChat;
+      if (!currentChat) {
+        return [];
+      }
+
+      const scopes: Array<{ scope: "user" | string; label: string; avatarUrl?: string }> = [];
+
+      // Add user scope first
+      scopes.push({
+        scope: "user",
+        label: "You",
+        avatarUrl: undefined, // Will be handled in the component
+      });
+
+      // Add each participant (only their IDs are stored in participants)
+      if (currentChat.participants) {
+        for (const participant of currentChat.participants) {
+          scopes.push({
+            scope: participant.id,
+            label: "Participant", // Label will be resolved in component with character data
+            avatarUrl: undefined, // Avatar will be resolved in component with character data
+          });
+        }
+      }
+
+      return scopes;
     },
 
     // Participant index controls
@@ -754,7 +984,30 @@ export const useCurrentChatMessages = () => useChatStore((state) => state.select
 
 export const useCurrentChatParticipantIndex = () => useChatStore((state) => state.participantIndex);
 
+// Memory hooks
+export const useCurrentChatMemories = () => useChatStore((state) => state.selectedChatMemories);
+
+export const useCurrentChatLongTermMemories = () => useChatStore((state) => state.selectedChatMemories.filter((m) => m.chapter_id === null));
+
+export const useCurrentChatShortTermMemories = () =>
+  useChatStore((state) => {
+    const activeChapterId = state.selectedChat?.active_chapter_id;
+    return state.selectedChatMemories.filter((m) => m.chapter_id === activeChapterId);
+  });
+
+export const useCurrentChatMemoriesByCharacter = (characterId: string | null) => useChatStore((state) => state.selectedChatMemories.filter((m) => m.character_id === characterId));
+
 export const useChatList = () => useChatStore((state) => state.chatList);
 export const useChatActions = () => useChatStore((state) => state.actions);
 export const useChatLoading = () => useChatStore((state) => state.isLoading);
 export const useChatError = () => useChatStore((state) => state.error);
+
+// Memory action hooks
+export const useChatMemoryActions = () => {
+  const actions = useChatActions();
+  return {
+    updateShortMemory: actions.updateShortMemory,
+    getShortMemoryContent: actions.getShortMemoryContent,
+    getShortMemoryScopes: actions.getShortMemoryScopes,
+  };
+};

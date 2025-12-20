@@ -5,6 +5,7 @@
   "description": "Capability for the main window",
   "windows": ["main"],
   "permissions": [
+    "cors-fetch:default",
     "core:default",
     "fs:default",
     "fs:allow-write-file",
@@ -17,6 +18,20 @@
     "fs:allow-resource-read-recursive",
     "dialog:default",
     "opener:default",
+    {
+      "identifier": "http:allow-fetch",
+      "allow": [
+        { "url": "http://*:*" },
+        { "url": "https://*:*" }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "http://*:*" },
+        { "url": "https://*:*" }
+      ]
+    },
     {
       "identifier": "opener:allow-open-path",
       "allow": [
@@ -32,7 +47,13 @@
     "updater:allow-download-and-install",
     {
       "identifier": "fs:scope",
-      "allow": ["$RESOURCE/**/*", "$APPDATA/**/*", "$HOME/**/*", "$APPCONFIG/**/*", "$TEMP/**/*"]
+      "allow": [
+        "$RESOURCE/**/*",
+        "$APPDATA/**/*",
+        "$HOME/**/*",
+        "$APPCONFIG/**/*",
+        "$TEMP/**/*"
+      ]
     },
     "clipboard-manager:default",
     "clipboard-manager:allow-write-text"

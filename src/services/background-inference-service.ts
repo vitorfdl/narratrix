@@ -80,7 +80,7 @@ export function useBackgroundInference() {
         }
       }
     },
-    onError: (error, requestId) => {
+    onError: (error: any, requestId) => {
       if (!activeRequests.current[requestId]) {
         return;
       }

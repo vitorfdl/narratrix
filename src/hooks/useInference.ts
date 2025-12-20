@@ -1,11 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cancelInferenceRequest, listenForInferenceResponses, queueInferenceRequest } from "@/commands/inference";
-import type { InferenceCancelledResponse, InferenceCompletedResponse, InferenceMessage, InferenceResponse, InferenceStreamingResponse, ModelSpecs } from "@/schema/inference-engine-schema";
+
+import {
+  InferenceCancelledResponse,
+  InferenceCompletedResponse,
+  InferenceMessage,
+  InferenceResponse,
+  InferenceStreamingResponse,
+  InferenceToolCall,
+  InferenceToolDefinition,
+  ModelSpecs,
+} from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
+import { callProviderConverseEndpoint } from "@/services/ai-providers/start-inference";
+import type { AIEvent, AIStreamPayload } from "@/services/ai-providers/types/ai-event.type";
+import type { AIProviderParams, InternalAIParameters, OpenAIToolDefinition, ToolSettings } from "@/services/ai-providers/types/request.type";
 import { parseEngineParameters } from "@/services/inference/formatter/parse-engine-parameters";
+
 import { useConsoleStoreActions } from "./consoleStore";
 
-// Define types needed for inference
 type InferenceStatus = "idle" | "queued" | "streaming" | "completed" | "error" | "cancelled";
 
 interface InferenceRequestState {
@@ -19,7 +31,7 @@ interface InferenceRequestState {
 
 interface UseInferenceOptions {
   onComplete?: (response: InferenceCompletedResponse | InferenceCancelledResponse, requestId: string) => void;
-  onError?: (error: any, requestId: string) => void;
+  onError?: (error: unknown, requestId: string) => void;
   onStream?: (partialResponse: InferenceStreamingResponse, requestId: string) => void;
 }
 
@@ -27,233 +39,431 @@ interface InferenceParams {
   messages: InferenceMessage[];
   modelSpecs: ModelSpecs;
   systemPrompt?: string;
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
   stream?: boolean;
   requestId?: string;
   disableLogs?: boolean;
+  tools?: InferenceToolDefinition[];
 }
 
-// Global listener to ensure it's only initialized once
-let listenerInitialized = false;
-const globalListeners = new Set<(response: InferenceResponse) => void>();
-let unlisten: (() => Promise<void>) | null = null;
+interface RequestRuntimeState {
+  modelId: string;
+  accumulatedText: string;
+  accumulatedReasoning: string;
+  accumulatedFullResponse: string;
+  toolCalls: InferenceToolCall[];
+  abort?: () => void;
+  cancelled: boolean;
+  finished: boolean;
+}
 
-/**
- * Hook for managing inference requests
- */
+interface ConcurrencyState {
+  active: number;
+  queue: Array<() => void>;
+}
+
+const MAX_COMPLETED_AGE_MS = 10 * 60 * 1000; // 10 minutes
+
+const toAIProviderParams = (modelSpecs: ModelSpecs): AIProviderParams => ({
+  id: modelSpecs.id,
+  model_type: modelSpecs.model_type === "completion" ? "completion" : "chat",
+  engine: modelSpecs.engine as AIProviderParams["engine"],
+  config: modelSpecs.config,
+});
+
+const toToolSettings = (engine: string, tools?: InferenceToolDefinition[]): ToolSettings | undefined => {
+  if (!tools || tools.length === 0) {
+    return undefined;
+  }
+
+  if (engine === "openai") {
+    const formattedTools: OpenAIToolDefinition[] = tools.map((tool) => ({
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters || undefined,
+      },
+    }));
+    return { tools: formattedTools };
+  }
+
+  return undefined;
+};
+
+const createStreamingResult = (payload: AIStreamPayload, state: RequestRuntimeState) => ({
+  text: payload.text,
+  reasoning: payload.reasoning,
+  full_response: state.accumulatedFullResponse || undefined,
+  tool_calls: state.toolCalls.length > 0 ? state.toolCalls : undefined,
+});
+
+const mergeToolCalls = (existing: InferenceToolCall[], incoming?: InferenceToolCall[]): InferenceToolCall[] => {
+  if (!incoming || incoming.length === 0) {
+    return existing;
+  }
+
+  const callMap = new Map<string, InferenceToolCall>();
+  for (const call of existing) {
+    if (call.id) {
+      callMap.set(call.id, call);
+    }
+  }
+
+  for (const call of incoming) {
+    if (call.id) {
+      callMap.set(call.id, call);
+    } else {
+      callMap.set(`${call.name}-${callMap.size}`, call);
+    }
+  }
+
+  return Array.from(callMap.values());
+};
+
 export function useInference(options: UseInferenceOptions = {}) {
-  // Track all active requests in local state
   const [requests, setRequests] = useState<Record<string, InferenceRequestState>>({});
-
-  // Get console store actions for history tracking
   const consoleActions = useConsoleStoreActions();
 
-  // Use refs for callback options to avoid unnecessary effect triggers
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
-  // Track the last seen stream chunk for each request to avoid duplicates
-  const lastStreamChunks = useRef<Record<string, string>>({});
+  const runtimeStateRef = useRef<Record<string, RequestRuntimeState>>({});
+  const concurrencyRef = useRef<Record<string, ConcurrencyState>>({});
 
-  // Initialize global listener once
-  useEffect(() => {
-    const setupListener = async () => {
-      if (!listenerInitialized) {
-        try {
-          // Function to distribute events to all hooks
-          const handleInferenceResponse = (response: InferenceResponse) => {
-            globalListeners.forEach((listener) => {
-              listener(response);
-            });
-          };
-
-          unlisten = await listenForInferenceResponses(handleInferenceResponse);
-          listenerInitialized = true;
-
-          // Cleanup on window unload
-          window.addEventListener("beforeunload", () => {
-            if (unlisten) {
-              unlisten().catch(console.error);
-            }
-          });
-        } catch (error) {
-          console.error("Failed to initialize inference listener:", error);
-        }
-      }
-    };
-
-    setupListener();
+  const updateRequestState = useCallback((requestId: string, updater: (previous: InferenceRequestState | undefined) => InferenceRequestState) => {
+    setRequests((current) => {
+      const previous = current[requestId];
+      const next = updater(previous);
+      return {
+        ...current,
+        [requestId]: next,
+      };
+    });
   }, []);
 
-  // Register this hook's response handler
-  useEffect(() => {
-    const handleResponse = async (response: InferenceResponse) => {
-      const requestId = response.request_id;
+  const finalizeRequest = useCallback((requestId: string) => {
+    delete runtimeStateRef.current[requestId];
+  }, []);
 
-      // Skip if this request isn't being tracked by this hook instance
-      if (!requests[requestId]) {
+  const releaseConcurrencySlot = useCallback((modelKey: string) => {
+    const state = concurrencyRef.current[modelKey];
+    if (!state) {
+      return;
+    }
+
+    state.active = Math.max(0, state.active - 1);
+    const next = state.queue.shift();
+    if (next) {
+      state.active += 1;
+      next();
+    }
+  }, []);
+
+  const handleStream = useCallback(
+    (requestId: string, payload: AIStreamPayload) => {
+      const runtime = runtimeStateRef.current[requestId];
+      if (!runtime || runtime.finished) {
         return;
       }
 
-      // For streaming responses, detect duplicates using the text content
-      if (response.status === "streaming" && (response.result?.text || response.result?.reasoning)) {
-        // Create a unique signature for this stream chunk
-        const chunkText = response.result.text || response.result.reasoning;
-        const chunkSignature = `${requestId}:${chunkText}`;
-
-        // If we've seen this exact chunk before, skip it
-        if (lastStreamChunks.current[requestId] === chunkSignature) {
-          return;
-        }
-
-        // Update the last seen chunk for this request
-        lastStreamChunks.current[requestId] = chunkSignature;
-
-        // Call the stream callback
-        optionsRef.current.onStream?.(response, requestId);
-      }
-      // For completion, error, or cancellation - always process
-      else if (response.status === "completed" || response.status === "cancelled") {
-        // Clean up the last chunks record for this request
-        delete lastStreamChunks.current[requestId];
-        optionsRef.current.onComplete?.(response, requestId);
-
-        // Update the console store with the completed response
-        if (response.status === "completed") {
-          consoleActions.updateRequestResponse(requestId, response);
-        }
-      } else if (response.status === "error") {
-        // Clean up the last chunks record for this request
-        delete lastStreamChunks.current[requestId];
-        optionsRef.current.onError?.(JSON.parse(response.error || "{}") || "Unknown error", requestId);
-        consoleActions.updateRequestResponse(requestId, response);
+      if (payload.text) {
+        runtime.accumulatedText += payload.text;
+        runtime.accumulatedFullResponse = runtime.accumulatedText;
       }
 
-      // Update the request state regardless of the event type
-      setRequests((currentRequests) => {
-        return {
-          ...currentRequests,
-          [requestId]: {
-            ...currentRequests[requestId],
-            status: response.status as InferenceStatus,
-            response: response,
-            error: response.error || null,
-          },
-        };
-      });
-    };
+      if (payload.fullResponse) {
+        runtime.accumulatedFullResponse = payload.fullResponse;
+      }
 
-    // Register this handler
-    globalListeners.add(handleResponse);
+      if (payload.reasoning) {
+        runtime.accumulatedReasoning += payload.reasoning;
+      }
 
-    // Clean up when component unmounts
-    return () => {
-      globalListeners.delete(handleResponse);
-    };
-  }, [requests, consoleActions]);
+      runtime.toolCalls = mergeToolCalls(runtime.toolCalls, payload.toolCalls);
 
-  // Run inference and track the request
-  const runInference = useCallback(
-    async (params: InferenceParams) => {
-      const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false, requestId: providedId } = params;
+      const streamingResponse: InferenceStreamingResponse = {
+        request_id: requestId,
+        status: "streaming",
+        result: createStreamingResult(payload, runtime),
+      };
 
-      // Use provided ID or generate a new one
-      const requestId = providedId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-      // Immediately register this request in our tracking
-      setRequests((current) => ({
-        ...current,
-        [requestId]: {
-          id: requestId,
-          modelId: modelSpecs.id,
-          status: "queued",
-          response: null,
-          error: null,
-          timestamp: Date.now(),
-        },
+      updateRequestState(requestId, (previous) => ({
+        id: requestId,
+        modelId: previous?.modelId || runtime.modelId,
+        status: "streaming",
+        response: streamingResponse,
+        error: null,
+        timestamp: previous?.timestamp || Date.now(),
       }));
 
-      // Clear any existing tracking for this request ID
-      delete lastStreamChunks.current[requestId];
-
-      const parsedParameters = parseEngineParameters(modelSpecs.engine as Engine, modelSpecs.config, parameters);
-
-      try {
-        if (!params.disableLogs) {
-          // Add request to console store history
-          consoleActions.addRequest({
-            id: requestId,
-            systemPrompt: systemPrompt || "",
-            messages: messages,
-            modelSpecs: modelSpecs,
-            parameters: { ...parameters, ...parsedParameters },
-            engine: modelSpecs.engine as Engine,
-          });
-        }
-
-        // Queue request with backend
-        await queueInferenceRequest(
-          {
-            id: requestId,
-            message_list: messages,
-            system_prompt: systemPrompt,
-            parameters: parsedParameters,
-            stream,
-          },
-          modelSpecs,
-        );
-
-        return requestId;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        optionsRef.current.onError?.(errorMessage, "queue-error");
-        return null;
-      }
+      optionsRef.current.onStream?.(streamingResponse, requestId);
     },
-    [consoleActions],
+    [updateRequestState],
   );
 
-  // Cancel a specific request
-  const cancelRequest = useCallback(
-    async (requestId: string) => {
-      const request = requests[requestId];
-      if (!request) {
-        return false;
+  const handleCompletion = useCallback(
+    (requestId: string, payload?: AIStreamPayload) => {
+      const runtime = runtimeStateRef.current[requestId];
+      if (!runtime || runtime.finished) {
+        return;
       }
 
-      try {
-        const success = await cancelInferenceRequest(request.modelId, requestId);
-        if (!success) {
+      runtime.finished = true;
+
+      if (payload) {
+        handleStream(requestId, payload);
+      }
+
+      const result: InferenceCompletedResponse = {
+        request_id: requestId,
+        status: "completed",
+        result: {
+          text: runtime.accumulatedText || payload?.text,
+          reasoning: runtime.accumulatedReasoning || payload?.reasoning,
+          full_response: runtime.accumulatedFullResponse || payload?.fullResponse,
+          tool_calls: runtime.toolCalls.length > 0 ? runtime.toolCalls : payload?.toolCalls,
+        },
+      };
+
+      updateRequestState(requestId, (previous) => ({
+        id: requestId,
+        modelId: previous?.modelId || runtime.modelId,
+        status: "completed",
+        response: result,
+        error: null,
+        timestamp: previous?.timestamp || Date.now(),
+      }));
+
+      consoleActions.updateRequestResponse(requestId, result);
+      optionsRef.current.onComplete?.(result, requestId);
+      finalizeRequest(requestId);
+    },
+    [consoleActions, finalizeRequest, handleStream, updateRequestState],
+  );
+
+  const handleCancellation = useCallback(
+    (requestId: string) => {
+      const runtime = runtimeStateRef.current[requestId];
+      if (!runtime || runtime.finished) {
+        return;
+      }
+
+      runtime.finished = true;
+
+      const result: InferenceCancelledResponse = {
+        request_id: requestId,
+        status: "cancelled",
+        result: {
+          text: runtime.accumulatedText,
+          reasoning: runtime.accumulatedReasoning,
+          full_response: runtime.accumulatedFullResponse,
+          tool_calls: runtime.toolCalls.length > 0 ? runtime.toolCalls : undefined,
+        },
+        error: undefined,
+      };
+
+      updateRequestState(requestId, (previous) => ({
+        id: requestId,
+        modelId: previous?.modelId || runtime.modelId,
+        status: "cancelled",
+        response: result,
+        error: null,
+        timestamp: previous?.timestamp || Date.now(),
+      }));
+
+      consoleActions.updateRequestResponse(requestId, result);
+      optionsRef.current.onComplete?.(result, requestId);
+      finalizeRequest(requestId);
+    },
+    [consoleActions, finalizeRequest, updateRequestState],
+  );
+
+  const handleError = useCallback(
+    (requestId: string, error: unknown) => {
+      const runtime = runtimeStateRef.current[requestId];
+      if (!runtime || runtime.finished) {
+        return;
+      }
+
+      runtime.finished = true;
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error && "message" in error
+            ? String((error as { message?: unknown }).message || "Unknown error")
+            : typeof error === "string"
+              ? error
+              : "Unknown error";
+      const serializedError = JSON.stringify({ message: errorMessage, details: error });
+
+      const response: InferenceResponse = {
+        request_id: requestId,
+        status: "error",
+        error: serializedError,
+      } as InferenceResponse;
+
+      updateRequestState(requestId, (previous) => ({
+        id: requestId,
+        modelId: previous?.modelId || runtime.modelId,
+        status: "error",
+        response,
+        error: errorMessage,
+        timestamp: previous?.timestamp || Date.now(),
+      }));
+
+      consoleActions.updateRequestResponse(requestId, response);
+      optionsRef.current.onError?.(error, requestId);
+      finalizeRequest(requestId);
+    },
+    [consoleActions, finalizeRequest, updateRequestState],
+  );
+
+  const createEvent = useCallback(
+    (requestId: string): AIEvent => ({
+      requestId,
+      sendStream: (payload) => handleStream(requestId, payload),
+      sendThinkingStream: (text: string) => handleStream(requestId, { reasoning: text }),
+      sendError: (error) => handleError(requestId, error),
+      finish: (payload) => handleCompletion(requestId, payload),
+      registerAborter: (aborter: () => void) => {
+        const runtime = runtimeStateRef.current[requestId];
+        if (runtime) {
+          runtime.abort = aborter;
+        }
+      },
+    }),
+    [handleCompletion, handleError, handleStream],
+  );
+
+  const enqueueRequest = useCallback(
+    async (modelKey: string, maxConcurrent: number, executor: () => Promise<void>) => {
+      const state: ConcurrencyState = concurrencyRef.current[modelKey] ?? { active: 0, queue: [] };
+      concurrencyRef.current[modelKey] = state;
+
+      const run = () => {
+        executor()
+          .catch(() => {
+            /* errors handled downstream */
+          })
+          .finally(() => {
+            releaseConcurrencySlot(modelKey);
+          });
+      };
+
+      if (state.active < maxConcurrent) {
+        state.active += 1;
+        run();
+      } else {
+        state.queue.push(() => {
+          run();
+        });
+      }
+    },
+    [releaseConcurrencySlot],
+  );
+
+  const runInference = useCallback(
+    async (params: InferenceParams) => {
+      const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false, requestId: providedId, tools, disableLogs } = params;
+
+      const requestId = providedId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+      runtimeStateRef.current[requestId] = {
+        modelId: modelSpecs.id,
+        accumulatedText: "",
+        accumulatedReasoning: "",
+        accumulatedFullResponse: "",
+        toolCalls: [],
+        cancelled: false,
+        finished: false,
+      };
+
+      updateRequestState(requestId, () => ({
+        id: requestId,
+        modelId: modelSpecs.id,
+        status: "queued",
+        response: null,
+        error: null,
+        timestamp: Date.now(),
+      }));
+
+      if (!disableLogs) {
+        consoleActions.addRequest({
+          id: requestId,
+          systemPrompt: systemPrompt || "",
+          messages,
+          modelSpecs,
+          parameters: parameters,
+          engine: modelSpecs.engine as Engine,
+        });
+      }
+
+      const providerParams = toAIProviderParams(modelSpecs);
+      const toolSettings = toToolSettings(modelSpecs.engine, tools);
+
+      const internalParams: InternalAIParameters = {
+        model: modelSpecs.config.model as string | undefined,
+        parameters: parameters,
+        max_response_tokens: parameters?.max_response_tokens as number | undefined,
+        system_message: systemPrompt,
+        messages,
+        stream,
+        tool_settings: toolSettings,
+      };
+
+      const executor = async () => {
+        const runtime = runtimeStateRef.current[requestId];
+        if (!runtime) {
           return;
         }
 
-        // Clean up tracking for this request
-        delete lastStreamChunks.current[requestId];
-        consoleActions.updateRequestResponse(requestId, {
-          status: "cancelled",
-          request_id: requestId,
-          result: {
-            text: "\n\n<Request cancelled by user>",
-          },
-        });
+        const event = createEvent(requestId);
 
-        setRequests((current) => ({
-          ...current,
-          [requestId]: {
-            ...current[requestId],
-            status: "cancelled",
-          },
-        }));
+        try {
+          await callProviderConverseEndpoint(event, providerParams, internalParams);
 
-        return true;
-      } catch (error) {
-        return false;
-      }
+          if (runtime.cancelled) {
+            handleCancellation(requestId);
+            return;
+          }
+
+          handleCompletion(requestId);
+        } catch (error) {
+          if (runtime.cancelled) {
+            handleCancellation(requestId);
+            return;
+          }
+
+          handleError(requestId, error);
+        }
+      };
+
+      await enqueueRequest(modelSpecs.id, modelSpecs.max_concurrent_requests, executor);
+
+      return requestId;
     },
-    [requests],
+    [consoleActions, createEvent, enqueueRequest, handleCancellation, handleCompletion, handleError, updateRequestState],
   );
 
-  // Cleanup old completed/cancelled/error requests
+  const cancelRequest = useCallback(
+    async (requestId: string) => {
+      const runtime = runtimeStateRef.current[requestId];
+      if (!runtime || runtime.finished) {
+        return false;
+      }
+
+      runtime.cancelled = true;
+      runtime.abort?.();
+
+      handleCancellation(requestId);
+
+      return true;
+    },
+    [handleCancellation],
+  );
+
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -261,45 +471,29 @@ export function useInference(options: UseInferenceOptions = {}) {
         const updated = { ...current };
         let changed = false;
 
-        // Clean up requests older than 10 minutes that are no longer active
-        Object.entries(updated).forEach(([id, request]) => {
-          if ((request.status === "completed" || request.status === "error" || request.status === "cancelled") && now - request.timestamp > 10 * 60 * 1000) {
+        for (const [id, request] of Object.entries(updated)) {
+          if ((request.status === "completed" || request.status === "error" || request.status === "cancelled") && now - request.timestamp > MAX_COMPLETED_AGE_MS) {
             delete updated[id];
-            // Also clean up any stream tracking for this request
-            delete lastStreamChunks.current[id];
             changed = true;
           }
-        });
+        }
 
         return changed ? updated : current;
       });
-    }, 60000); // Check every minute
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);
 
   return {
-    // Core functions
     runInference,
     cancelRequest,
-
-    // Request data
     requests,
-
-    // Helper methods
-    getActiveRequestIds: () => {
-      return Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming");
-    },
-
-    getRequestById: (id: string) => {
-      return requests[id] || null;
-    },
-
+    getActiveRequestIds: () => Object.keys(requests).filter((id) => requests[id]?.status === "queued" || requests[id]?.status === "streaming"),
+    getRequestById: (id: string) => requests[id] || null,
     cancelAllRequests: async () => {
-      const activeIds = Object.keys(requests).filter((id) => requests[id].status === "queued" || requests[id].status === "streaming");
-
+      const activeIds = Object.keys(requests).filter((id) => requests[id]?.status === "queued" || requests[id]?.status === "streaming");
       const results = await Promise.all(activeIds.map((id) => cancelRequest(id)));
-
       return results.every(Boolean);
     },
   };

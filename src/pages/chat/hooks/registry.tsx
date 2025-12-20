@@ -23,7 +23,7 @@ export const widgetTitles: Record<WidgetId, string> = {
   participants: "Participants",
   scripts: "Scripts",
   character_sheet: "Character Sheet",
-  memory: "Memory",
+  memory: "Short-Term Memory",
   database: "Database",
   chapters: "Chapters",
   expressions: "Expressions",

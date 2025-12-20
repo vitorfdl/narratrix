@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -40,8 +40,52 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
   const [selectedManifest, setSelectedManifest] = useState<Manifest | null>(null);
   const [formSchema, setFormSchema] = useState<z.ZodObject<any>>();
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [testResult, setTestResult] = useState<{ state: "success" | "error" | "pending"; message: string; errorDetails?: any } | null>(null);
+  const [testResult, setTestResult] = useState<{ state: "success" | "error" | "pending"; message: string; details?: string } | null>(null);
   const [testRequestId, setTestRequestId] = useState<string | null>(null);
+
+  const normalizeError = useMemo(
+    () =>
+      (error: unknown): { message: string; details?: string } => {
+        if (error instanceof Error) {
+          const details = typeof error.cause === "string" ? error.cause : undefined;
+          return {
+            message: error.message || "Unknown error",
+            details,
+          };
+        }
+
+        if (typeof error === "string") {
+          return { message: error };
+        }
+
+        if (typeof error === "object" && error !== null) {
+          const maybeMessage = "message" in error && typeof (error as Record<string, unknown>).message === "string" ? (error as Record<string, string>).message : "Unknown error";
+          const rawDetails = "details" in error ? (error as Record<string, unknown>).details : undefined;
+          let details: string | undefined;
+
+          if (typeof rawDetails === "string") {
+            details = rawDetails;
+          } else if (rawDetails && typeof rawDetails === "object") {
+            try {
+              details = JSON.stringify(rawDetails, null, 2);
+            } catch (_jsonError) {
+              details = String(rawDetails);
+            }
+          } else if (Object.keys(error as Record<string, unknown>).length > 0) {
+            try {
+              details = JSON.stringify(error, null, 2);
+            } catch (_jsonError) {
+              details = String(error);
+            }
+          }
+
+          return { message: maybeMessage, details };
+        }
+
+        return { message: "Unknown error" };
+      },
+    [],
+  );
 
   const { runInference, cancelRequest, requests } = useInference({
     // Global callbacks to handle inference responses
@@ -66,13 +110,14 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
       }
     },
     onError: (error, requestId) => {
-      toast.error(`Connection failed: ${error.message}`);
+      const normalized = normalizeError(error);
+      toast.error(`Connection failed: ${normalized.message}`);
       // Only process if it's our test request
       if (requestId === testRequestId) {
         setTestResult({
           state: "error",
-          message: error.message,
-          errorDetails: error, // Store the full error object
+          message: normalized.message,
+          details: normalized.details,
         });
         setTestRequestId(null);
       }
@@ -376,7 +421,6 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
 
         // Include other fields if they have a value
         if (fieldValue !== undefined) {
-          // Format URL fields with proper prefix
           if (field.field_type === "url" && fieldValue) {
             configFields[field.key] = formatUrl(String(fieldValue).trim());
           } else if (field.field_type === "secret" && fieldValue) {
@@ -446,6 +490,8 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
           // Format URL fields with proper prefix
           if (field.field_type === "url" && fieldValue) {
             configFields[field.key] = formatUrl(String(fieldValue).trim());
+          } else if (field.field_type === "secret" && fieldValue) {
+            configFields[field.key] = await encryptApiKey(fieldValue);
           } else {
             configFields[field.key] = fieldValue;
           }
@@ -639,7 +685,10 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
               <AlertCircle className="h-3 w-3" />
               <span>Error verifying connection</span>
             </div>
-            {testResult.errorDetails && <div className="text-xs mt-1 space-y-1">{testResult.errorDetails.details && <div>{testResult.errorDetails.details}</div>}</div>}
+            <div className="text-xs mt-1 space-y-1">
+              <div>{testResult.message}</div>
+              {testResult.details && <pre className="whitespace-pre-wrap break-words font-mono text-[10px] leading-tight opacity-80">{testResult.details}</pre>}
+            </div>
           </Badge>
         </div>
       )}
