@@ -13,11 +13,11 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "ai": "6.0.0-beta.160",
-    "@ai-sdk/amazon-bedrock": "4.0.0-beta.103",
-    "@ai-sdk/anthropic": "3.0.0-beta.92",
-    "@ai-sdk/google": "3.0.0-beta.83",
-    "@ai-sdk/openai": "3.0.0-beta.106",
+    "ai": "6.0.5",
+    "@ai-sdk/amazon-bedrock": "4.0.4",
+    "@ai-sdk/anthropic": "3.0.2",
+    "@ai-sdk/google": "3.0.2",
+    "@ai-sdk/openai": "3.0.2",
     "@codemirror/autocomplete": "^6.20.0",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/language": "^6.11.3",

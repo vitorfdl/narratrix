@@ -21,12 +21,12 @@ interface ChatTab {
 const chatParticipantSchema = z.object({
   id: z.string(),
   enabled: z.boolean().default(true),
-  settings: z.record(z.any()).default({}),
+  settings: z.record(z.string(), z.any()).default({}),
 });
 
 const chatUserSettingsSchema = z.object({
   id: z.string(),
-  settings: z.record(z.any()).default({}),
+  settings: z.record(z.string(), z.any()).default({}),
 });
 
 /**

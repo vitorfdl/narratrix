@@ -337,7 +337,7 @@ export function useInference(options: UseInferenceOptions = {}) {
 
   const runInference = useCallback(
     async (params: InferenceParams) => {
-      const { messages, modelSpecs, systemPrompt, parameters = {}, stream = false, requestId: providedId, tools, disableLogs } = params;
+      const { messages, modelSpecs, systemPrompt, parameters = {}, requestId: providedId, disableLogs } = params;
 
       const requestId = providedId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 

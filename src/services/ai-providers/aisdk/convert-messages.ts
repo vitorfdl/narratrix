@@ -1,5 +1,4 @@
 import { ModelMessage } from "ai";
-import type { InternalAIParameters } from "../types/request.type";
 
 // Define strict types for CoreMessage content parts to match Vercel AI SDK requirements
 type TextPart = {
@@ -12,7 +11,7 @@ type ImagePart = {
   image: string | URL;
 };
 
-function toCoreMessages(systemMessage: string | undefined, messages: InternalAIParameters["messages"]): ModelMessage[] {
+function toCoreMessages(systemMessage: string | undefined, messages: any[]): ModelMessage[] {
   const core: ModelMessage[] = [];
 
   if (systemMessage) {
@@ -75,14 +74,14 @@ function toCoreMessages(systemMessage: string | undefined, messages: InternalAIP
     } else if (msg.role === "assistant") {
       // Assistant messages can have tool calls
       if (msg.tool_calls && msg.tool_calls.length > 0) {
-        const toolCalls = msg.tool_calls.map((tc) => ({
+        const toolCalls = msg.tool_calls.map((tc: any) => ({
           toolCallId: tc.id || "unknown",
           toolName: tc.name,
           args: typeof tc.arguments === "string" ? JSON.parse(tc.arguments) : tc.arguments,
         }));
         core.push({
           role: "assistant",
-          content: [{ type: "text", text: msg.text || "" }, ...toolCalls.map((tc) => ({ type: "tool-call" as const, input: tc.args, toolCallId: tc.toolCallId, toolName: tc.toolName }))],
+          content: [{ type: "text", text: msg.text || "" }, ...toolCalls.map((tc: any) => ({ type: "tool-call" as const, input: tc.args, toolCallId: tc.toolCallId, toolName: tc.toolName }))],
         });
       } else {
         core.push({ role: "assistant", content: msg.text });

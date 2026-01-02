@@ -32,7 +32,7 @@ export const EXPRESSION_LIST = [
 ];
 
 // Common JSON object schema
-export const JsonObjectSchema = z.record(z.unknown());
+export const JsonObjectSchema = z.record(z.string(), z.unknown());
 
 // Expression schema (only for characters)
 export const ExpressionSchema = z.object({

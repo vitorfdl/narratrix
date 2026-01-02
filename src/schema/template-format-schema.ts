@@ -31,6 +31,7 @@ const SystempPromptConfigSchema = z
     {
       type: "context",
       content: "You are a helpful assistant that can answer questions and help with tasks.",
+      enabled: true,
     },
   ]);
 
@@ -51,8 +52,8 @@ const templateSettingsSchema = z.object({
 
 const formatTemplateSchema = baseTemplateSchema.extend({
   config: z.object({
-    settings: templateSettingsSchema.default({}),
-    reasoning: templateFormattingSchema.default({}),
+    settings: templateSettingsSchema.default({} as any),
+    reasoning: templateFormattingSchema.default({} as any),
     context_separator: z.string().optional().default("\n---\n"),
     lorebook_separator: z.string().optional().default("\n---\n"),
   }),

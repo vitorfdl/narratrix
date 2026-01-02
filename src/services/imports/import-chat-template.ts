@@ -40,7 +40,7 @@ function validateInternalChatTemplateJSON(data: any): ValidationTransformationRe
   }
   return {
     valid: false,
-    errors: parseResult.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`),
+    errors: parseResult.error.issues.map((e) => `${e.path.join(".")}: ${e.message}`),
     data: null,
     format: "internal_json",
   };

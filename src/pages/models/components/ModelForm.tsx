@@ -189,7 +189,7 @@ export function ModelForm({ onSuccess, model, mode = "add" }: ModelFormProps) {
           schemaObj[field.key] = z.any();
           break;
         case "number":
-          schemaObj[field.key] = field.required ? z.number({ required_error: "This field is required." }) : z.number().optional();
+          schemaObj[field.key] = field.required ? z.number().min(1, { message: "This field is required." }) : z.number().optional();
           break;
         case "boolean":
           schemaObj[field.key] = field.required ? z.boolean() : z.boolean().optional();

@@ -18,7 +18,7 @@ const CharaCardV2Schema = z.object({
     tags: z.array(z.string()).optional(),
     creator: z.string().optional(),
     character_version: z.string().optional(),
-    extensions: z.record(z.unknown()).optional(),
+    extensions: z.record(z.string(), z.unknown()).optional(),
     creator_notes: z.string().optional(),
     system_prompt: z.string().optional(),
     post_history_instructions: z.string().optional(),
@@ -47,7 +47,7 @@ export function validateCharacterSpecV2(data: any): { valid: boolean; errors: st
   }
   return {
     valid: false,
-    errors: result.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`),
+    errors: result.error.issues.map((e) => `${e.path.join(".")}: ${e.message}`),
   };
 }
 

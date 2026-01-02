@@ -49,12 +49,12 @@ const SystemSettingsSchema = z.object({
  * Define the main Profile schema
  */
 const AppSettingsSchema = z.object({
-  general: GeneralSettingsSchema.default({}),
-  notifications: NotificationSettingsSchema.default({}),
-  chat: ChatSettingsSchema.default({}),
-  censorship: CensorshipSettingsSchema.default({}),
-  appearance: AppearanceSettingsSchema.default({}),
-  system: SystemSettingsSchema.default({}),
+  general: GeneralSettingsSchema.default({} as any),
+  notifications: NotificationSettingsSchema.default({} as any),
+  chat: ChatSettingsSchema.default({} as any),
+  censorship: CensorshipSettingsSchema.default({} as any),
+  appearance: AppearanceSettingsSchema.default({} as any),
+  system: SystemSettingsSchema.default({} as any),
 });
 
 // Define QuickAction schema for profile quick actions
@@ -75,7 +75,7 @@ const ProfileSchema = z.object({
   version: z.number().optional().default(0),
   avatar_path: z.string().optional().nullable().default(null),
   password: z.string().min(3).optional(),
-  settings: AppSettingsSchema.default({}),
+  settings: AppSettingsSchema.default({} as any),
   quick_actions: z.array(QuickActionSchema).nullable().default([]),
   created_at: dateUtils.withDefaultNow(),
   updated_at: dateUtils.withDefaultNow(),

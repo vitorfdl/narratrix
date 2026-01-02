@@ -6,7 +6,7 @@ const customChapterSchema = z
     auto_start_message: z.boolean().optional().default(false),
     branchingOptions: z.array(z.string()).nullable().optional().default([]),
   })
-  .default({});
+  .default({} as any);
 
 /**
  * Chat Chapter Schema

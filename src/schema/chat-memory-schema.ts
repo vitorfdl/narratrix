@@ -17,7 +17,7 @@ export const chatMemorySchema = z.object({
   chapter_id: uuidUtils.uuid().nullable().optional(),
   character_id: uuidUtils.uuid().nullable().optional(),
   content: z.string(),
-  metadata: z.record(z.any()).nullable().optional(),
+  metadata: z.record(z.string(), z.any()).nullable().optional(),
   created_at: z.date(),
   updated_at: z.date(),
 });

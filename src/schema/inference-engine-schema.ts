@@ -5,13 +5,13 @@ import { uuidUtils } from "./utils-schema";
 const InferenceToolCallSchema = z.object({
   id: z.string().optional(),
   name: z.string(),
-  arguments: z.union([z.string(), z.record(z.any())]),
+  arguments: z.union([z.string(), z.record(z.string(), z.any())]),
 });
 
 const InferenceToolDefinitionSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
-  parameters: z.record(z.any()).optional(),
+  parameters: z.record(z.string(), z.any()).optional(),
 });
 
 type InferenceToolCall = z.infer<typeof InferenceToolCallSchema>;
@@ -32,7 +32,7 @@ const InferenceRequestSchema = z.object({
   id: uuidUtils.uuid(),
   message_list: z.array(InferenceMessageSchema),
   system_prompt: z.string().optional(),
-  parameters: z.record(z.any()),
+  parameters: z.record(z.string(), z.any()),
   stream: z.boolean(),
   tools: z.array(InferenceToolDefinitionSchema).optional(),
 });
@@ -81,7 +81,7 @@ type InferenceStreamingResponse = Extract<InferenceResponse, { status: "streamin
 const ModelSpecsSchema = z.object({
   id: z.string(),
   model_type: z.string(),
-  config: z.record(z.any()),
+  config: z.record(z.string(), z.any()),
   max_concurrent_requests: z.number().int().positive(),
   engine: z.string(),
 });

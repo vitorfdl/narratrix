@@ -13,15 +13,15 @@ const agentMessageFormattingSchema = templateFormattingSchema.extend({
 });
 
 const inferenceConfigSchema = z.object({
-  systemPromptFormatting: templateFormattingSchema.default({}),
-  userMessageFormatting: templateFormattingSchema.default({}),
-  assistantMessageFormatting: assistantMessageFormattingSchema.default({}),
-  agentMessageFormatting: agentMessageFormattingSchema.default({}),
+  systemPromptFormatting: templateFormattingSchema.default({} as any),
+  userMessageFormatting: templateFormattingSchema.default({} as any),
+  assistantMessageFormatting: assistantMessageFormattingSchema.default({} as any),
+  agentMessageFormatting: agentMessageFormattingSchema.default({} as any),
   customStopStrings: z.array(z.string()).default([]),
 });
 
 const inferenceTemplateSchema = baseTemplateSchema.extend({
-  config: inferenceConfigSchema.default({}),
+  config: inferenceConfigSchema.default({} as any),
 });
 
 /**
