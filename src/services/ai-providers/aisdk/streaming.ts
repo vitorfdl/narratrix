@@ -44,6 +44,21 @@ async function streamResponse(event: AIEvent, params: FinalParams): Promise<stri
       onError: (error) => {
         event.sendError({ message: getErrorMessage(error) });
       },
+      onChunk: ({ chunk }) => {
+        // if (chunk.type === "text-delta") {
+        //   fullText += chunk.text;
+
+        //   event.sendStream({
+        //     text: chunk.text,
+        //   });
+        // }
+
+        if (chunk.type === "reasoning-delta") {
+          event.sendStream({
+            reasoning: chunk.text,
+          });
+        }
+      },
     });
 
     for await (const textPart of textStream) {
