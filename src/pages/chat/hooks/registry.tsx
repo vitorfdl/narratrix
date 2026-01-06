@@ -1,11 +1,11 @@
-import { BookOpen, Brain, Contact, Database, FileTextIcon, HelpCircle, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
+import { BookOpen, Contact, Database, FileTextIcon, HelpCircle, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
 import React from "react";
 import WidgetChapters from "@/pages/chat/components/WidgetChapters";
 import WidgetCharacterSheet from "@/pages/chat/components/WidgetCharacterSheet";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import WidgetDatabase from "@/pages/chat/components/WidgetDatabase";
 import WidgetGenerate from "@/pages/chat/components/WidgetGenerate";
-import WidgetMemory from "@/pages/chat/components/WidgetMemory";
+// import WidgetMemory from "@/pages/chat/components/WidgetMemory";
 import WidgetMessages from "@/pages/chat/components/WidgetMessages";
 import WidgetParticipants from "@/pages/chat/components/WidgetParticipants";
 import WidgetScript from "@/pages/chat/components/WidgetScript";
@@ -14,7 +14,7 @@ import { WidgetHelp } from "../components/WidgetHelp";
 
 // Import types for props if available
 
-export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "character_sheet" | "memory" | "database" | "chapters" | "expressions" | "help";
+export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "character_sheet" | "database" | "chapters" | "expressions" | "help";
 
 export const widgetTitles: Record<WidgetId, string> = {
   messages: "Messages",
@@ -23,7 +23,7 @@ export const widgetTitles: Record<WidgetId, string> = {
   participants: "Participants",
   scripts: "Scripts",
   character_sheet: "Character Sheet",
-  memory: "Short-Term Memory",
+  // memory: "Short-Term Memory",
   database: "Database",
   chapters: "Chapters",
   expressions: "Expressions",
@@ -82,13 +82,13 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
     defaultProps: {},
     icon: <Contact className="w-4 h-4" />,
   },
-  memory: {
-    id: "memory",
-    title: widgetTitles.memory,
-    component: WidgetMemory,
-    defaultProps: {},
-    icon: <Brain className="w-4 h-4" />,
-  },
+  // memory: {
+  //   id: "memory",
+  //   title: widgetTitles.memory,
+  //   component: WidgetMemory,
+  //   defaultProps: {},
+  //   icon: <Brain className="w-4 h-4" />,
+  // },
   database: {
     id: "database",
     title: widgetTitles.database,
