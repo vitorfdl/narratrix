@@ -68,7 +68,11 @@ export const NoMessagePlaceholder: React.FC = () => {
       }
 
       // If auto-inference is not enabled, use the default behavior
-      const characterID = currentChatParticipants?.find((p) => p.enabled)?.id!;
+      const characterID = currentChatParticipants?.find((p) => p.enabled)?.id;
+      if (!characterID) {
+        throw new Error("No enabled chat participant found.");
+      }
+
       const character = await getCharacterById(characterID);
       const userCharacter = userCharacterId ? await getCharacterById(userCharacterId!) : undefined;
 

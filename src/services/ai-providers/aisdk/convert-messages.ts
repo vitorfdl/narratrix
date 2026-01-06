@@ -1,4 +1,4 @@
-import { ModelMessage } from "ai";
+import { ModelMessage, SystemModelMessage } from "ai";
 
 // Define strict types for CoreMessage content parts to match Vercel AI SDK requirements
 type TextPart = {
@@ -15,7 +15,7 @@ function toCoreMessages(systemMessage: string | undefined, messages: any[]): Mod
   const core: ModelMessage[] = [];
 
   if (systemMessage) {
-    core.push({ role: "system", content: systemMessage });
+    core.push({ role: "system", content: systemMessage } as SystemModelMessage);
   }
 
   for (const msg of messages || []) {

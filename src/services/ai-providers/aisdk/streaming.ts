@@ -44,7 +44,13 @@ async function streamResponse(event: AIEvent, params: FinalParams): Promise<stri
       onError: (error) => {
         event.sendError({ message: getErrorMessage(error) });
       },
+      onFinish({ finishReason }) {
+        if (finishReason !== "stop") {
+          event.sendError({ message: `Inference stopped: ${finishReason}` });
+        }
+      },
       onChunk: ({ chunk }) => {
+        // TODO: Decide if use onChunk or fullTream
         // if (chunk.type === "text-delta") {
         //   fullText += chunk.text;
 

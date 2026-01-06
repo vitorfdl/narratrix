@@ -121,7 +121,7 @@ body,
   }
 
   .textarea-quoted-text {
-    @apply text-chart-4  italic;
+    @apply text-chart-4 italic;
   }
 
   .rich-text-area {
