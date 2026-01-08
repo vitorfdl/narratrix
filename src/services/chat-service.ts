@@ -30,6 +30,8 @@ export async function createChat(chatData: CreateChatParams): Promise<Chat> {
     updated_at: new Date(now),
   });
 
+  console.log(validatedChat);
+
   // Convert arrays to JSON strings for storage
   const participantsStr = JSON.stringify(validatedChat.participants);
   const userCharacterSettingsStr = JSON.stringify(validatedChat.user_character_settings);
@@ -51,11 +53,11 @@ export async function createChat(chatData: CreateChatParams): Promise<Chat> {
       validatedChat.id,
       validatedChat.profile_id,
       validatedChat.name,
-      validatedChat.chat_template_id,
+      validatedChat.chat_template_id || null,
       participantsStr,
-      validatedChat.user_character_id,
+      validatedChat.user_character_id || null,
       userCharacterSettingsStr,
-      validatedChat.active_chapter_id,
+      validatedChat.active_chapter_id || null,
       now,
       now,
     ],
