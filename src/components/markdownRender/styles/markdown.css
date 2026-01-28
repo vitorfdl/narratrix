@@ -361,7 +361,7 @@ pre:focus-within .copy-code-button {
 }
 
 .markdown-body table {
-  @apply border-spacing-0 border-collapse block w-max max-w-full overflow-auto my-2;
+  @apply border-spacing-0 border-collapse block w-full overflow-auto my-2;
 }
 
 .markdown-body td,
