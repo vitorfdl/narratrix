@@ -2,7 +2,7 @@ import type { Element, Root, Text } from "hast";
 import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
 
-type DelimiterType = "quote-double" | "quote-left" | "brace";
+type DelimiterType = "quote-double" | "quote-left" | "brace" | "dash-em" | "dash-en";
 
 interface DelimiterConfig {
   type: DelimiterType;
@@ -15,6 +15,7 @@ const DELIMITER_CONFIGS: DelimiterConfig[] = [
   { type: "quote-double", opening: '"', closing: '"', className: "markdown-quoted-text" },
   { type: "quote-left", opening: "“", closing: "”", className: "markdown-quoted-text" },
   { type: "brace", opening: "{{", closing: "}}", className: "markdown-special-text" },
+  { type: "dash-em", opening: "—", closing: "—", className: "markdown-quoted-text" },
 ];
 const createStyledSpan = (className: string, children: (Element | Text)[]): Element => ({
   type: "element",
