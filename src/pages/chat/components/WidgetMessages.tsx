@@ -329,6 +329,19 @@ const WidgetMessages: React.FC = () => {
     }
   }, [isEditingID]);
 
+  // Reset scroll to bottom (scrollTop=0 in column-reverse) when switching chats.
+  // currentChatId is read here so the linter correctly identifies it as a dependency.
+  useEffect(() => {
+    if (!currentChatId) {
+      return;
+    }
+    const el = scrollContainerRef.current;
+    if (el) {
+      el.scrollTop = 0;
+    }
+    setIsAtBottom(true);
+  }, [currentChatId]);
+
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) {
@@ -352,7 +365,6 @@ const WidgetMessages: React.FC = () => {
   return (
     <div className={MESSAGE_CONTAINER_STYLES}>
       <div
-        key={currentChatId}
         ref={scrollContainerRef}
         className="messages-container flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full p-1"
         onScroll={handleScroll}

@@ -2,6 +2,7 @@ import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { LuBot, LuEyeOff, LuFileText, LuPlay } from "react-icons/lu";
 import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { useLazyRender } from "@/hooks/useLazyRender";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/schema/chat-message-schema";
 import type { UpdateChatMessageParams } from "@/schema/chat-message-schema";
@@ -152,6 +153,11 @@ const MessageItem = ({
 }: MessageItemProps) => {
   const isDisabled = !!message.disabled;
 
+  // Lazy rendering: skip the expensive markdown pipeline until the item is near the viewport.
+  // Always render immediately for streaming/editing messages since they are always visible.
+  const { ref: lazyRef, hasBeenVisible } = useLazyRender<HTMLDivElement>();
+  const shouldRenderFull = hasBeenVisible || isStreaming || isEditing;
+
   // State to track the displayed content, separate from the message's content
   const [displayContent, setDisplayContent] = useState<string>("");
 
@@ -243,7 +249,7 @@ const MessageItem = ({
     <>
       {isContextCut && <ContextCutDivider />}
 
-      <div data-message-id={message.id} className={containerClassName}>
+      <div ref={lazyRef} data-message-id={message.id} className={containerClassName}>
         {isDisabled && (
           <>
             <div className={MESSAGE_BASE_CLASSES.disabledOverlay} />
@@ -253,71 +259,78 @@ const MessageItem = ({
 
         {(message.type === "user" || message.type === "character") && <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />}
 
-        <div onMouseUp={() => handleMessageSelection(message.character_id || undefined)} className={contentClassName}>
-          {isStreaming && <StreamingIndicator />}
+        {shouldRenderFull ? (
+          <div onMouseUp={() => handleMessageSelection(message.character_id || undefined)} className={contentClassName}>
+            {isStreaming && <StreamingIndicator />}
 
-          {hasReasoningData && message.type === "character" && <ReasoningSection content={reasoningContent || ""} />}
+            {hasReasoningData && message.type === "character" && <ReasoningSection content={reasoningContent || ""} />}
 
-          {message.extra?.script &&
-            (message.type === "system" ? (
-              <ScriptHeader script={message.extra.script} createdAt={message.created_at} messageType={message.type} />
-            ) : (
-              <div className={cn("flex mb-3", message.type === "user" ? "justify-end" : "justify-start")}>
-                <ScriptIndicator script={message.extra.script} />
-              </div>
-            ))}
+            {message.extra?.script &&
+              (message.type === "system" ? (
+                <ScriptHeader script={message.extra.script} createdAt={message.created_at} messageType={message.type} />
+              ) : (
+                <div className={cn("flex mb-3", message.type === "user" ? "justify-end" : "justify-start")}>
+                  <ScriptIndicator script={message.extra.script} />
+                </div>
+              ))}
 
-          <MarkdownTextArea
-            autofocus={isEditing}
-            initialValue={isEditing ? editedContent : displayContent}
-            editable={isEditing && !isStreaming}
-            placeholder="Edit message..."
-            className={markdownClassName}
-            onChange={(newContent) => {
-              if (isEditing) {
-                setEditedContent(newContent);
-              }
-            }}
-          />
+            <MarkdownTextArea
+              autofocus={isEditing}
+              initialValue={isEditing ? editedContent : displayContent}
+              editable={isEditing && !isStreaming}
+              placeholder="Edit message..."
+              className={markdownClassName}
+              onChange={(newContent) => {
+                if (isEditing) {
+                  setEditedContent(newContent);
+                }
+              }}
+            />
 
-          <div className={MESSAGE_BASE_CLASSES.controlsContainer}>
-            {isEditing ? (
-              <EditControls onCancel={handleCancelEdit} onSave={handleSave} />
-            ) : (
-              <>
-                <div className="flex justify-start">
-                  {message.type === "character" && (
-                    <VersionControls
+            <div className={MESSAGE_BASE_CLASSES.controlsContainer}>
+              {isEditing ? (
+                <EditControls onCancel={handleCancelEdit} onSave={handleSave} />
+              ) : (
+                <>
+                  <div className="flex justify-start">
+                    {message.type === "character" && (
+                      <VersionControls
+                        messageId={message.id}
+                        messageType={message.type}
+                        currentIndex={message.message_index}
+                        totalVersions={message.messages.length}
+                        onSwipe={handleSwipe}
+                        isLastMessage={isLastMessage}
+                        isStreaming={isStreaming}
+                      />
+                    )}
+                  </div>
+                  <div className="flex justify-end">
+                    <MessageActions
                       messageId={message.id}
                       messageType={message.type}
-                      currentIndex={message.message_index}
-                      totalVersions={message.messages.length}
-                      onSwipe={handleSwipe}
-                      isLastMessage={isLastMessage}
+                      isDisabled={isDisabled}
                       isStreaming={isStreaming}
+                      onEdit={startEditing}
+                      onRegenerateMessage={onRegenerateMessage}
+                      onDeleteMessage={onDeleteMessage}
+                      onTranslate={onTranslate}
+                      onCreateCheckpoint={onCreateCheckpoint}
+                      onGenerateImage={onGenerateImage}
+                      onExcludeFromPrompt={onExcludeFromPrompt}
+                      isLastMessage={isLastMessage}
                     />
-                  )}
-                </div>
-                <div className="flex justify-end">
-                  <MessageActions
-                    messageId={message.id}
-                    messageType={message.type}
-                    isDisabled={isDisabled}
-                    isStreaming={isStreaming}
-                    onEdit={startEditing}
-                    onRegenerateMessage={onRegenerateMessage}
-                    onDeleteMessage={onDeleteMessage}
-                    onTranslate={onTranslate}
-                    onCreateCheckpoint={onCreateCheckpoint}
-                    onGenerateImage={onGenerateImage}
-                    onExcludeFromPrompt={onExcludeFromPrompt}
-                    isLastMessage={isLastMessage}
-                  />
-                </div>
-              </>
-            )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          // Lightweight placeholder rendered while the message is off-screen.
+          // min-height keeps the scroll container's total height stable so
+          // the user's scroll position doesn't jump when content loads in.
+          <div className="flex-grow min-h-[6rem]" />
+        )}
       </div>
     </>
   );
