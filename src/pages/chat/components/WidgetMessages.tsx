@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
-import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import type { ChatMessage } from "@/services/chat-message-service";
 import { updateChatMessagesUsingFilter } from "@/services/chat-message-service";
@@ -364,11 +364,7 @@ const WidgetMessages: React.FC = () => {
 
   return (
     <div className={MESSAGE_CONTAINER_STYLES}>
-      <div
-        ref={scrollContainerRef}
-        className="messages-container flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full p-1"
-        onScroll={handleScroll}
-      >
+      <div ref={scrollContainerRef} className="messages-container flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full p-1" onScroll={handleScroll}>
         <div className="flex flex-col gap-2">
           {messages.map((message, index) => {
             const isLastMessage = index === messages.length - 1 || message.type === "system";
