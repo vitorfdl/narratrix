@@ -58,7 +58,6 @@ async function streamResponse(event: AIEvent, params: FinalParams): Promise<stri
         //     text: chunk.text,
         //   });
         // }
-
         if (chunk.type === "reasoning-delta") {
           event.sendStream({
             reasoning: chunk.text,

@@ -32,11 +32,24 @@ const CensorshipSettingsSchema = z.object({
   applyToAssistantMessages: z.boolean().default(true),
 });
 
+const DelimiterHighlightingSchema = z.object({
+  quoteDouble: z.boolean().default(true),
+  quoteLeft: z.boolean().default(true),
+  brace: z.boolean().default(true),
+  dashEm: z.boolean().default(false),
+});
+
 const AppearanceSettingsSchema = z.object({
   theme: z.enum(["light", "dark", "system"]).default("system"),
   fontSize: z.number().min(12).max(24).nullable().default(null),
   fontFamily: z.string().default("Inter"),
   accentColor: z.string().default("#7C3AED"),
+  delimiterHighlighting: DelimiterHighlightingSchema.default({
+    quoteDouble: true,
+    quoteLeft: true,
+    brace: true,
+    dashEm: false,
+  }),
 });
 
 const SystemSettingsSchema = z.object({
@@ -107,6 +120,7 @@ const UpdatePasswordSchema = z.object({
 type QuickAction = z.infer<typeof QuickActionSchema>;
 type Profile = z.infer<typeof ProfileSchema>;
 type AppSettings = z.infer<typeof AppSettingsSchema>;
+type DelimiterHighlighting = z.infer<typeof DelimiterHighlightingSchema>;
 
 type ProfileResponse = Omit<Profile, "password"> & { hasPassword: boolean };
 
@@ -126,6 +140,7 @@ export {
   UpdatePasswordSchema,
   updateProfileSchema,
   type AppSettings,
+  type DelimiterHighlighting,
   type LoginPasswordParams,
   type NewProfileParams,
   type Profile,

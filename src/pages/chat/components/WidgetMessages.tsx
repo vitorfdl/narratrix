@@ -131,12 +131,11 @@ const WidgetMessages: React.FC = () => {
         });
       }
 
-      // Use the inference service to regenerate the message
       await inferenceService.regenerateMessage(messageId, {
+        chatId: currentChatId,
         characterId: message.character_id,
         messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
         onStreamingStateChange: (state) => {
-          // When streaming stops or errors out, clear the streaming message ID
           if (!state) {
             setStreamingMessageId(null);
           }
@@ -186,14 +185,20 @@ const WidgetMessages: React.FC = () => {
     [messages, streamingMessageId, updateChatMessage, onRegenerateMessage],
   );
 
-  // Subscribe to streaming state changes
+  // Subscribe to streaming state changes scoped to this chat.
+  // Sync local state immediately so switching chats doesn't carry over the old chat's indicators.
   useEffect(() => {
+    const currentState = inferenceService.getStreamingState(currentChatId);
+    if (currentState.messageId) {
+      setStreamingMessageId(currentState.messageId);
+    } else {
+      setStreamingMessageId(null);
+    }
+
     const unsubscribe = inferenceService.subscribeToStateChanges((streamingState) => {
       if (streamingState.messageId) {
-        // If we have a message ID in the streaming state
         setStreamingMessageId(streamingState.messageId as string);
 
-        // If there's new accumulated reasoning, update the reasonings state
         if (streamingState.accumulatedReasoning && streamingState.accumulatedReasoning.trim() !== "") {
           setMessageReasonings((prev) => ({
             ...prev,
@@ -201,17 +206,16 @@ const WidgetMessages: React.FC = () => {
           }));
         }
 
-        // Update timestamp to trigger re-renders during streaming
         if (streamingState.accumulatedText !== "") {
           setStreamingTimestamp(Date.now());
         }
       } else if (streamingMessageId) {
         setStreamingMessageId(null);
       }
-    });
+    }, currentChatId);
 
     return unsubscribe;
-  }, [inferenceService, streamingMessageId]);
+  }, [inferenceService, streamingMessageId, currentChatId]);
 
   // Handle scroll events for message pagination
   const onChatScroll = useCallback(() => {
@@ -387,8 +391,8 @@ const WidgetMessages: React.FC = () => {
 
           // Generate a summary using the inference service
           try {
-            // Start inference to generate the summary
             await inferenceService.generateMessage({
+              chatId: currentChatId,
               existingMessageId: summaryMessage.id,
               messageIndex: 0,
               userMessage: settings.requestPrompt,

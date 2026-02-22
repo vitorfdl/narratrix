@@ -2,9 +2,11 @@ import { ChatMessage } from "@/schema/chat-message-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 
 /**
- * StreamingState interface for tracking the streaming state of a message
+ * StreamingState interface for tracking the streaming state of a message.
+ * Each active chat generation has its own StreamingState instance.
  */
 export interface StreamingState {
+  chatId: string | null;
   messageId: string | null;
   requestId: string | null;
   accumulatedText: string;
@@ -28,6 +30,10 @@ export type StreamingStateChangeCallback = (state: StreamingState) => void;
  * Simplified options interface that requires less parameters
  */
 export interface GenerationOptions {
+  // Chat Context (defaults to currently selected chat if omitted)
+  chatId?: string;
+  chapterId?: string;
+
   // Template Configuration
   chatTemplateID?: string; // Override current chat template
 
@@ -60,6 +66,7 @@ export const DEFAULT_THINKING_CONFIG = {
 };
 
 export const INITIAL_STREAMING_STATE: StreamingState = {
+  chatId: null,
   messageId: null,
   requestId: null,
   accumulatedText: "",

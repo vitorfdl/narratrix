@@ -1,9 +1,6 @@
 import { useCallback, useRef } from "react";
 import { INITIAL_STREAMING_STATE, StreamingState, StreamingStateChangeCallback } from "./types";
 
-/**
- * Shallow comparison for streaming state to prevent unnecessary notifications
- */
 const shallowEqual = (obj1: StreamingState, obj2: StreamingState): boolean => {
   const keys1 = Object.keys(obj1) as (keyof StreamingState)[];
   const keys2 = Object.keys(obj2) as (keyof StreamingState)[];
@@ -21,110 +18,188 @@ const shallowEqual = (obj1: StreamingState, obj2: StreamingState): boolean => {
   return true;
 };
 
+interface Subscription {
+  callback: StreamingStateChangeCallback;
+  chatId?: string;
+}
+
 /**
- * Hook for managing streaming state and notifications
+ * Multi-session streaming state manager.
+ * Tracks one StreamingState per chatId with requestId-based routing for callbacks.
  */
 export function useStreamingStateManager() {
-  const streamingState = useRef<StreamingState>({ ...INITIAL_STREAMING_STATE });
-  const stateChangeCallbacks = useRef<Set<StreamingStateChangeCallback>>(new Set());
-  const lastNotifiedState = useRef<StreamingState>({ ...INITIAL_STREAMING_STATE });
+  const sessions = useRef<Map<string, StreamingState>>(new Map());
+  const requestToChatMap = useRef<Map<string, string>>(new Map());
+  const subscriptions = useRef<Set<Subscription>>(new Set());
+  const lastNotifiedStates = useRef<Map<string, StreamingState>>(new Map());
 
-  /**
-   * Notify all registered callbacks about streaming state changes (optimized with shallow comparison)
-   */
-  const notifyStateChange = useCallback(() => {
-    const currentState = { ...streamingState.current };
+  const notifyForChat = useCallback((chatId: string) => {
+    const session = sessions.current.get(chatId) ?? { ...INITIAL_STREAMING_STATE, chatId };
+    const lastState = lastNotifiedStates.current.get(chatId);
 
-    // Only notify if state actually changed
-    if (shallowEqual(currentState, lastNotifiedState.current)) {
+    if (lastState && shallowEqual(session, lastState)) {
       return;
     }
 
-    lastNotifiedState.current = currentState;
+    const snapshot = { ...session };
+    lastNotifiedStates.current.set(chatId, snapshot);
 
-    stateChangeCallbacks.current.forEach((callback) => {
+    for (const sub of subscriptions.current) {
+      if (sub.chatId !== undefined && sub.chatId !== chatId) {
+        continue;
+      }
       try {
-        callback(currentState);
+        sub.callback(snapshot);
       } catch (error) {
         console.error("Error in streaming state change callback:", error);
       }
-    });
+    }
   }, []);
 
-  /**
-   * Subscribe to streaming state changes
-   */
-  const subscribeToStateChanges = useCallback((callback: StreamingStateChangeCallback) => {
-    stateChangeCallbacks.current.add(callback);
+  const createSession = useCallback(
+    (chatId: string, requestId: string) => {
+      sessions.current.set(chatId, { ...INITIAL_STREAMING_STATE, chatId, requestId });
+      requestToChatMap.current.set(requestId, chatId);
+      notifyForChat(chatId);
+    },
+    [notifyForChat],
+  );
 
-    // Return unsubscribe function
+  const getSessionByChatId = useCallback((chatId: string): StreamingState | undefined => {
+    return sessions.current.get(chatId);
+  }, []);
+
+  const getSessionByRequest = useCallback((requestId: string): StreamingState | undefined => {
+    const chatId = requestToChatMap.current.get(requestId);
+    if (!chatId) {
+      return undefined;
+    }
+    return sessions.current.get(chatId);
+  }, []);
+
+  const getChatIdByRequest = useCallback((requestId: string): string | undefined => {
+    return requestToChatMap.current.get(requestId);
+  }, []);
+
+  const updateSessionByRequest = useCallback(
+    (requestId: string, updates: Partial<StreamingState>) => {
+      const chatId = requestToChatMap.current.get(requestId);
+      if (!chatId) {
+        return;
+      }
+
+      const current = sessions.current.get(chatId);
+      if (!current) {
+        return;
+      }
+
+      const newState = { ...current, ...updates };
+      if (!shallowEqual(newState, current)) {
+        sessions.current.set(chatId, newState);
+        notifyForChat(chatId);
+      }
+    },
+    [notifyForChat],
+  );
+
+  const batchUpdateSessionByRequest = useCallback(
+    (requestId: string, updateFn: (currentState: StreamingState) => Partial<StreamingState>) => {
+      const chatId = requestToChatMap.current.get(requestId);
+      if (!chatId) {
+        return;
+      }
+
+      const current = sessions.current.get(chatId);
+      if (!current) {
+        return;
+      }
+
+      const updates = updateFn(current);
+      const newState = { ...current, ...updates };
+      if (!shallowEqual(newState, current)) {
+        sessions.current.set(chatId, newState);
+        notifyForChat(chatId);
+      }
+    },
+    [notifyForChat],
+  );
+
+  const resetSession = useCallback(
+    (chatId: string): StreamingState | undefined => {
+      const previous = sessions.current.get(chatId);
+      if (!previous) {
+        return undefined;
+      }
+
+      if (previous.requestId) {
+        requestToChatMap.current.delete(previous.requestId);
+      }
+      sessions.current.delete(chatId);
+      lastNotifiedStates.current.delete(chatId);
+
+      notifyForChat(chatId);
+      return previous;
+    },
+    [notifyForChat],
+  );
+
+  const resetSessionByRequest = useCallback(
+    (requestId: string): StreamingState | undefined => {
+      const chatId = requestToChatMap.current.get(requestId);
+      if (!chatId) {
+        return undefined;
+      }
+      return resetSession(chatId);
+    },
+    [resetSession],
+  );
+
+  /**
+   * Subscribe to streaming state changes.
+   * @param callback Called with the StreamingState snapshot whenever it changes.
+   * @param chatId If provided, only notified for changes to that specific chat.
+   */
+  const subscribeToStateChanges = useCallback((callback: StreamingStateChangeCallback, chatId?: string) => {
+    const entry: Subscription = { callback, chatId };
+    subscriptions.current.add(entry);
+
     return () => {
-      stateChangeCallbacks.current.delete(callback);
+      subscriptions.current.delete(entry);
     };
   }, []);
 
-  /**
-   * Reset the streaming state
-   */
-  const resetStreamingState = useCallback(() => {
-    const previousState = { ...streamingState.current };
-    streamingState.current = { ...INITIAL_STREAMING_STATE };
-
-    // Notify all subscribers about the state change
-    notifyStateChange();
-
-    return previousState;
-  }, [notifyStateChange]);
-
-  /**
-   * Update streaming state with optimized change detection
-   */
-  const updateStreamingState = useCallback(
-    (updates: Partial<StreamingState>) => {
-      const newState = { ...streamingState.current, ...updates };
-
-      // Only update if something actually changed
-      if (!shallowEqual(newState, streamingState.current)) {
-        streamingState.current = newState;
-        notifyStateChange();
+  const isStreaming = useCallback((chatId?: string): boolean => {
+    if (chatId) {
+      const session = sessions.current.get(chatId);
+      return !!(session?.requestId && session?.characterId);
+    }
+    for (const session of sessions.current.values()) {
+      if (session.requestId && session.characterId) {
+        return true;
       }
-    },
-    [notifyStateChange],
-  );
-
-  /**
-   * Batch update multiple streaming state properties
-   */
-  const batchUpdateStreamingState = useCallback(
-    (updateFn: (currentState: StreamingState) => Partial<StreamingState>) => {
-      const updates = updateFn(streamingState.current);
-      updateStreamingState(updates);
-    },
-    [updateStreamingState],
-  );
-
-  /**
-   * Get the current streaming state (memoized to prevent unnecessary object creation)
-   */
-  const getStreamingState = useCallback((): StreamingState => {
-    return { ...streamingState.current };
+    }
+    return false;
   }, []);
 
-  /**
-   * Check if currently streaming
-   */
-  const isStreaming = useCallback((): boolean => {
-    return !!(streamingState.current.requestId && streamingState.current.characterId);
+  const getStreamingState = useCallback((chatId?: string): StreamingState => {
+    if (chatId) {
+      return { ...(sessions.current.get(chatId) ?? { ...INITIAL_STREAMING_STATE, chatId }) };
+    }
+    const first = sessions.current.values().next().value;
+    return first ? { ...first } : { ...INITIAL_STREAMING_STATE };
   }, []);
 
   return {
-    streamingState,
+    createSession,
+    getSessionByChatId,
+    getSessionByRequest,
+    getChatIdByRequest,
+    updateSessionByRequest,
+    batchUpdateSessionByRequest,
+    resetSession,
+    resetSessionByRequest,
     subscribeToStateChanges,
-    resetStreamingState,
-    updateStreamingState,
-    batchUpdateStreamingState,
-    getStreamingState,
     isStreaming,
-    notifyStateChange,
+    getStreamingState,
   };
 }

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import type { MarkdownEditorRef } from "@/components/markdownRender/markdown-editor";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { cn } from "@/lib/utils";
 import type { GenerationOptions, StreamingState } from "@/providers/inferenceChatProvider";
@@ -30,6 +30,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   // Track history navigation
 
   const currentProfile = useCurrentProfile();
+  const currentChatId = useCurrentChatId();
   const sendCommand = currentProfile?.settings.chat.sendShortcut;
   const participants = useCurrentChatParticipants();
   const chatMessages = useCurrentChatMessages();
@@ -45,41 +46,44 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   // Ref for focusing the MarkdownTextArea
   const markdownRef = useRef<MarkdownEditorRef>(null);
 
-  // Subscribe to streaming state changes
+  // Subscribe to streaming state changes scoped to this chat.
+  // Sync local state immediately so switching chats clears the previous chat's indicators.
   useEffect(() => {
+    const currentState = inferenceService.getStreamingState(currentChatId);
+    if (currentState.characterId) {
+      setStreamingCharacters({ [currentState.characterId]: true });
+    } else {
+      setStreamingCharacters({});
+    }
+    quietResponseRef.current = false;
+    setInputStreamingText("");
+
     const unsubscribe = inferenceService.subscribeToStateChanges((streamingState) => {
-      // Check for quiet response mode
       if (streamingState.messageId === "generate-input-area") {
         quietResponseRef.current = true;
         setInputStreamingText(streamingState.accumulatedText);
       } else if (quietResponseRef.current && !streamingState.characterId) {
-        // Reset quiet response mode when streaming ends
         quietResponseRef.current = false;
         setInputStreamingText("");
       }
 
       if (streamingState.characterId) {
         setStreamingCharacters((prev) => {
-          // If already tracked, no need to update
           if (prev[streamingState.characterId as string]) {
             return prev;
           }
-
-          // Add the new streaming character
           return {
             ...prev,
             [streamingState.characterId as string]: true,
           };
         });
       } else {
-        // If no character is currently streaming according to the service,
-        // clear all streaming characters
         setStreamingCharacters({});
       }
-    });
+    }, currentChatId);
 
     return unsubscribe;
-  }, [inferenceService]);
+  }, [inferenceService, currentChatId]);
 
   // Global tab-to-focus handler
   useEffect(() => {
@@ -127,10 +131,11 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         return;
       }
 
-      // Promise that resolves when current generation is done (or aborted)
+      const targetChatId = currentChatId;
+
       const waitForGenerationToFinish = (): Promise<void> => {
         return new Promise((resolve) => {
-          if (!inferenceService.isStreaming()) {
+          if (!inferenceService.isStreaming(targetChatId)) {
             resolve();
             return;
           }
@@ -144,7 +149,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
               unsubscribe();
               resolve();
             }
-          });
+          }, targetChatId);
         });
       };
 
@@ -160,29 +165,17 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           continue;
         }
 
-        setStreamingCharacters((prev) => ({ ...prev, [participant.id]: true }));
-
         try {
           const isFirst = i === 0;
           const userMsg = isFirst ? structuredClone(submittedText.trim()) : "";
 
           await inferenceService.generateMessage({
+            chatId: targetChatId,
             characterId: participant.id,
             userMessage: userMsg,
-            quietUserMessage: !isFirst, // only first attaches user message to chat
+            quietUserMessage: !isFirst,
             stream: true,
-            onStreamingStateChange: (state: StreamingState | null) => {
-              handleStreamingStateChange(state);
-              if (state?.characterId) {
-                setStreamingCharacters((prev) => ({ ...prev, [state.characterId as string]: true }));
-              } else {
-                setStreamingCharacters((prev) => {
-                  const newState = { ...prev };
-                  delete newState[participant.id];
-                  return newState;
-                });
-              }
-            },
+            onStreamingStateChange: handleStreamingStateChange,
           });
 
           if (isFirst && !quietResponseRef.current) {
@@ -200,16 +193,11 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           }
         } catch (error) {
           toast.error(`${error}`);
-          setStreamingCharacters((prev) => {
-            const newState = { ...prev };
-            delete newState[participant.id];
-            return newState;
-          });
           break;
         }
       }
     },
-    [enabledParticipants, inferenceService, handleStreamingStateChange, generationInputHistory, setGenerationInputHistory],
+    [enabledParticipants, inferenceService, handleStreamingStateChange, generationInputHistory, setGenerationInputHistory, currentChatId],
   );
 
   // Function to check if any character is currently streaming
@@ -217,13 +205,11 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     return Object.keys(streamingCharacters).length > 0;
   }, [streamingCharacters]);
 
-  // Handle cancellation of ongoing generation
   const handleCancel = useCallback(async () => {
     try {
       rotationAbortRef.current = true;
-      const success = await inferenceService.cancelGeneration();
+      const success = await inferenceService.cancelGeneration(currentChatId);
       if (success) {
-        // Reset streaming characters state
         setStreamingCharacters({});
         if (quietResponseRef.current) {
           quietResponseRef.current = false;
@@ -236,7 +222,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       console.error("Error cancelling generation:", error);
       toast.error("Error cancelling generation");
     }
-  }, [inferenceService]);
+  }, [inferenceService, currentChatId]);
 
   useEffect(() => {
     if (text.length > 0) {
@@ -251,6 +237,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     const quietResponse = action.streamOption === "textarea";
 
     const generationConfig: GenerationOptions = {
+      chatId: currentChatId,
       chatTemplateID: action.chatTemplateId ?? undefined,
       characterId: nextCharacter?.id ?? participantId ?? "",
       systemPromptOverride: action.systemPromptOverride,
@@ -261,14 +248,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       extraSuggestions: {
         input: structuredClone(text),
       },
-      onStreamingStateChange: (state) => {
-        // Handle streaming state changes for both regular and quiet responses
-        handleStreamingStateChange(state);
-
-        if (state?.characterId) {
-          setStreamingCharacters((prev) => ({ ...prev, [state.characterId as string]: true }));
-        }
-      },
+      onStreamingStateChange: handleStreamingStateChange,
     };
 
     if (action.streamOption === "participantMessage") {

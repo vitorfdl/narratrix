@@ -971,6 +971,10 @@ export const useCurrentChatUserCharacter = () =>
     userCharacterSettings: state.selectedChat?.user_character_settings,
   }));
 
+/** Non-hook selector for reading current chat ID outside of React components. */
+export const getCurrentChatId = () => useChatStore.getState().selectedChat?.id;
+export const getCurrentChapterId = () => useChatStore.getState().selectedChat?.active_chapter_id;
+
 export const useCurrentChatId = () => useChatStore((state) => state.selectedChat.id);
 export const useCurrentChatName = () => useChatStore((state) => state.selectedChat.name);
 export const useCurrentChatUserCharacterID = () => useChatStore((state) => state.selectedChat.user_character_id);

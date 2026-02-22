@@ -1,7 +1,7 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.7/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.3/schema.json",
   "files": {
-    "includes": ["src/**"]
+    "includes": ["src/**", "!src-tauri", "!!**/target/"]
   },
   "formatter": {
     "indentStyle": "space",
@@ -28,6 +28,7 @@
         "useHookAtTopLevel": "warn"
       },
       "complexity": {
+        "noImportantStyles": "warn",
         "noForEach": "warn"
       },
       "style": {

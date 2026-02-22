@@ -30,6 +30,12 @@ export const defaultSettings = AppSettingsSchema.parse({
     fontSize: 16,
     fontFamily: "Inter",
     accentColor: "#7C3AED",
+    delimiterHighlighting: {
+      quoteDouble: true,
+      quoteLeft: true,
+      brace: true,
+      dashEm: true,
+    },
   },
   system: {
     expressionPackDirectory: "",

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useAgents } from "@/hooks/agentStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { useImageUrl } from "@/hooks/useImageUrl";
@@ -197,6 +197,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
   const [isEditCharacterModalOpen, setIsEditCharacterModalOpen] = useState<string | null>(null);
   const [isEditAgentModalOpen, setIsEditAgentModalOpen] = useState<string | null>(null);
 
+  const currentChatId = useCurrentChatId();
   const messages = useCurrentChatMessages();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const participants = useCurrentChatParticipants() || [];
@@ -206,25 +207,22 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
   const inferenceService = useInferenceServiceFromContext();
   const { executeWorkflow: executeAgentWorkflow, workflowState } = useAgentWorkflow();
 
-  // State to track current streaming state
-  const [streamingState, setStreamingState] = useState(() => inferenceService.getStreamingState());
+  const [streamingState, setStreamingState] = useState(() => inferenceService.getStreamingState(currentChatId));
 
   // Get user character if it exists
   const userCharacter = currentChatUserCharacterID ? characterList.find((char) => char.id === currentChatUserCharacterID) : null;
 
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
 
-  // Subscribe to streaming state changes
   useEffect(() => {
     const unsubscribe = inferenceService.subscribeToStateChanges((newState) => {
       setStreamingState(newState);
-    });
+    }, currentChatId);
 
-    // Initial sync
-    setStreamingState(inferenceService.getStreamingState());
+    setStreamingState(inferenceService.getStreamingState(currentChatId));
 
     return unsubscribe;
-  }, [inferenceService]);
+  }, [inferenceService, currentChatId]);
 
   // Map chat participants to the Participant interface for this component
   const mappedParticipants: Participant[] = participants.map((p) => {
@@ -350,7 +348,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
       }
 
       if (streamingState.characterId === participantId) {
-        inferenceService.cancelGeneration();
+        inferenceService.cancelGeneration(currentChatId);
         return;
       }
 
@@ -389,8 +387,8 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
             toast.error(`Agent ${agent.name} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
           }
         } else if (character) {
-          // Use the inference service to generate a message for characters
           await inferenceService.generateMessage({
+            chatId: currentChatId,
             characterId: participantId,
           });
         }
@@ -399,7 +397,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
       }
     },
-    [characterList, agentList, messages, inferenceService, streamingState.characterId],
+    [characterList, agentList, messages, inferenceService, streamingState.characterId, currentChatId],
   );
 
   const isInQueue = (participantId: string) => {

@@ -2,7 +2,11 @@ import type { Element, Root, Text } from "hast";
 import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
 
-type DelimiterType = "quote-double" | "quote-left" | "brace" | "dash-em" | "dash-en";
+export type DelimiterType = "quote-double" | "quote-left" | "brace" | "dash-em" | "dash-en";
+
+export interface RehypeHighlightQuotesOptions {
+  enabledTypes?: DelimiterType[];
+}
 
 interface DelimiterConfig {
   type: DelimiterType;
@@ -13,10 +17,11 @@ interface DelimiterConfig {
 
 const DELIMITER_CONFIGS: DelimiterConfig[] = [
   { type: "quote-double", opening: '"', closing: '"', className: "markdown-quoted-text" },
-  { type: "quote-left", opening: "“", closing: "”", className: "markdown-quoted-text" },
+  { type: "quote-left", opening: "\u201C", closing: "\u201D", className: "markdown-quoted-text" },
   { type: "brace", opening: "{{", closing: "}}", className: "markdown-special-text" },
-  { type: "dash-em", opening: "—", closing: "—", className: "markdown-quoted-text" },
+  { type: "dash-em", opening: "\u2014", closing: "\u2014", className: "markdown-quoted-text" },
 ];
+
 const createStyledSpan = (className: string, children: (Element | Text)[]): Element => ({
   type: "element",
   tagName: "span",
@@ -24,11 +29,11 @@ const createStyledSpan = (className: string, children: (Element | Text)[]): Elem
   children,
 });
 
-const findNextDelimiter = (text: string, startPos: number): { pos: number; config: DelimiterConfig } | null => {
+const findNextDelimiter = (configs: DelimiterConfig[], text: string, startPos: number): { pos: number; config: DelimiterConfig } | null => {
   let closestPos = -1;
   let closestConfig: DelimiterConfig | null = null;
 
-  for (const config of DELIMITER_CONFIGS) {
+  for (const config of configs) {
     const pos = text.indexOf(config.opening, startPos);
     if (pos !== -1 && (closestPos === -1 || pos < closestPos)) {
       closestPos = pos;
@@ -48,8 +53,13 @@ const addTextToNode = (target: (Element | Text)[] | Element, text: string): void
   }
 };
 
-const processTextOutsideSpan = (text: string, startPos: number, newChildren: (Element | Text)[]): { newPos: number; span: Element | null; spanType: DelimiterType | null } => {
-  const delimiter = findNextDelimiter(text, startPos);
+const processTextOutsideSpan = (
+  configs: DelimiterConfig[],
+  text: string,
+  startPos: number,
+  newChildren: (Element | Text)[],
+): { newPos: number; span: Element | null; spanType: DelimiterType | null } => {
+  const delimiter = findNextDelimiter(configs, text, startPos);
 
   if (!delimiter) {
     if (startPos < text.length) {
@@ -72,8 +82,8 @@ const processTextOutsideSpan = (text: string, startPos: number, newChildren: (El
   };
 };
 
-const processTextInsideSpan = (text: string, startPos: number, span: Element, spanType: DelimiterType): { newPos: number; spanClosed: boolean } => {
-  const config = DELIMITER_CONFIGS.find((c) => c.type === spanType)!;
+const processTextInsideSpan = (configs: DelimiterConfig[], text: string, startPos: number, span: Element, spanType: DelimiterType): { newPos: number; spanClosed: boolean } => {
+  const config = configs.find((c) => c.type === spanType)!;
   const closingPos = text.indexOf(config.closing, startPos);
 
   if (closingPos === -1) {
@@ -95,6 +105,7 @@ const processTextInsideSpan = (text: string, startPos: number, span: Element, sp
 };
 
 const processTextNode = (
+  configs: DelimiterConfig[],
   textValue: string,
   currentSpan: Element | null,
   currentSpanType: DelimiterType | null,
@@ -106,12 +117,12 @@ const processTextNode = (
 
   while (currentPos < textValue.length) {
     if (spanType === null) {
-      const result = processTextOutsideSpan(textValue, currentPos, newChildren);
+      const result = processTextOutsideSpan(configs, textValue, currentPos, newChildren);
       currentPos = result.newPos;
       span = result.span;
       spanType = result.spanType;
     } else {
-      const result = processTextInsideSpan(textValue, currentPos, span!, spanType);
+      const result = processTextInsideSpan(configs, textValue, currentPos, span!, spanType);
       currentPos = result.newPos;
       if (result.spanClosed) {
         span = null;
@@ -123,18 +134,18 @@ const processTextNode = (
   return { span, spanType };
 };
 
-const processPhrasingContent = (nodes: (Element | Text)[], inSpan: Element | null = null, inSpanType: DelimiterType | null = null): (Element | Text)[] => {
+const processPhrasingContent = (configs: DelimiterConfig[], nodes: (Element | Text)[], inSpan: Element | null = null, inSpanType: DelimiterType | null = null): (Element | Text)[] => {
   const newChildren: (Element | Text)[] = [];
   let currentSpan = inSpan;
   let currentSpanType = inSpanType;
 
   for (const child of nodes) {
     if (child.type === "text") {
-      const result = processTextNode(child.value, currentSpan, currentSpanType, newChildren);
+      const result = processTextNode(configs, child.value, currentSpan, currentSpanType, newChildren);
       currentSpan = result.span;
       currentSpanType = result.spanType;
     } else if (child.type === "element") {
-      const processedChildren = processPhrasingContent(child.children as (Element | Text)[], currentSpan, currentSpanType);
+      const processedChildren = processPhrasingContent(configs, child.children as (Element | Text)[], currentSpan, currentSpanType);
       const newElement: Element = { ...child, children: processedChildren };
 
       if (currentSpan) {
@@ -151,14 +162,21 @@ const processPhrasingContent = (nodes: (Element | Text)[], inSpan: Element | nul
 /**
  * Rehype plugin to highlight quoted phrases ("...") and special phrases ({{...}})
  * in markdown, correctly handling phrases that contain inline elements.
+ * Accepts optional `enabledTypes` to filter which delimiter types are processed.
  */
-const rehypeHighlightQuotes: Plugin<[], Root> = () => {
+const rehypeHighlightQuotes: Plugin<[RehypeHighlightQuotesOptions?], Root> = (options) => {
+  const activeConfigs = options?.enabledTypes ? DELIMITER_CONFIGS.filter((c) => options.enabledTypes!.includes(c.type)) : DELIMITER_CONFIGS;
+
   return (tree) => {
+    if (activeConfigs.length === 0) {
+      return;
+    }
+
     visit(tree, "element", (node: Element) => {
       if (!["p", "li", "div", "blockquote", "td", "th"].includes(node.tagName)) {
         return;
       }
-      node.children = processPhrasingContent(node.children as (Element | Text)[]);
+      node.children = processPhrasingContent(activeConfigs, node.children as (Element | Text)[]);
     });
   };
 };

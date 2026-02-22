@@ -1,14 +1,16 @@
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { Copy } from "lucide-react";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import RehypeHighlight from "rehype-highlight";
 import RemarkBreaks from "remark-breaks";
 import RemarkGfm from "remark-gfm";
 import { toast } from "sonner";
-import rehypeHighlightQuotes from "@/components/markdownRender/extensions/rehype-highlight-quotes";
+import rehypeHighlightQuotes, { type DelimiterType } from "@/components/markdownRender/extensions/rehype-highlight-quotes";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { cn } from "@/lib/utils";
+import type { DelimiterHighlighting } from "@/schema/profiles-schema";
 import "./styles/highlight.css";
 import "./styles/markdown.css";
 
@@ -42,8 +44,41 @@ const PreWithCopy: React.FC<React.PropsWithChildren<React.HTMLAttributes<HTMLPre
   );
 };
 
+const DELIMITER_SETTING_MAP: Record<keyof DelimiterHighlighting, DelimiterType> = {
+  quoteDouble: "quote-double",
+  quoteLeft: "quote-left",
+  brace: "brace",
+  dashEm: "dash-em",
+};
+
+function getEnabledDelimiterTypes(highlighting: DelimiterHighlighting | undefined): DelimiterType[] | undefined {
+  if (!highlighting) {
+    return undefined;
+  }
+  const enabled = Object.entries(DELIMITER_SETTING_MAP)
+    .filter(([key]) => highlighting[key as keyof DelimiterHighlighting])
+    .map(([, type]) => type);
+  return enabled.length === Object.keys(DELIMITER_SETTING_MAP).length ? undefined : enabled;
+}
+
 export function MarkdownViewer({ content, className, label }: MarkdownViewerProps) {
-  // Define markdown components for view-only mode
+  const currentProfile = useCurrentProfile();
+  const delimiterHighlighting = currentProfile?.settings.appearance.delimiterHighlighting;
+
+  const rehypePlugins = useMemo(() => {
+    const enabledTypes = getEnabledDelimiterTypes(delimiterHighlighting);
+    return [
+      enabledTypes !== undefined ? [rehypeHighlightQuotes, { enabledTypes }] : rehypeHighlightQuotes,
+      [
+        RehypeHighlight,
+        {
+          detect: false,
+          ignoreMissing: true,
+        },
+      ],
+    ] as NonNullable<React.ComponentProps<typeof ReactMarkdown>["rehypePlugins"]>;
+  }, [delimiterHighlighting]);
+
   const markdownComponents: Components = {
     pre: PreWithCopy,
     code: ({ className, children, ...props }) => (
@@ -57,20 +92,7 @@ export function MarkdownViewer({ content, className, label }: MarkdownViewerProp
     <div className="flex flex-col">
       {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
       <div className={cn("custom-scrollbar font-sans rounded-sm markdown-body h-full w-full px-3 py-2 overflow-auto prose prose-sm dark:prose-invert max-w-none", className)}>
-        <ReactMarkdown
-          remarkPlugins={[RemarkGfm, RemarkBreaks]}
-          rehypePlugins={[
-            rehypeHighlightQuotes,
-            [
-              RehypeHighlight,
-              {
-                detect: false,
-                ignoreMissing: true,
-              },
-            ],
-          ]}
-          components={markdownComponents}
-        >
+        <ReactMarkdown remarkPlugins={[RemarkGfm, RemarkBreaks]} rehypePlugins={rehypePlugins} components={markdownComponents}>
           {content}
         </ReactMarkdown>
       </div>

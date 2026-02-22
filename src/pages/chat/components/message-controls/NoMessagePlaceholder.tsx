@@ -3,12 +3,13 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatId, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
 import { getCharacterById } from "@/services/character-service";
 import { replaceStringPlaceholders } from "@/services/inference/formatter/replace-text-placeholders";
 
 export const NoMessagePlaceholder: React.FC = () => {
+  const currentChatId = useCurrentChatId();
   const currentChatChapters = useCurrentChatChapters();
   const activeChapterId = useCurrentChatActiveChapterID();
   const inferenceService = useInferenceServiceFromContext();
@@ -55,8 +56,8 @@ export const NoMessagePlaceholder: React.FC = () => {
           extra: { script: "start_chapter" },
         });
 
-        // Start inference to generate the intro message
         await inferenceService.generateMessage({
+          chatId: currentChatId,
           existingMessageId: systemMessage.id,
           messageIndex: 0,
           userMessage: currentChapter.start_message,
