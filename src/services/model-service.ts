@@ -1,4 +1,5 @@
 import { encryptApiKey } from "@/commands/security.ts";
+import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils";
 import { formatDateTime } from "@/utils/date-time.ts";
 import { Model, ModelSchema, ModelType } from "../schema/models-schema.ts";
 import { uuidUtils } from "../schema/utils-schema.ts";
@@ -127,7 +128,7 @@ export async function getModelById(id: string): Promise<Model | null> {
   const model = result[0];
 
   model.config = JSON.parse(model.config || "{}");
-  // Convert date strings to Date objects
+  model.favorite = parseBoolean(model.favorite);
   model.created_at = new Date(model.created_at);
   model.updated_at = new Date(model.updated_at);
 
@@ -185,7 +186,7 @@ export async function listModels(filter?: ModelFilter): Promise<Model[]> {
   return result.map((model) => ({
     ...model,
     config: JSON.parse(model.config || "{}"),
-    favorite: model.favorite || false,
+    favorite: parseBoolean(model.favorite),
     created_at: new Date(model.created_at),
     updated_at: new Date(model.updated_at),
   })) as Model[];

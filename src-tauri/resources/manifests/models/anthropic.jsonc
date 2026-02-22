@@ -7,7 +7,7 @@
   "type": "llm",
   "inference_type": ["chat"],
   "inference_fields": ["temperature", "top_p", "top_k", "reasoning"],
-  "engine": "openai_compatible",
+  "engine": "anthropic",
   "fields": [
     {
       "key": "api_key",

@@ -80,8 +80,9 @@ export function buildUpdateParams<T extends Record<string, any>>(
     if (value !== undefined) {
       // Skip undefined values
       const transformedValue = key in fieldMapping ? fieldMapping[key]!(value) : value;
+      const sqlValue = typeof transformedValue === "boolean" ? (transformedValue ? 1 : 0) : transformedValue;
       builder.updates.push(`${key.toLowerCase()} = $${builder.paramIndex}`);
-      builder.values.push(transformedValue);
+      builder.values.push(sqlValue);
       builder.paramIndex++;
     }
   }
