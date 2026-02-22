@@ -1,6 +1,6 @@
 import type { IconType } from "react-icons";
 import { LuCpu, LuRoute, LuServer } from "react-icons/lu";
-import { SiAmazonwebservices, SiAnthropic, SiGoogle, SiOpenai } from "react-icons/si";
+import { SiAmazonwebservices, SiAnthropic, SiGoogle, SiOllama, SiOpenai } from "react-icons/si";
 import type { Engine } from "@/schema/model-manifest-schema";
 
 interface EngineIconConfig {
@@ -16,6 +16,7 @@ const ENGINE_CONFIG: Record<Engine, EngineIconConfig> = {
   aws_bedrock: { icon: SiAmazonwebservices, color: "#FF9900" },
   openrouter: { icon: LuRoute, color: "#6467f2" },
   runpod: { icon: LuServer, color: "#6c4de7" },
+  ollama: { icon: SiOllama },
   openai_compatible: { icon: LuCpu },
 };
 

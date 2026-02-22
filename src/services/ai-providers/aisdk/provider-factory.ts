@@ -4,10 +4,12 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import { createOllama } from "ai-sdk-ollama";
 import { decryptApiKey } from "@/commands/security";
 import { ModelSpecs } from "@/schema/inference-engine-schema";
+import { getOllamaModelSettings } from "./provider-options/ollama";
 
-async function getAISDKModel(modelProvider: ModelSpecs) {
+async function getAISDKModel(modelProvider: ModelSpecs, inferenceParameters?: Record<string, any>) {
   const engineName = modelProvider.engine;
   const authParams = modelProvider.config;
 
@@ -60,6 +62,17 @@ async function getAISDKModel(modelProvider: ModelSpecs) {
     } else {
       return openrouter.completion(modelName);
     }
+  }
+
+  if (engineName === "ollama") {
+    const APIKey = authParams?.api_key ? await decryptApiKey(authParams?.api_key) : undefined;
+    const ollamaSettings = getOllamaModelSettings(inferenceParameters ?? {});
+    const ollamaProvider = createOllama({
+      baseURL: authParams?.base_url || "http://127.0.0.1:11434",
+      apiKey: APIKey,
+      fetch: fetchOverride,
+    });
+    return ollamaProvider(modelName, ollamaSettings);
   }
 
   if (engineName === "openai_compatible") {

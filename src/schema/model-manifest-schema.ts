@@ -37,7 +37,7 @@ export const ManifestFieldSchema = z.object({
     .optional(),
 });
 
-const engineSchema = z.enum(["openai_compatible", "openai", "anthropic", "google", "runpod", "aws_bedrock", "openrouter"]);
+const engineSchema = z.enum(["openai_compatible", "openai", "anthropic", "google", "runpod", "aws_bedrock", "openrouter", "ollama"]);
 /**
  * Zod schema representing a manifest file structure
  */

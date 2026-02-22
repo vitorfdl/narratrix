@@ -23,6 +23,7 @@
     "nsigma",
     "stop",
     "sampling_order",
+    "adaptive_p",
     "reasoning"
   ],
   "fields": [

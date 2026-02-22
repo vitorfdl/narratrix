@@ -68,6 +68,7 @@
     "@uiw/react-codemirror": "^4.25.4",
     "@xyflow/react": "^12.10.1",
     "ai": "6.0.5",
+    "ai-sdk-ollama": "^3.7.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

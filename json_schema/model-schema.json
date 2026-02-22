@@ -40,7 +40,8 @@
         "aws_bedrock",
         "anthropic",
         "google",
-        "openrouter"
+        "openrouter",
+        "ollama"
       ]
     },
     "inference_type": {
@@ -77,7 +78,8 @@
           "reasoning",
           "prompt_cache",
           "nsigma",
-          "dynamic_temperature"
+          "dynamic_temperature",
+          "adaptive_p"
         ]
       },
       "uniqueItems": true

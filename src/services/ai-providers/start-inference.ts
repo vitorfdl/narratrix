@@ -21,7 +21,7 @@ const DEFAULT_MAX_TOKENS = 4000;
  */
 async function callProviderConverseEndpoint(event: AIEvent, params: InferenceParams) {
   // 1. Create Model Instance
-  const model = await getAISDKModel(params.modelSpecs);
+  const model = await getAISDKModel(params.modelSpecs, params.parameters as Record<string, any>);
   const isChatModel = params.modelSpecs.model_type === "chat";
 
   // 2. Convert Messages

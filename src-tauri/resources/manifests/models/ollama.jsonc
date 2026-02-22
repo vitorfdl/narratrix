@@ -1,0 +1,62 @@
+{
+  "$schema": "../../../../json_schema/model-schema.json",
+  "id": "ollama",
+  "name": "Ollama",
+  "description": "Integration with locally-hosted Ollama models",
+  "website": "https://ollama.com/",
+  "type": "llm",
+  "inference_type": ["chat"],
+  "inference_fields": ["temperature", "top_p", "top_k", "min_p", "repetition_penalty", "seed", "reasoning"],
+  "engine": "ollama",
+  "fields": [
+    {
+      "key": "base_url",
+      "label": "Base URL",
+      "placeholder": "Ollama server address",
+      "required": true,
+      "default": "http://127.0.0.1:11434",
+      "field_type": "url"
+    },
+    {
+      "key": "api_key",
+      "label": "API Key",
+      "placeholder": "API key (optional, for remote instances)",
+      "required": false,
+      "field_type": "secret"
+    },
+    {
+      "key": "model",
+      "label": "Model",
+      "placeholder": "The Ollama model to use",
+      "required": true,
+      "field_type": "string",
+      "hints": [
+        "llama3.2",
+        "mistral",
+        "qwen2.5",
+        "deepseek-r1:7b",
+        "phi4-mini",
+        "gemma2",
+        "codellama"
+      ],
+      "request": {
+        "label": "Get Models",
+        "method": "GET",
+        "url": "{base_url}/api/tags",
+        "response": {
+          "label": "name",
+          "value": "name",
+          "parse": {
+            "models": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "name": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

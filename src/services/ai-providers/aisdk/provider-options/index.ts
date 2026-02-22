@@ -1,4 +1,4 @@
-import { Engine } from "@/schema/model-manifest-schema";
+import type { Engine } from "@/schema/model-manifest-schema";
 import { getAWSBedrockProviderOptions } from "./aws-bedrock";
 import { getGeminiProviderOptions } from "./gemini";
 import { getOpenAIProviderOptions } from "./openai";
@@ -18,6 +18,8 @@ function getProviderOptions(engine: Engine, parameters: Record<string, any>) {
     //   return { anthropic: getAnthropicProviderOptions(parameters) };
     case "openai_compatible":
       return { openai: getOpenAICompatibleProviderOptions(parameters) };
+    case "ollama":
+      return {};
     default:
       return {};
   }
