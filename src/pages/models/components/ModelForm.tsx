@@ -536,20 +536,20 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
           {testRequestStatus === "queued" || testRequestStatus === "streaming" ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              <span>Cancel Verification</span>
+              <span>Cancel Test Request</span>
             </>
           ) : testResult?.state === "success" ? (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              <span>Successfully Verified</span>
+              <span>Verification Successful</span>
             </>
           ) : testResult?.state === "error" ? (
             <>
               <AlertCircle className="mr-2 h-4 w-4" />
-              <span>Retry Verification</span>
+              <span>Retry Connection Test</span>
             </>
           ) : (
-            <span>Verify Connection</span>
+            <span>Run Connection Test</span>
           )}
         </Button>
 

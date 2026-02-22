@@ -122,6 +122,7 @@ const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSetti
   {
     chatTemplateId: "",
     autoRefresh: false,
+    autoRunAfterComplete: false,
     requestPrompt: "",
     systemPrompt: "",
     throttleInterval: 8000, // Default 8 seconds
@@ -140,6 +141,7 @@ const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSetti
         return {
           chatTemplateId: parsed.chatTemplateId ?? initialValue.chatTemplateId,
           autoRefresh: parsed.autoRefresh ?? initialValue.autoRefresh,
+          autoRunAfterComplete: parsed.autoRunAfterComplete ?? initialValue.autoRunAfterComplete,
           requestPrompt: parsed.requestPrompt ?? initialValue.requestPrompt,
           systemPrompt: parsed.systemPrompt ?? initialValue.systemPrompt,
           throttleInterval: parsed.throttleInterval ?? initialValue.throttleInterval,

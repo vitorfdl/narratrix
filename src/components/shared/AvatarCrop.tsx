@@ -251,11 +251,11 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
   );
 };
 
-// Helper function to read file as data URL
 const readFile = (file: File): Promise<string> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.addEventListener("load", () => resolve(reader.result as string));
+    reader.addEventListener("error", () => reject(new Error(`Failed to read file: ${file.name}`)));
     reader.readAsDataURL(file);
   });
 };

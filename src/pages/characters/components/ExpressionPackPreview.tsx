@@ -1,45 +1,29 @@
-import { appDataDir, basename, join } from "@tauri-apps/api/path";
+import { basename, join } from "@tauri-apps/api/path";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, confirm as tauriConfirm } from "@tauri-apps/plugin-dialog";
 import { readFile, remove } from "@tauri-apps/plugin-fs";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { Edit, Folder, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useCharacterActions, useCharacterById } from "@/hooks/characterStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useMultipleImageUrls } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
-import { Character, Expression } from "@/schema/characters-schema";
-import { saveExpressionImage } from "@/services/file-system-service";
+import type { Character, Expression } from "@/schema/characters-schema";
+import { getAppDataDir, saveExpressionImageFromBinary } from "@/services/file-system-service";
 
-// Helper function to convert binary array to data URL
-function binaryToDataUrl(binaryData: Uint8Array, mimeType: string): string {
-  let binaryString = "";
-  for (let i = 0; i < binaryData.length; i++) {
-    binaryString += String.fromCharCode(binaryData[i]);
-  }
-  const base64 = btoa(binaryString);
-  return `data:${mimeType};base64,${base64}`;
-}
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
+const IMAGE_FILTERS = [{ name: "Images", extensions: IMAGE_EXTENSIONS }];
 
-// Helper to get mime type from file extension
-function getMimeType(filePath: string): string {
-  const extension = filePath.split(".").pop()?.toLowerCase() || "";
-  switch (extension) {
-    case "png":
-      return "image/png";
-    case "jpg":
-    case "jpeg":
-      return "image/jpeg";
-    case "webp":
-      return "image/webp";
-    default:
-      return "application/octet-stream"; // Fallback
-  }
+function getFileExtension(filePath: string): string {
+  return filePath.split(".").pop()?.toLowerCase() || "";
 }
 
 interface ExpressionPackPreviewProps {
@@ -54,20 +38,43 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const currentProfile = useCurrentProfile();
 
-  // Memoize getter functions for useMultipleImageUrls
+  // Prompt dialog state (replaces native prompt())
+  const [promptDialogOpen, setPromptDialogOpen] = useState(false);
+  const [promptValue, setPromptValue] = useState("new_expression");
+  const promptResolveRef = useRef<((value: string | null) => void) | null>(null);
+
+  // Stable refs so the drag-drop effect doesn't re-subscribe on every expressions change
+  const expressionsRef = useRef(expressions);
+  expressionsRef.current = expressions;
+  const characterRef = useRef(character);
+  characterRef.current = character;
+
   const getExpressionPath = useCallback((expression: Expression) => expression.image_path, []);
   const getExpressionId = useCallback((expression: Expression) => expression.id, []);
 
-  // Use our custom hook to efficiently load all expression images
-  const {
-    urlMap: expressionUrls,
-    isLoading,
-    reloadAll,
-  } = useMultipleImageUrls(
-    expressions ?? [], // Provide default empty array
-    getExpressionPath, // Use memoized function
-    getExpressionId, // Use memoized function
-  );
+  const { urlMap: expressionUrls, isLoading, reloadAll } = useMultipleImageUrls(expressions ?? [], getExpressionPath, getExpressionId);
+
+  /** Opens the controlled prompt dialog and returns user input (or null if cancelled). */
+  const showPromptDialog = useCallback((defaultValue = "new_expression"): Promise<string | null> => {
+    return new Promise<string | null>((resolve) => {
+      setPromptValue(defaultValue);
+      promptResolveRef.current = resolve;
+      setPromptDialogOpen(true);
+    });
+  }, []);
+
+  const handlePromptConfirm = useCallback(() => {
+    const trimmed = promptValue.trim();
+    promptResolveRef.current?.(trimmed || null);
+    promptResolveRef.current = null;
+    setPromptDialogOpen(false);
+  }, [promptValue]);
+
+  const handlePromptCancel = useCallback(() => {
+    promptResolveRef.current?.(null);
+    promptResolveRef.current = null;
+    setPromptDialogOpen(false);
+  }, []);
 
   // --- Drag and Drop Event Listener (Tauri v2) ---
   useEffect(() => {
@@ -75,121 +82,95 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
     const setupListener = async () => {
       const currentWindow = getCurrentWebviewWindow();
-      // Listen to the window's drag-drop events
       unlisten = await currentWindow.onDragDropEvent(async (event) => {
-        // Check payload type and access paths directly
-        if (event.payload.type === "drop" && Array.isArray(event.payload.paths)) {
-          if (!character) {
-            return; // Need character context
-          }
+        if (event.payload.type !== "drop" || !Array.isArray(event.payload.paths)) {
+          return;
+        }
+        if (!characterRef.current) {
+          return;
+        }
 
-          setIsProcessingDrop(true);
-          const droppedFilePaths = event.payload.paths; // Access paths directly
-          const currentExpressions = [...(expressions ?? [])];
-          let needsUpdate = false;
+        setIsProcessingDrop(true);
+        const droppedFilePaths = event.payload.paths;
+        const currentExpressions = [...(expressionsRef.current ?? [])];
+        let needsUpdate = false;
 
-          // Map to track new expressions to be created - using Map to prevent duplicates
-          const newExpressionsMap = new Map<
-            string,
-            {
-              fileName: string;
-              dataUrl: string;
-              id: string;
-            }
-          >();
+        const newExpressionsMap = new Map<string, { fileName: string; data: Uint8Array; ext: string; id: string }>();
 
-          try {
-            // First pass - process all files and categorize them
-            for (const filePath of droppedFilePaths) {
-              try {
-                const fileNameWithExt = await basename(filePath);
-                const fileExtMatch = fileNameWithExt.match(/\.(\w+)$/);
-                const fileExt = fileExtMatch ? fileExtMatch[1].toLowerCase() : "";
-                const fileName = fileNameWithExt.replace(/\.\w+$/, "");
+        try {
+          for (const filePath of droppedFilePaths) {
+            try {
+              const fileNameWithExt = await basename(filePath);
+              const fileExt = getFileExtension(fileNameWithExt);
+              const fileName = fileNameWithExt.replace(/\.\w+$/, "");
 
-                // Skip non-image files based on extension
-                if (!["png", "jpg", "jpeg", "webp"].includes(fileExt)) {
-                  continue;
-                }
-
-                const lowerCaseFileName = fileName.toLowerCase();
-
-                // Check if expression exists (case-insensitive)
-                const existingExpressionIndex = currentExpressions.findIndex((exp) => exp.name.toLowerCase() === lowerCaseFileName);
-
-                // --- Read file content (common step) ---
-                const fileContent = await readFile(filePath);
-                const mimeType = getMimeType(filePath);
-                const dataUrl = binaryToDataUrl(fileContent, mimeType);
-                // -----------------------------------------
-
-                if (existingExpressionIndex !== -1) {
-                  // Update existing expression
-                  const expressionToUpdate = currentExpressions[existingExpressionIndex];
-                  const savedPath = await saveExpressionImage(dataUrl, expressionToUpdate.name, character_id);
-                  currentExpressions[existingExpressionIndex] = { ...expressionToUpdate, image_path: savedPath };
-                  needsUpdate = true;
-                } else if (!newExpressionsMap.has(lowerCaseFileName)) {
-                  // Only add to the map if not already present (prevents duplicates)
-                  const newExpressionId = nanoid();
-                  newExpressionsMap.set(lowerCaseFileName, {
-                    fileName,
-                    dataUrl,
-                    id: newExpressionId,
-                  });
-                }
-              } catch (fileProcessingError) {
-                console.error(`Error processing dropped file ${filePath}:`, fileProcessingError);
-                // Optionally inform user about the specific file error
+              if (!IMAGE_EXTENSIONS.includes(fileExt)) {
+                continue;
               }
-            }
 
-            // Convert map to array for processing
-            const newExpressionsToCreate = Array.from(newExpressionsMap.values());
+              const lowerCaseFileName = fileName.toLowerCase();
+              const existingExpressionIndex = currentExpressions.findIndex((exp) => exp.name.toLowerCase() === lowerCaseFileName);
 
-            // If we have new expressions to create, show a single confirmation dialog
-            if (newExpressionsToCreate.length > 0) {
-              const expressionNames = newExpressionsToCreate.map((item) => item.fileName).join("\n• ");
-              const confirmMessage = `Create ${newExpressionsToCreate.length} new expressions?\n\n• ${expressionNames}`;
-              const confirmed = await confirm(confirmMessage);
+              const fileContent = await readFile(filePath);
 
-              if (!confirmed) {
-                return;
-              }
-              // Process all confirmed new expressions
-              for (const { fileName, dataUrl, id } of newExpressionsToCreate) {
-                const savedPath = await saveExpressionImage(dataUrl, fileName, character_id);
-                const newExpression: Expression = {
-                  id,
-                  name: fileName,
-                  image_path: savedPath,
-                };
-                currentExpressions.push(newExpression);
+              if (existingExpressionIndex !== -1) {
+                const expressionToUpdate = currentExpressions[existingExpressionIndex];
+                const savedPath = await saveExpressionImageFromBinary(fileContent, fileExt, expressionToUpdate.name, character_id);
+                currentExpressions[existingExpressionIndex] = { ...expressionToUpdate, image_path: savedPath };
                 needsUpdate = true;
+              } else if (!newExpressionsMap.has(lowerCaseFileName)) {
+                newExpressionsMap.set(lowerCaseFileName, {
+                  fileName,
+                  data: fileContent,
+                  ext: fileExt,
+                  id: nanoid(),
+                });
               }
+            } catch (fileProcessingError) {
+              console.error(`Error processing dropped file ${filePath}:`, fileProcessingError);
+              toast.error(`Failed to process file: ${filePath}`);
+            }
+          }
+
+          const newExpressionsToCreate = Array.from(newExpressionsMap.values());
+
+          if (newExpressionsToCreate.length > 0) {
+            const expressionNames = newExpressionsToCreate.map((item) => item.fileName).join("\n- ");
+            const confirmed = await tauriConfirm(`Create ${newExpressionsToCreate.length} new expression(s)?\n\n- ${expressionNames}`, {
+              title: "Add Expressions",
+              kind: "info",
+            });
+
+            if (!confirmed) {
+              return;
             }
 
-            // Perform batch update if changes were made
-            if (needsUpdate) {
-              await updateCharacter(currentProfile!.id, character_id, { expressions: currentExpressions });
+            for (const { fileName, data, ext, id } of newExpressionsToCreate) {
+              const savedPath = await saveExpressionImageFromBinary(data, ext, fileName, character_id);
+              currentExpressions.push({ id, name: fileName, image_path: savedPath });
+              needsUpdate = true;
             }
-          } catch (error) {
-            console.error("Error handling file drop:", error);
-          } finally {
-            setIsProcessingDrop(false);
           }
+
+          if (needsUpdate) {
+            await updateCharacter(currentProfile!.id, character_id, { expressions: currentExpressions });
+            toast.success("Expressions updated successfully");
+          }
+        } catch (error) {
+          console.error("Error handling file drop:", error);
+          toast.error(`Failed to process dropped files: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+          setIsProcessingDrop(false);
         }
       });
     };
 
     setupListener();
 
-    // Cleanup listener on unmount
     return () => {
       unlisten?.();
     };
-  }, [character_id, expressions, updateCharacter, character]); // Add dependencies
-  // -------------------------------------
+  }, [character_id, updateCharacter, currentProfile]);
 
   const onRefresh = () => {
     reloadAll();
@@ -197,162 +178,131 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
   const onOpenFolder = async () => {
     try {
-      const appDataDirPath = await appDataDir();
-      // Corrected path based on file-system-service.ts
-      const expressionsFolderPath = await join(appDataDirPath, "images", "characters", character_id);
-
-      console.log(`Attempting to open folder: ${expressionsFolderPath}`);
+      const appData = await getAppDataDir();
+      const expressionsFolderPath = await join(appData, "images", "characters", character_id);
       await openPath(expressionsFolderPath);
     } catch (error) {
       console.error("Failed to open expressions folder:", error);
-      // TODO: Show user-friendly error message
+      toast.error("Failed to open expressions folder");
     }
   };
 
   const onEdit = async (expressionToEdit: Expression) => {
     try {
-      // 1. Open file dialog to select a new image
       const selectedPath = await openDialog({
         multiple: false,
         directory: false,
-        filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp"] }],
+        filters: IMAGE_FILTERS,
       });
 
       if (!selectedPath || typeof selectedPath !== "string") {
-        console.log("No new image selected or dialog cancelled.");
         return;
       }
 
-      // Optional: Prompt to rename (Skipping for now, focusing on image replace)
-      // const newName = prompt("Enter new name (leave blank to keep current):", expressionToEdit.name);
-      // const finalName = newName?.trim() || expressionToEdit.name;
-
-      // 2. Read the selected file content
       const fileContent = await readFile(selectedPath);
-      const mimeType = getMimeType(selectedPath);
-      const dataUrl = binaryToDataUrl(fileContent, mimeType);
+      const ext = getFileExtension(selectedPath);
+      const savedPath = await saveExpressionImageFromBinary(fileContent, ext, expressionToEdit.id, character_id);
 
-      // 3. Save the new image, overwriting the old one using the same expression ID
-      const savedPath = await saveExpressionImage(dataUrl, expressionToEdit.id, character_id);
-
-      // 4. Update character state
       const updatedExpressions = (expressions ?? []).map((exp) => {
         if (exp.id === expressionToEdit.id) {
-          return { ...exp, image_path: savedPath /*, name: finalName */ };
+          return { ...exp, image_path: savedPath };
         }
         return exp;
       });
 
       await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
-
-      // 5. Refresh the image URLs - Removed explicit reloadAll, useEffect should handle it
-      // await reloadAll();
+      reloadAll();
+      toast.success(`Expression "${expressionToEdit.name}" updated`);
     } catch (error) {
       console.error("Failed to edit expression:", error);
-      // TODO: Show user-friendly error message
+      toast.error(`Failed to edit expression: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
   const onDelete = async (expressionToDelete: Expression) => {
-    // Optional: Add confirmation dialog here
-    if (!confirm(`Are you sure you want to delete the expression "${expressionToDelete.name}"?`)) {
-      return;
-    }
-
-    try {
-      // 1. Update character state by filtering out the expression
-      const updatedExpressions = (expressions ?? []).filter((exp) => exp.id !== expressionToDelete.id);
-      await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
-
-      // 2. Attempt to delete the associated image file
-      if (expressionToDelete.image_path) {
-        try {
-          const appData = await appDataDir();
-          const filePath = await join(appData, expressionToDelete.image_path);
-          await remove(filePath);
-          console.log(`Deleted expression image: ${filePath}`);
-          // Removed explicit reloadAll - state update should trigger useEffect in useMultipleImageUrls
-          // reloadAll();
-        } catch (fileError) {
-          // Log error but don't block the state update if file deletion fails
-          console.error(`Failed to delete expression image file (${expressionToDelete.image_path}):`, fileError);
-        }
-      }
-      // No need to call reloadAll - state update triggers re-render
-    } catch (error) {
-      console.error("Failed to delete expression:", error);
-      // TODO: Show user-friendly error message
-    }
-  };
-
-  const onAdd = async () => {
-    try {
-      // 1. Open file dialog to select an image
-      const selectedPath = await openDialog({
-        multiple: false,
-        directory: false,
-        filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp"] }],
-      });
-
-      if (!selectedPath || typeof selectedPath !== "string") {
-        console.log("No image selected or dialog cancelled.");
-        return;
-      }
-
-      // 2. Prompt for expression name (simple prompt for now)
-      const expressionName = prompt("Enter a name for the new expression:", "new_expression");
-      if (!expressionName) {
-        console.log("Expression name cancelled.");
-        return;
-      }
-
-      // 3. Read the selected file content
-      const fileContent = await readFile(selectedPath);
-      const mimeType = getMimeType(selectedPath);
-      const dataUrl = binaryToDataUrl(fileContent, mimeType);
-
-      // 4. Create new expression object (initially without path)
-      const newExpressionId = nanoid();
-      const newExpression: Expression = {
-        id: newExpressionId,
-        name: expressionName,
-        image_path: null, // Will be set after saving
-      };
-
-      // 5. Save the image using the file service
-      const savedPath = await saveExpressionImage(dataUrl, newExpression.id, character_id);
-      newExpression.image_path = savedPath; // Set the correct relative path
-
-      // 6. Update character state
-      const updatedExpressions = [...(expressions ?? []), newExpression];
-      await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
-
-      // 7. Optionally refresh the view or rely on state update
-      reloadAll(); // Refresh to attempt loading the new image
-    } catch (error) {
-      console.error("Failed to add expression:", error);
-      // TODO: Show user-friendly error message
-    }
-  };
-
-  const onDeleteAll = async () => {
-    // Confirm the action with the user
-    const confirmed = await confirm("Are you sure you want to delete all expressions? This action cannot be undone.");
-
+    const confirmed = await tauriConfirm(`Are you sure you want to delete the expression "${expressionToDelete.name}"?`, {
+      title: "Delete Expression",
+      kind: "warning",
+    });
     if (!confirmed) {
       return;
     }
 
     try {
-      // 1. Delete all associated image files (optional)
+      const updatedExpressions = (expressions ?? []).filter((exp) => exp.id !== expressionToDelete.id);
+      await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
+
+      if (expressionToDelete.image_path) {
+        try {
+          const appData = await getAppDataDir();
+          const filePath = await join(appData, expressionToDelete.image_path);
+          await remove(filePath);
+        } catch (fileError) {
+          console.error(`Failed to delete expression image file (${expressionToDelete.image_path}):`, fileError);
+        }
+      }
+      toast.success(`Expression "${expressionToDelete.name}" deleted`);
+    } catch (error) {
+      console.error("Failed to delete expression:", error);
+      toast.error(`Failed to delete expression: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const onAdd = async () => {
+    try {
+      const selectedPath = await openDialog({
+        multiple: false,
+        directory: false,
+        filters: IMAGE_FILTERS,
+      });
+
+      if (!selectedPath || typeof selectedPath !== "string") {
+        return;
+      }
+
+      const expressionName = await showPromptDialog("new_expression");
+      if (!expressionName) {
+        return;
+      }
+
+      const fileContent = await readFile(selectedPath);
+      const ext = getFileExtension(selectedPath);
+      const newExpressionId = nanoid();
+      const savedPath = await saveExpressionImageFromBinary(fileContent, ext, newExpressionId, character_id);
+
+      const newExpression: Expression = {
+        id: newExpressionId,
+        name: expressionName,
+        image_path: savedPath,
+      };
+
+      const updatedExpressions = [...(expressions ?? []), newExpression];
+      await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
+      reloadAll();
+      toast.success(`Expression "${expressionName}" added`);
+    } catch (error) {
+      console.error("Failed to add expression:", error);
+      toast.error(`Failed to add expression: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const onDeleteAll = async () => {
+    const confirmed = await tauriConfirm("Are you sure you want to delete all expressions? This action cannot be undone.", {
+      title: "Delete All Expressions",
+      kind: "warning",
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    try {
       if (expressions && expressions.length > 0) {
-        const appData = await appDataDir();
+        const appData = await getAppDataDir();
         for (const expression of expressions) {
           if (expression.image_path) {
             try {
               const filePath = await join(appData, expression.image_path);
               await remove(filePath);
-              console.log(`Deleted expression image: ${filePath}`);
             } catch (fileError) {
               console.error(`Failed to delete expression image file (${expression.image_path}):`, fileError);
             }
@@ -360,28 +310,65 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
         }
       }
 
-      // 2. Update character state to remove all expressions
       await updateCharacter(currentProfile!.id, character_id, { expressions: [] });
-
-      // 3. Refresh the view
       reloadAll();
+      toast.success("All expressions deleted");
     } catch (error) {
       console.error("Failed to delete all expressions:", error);
-      // TODO: Show user-friendly error message
+      toast.error(`Failed to delete all expressions: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
   return (
     <Card className="overflow-hidden bg-gradient-to-b from-card/50 to-card border-none shadow-xl">
       <div className="p-1 space-y-1">
-        {/* Processing Dialog using shadcn UI */}
-        <Dialog open={isProcessingDrop} modal>
+        {/* Processing Dialog */}
+        <Dialog open={isProcessingDrop}>
           <DialogContent className="sm:max-w-md">
             <div className="flex flex-col items-center justify-center gap-3 py-4">
               <RefreshCw className="h-8 w-8 text-primary animate-spin" />
               <p className="text-lg font-semibold">Processing dropped files...</p>
               <p className="text-sm text-muted-foreground">Please wait while we process your files</p>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Expression Name Prompt Dialog */}
+        <Dialog
+          open={promptDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              handlePromptCancel();
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>New Expression</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 py-2">
+              <Label htmlFor="expression-name">Expression Name</Label>
+              <Input
+                id="expression-name"
+                value={promptValue}
+                onChange={(e) => setPromptValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handlePromptConfirm();
+                  }
+                }}
+                placeholder="e.g. happy, sad, angry"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={handlePromptCancel}>
+                Cancel
+              </Button>
+              <Button onClick={handlePromptConfirm} disabled={!promptValue.trim()}>
+                Add
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
 import { basicPromptSuggestionList, ChatMessage } from "@/schema/chat-message-schema";
+import { useChatInferenceState } from "@/providers/inferenceChatProvider";
 import { useBackgroundInference } from "@/services/background-inference-service";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { findClosestExpressionMatch } from "@/utils/fuzzy-search";
@@ -59,10 +60,11 @@ const EXPRESSION_IMAGE_FIT_OPTIONS: { value: ExpressionImageFit; label: string; 
 export type ExpressionGenerateSettings = {
   chatTemplateId: string;
   autoRefresh: boolean;
+  autoRunAfterComplete: boolean;
   requestPrompt: string;
   systemPrompt: string;
   throttleInterval: number; // Auto mode update frequency in milliseconds
-  disableLogs: boolean; // Option to disable logs for background inference
+  disableLogs: boolean;
   imageObjectFit: ExpressionImageFit;
 };
 
@@ -103,16 +105,17 @@ const WidgetExpressions = () => {
   const [tempSystemPrompt, setTempSystemPrompt] = useState(""); // Temp state for dialog
   const [tempChatTemplateId, setTempChatTemplateId] = useState(""); // Temp state for chat template
   const [tempThrottleInterval, setTempThrottleInterval] = useState(8000); // Temp state for throttle interval
-  const [tempDisableLogs, setTempDisableLogs] = useState(false); // Temp state for disable logs
+  const [tempDisableLogs, setTempDisableLogs] = useState(false);
+  const [tempAutoRunAfterComplete, setTempAutoRunAfterComplete] = useState(false);
   const [tempImageObjectFit, setTempImageObjectFit] = useState<ExpressionImageFit>("cover");
 
   // Use the hook for settings
   const [expressionSettings, setExpressionSettings] = useLocalExpressionGenerationSettings();
 
-  // Get the selected template's modelId
   const autoRefreshEnabled = expressionSettings.autoRefresh;
+  const { isStreaming: isChatStreaming } = useChatInferenceState();
+  const wasStreamingRef = useRef(false);
 
-  // Get state and actions from the expression store
   const { selectedText, selectedMessageCharacterId, clearSelection } = useExpressionStore();
 
   const setAutoRefreshEnabled = useCallback(
@@ -173,6 +176,7 @@ const WidgetExpressions = () => {
       setTempChatTemplateId(expressionSettings.chatTemplateId || "");
       setTempThrottleInterval(expressionSettings.throttleInterval || 8000);
       setTempDisableLogs(expressionSettings.disableLogs || false);
+      setTempAutoRunAfterComplete(expressionSettings.autoRunAfterComplete || false);
       setTempImageObjectFit(expressionSettings.imageObjectFit ?? "cover");
       setActiveTab("basic");
     }
@@ -183,6 +187,7 @@ const WidgetExpressions = () => {
     expressionSettings.chatTemplateId,
     expressionSettings.throttleInterval,
     expressionSettings.disableLogs,
+    expressionSettings.autoRunAfterComplete,
     expressionSettings.imageObjectFit,
   ]);
 
@@ -340,22 +345,31 @@ const WidgetExpressions = () => {
     };
   }, [throttledGenerateExpression]);
 
-  // Effect to trigger THROTTLED generation DURING streaming
+  // Manual text selection always bypasses throttle -- it's a deliberate user action
   useEffect(() => {
-    if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
-      if (selectedText && selectedMessageCharacterId) {
-        throttledGenerateExpression(selectedText);
-      }
+    if (autoRefreshEnabled && expressionSettings.chatTemplateId && selectedText && selectedMessageCharacterId) {
+      generateExpression(selectedText);
     }
-  }, [autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, selectedMessageCharacterId, throttledGenerateExpression]);
+  }, [autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, selectedMessageCharacterId, generateExpression]);
 
+  // Throttled auto-refresh during streaming (skipped when "run after complete" is on)
   useEffect(() => {
-    if (autoRefreshEnabled && expressionSettings.chatTemplateId) {
+    if (autoRefreshEnabled && expressionSettings.chatTemplateId && !expressionSettings.autoRunAfterComplete) {
       if (lastSpeakerId && lastMessageContent && lastMessageContent.trim() !== "...") {
-        throttledGenerateExpression(); // Call the throttled function directly
+        throttledGenerateExpression();
       }
     }
-  }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, expressionSettings.chatTemplateId, throttledGenerateExpression]);
+  }, [lastMessageContent, lastSpeakerId, autoRefreshEnabled, expressionSettings.chatTemplateId, expressionSettings.autoRunAfterComplete, throttledGenerateExpression]);
+
+  // Fire once when streaming finishes (only when "run after complete" is on)
+  useEffect(() => {
+    if (wasStreamingRef.current && !isChatStreaming) {
+      if (autoRefreshEnabled && expressionSettings.chatTemplateId && expressionSettings.autoRunAfterComplete) {
+        generateExpression();
+      }
+    }
+    wasStreamingRef.current = isChatStreaming;
+  }, [isChatStreaming, autoRefreshEnabled, expressionSettings.chatTemplateId, expressionSettings.autoRunAfterComplete, generateExpression]);
 
   // Simplified Toggle auto-refresh: just update the state
   const toggleAutoRefresh = useCallback(() => {
@@ -371,10 +385,11 @@ const WidgetExpressions = () => {
       chatTemplateId: tempChatTemplateId,
       throttleInterval: tempThrottleInterval,
       disableLogs: tempDisableLogs,
+      autoRunAfterComplete: tempAutoRunAfterComplete,
       imageObjectFit: tempImageObjectFit,
     }));
     setIsSettingsOpen(false);
-  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt, tempChatTemplateId, tempThrottleInterval, tempDisableLogs, tempImageObjectFit]);
+  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt, tempChatTemplateId, tempThrottleInterval, tempDisableLogs, tempAutoRunAfterComplete, tempImageObjectFit]);
 
   // Function to get expression for a character (stable via useCallback)
   const getCharacterExpression = useCallback(
@@ -648,6 +663,15 @@ const WidgetExpressions = () => {
                             </div>
                             <div className="flex items-center space-x-2 h-8">
                               <Switch id="disable-logs" checked={tempDisableLogs} onCheckedChange={setTempDisableLogs} />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor="auto-run-after-complete">Run After Completion</Label>
+                              <HelpTooltip>When enabled, auto mode waits for the full response to finish before generating an expression, instead of updating periodically during streaming.</HelpTooltip>
+                            </div>
+                            <div className="flex items-center space-x-2 h-8">
+                              <Switch id="auto-run-after-complete" checked={tempAutoRunAfterComplete} onCheckedChange={setTempAutoRunAfterComplete} />
                             </div>
                           </div>
                           <div className="space-y-2">

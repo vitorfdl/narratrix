@@ -239,29 +239,27 @@ export const useCharacterStore: UseBoundStore<StoreApi<CharacterState>> = create
       }
 
       set({ isLoadingAvatars: true });
+      const cacheBuster = Date.now();
 
       try {
-        // Create a copy of the current avatar URLs
         const newUrlMap: Record<string, string> = { ...avatarUrls };
 
         if (characterId) {
-          // Refresh only the specified character avatar
           const character = characters.find((char) => char.id === characterId);
           if (character?.avatar_path) {
             try {
-              const url = await getImageUrl(character.avatar_path);
+              const url = await getImageUrl(character.avatar_path, cacheBuster);
               newUrlMap[character.id] = url;
             } catch (error) {
               console.error(`Failed to load avatar for ${character.id}:`, error);
             }
           }
         } else {
-          // Refresh all character avatars
           await Promise.all(
             characters.map(async (char) => {
               if (char.avatar_path) {
                 try {
-                  const url = await getImageUrl(char.avatar_path);
+                  const url = await getImageUrl(char.avatar_path, cacheBuster);
                   newUrlMap[char.id] = url;
                 } catch (error) {
                   console.error(`Failed to load avatar for ${char.id}:`, error);

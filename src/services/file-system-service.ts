@@ -1,3 +1,4 @@
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir, join, sep } from "@tauri-apps/api/path";
 import { BaseDirectory, exists, mkdir, readFile, remove, writeFile } from "@tauri-apps/plugin-fs";
 
@@ -8,6 +9,16 @@ const PROFILES_DIR = "profiles";
 const IMAGES_DIR = "images";
 const AVATAR_PREFIX = "avatar_";
 const CHARACTERS_DIR = "characters";
+
+let cachedAppDataDir: string | null = null;
+
+/** Cached appDataDir — the value never changes during the app's lifetime. */
+export async function getAppDataDir(): Promise<string> {
+  if (!cachedAppDataDir) {
+    cachedAppDataDir = await appDataDir();
+  }
+  return cachedAppDataDir;
+}
 
 /**
  * Convert a data URL to a binary array
@@ -46,7 +57,7 @@ function getExtensionFromDataUrl(dataUrl: string): string {
  * Ensure the required directories exist
  */
 async function ensureDirectories(): Promise<void> {
-  const appData = await appDataDir();
+  const appData = await getAppDataDir();
 
   // Ensure profiles directory exists
   const profilesPath = await join(appData, PROFILES_DIR);
@@ -83,16 +94,12 @@ export async function saveAvatarImage(dataUrl: string, nameID: string): Promise<
   const extension = getExtensionFromDataUrl(dataUrl);
   const fileName = `${imageId}.${extension}`;
 
-  const appData = await appDataDir();
+  const appData = await getAppDataDir();
   const filePath = await join(appData, PROFILES_DIR, fileName);
 
-  // Convert data URL to binary data
   const binaryData = dataUrlToBinary(dataUrl);
-
-  // Write the file
   await writeFile(filePath, binaryData, { baseDir: BaseDirectory.AppData });
 
-  // Return the relative path for storing in the database
   const separator = await sep();
   return `${PROFILES_DIR}${separator}${fileName}`;
 }
@@ -110,7 +117,7 @@ export async function readImageAsDataUrl(relativePath: string): Promise<string> 
     // If it's a relative path, join with appDataDir
     let path = relativePath;
     if (isRelative) {
-      const appData = await appDataDir();
+      const appData = await getAppDataDir();
       path = await join(appData, relativePath);
     }
 
@@ -154,7 +161,7 @@ export async function saveImage(dataUrl: string, nameID: string, subDirectory?: 
   const extension = getExtensionFromDataUrl(dataUrl);
   const fileName = `${imageId}.${extension}`;
 
-  const appData = await appDataDir();
+  const appData = await getAppDataDir();
   let directory = IMAGES_DIR;
 
   // If subdirectory is specified, make sure it exists
@@ -182,42 +189,26 @@ export async function saveImage(dataUrl: string, nameID: string, subDirectory?: 
 }
 
 /**
- * Save an expression image to the app data directory
- * @param dataUrl - The image data URL
- * @param nameID - The ID to use in the filename
- * @param characterId - The ID of the character
- * @returns The path to the saved expression image
+ * Save binary image data directly to disk as an expression image,
+ * avoiding the data URL round-trip (binary → base64 → binary).
  */
-export async function saveExpressionImage(dataUrl: string, nameID: string, characterId: string): Promise<string> {
-  if (!dataUrl.startsWith("data:")) {
-    return dataUrl;
-  }
-
+export async function saveExpressionImageFromBinary(data: Uint8Array, extension: string, nameID: string, characterId: string): Promise<string> {
   await ensureDirectories();
 
-  const extension = getExtensionFromDataUrl(dataUrl);
   const fileName = `${nameID}.${extension}`;
-  const appData = await appDataDir();
+  const appData = await getAppDataDir();
 
-  // Construct the character-specific directory path
   const characterImageDir = await join(IMAGES_DIR, CHARACTERS_DIR, characterId);
   const fullDirPath = await join(appData, characterImageDir);
 
-  // Ensure the character-specific directory exists
   const dirExists = await exists(fullDirPath, { baseDir: BaseDirectory.AppData });
   if (!dirExists) {
     await mkdir(fullDirPath, { baseDir: BaseDirectory.AppData, recursive: true });
   }
 
   const filePath = await join(fullDirPath, fileName);
+  await writeFile(filePath, data, { baseDir: BaseDirectory.AppData, create: true });
 
-  // Convert data URL to binary data
-  const binaryData = dataUrlToBinary(dataUrl);
-
-  // Write the file
-  await writeFile(filePath, binaryData, { baseDir: BaseDirectory.AppData, create: true });
-
-  // Return the relative path for storing in the database
   const separator = await sep();
   return `${characterImageDir}${separator}${fileName}`;
 }
@@ -244,32 +235,38 @@ export function getImageSourceType(source: string): "url" | "data-url" | "file-p
 }
 
 /**
- * Get a properly formatted URL for an image that can be used directly in <img> tags
- * This now uses readImageAsDataUrl for local files to ensure cache invalidation.
+ * Get a properly formatted URL for an image that can be used directly in <img> tags.
+ * Uses Tauri's asset protocol (`convertFileSrc`) so the webview loads files
+ * directly from disk — no file reading or base64 encoding required.
  *
  * @param imagePath - The path to the image (relative to appData, absolute, URL, or data URL)
- * @returns A URL (likely a data: URL for local files) that can be used in an img src attribute
+ * @param cacheBuster - Optional cache-buster value appended as `?v=` query param
+ * @returns A URL that can be used in an img src attribute
  */
-export async function getImageUrl(imagePath: string): Promise<string> {
+export async function getImageUrl(imagePath: string, cacheBuster?: string | number): Promise<string> {
   try {
     if (!imagePath) {
       return "";
     }
 
-    // If it's already a URL or data URL, return it as is
     const sourceType = getImageSourceType(imagePath);
     if (sourceType === "url" || sourceType === "data-url") {
       return imagePath;
     }
 
-    // For file paths, read the image as a data URL to bypass caching
     if (sourceType === "file-path") {
-      return await readImageAsDataUrl(imagePath);
+      const isRelative = !imagePath.includes(":");
+      let absolutePath = imagePath;
+      if (isRelative) {
+        const appData = await getAppDataDir();
+        absolutePath = await join(appData, imagePath);
+      }
+      const assetUrl = convertFileSrc(absolutePath);
+      return cacheBuster != null ? `${assetUrl}?v=${cacheBuster}` : assetUrl;
     }
 
-    // Fallback or handle unexpected types if necessary, though should be covered
     console.warn("Unexpected image path type in getImageUrl:", imagePath);
-    return ""; // Return empty string for unhandled cases
+    return "";
   } catch (error) {
     console.error("Error creating image URL:", error);
     return "";
@@ -282,7 +279,7 @@ export async function getImageUrl(imagePath: string): Promise<string> {
  */
 export async function removeFile(relativePath: string): Promise<void> {
   try {
-    const appData = await appDataDir();
+    const appData = await getAppDataDir();
     const filePath = await join(appData, relativePath);
     await remove(filePath);
     console.info(`File deleted: ${filePath}`);
@@ -298,7 +295,7 @@ export async function removeFile(relativePath: string): Promise<void> {
  */
 export async function removeDirectoryRecursive(relativeDirPath: string): Promise<void> {
   try {
-    const appData = await appDataDir();
+    const appData = await getAppDataDir();
     const dirPath = await join(appData, relativeDirPath);
     await remove(dirPath, { recursive: true });
     console.info(`Directory deleted recursively: ${dirPath}`);

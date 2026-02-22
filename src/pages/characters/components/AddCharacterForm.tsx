@@ -387,7 +387,7 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(({
           <CharacterInfoContent
             personality={personality}
             systemPrompt={systemPrompt}
-            characterId={initialData?.id || "none"}
+            characterId={initialData?.id}
             expressions={initialData?.expressions || []}
             onPersonalityChange={setPersonality}
             onSystemPromptChange={setSystemPrompt}
