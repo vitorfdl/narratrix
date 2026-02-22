@@ -626,7 +626,6 @@ const WidgetExpressions = () => {
                               <span className="text-xs text-muted-foreground">{estimateTokens(tempSystemPrompt || "", 0)} tokens</span>
                             </div>
                             <MarkdownTextArea
-                              key={tempSystemPrompt ? `systemPrompt-${tempSystemPrompt}` : "new-systemPrompt"}
                               initialValue={tempSystemPrompt || ""}
                               editable={true}
                               className="min-h-[100px]"
