@@ -1,27 +1,29 @@
-import { Brain, Clock, Copy, Cpu, Edit, GitBranch, Network, Server, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LuBrain, LuClock, LuCopy, LuCpu, LuServer, LuTrash2, LuZap } from "react-icons/lu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useInferenceTemplate } from "@/hooks/templateStore";
+import type { Engine } from "@/schema/model-manifest-schema";
+import { getEngineColor, getEngineIcon } from "@/utils/engine-icons";
 import { Model } from "../../../schema/models-schema";
 
 interface ModelCardProps {
   model: Model;
-  onEdit?: (model: Model) => void;
   onDelete?: (model: Model) => void;
   onDuplicate?: (model: Model) => void;
-  setConfigDialogOpen: (model: Model) => void;
+  onOpenSettings: (model: Model) => void;
 }
 
-export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialogOpen }: ModelCardProps) {
+export function ModelCard({ model, onDelete, onDuplicate, onOpenSettings }: ModelCardProps) {
   const { getManifestById } = useModelManifestsActions();
   const [manifestName, setManifestName] = useState<string>("");
+  const [manifestEngine, setManifestEngine] = useState<Engine | undefined>(undefined);
   const inferenceTemplate = useInferenceTemplate(model.inference_template_id || "");
 
   // For demonstration purposes, you can replace these with actual model properties
-  const isNew = model.created_at && new Date().getTime() - new Date(model.created_at).getTime() < 15 * 60 * 60 * 1000; // 15 hours
+  const isNew = model.created_at && Date.now() - new Date(model.created_at).getTime() < 15 * 60 * 60 * 1000; // 15 hours
   const isPopular = false; // Replace with actual logic if you have popularity metrics
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
         const manifest = await getManifestById(model.manifest_id);
         if (manifest) {
           setManifestName(manifest.name);
+          setManifestEngine(manifest.engine);
         }
       } catch (error) {
         console.error("Failed to fetch manifest:", error);
@@ -78,32 +81,18 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
     return capabilities;
   };
 
-  // Get model type icon
-  const getModelIcon = () => {
-    const type = model.type.toLowerCase();
-    if (type.includes("chat") || type.includes("gpt")) {
-      return Brain;
-    }
-    if (type.includes("embedding")) {
-      return Network;
-    }
-    if (type.includes("completion")) {
-      return GitBranch;
-    }
-    return Cpu;
-  };
-
-  const ModelIcon = getModelIcon();
+  const ModelIcon = getEngineIcon(manifestEngine);
+  const engineColor = getEngineColor(manifestEngine);
 
   return (
     <Card
-      onClick={() => setConfigDialogOpen(model)}
+      onClick={() => onOpenSettings(model)}
       className="group relative overflow-hidden flex flex-col h-full bg-gradient-to-br from-background to-accent/10 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer"
     >
       <CardHeader className="relative pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <div className={engineColor ? "p-2 rounded-lg" : "p-2 rounded-lg bg-primary/10 text-primary"} style={engineColor ? { backgroundColor: `${engineColor}20`, color: engineColor } : undefined}>
               <ModelIcon className="h-5 w-5" />
             </div>
             <div className="flex-1">
@@ -116,7 +105,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
             {/* Status badges */}
             {isNew && (
               <Badge variant="default" className="text-xxs flex items-center text-primary-foreground">
-                <Zap className="h-3 w-3 mr-1" />
+                <LuZap className="h-3 w-3 mr-1" />
                 New
               </Badge>
             )}
@@ -134,7 +123,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
         <div className="space-y-2">
           {urlValue && (
             <div className="flex items-center gap-2 text-xs">
-              <Server className="h-3 w-3 text-muted-foreground" />
+              <LuServer className="h-3 w-3 text-muted-foreground" />
               <span className="font-mono text-muted-foreground truncate" title={urlValue}>
                 {urlValue}
               </span>
@@ -142,7 +131,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
           )}
           {modelValue && (
             <div className="flex items-center gap-2 text-xs">
-              <Brain className="h-3 w-3 text-muted-foreground" />
+              <LuBrain className="h-3 w-3 text-muted-foreground" />
               <span className="font-mono text-muted-foreground truncate" title={modelValue}>
                 {modelValue}
               </span>
@@ -150,7 +139,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
           )}
           {!urlValue && !modelValue && fallbackValue && (
             <div className="flex items-center gap-2 text-xs">
-              <Cpu className="h-3 w-3 text-muted-foreground" />
+              <LuCpu className="h-3 w-3 text-muted-foreground" />
               <span className="font-mono text-muted-foreground truncate">{fallbackValue}</span>
             </div>
           )}
@@ -159,11 +148,11 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
         {/* Model stats */}
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1 text-muted-foreground">
-            <Zap className="h-3 w-3" />
+            <LuZap className="h-3 w-3" />
             <span>Max: {model.max_concurrency}</span>
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
-            <Cpu className="h-3 w-3" />
+            <LuCpu className="h-3 w-3" />
             <span>{model.type.toUpperCase()}</span>
           </div>
         </div>
@@ -184,19 +173,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
       </CardContent>
 
       {/* Action buttons - shown on hover */}
-      <div className="absolute right-2 top-2  flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <Button
-          variant="secondary"
-          size="icon"
-          className="h-8 w-8"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit?.(model);
-          }}
-          title="Edit Model"
-        >
-          <Edit className="h-3.5 w-3.5" />
-        </Button>
+      <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
         <Button
           variant="secondary"
           size="icon"
@@ -207,7 +184,7 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
           }}
           title="Duplicate Model"
         >
-          <Copy className="h-3.5 w-3.5" />
+          <LuCopy className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="destructive"
@@ -219,14 +196,14 @@ export function ModelCard({ model, onEdit, onDelete, onDuplicate, setConfigDialo
           }}
           title="Delete Model"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <LuTrash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
 
       <CardFooter className="p-3 pt-0 text-xs text-muted-foreground mt-auto">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
+            <LuClock className="h-3 w-3" />
             <span>Updated {new Date(model.updated_at).toLocaleDateString()}</span>
           </div>
         </div>

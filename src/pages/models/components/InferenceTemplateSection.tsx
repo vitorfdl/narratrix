@@ -1,5 +1,5 @@
-import { Bot, MessageSquare, Settings, StopCircle, Wrench } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LuBot, LuCircleStop, LuMessageSquare, LuSettings, LuWrench } from "react-icons/lu";
 import { toast } from "sonner";
 import { useDebouncedCallback } from "use-debounce";
 import { TemplatePicker } from "@/components/shared/TemplatePicker";
@@ -365,7 +365,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
       <Card>
         <CardHeader>
           <CardTitle className={`inference-section-header flex items-center gap-1 pb-2 border-b ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
-            <Settings className="h-5 w-5" /> Inference Template
+            <LuSettings className="h-5 w-5" /> Inference Template
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -393,7 +393,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
           <Card>
             <CardHeader className="template-card-header">
               <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
-                <Settings className="h-4 w-4" /> System Prompt Formatting
+                <LuSettings className="h-4 w-4" /> System Prompt Formatting
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -419,7 +419,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
           <Card>
             <CardHeader className="template-card-header">
               <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
-                <MessageSquare className="h-4 w-4" /> User Message Formatting
+                <LuMessageSquare className="h-4 w-4" /> User Message Formatting
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -445,7 +445,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
           <Card>
             <CardHeader className="template-card-header">
               <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
-                <Bot className="h-4 w-4" /> Assistant Message Formatting
+                <LuBot className="h-4 w-4" /> Assistant Message Formatting
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -489,7 +489,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
           <Card>
             <CardHeader className="template-card-header">
               <CardTitle className={`template-card-title ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
-                <Wrench className="h-4 w-4" /> Agent Message Formatting
+                <LuWrench className="h-4 w-4" /> Agent Message Formatting
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -533,7 +533,7 @@ export function InstructTemplateSection({ disabled, onChange, modelTemplateID }:
           <Card>
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
-                <StopCircle className="h-4 w-4" /> Custom Stop Strings
+                <LuCircleStop className="h-4 w-4" /> Custom Stop Strings
               </CardTitle>
             </CardHeader>
             <CardContent>

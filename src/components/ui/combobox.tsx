@@ -1,5 +1,5 @@
-import { Check, Star, X } from "lucide-react";
 import * as React from "react";
+import { LuCheck, LuStar, LuX } from "react-icons/lu";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,7 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search...", 
             {clearable && selectedValue && (
               <CommandGroup>
                 <CommandItem onSelect={handleClear} className="flex items-center text-muted-foreground hover:text-foreground border-b border-border">
-                  <X className="mr-2 h-4 w-4" />
+                  <LuX className="mr-2 h-4 w-4" />
                   Clear selection
                 </CommandItem>
               </CommandGroup>
@@ -94,7 +94,7 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search...", 
                         className={cn("p-0 mr-2 rounded-sm transition-colors hover:bg-accent/50 opacity-0 group-hover:opacity-100", item.favorite && "opacity-100")}
                         title={item.favorite ? "Remove from favorites" : "Add to favorites"}
                       >
-                        <Star className={cn("h-3 w-3 transition-colors", item.favorite ? "fill-muted-foreground text-muted-foreground" : "text-muted-foreground hover:text-foreground")} />
+                        <LuStar className={cn("h-3 w-3 transition-colors", item.favorite ? "fill-muted-foreground text-muted-foreground" : "text-muted-foreground hover:text-foreground")} />
                       </button>
                     )}
                     <div className="flex flex-col flex-1 min-w-0">
@@ -103,7 +103,7 @@ export function Combobox({ items, onChange, trigger, placeholder = "Search...", 
                     </div>
                   </div>
 
-                  <Check className={cn("h-2 w-2 ml-0", selectedValue === item.value ? "opacity-100" : "opacity-0")} />
+                  <LuCheck className={cn("h-2 w-2 ml-0", selectedValue === item.value ? "opacity-100" : "opacity-0")} />
                 </CommandItem>
               ))}
             </CommandGroup>

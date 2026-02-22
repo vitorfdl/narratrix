@@ -1,5 +1,5 @@
-import { ALargeSmallIcon, Highlighter, Palette } from "lucide-react";
 import React from "react";
+import { LuALargeSmall, LuHighlighter, LuPalette } from "react-icons/lu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
@@ -37,7 +37,7 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
 
   return (
     <SettingSection title="Appearance">
-      <SettingItem icon={<Palette className="w-4 h-4" />} label="Theme">
+      <SettingItem icon={<LuPalette className="w-4 h-4" />} label="Theme">
         <Select value={settings.appearance.theme} onValueChange={(value) => onSettingChange("appearance", "theme", value)}>
           <SelectTrigger className="w-36">
             <SelectValue placeholder="Select theme" />
@@ -52,7 +52,7 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
 
       <Separator />
 
-      <SettingItem icon={<ALargeSmallIcon className="w-4 h-4" />} label="Font Size">
+      <SettingItem icon={<LuALargeSmall className="w-4 h-4" />} label="Font Size">
         <div className="flex items-center gap-3">
           <span
             className={`ml-2 px-2 py-0.5 rounded text-xxs text-muted-foreground font-medium border transition-colors
@@ -67,7 +67,7 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
 
       <Separator />
 
-      <SettingCollapsible icon={<Highlighter className="w-4 h-4" />} label="Text Highlighting">
+      <SettingCollapsible icon={<LuHighlighter className="w-4 h-4" />} label="Text Highlighting">
         <Separator />
         <SettingItem label={'Double Quotes "..."'} htmlFor="highlight-quote-double">
           <Switch

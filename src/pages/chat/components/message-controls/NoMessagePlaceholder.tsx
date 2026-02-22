@@ -1,5 +1,5 @@
-import { LayoutTemplateIcon, PencilLine, SendIcon, UserPlus } from "lucide-react";
 import React, { useState } from "react";
+import { LuLayoutTemplate, LuPencilLine, LuSend, LuUserPlus } from "react-icons/lu";
 import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
@@ -122,7 +122,7 @@ export const NoMessagePlaceholder: React.FC = () => {
               onClick={startMessageAction}
               aria-label="Send Chapter Intro"
             >
-              <SendIcon className="w-4 h-4 mr-2" />
+              <LuSend className="w-4 h-4 mr-2" />
               Start Chapter
             </Button>
           </div>
@@ -138,18 +138,18 @@ export const NoMessagePlaceholder: React.FC = () => {
         <div className="flex flex-col items-center gap-4 mt-10 w-full max-w-xs">
           {/* Step 1: Create a Chat Template */}
           <div className="flex flex-row items-center gap-2 w-full">
-            <LayoutTemplateIcon className="w-4 h-4 text-secondary-foreground" />
+            <LuLayoutTemplate className="w-4 h-4 text-secondary-foreground" />
             <span className="font-medium">1. Create a Chat Template</span>
           </div>
           <div className="text-xs text-muted-foreground w-full pl-7 -mt-2 mb-2">Pick your model and your format</div>
           {/* Step 2: Add a participant */}
           <div className="flex flex-row items-center gap-2 w-full">
-            <UserPlus className="w-4 h-4 text-secondary-foreground" />
+            <LuUserPlus className="w-4 h-4 text-secondary-foreground" />
             <span className="font-medium">2. Add a participant</span>
           </div>
           {/* Step 3: Write your first message */}
           <div className="flex flex-row items-center gap-2 w-full">
-            <PencilLine className="w-4 h-4 text-secondary-foreground" />
+            <LuPencilLine className="w-4 h-4 text-secondary-foreground" />
             <span className="font-medium">3. Write your first message</span>
           </div>
         </div>

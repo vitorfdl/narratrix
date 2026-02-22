@@ -1,5 +1,5 @@
-import { CheckCircleIcon, ChevronDown, CircleCheckBig, UserRoundPenIcon, XCircleIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { LuChevronDown, LuCircleCheck, LuCircleX, LuUserRoundPen } from "react-icons/lu";
 import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { AvatarCrop } from "@/components/shared/AvatarCrop";
@@ -76,7 +76,7 @@ function CharacterInfoContent({
                     <br />
                   </HelpTooltip>
                 </div>
-                <ChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
+                <LuChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -100,9 +100,9 @@ function CharacterInfoContent({
                       <p>Overrides the context system prompt for this character.</p>
                     </HelpTooltip>
                   </div>
-                  {systemPrompt && <CircleCheckBig className="h-4 w-4 text-primary" />}
+                  {systemPrompt && <LuCircleCheck className="h-4 w-4 text-primary" />}
                 </div>
-                <ChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
+                <LuChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="">
@@ -406,7 +406,7 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(({
       <DialogContent size="large">
         <DialogHeader>
           <DialogTitle className="flex gap-2 items-center text-lg font-semibold">
-            <UserRoundPenIcon className="h-5 w-5" />
+            <LuUserRoundPen className="h-5 w-5" />
             {title || (mode === "edit" ? `Edit ${initialData?.type === "character" ? "Character" : "Agent"}` : "Add New Character / Agent")}
           </DialogTitle>
         </DialogHeader>
@@ -423,11 +423,11 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(({
           </DialogBody>
           <DialogFooter>
             <Button variant="ghost" type="button" onClick={() => onOpenChange?.(false)} disabled={isSubmitting}>
-              <XCircleIcon className="h-4 w-4" />
+              <LuCircleX className="h-4 w-4" />
               Cancel
             </Button>
             <Button type="submit" size="dialog">
-              <CheckCircleIcon className="h-4 w-4" />
+              <LuCircleCheck className="h-4 w-4" />
               Save
             </Button>
           </DialogFooter>

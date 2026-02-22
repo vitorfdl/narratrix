@@ -1,5 +1,5 @@
-import { BarChart, Info, PieChart as PieChartIcon, Target } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { LuChartBar, LuChartPie, LuInfo, LuTarget } from "react-icons/lu";
 import { Label, Pie, PieChart } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -157,7 +157,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
   if (!tokenStats) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
-        <BarChart className="w-10 h-10 mb-3 animate-pulse" />
+        <LuChartBar className="w-10 h-10 mb-3 animate-pulse" />
         <span className="text-sm">Calculating token statistics...</span>
       </div>
     );
@@ -176,7 +176,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
             {/* Token Breakdown Chart */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <PieChartIcon className="w-5 h-5 text-primary" />
+                <LuChartPie className="w-5 h-5 text-primary" />
                 Token Breakdown
               </h3>
               <div className="flex items-center gap-8 max-w-[600px] mx-auto">
@@ -222,7 +222,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
                       <span className="text-sm font-medium">History</span>
                       <Tooltip delayDuration={100}>
                         <TooltipTrigger>
-                          <Info className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                          <LuInfo className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                         </TooltipTrigger>
                         <TooltipContent>Actual / Estimated (Internal)</TooltipContent>
                       </Tooltip>
@@ -237,7 +237,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
                       <span className="text-sm font-medium">Response</span>
                       <Tooltip delayDuration={100}>
                         <TooltipTrigger>
-                          <Info className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                          <LuInfo className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                         </TooltipTrigger>
                         <TooltipContent>Actual / Reserved Maximum</TooltipContent>
                       </Tooltip>
@@ -255,7 +255,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
             {/* Utilization Gauges - REPLACED WITH CUSTOM SVG CIRCLES */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Target className="w-5 h-5 text-primary" />
+                <LuTarget className="w-5 h-5 text-primary" />
                 Utilization Metrics
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">

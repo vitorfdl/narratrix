@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { CheckCircleIcon, MessageSquarePlus, PersonStanding, Sparkles, UserRound, XCircleIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LuCircleCheck, LuCircleX, LuMessageSquarePlus, LuPersonStanding, LuSparkles, LuUserRound } from "react-icons/lu";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,13 @@ interface CustomPromptModalProps {
 export const getRoleIcon = (role: string) => {
   switch (role) {
     case "user":
-      return <UserRound className="h-4 w-4" />;
+      return <LuUserRound className="h-4 w-4" />;
     case "character":
-      return <PersonStanding className="h-4 w-4" />;
+      return <LuPersonStanding className="h-4 w-4" />;
     case "system":
-      return <Sparkles className="h-4 w-4" />;
+      return <LuSparkles className="h-4 w-4" />;
     default:
-      return <UserRound className="h-4 w-4" />;
+      return <LuUserRound className="h-4 w-4" />;
   }
 };
 
@@ -82,7 +82,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
       <DialogContent allowClickOutsideClose={false}>
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <MessageSquarePlus className="h-5 w-5 text-primary" />
+            <LuMessageSquarePlus className="h-5 w-5 text-primary" />
             {initialData ? "Edit Custom Prompt" : "Add Custom Prompt"}
           </DialogTitle>
         </DialogHeader>
@@ -111,19 +111,19 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
                   <SelectContent>
                     <SelectItem value="user">
                       <div className="flex items-center gap-2">
-                        <UserRound className="h-4 w-4" />
+                        <LuUserRound className="h-4 w-4" />
                         <span>User</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="character">
                       <div className="flex items-center gap-2">
-                        <PersonStanding className="h-4 w-4" />
+                        <LuPersonStanding className="h-4 w-4" />
                         <span>Character</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="system">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4" />
+                        <LuSparkles className="h-4 w-4" />
                         <span>System</span>
                       </div>
                     </SelectItem>
@@ -184,7 +184,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
         </DialogBody>
         <DialogFooter className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
-            <XCircleIcon className="h-4 w-4" />
+            <LuCircleX className="h-4 w-4" />
             Cancel
           </Button>
           <Button
@@ -194,7 +194,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
             size="dialog"
             className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
           >
-            <CheckCircleIcon className="h-4 w-4" />
+            <LuCircleCheck className="h-4 w-4" />
             {initialData ? "Update" : "Save"} Prompt
           </Button>
         </DialogFooter>

@@ -1,5 +1,5 @@
-import { Bot, EyeOff, FileText, Play } from "lucide-react";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import { LuBot, LuEyeOff, LuFileText, LuPlay } from "react-icons/lu";
 import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
@@ -16,21 +16,21 @@ import { VersionControls } from "./VersionButtons";
 // Script type configurations with icons and styling
 const SCRIPT_CONFIGS = {
   agent: {
-    icon: Bot,
+    icon: LuBot,
     label: "AI Agent",
     description: "Automated response",
     className: "bg-chart-2/15 text-chart-2 border-chart-2/30",
     iconClassName: "text-chart-2",
   },
   summary: {
-    icon: FileText,
+    icon: LuFileText,
     label: "Summary",
     description: "Context summary",
     className: "bg-chart-4/15 text-chart-4 border-chart-4/30",
     iconClassName: "text-chart-4",
   },
   start_chapter: {
-    icon: Play,
+    icon: LuPlay,
     label: "Chapter Start",
     description: "New chapter begins",
     className: "bg-primary/15 text-primary border-primary/30",
@@ -198,7 +198,7 @@ const MessageItem = ({
   const DisabledIndicator = () => (
     <div className="absolute top-2 right-2 z-10">
       <div className="flex items-center gap-1.5 px-2 py-1 bg-destructive/90 text-destructive-foreground text-xs font-medium rounded-md shadow-sm backdrop-blur-sm">
-        <EyeOff className="h-3 w-3" />
+        <LuEyeOff className="h-3 w-3" />
         <span className="hidden @sm:inline">Excluded</span>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Clock, Construction, Database } from "lucide-react";
+import { LuClock, LuConstruction, LuDatabase } from "react-icons/lu";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card";
 
@@ -8,7 +8,7 @@ const WidgetDatabase = () => {
     <Card className="w-full border border-border bg-transparent border-none backdrop-blur-sm">
       <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
-          <Construction className="h-5 w-5 text-primary" />
+          <LuConstruction className="h-5 w-5 text-primary" />
           <CardTitle className="text-xl">Database Widget</CardTitle>
         </div>
         <CardDescription>This feature is currently under development</CardDescription>
@@ -27,7 +27,7 @@ const WidgetDatabase = () => {
             }}
             className="relative"
           >
-            <Database className="h-24 w-24 text-primary/80" strokeWidth={1.5} />
+            <LuDatabase className="h-24 w-24 text-primary/80" strokeWidth={1.5} />
             <motion.div
               className="absolute inset-0 rounded-full bg-primary/10"
               animate={{ scale: [1, 1.2, 1] }}
@@ -47,11 +47,11 @@ const WidgetDatabase = () => {
       </CardContent>
       <CardFooter className="flex justify-between border-t border-border/50 pt-4">
         <div className="flex items-center text-xs text-muted-foreground">
-          <Clock className="mr-1 h-3 w-3" />
+          <LuClock className="mr-1 h-3 w-3" />
           <span>Coming in the next update</span>
         </div>
         <Button variant="outline" size="sm">
-          <Construction className="mr-2 h-4 w-4" />
+          <LuConstruction className="mr-2 h-4 w-4" />
           Stay Tuned
         </Button>
       </CardFooter>

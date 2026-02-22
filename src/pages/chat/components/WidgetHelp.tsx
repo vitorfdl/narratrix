@@ -1,5 +1,5 @@
-import { Command } from "lucide-react";
 import React from "react";
+import { LuCommand } from "react-icons/lu";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import shortcutsDoc from "./shortcuts_doc.json";
 
@@ -29,7 +29,7 @@ const RenderKey: React.FC<{ shortcutKey: ShortcutKey; kbdClass: string }> = ({ s
       // Currently only supports Command icon
       return (
         <kbd className={kbdClass}>
-          <Command className="w-4 h-4" />
+          <LuCommand className="w-4 h-4" />
         </kbd>
       );
     }

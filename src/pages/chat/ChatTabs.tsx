@@ -1,8 +1,8 @@
 import { closestCenter, DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { PlusIcon, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LuPlus, LuX } from "react-icons/lu";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -74,7 +74,7 @@ function SortableTab({ tab, index, activeTab, onTabChange, onCloseTab, onRenameR
               }}
               className="opacity-30 group-hover:opacity-100 hover:text-destructive transition-opacity ml-auto flex-shrink-0 pointer-events-auto"
             >
-              <X className="h-4 w-4" />
+              <LuX className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -189,7 +189,7 @@ export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, on
               onDuplicateRequest={onDuplicateRequest}
               onDeleteRequest={onDeleteRequest}
             >
-              <PlusIcon className="h-4 w-4 text-foreground" />
+              <LuPlus className="h-4 w-4 text-foreground" />
             </ChatMenuDropdown>
           </div>
 
@@ -204,7 +204,7 @@ export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, on
                 >
                   <span className="mr-2 max-h-6 text-sm overflow-hidden text-ellipsis whitespace-nowrap pointer-events-none">{draggedTab.name}</span>
                   <button className="opacity-30 group-hover:opacity-100 hover:text-destructive transition-opacity ml-auto flex-shrink-0 pointer-events-none">
-                    <X className="h-4 w-4" />
+                    <LuX className="h-4 w-4" />
                   </button>
                 </div>
               </div>

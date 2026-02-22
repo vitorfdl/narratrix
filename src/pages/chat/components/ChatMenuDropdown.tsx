@@ -1,5 +1,5 @@
-import { Clock, PlusIcon, Trash2, UsersRound } from "lucide-react";
 import { useState } from "react";
+import { LuClock, LuPlus, LuTrash2, LuUsersRound } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
 import { Command, CommandGroup, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
@@ -48,13 +48,13 @@ function ChatListItem({ chat, showTimestamp, onSelectChat, onRenameRequest, onDu
           </div>
 
           <div className="flex items-center gap-2 text-xxs text-muted-foreground">
-            <UsersRound className="!h-3 !w-3" />
+            <LuUsersRound className="!h-3 !w-3" />
             <span className="m-0 p-0">{chat.participants?.length || 0}</span>
           </div>
 
           {showTimestamp && (
             <div className="flex items-center gap-2 text-xxs text-muted-foreground mr-2">
-              <Clock className="!h-3 !w-3" />
+              <LuClock className="!h-3 !w-3" />
               <span className="m-0 p-0">{formatRelativeTime(new Date(chat.updated_at))}</span>
             </div>
           )}
@@ -70,7 +70,7 @@ function ChatListItem({ chat, showTimestamp, onSelectChat, onRenameRequest, onDu
               }
             }}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <LuTrash2 className="h-3.5 w-3.5" />
           </div>
         </CommandItem>
         <Separator className="bg-foreground/10" />
@@ -200,7 +200,7 @@ export function ChatMenuDropdown({ allChats, openChatIds, onSelectChat, onCreate
                 }}
                 className="flex items-center gap-2 py-2 cursor-pointer"
               >
-                <PlusIcon className="h-4 w-4 text-primary" />
+                <LuPlus className="h-4 w-4 text-primary" />
                 <span className="font-medium">Create New Chat</span>
               </CommandItem>
             </CommandGroup>

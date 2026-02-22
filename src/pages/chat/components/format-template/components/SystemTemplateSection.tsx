@@ -2,8 +2,8 @@ import { closestCenter, DndContext } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, ChevronDown, ChevronUp, Edit, GripVertical, Paperclip, Plus, SeparatorVertical, Trash, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LuCheck, LuChevronDown, LuChevronUp, LuGripVertical, LuPaperclip, LuPencil, LuPlus, LuSeparatorVertical, LuTrash, LuX } from "react-icons/lu";
 import { useDebouncedCallback } from "use-debounce";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
@@ -154,10 +154,10 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div {...attributes} {...listeners} className={disabled ? "cursor-not-allowed" : "cursor-grab"}>
-              <GripVertical className="h-4 w-4 text-muted-foreground" />
+              <LuGripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
             <Button variant="ghost" size="sm" disabled={disabled} onClick={handleCollapseToggle}>
-              {prompt.isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              {prompt.isCollapsed ? <LuChevronDown className="h-4 w-4" /> : <LuChevronUp className="h-4 w-4" />}
             </Button>
 
             {/* Inline editable label */}
@@ -174,10 +174,10 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
                     placeholder="Enter label name"
                   />
                   <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={handleLabelSave}>
-                    <Check className="h-3 w-3" />
+                    <LuCheck className="h-3 w-3" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={handleLabelCancel}>
-                    <X className="h-3 w-3" />
+                    <LuX className="h-3 w-3" />
                   </Button>
                 </div>
               ) : (
@@ -194,7 +194,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
                   </div>
                   {!disabled && (
                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleLabelEdit} title="Edit label">
-                      <Edit className="h-3 w-3" />
+                      <LuPencil className="h-3 w-3" />
                     </Button>
                   )}
                 </div>
@@ -207,7 +207,7 @@ function SystemPromptItem({ prompt, onUpdate, onDelete, disabled }: SystemPrompt
               <span className="text-xs text-muted-foreground">{(prompt.enabled ?? true) ? "Enabled" : "Disabled"}</span>
             </div>
             <Button variant="ghost" size="icon" disabled={disabled} onClick={() => onDelete(prompt.id)}>
-              <Trash className="h-4 w-4" />
+              <LuTrash className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -467,7 +467,7 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
       <CardHeader>
         <CardTitle className="inference-section-header flex items-center gap-1 pb-2 border-b ">
           <div className="flex items-center gap-1">
-            <Paperclip className="h-5 w-5" /> System Prompts
+            <LuPaperclip className="h-5 w-5" /> System Prompts
             <HelpTooltip>
               <p>Define the AI's core behavior and instructions using System Prompts. Multiple prompts added here are automatically combined into a single system message sent to the AI.</p>
               <br />
@@ -510,7 +510,7 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="border-dashed border-2 hover:border-solid" disabled={isDisabled}>
-                  <Plus className="h-4 w-4 mr-1" />
+                  <LuPlus className="h-4 w-4 mr-1" />
                   Add Section
                 </Button>
               </DropdownMenuTrigger>
@@ -531,7 +531,7 @@ export function SystemPromptTemplateSection({ formatTemplateID }: SystemPromptSe
         <Card className="mt-4">
           <CardHeader className="template-card-header">
             <CardTitle className="template-card-title">
-              <SeparatorVertical className="h-4 w-4" /> Separators
+              <LuSeparatorVertical className="h-4 w-4" /> Separators
             </CardTitle>
           </CardHeader>
           <CardContent>

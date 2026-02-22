@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { LuPlus } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -14,7 +14,7 @@ export function EmptyTabsPrompt({ onCreateTab }: EmptyTabsPromptProps) {
           <h3 className="text-lg font-semibold mb-2">No Active Tabs</h3>
           <p className="text-muted-foreground mb-4">Create a new tab to get started with your conversation</p>
           <Button onClick={onCreateTab} className="gap-2">
-            <Plus className="h-4 w-4" />
+            <LuPlus className="h-4 w-4" />
             Create New Tab
           </Button>
         </CardContent>

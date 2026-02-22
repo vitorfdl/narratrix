@@ -1,5 +1,5 @@
-import { FileQuestion } from "lucide-react";
 import React from "react";
+import { LuFileQuestion } from "react-icons/lu";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatMarkdownValue, markdownClass } from "../LiveInspector";
@@ -17,7 +17,7 @@ export const Response: React.FC<ResponseProps> = ({ selectedRequest }) => {
             <MarkdownTextArea editable={false} className={markdownClass} initialValue={formatMarkdownValue(selectedRequest.fullResponse)} />
           ) : (
             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-              <FileQuestion className="w-8 h-8 mb-2" />
+              <LuFileQuestion className="w-8 h-8 mb-2" />
               <span>No response data available</span>
             </div>
           )}

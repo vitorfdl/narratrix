@@ -1,8 +1,9 @@
 import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { BookDown, BookOpenIcon, BookUp, Bot, Filter, GripVertical, Plus, Search, SortAsc, SortDesc, Trash2, User } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { LuBookDown, LuBookOpen, LuBookUp, LuBot, LuFilter, LuGripVertical, LuPlus, LuSearch, LuTrash2, LuUser } from "react-icons/lu";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,10 +44,10 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
 
   // Map insertion types to readable names and icons
   const insertionTypeDisplay: { [key: string]: { name: string; icon: React.ElementType } } = {
-    lorebook_top: { name: "Top", icon: BookUp },
-    lorebook_bottom: { name: "Bottom", icon: BookDown },
-    user: { name: "User", icon: User },
-    assistant: { name: "Assistant", icon: Bot },
+    lorebook_top: { name: "Top", icon: LuBookUp },
+    lorebook_bottom: { name: "Bottom", icon: LuBookDown },
+    user: { name: "User", icon: LuUser },
+    assistant: { name: "Assistant", icon: LuBot },
   };
 
   const displayInfo = insertionTypeDisplay[entry.insertion_type] || { name: entry.insertion_type, icon: null };
@@ -56,7 +57,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
     <TableRow ref={setNodeRef} style={style} className={cn("transition-colors cursor-pointer hover:bg-muted", isDragging && "bg-accent opacity-80")} {...attributes} onClick={() => onEdit(entry)}>
       <TableCell className="p-0 pl-2 w-10">
         <div {...listeners} className="cursor-grab py-2 px-1 inline-block">
-          <GripVertical size={16} className="text-muted-foreground" />
+          <LuGripVertical size={16} className="text-muted-foreground" />
         </div>
       </TableCell>
       <TableCell className="p-2 w-10">
@@ -122,7 +123,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
             onDelete(entry);
           }}
         >
-          <Trash2 size={16} />
+          <LuTrash2 size={16} />
         </Button>
       </TableCell>
     </TableRow>
@@ -300,7 +301,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
       {!compact && (
         <div className="p-4 flex items-center justify-between gap-2 border-b">
           <div className="flex items-center gap-2">
-            <BookOpenIcon className="w-5 h-5 mr-2 text-primary" />
+            <LuBookOpen className="w-5 h-5 mr-2 text-primary" />
             <h2 className="text-lg font-semibold">Entries</h2>
           </div>
           <Button
@@ -312,14 +313,14 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
               handleCreateNewEntry();
             }}
           >
-            <Plus size={16} className="mr-1" /> New Entry
+            <LuPlus size={16} className="mr-1" /> New Entry
           </Button>
         </div>
       )}
 
       <div className="p-4 flex items-center gap-3 border-b">
         <div className="relative flex-1">
-          <Search className="absolute left-2 top-1 h-4 w-4 text-muted-foreground" />
+          <LuSearch className="absolute left-2 top-1 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search entries..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
         </div>
 
@@ -333,14 +334,14 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
               handleCreateNewEntry();
             }}
           >
-            <Plus size={16} className="mr-1" /> New
+            <LuPlus size={16} className="mr-1" /> New
           </Button>
         )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
-              <Filter size={16} className="mr-1" /> Filter
+              <LuFilter size={16} className="mr-1" /> Filter
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -395,25 +396,25 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                     <TableHead className="w-10" />
                     <TableHead className="w-10">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleSort("enabled")}>
-                        <Filter size={14} />
+                        <LuFilter size={14} />
                       </Button>
                     </TableHead>
                     <TableHead className="w-[25%] max-w-[200px]">
                       <Button variant="ghost" size="sm" className={cn("-ml-3 font-medium", compact && "text-xs h-8")} onClick={() => handleSort("comment")}>
                         Title
-                        {sortField === "comment" && (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
+                        {sortField === "comment" && (sortOrder === "asc" ? <FaSortAmountUp size={14} className="ml-1 inline" /> : <FaSortAmountDown size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="max-w-[100px] text-center">
                       <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "text-xs h-8")} onClick={() => handleSort("group_key")}>
                         Group
-                        {sortField === "group_key" && (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
+                        {sortField === "group_key" && (sortOrder === "asc" ? <FaSortAmountUp size={14} className="ml-1 inline" /> : <FaSortAmountDown size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="max-w-[50px] text-center">
                       <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "text-xs h-8")} onClick={() => handleSort("insertion_type")}>
                         Insert Type
-                        {sortField === "insertion_type" && (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
+                        {sortField === "insertion_type" && (sortOrder === "asc" ? <FaSortAmountUp size={14} className="ml-1 inline" /> : <FaSortAmountDown size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="w-[10%] max-w-[100px] text-center">
@@ -425,7 +426,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                     <TableHead className="w-[10%] text-center">
                       <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "text-xs h-8")} onClick={() => handleSort("priority")}>
                         Priority
-                        {sortField === "priority" && (sortOrder === "asc" ? <SortAsc size={14} className="ml-1 inline" /> : <SortDesc size={14} className="ml-1 inline" />)}
+                        {sortField === "priority" && (sortOrder === "asc" ? <FaSortAmountUp size={14} className="ml-1 inline" /> : <FaSortAmountDown size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
                     <TableHead className="w-10" />
@@ -444,7 +445,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="rounded-full bg-muted p-3 mb-3">
-              <Search className="h-6 w-6 text-muted-foreground" />
+              <LuSearch className="h-6 w-6 text-muted-foreground" />
             </div>
             <h3 className={cn("text-lg font-medium", compact && "text-xs")}>No entries found</h3>
             <p className={cn("text-sm text-muted-foreground mt-1 mb-4 max-w-md", compact && "text-xs")}>
@@ -459,7 +460,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                 handleCreateNewEntry();
               }}
             >
-              <Plus size={16} className="mr-1" /> New Entry
+              <LuPlus size={16} className="mr-1" /> New Entry
             </Button>
           </div>
         )}

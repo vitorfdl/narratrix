@@ -1,7 +1,7 @@
-import { ChevronDown } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { LuChevronDown } from "react-icons/lu";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
@@ -356,15 +356,12 @@ const WidgetMessages: React.FC = () => {
     [messages, streamingMessageId, messageReasonings, isEditingID, editedContent, handleCancelEdit, handleSaveEdit, handleSwipe, handleMessageSelection, handleSummarizeMessages, onRegenerateMessage],
   );
 
-  const followOutput = useCallback(
-    (atBottom: boolean) => {
-      if (atBottom) {
-        return "smooth" as const;
-      }
-      return false as const;
-    },
-    [],
-  );
+  const followOutput = useCallback((atBottom: boolean) => {
+    if (atBottom) {
+      return "smooth" as const;
+    }
+    return false as const;
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: "smooth", align: "end" });
@@ -393,7 +390,7 @@ const WidgetMessages: React.FC = () => {
 
       {!isAtBottom && (
         <Button variant="outline" size="icon" className={SCROLL_BUTTON_STYLES} onClick={scrollToBottom} title="Scroll to latest messages">
-          <ChevronDown className="h-4 w-4" />
+          <LuChevronDown className="h-4 w-4" />
         </Button>
       )}
     </div>

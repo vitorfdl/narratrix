@@ -1,5 +1,5 @@
-import { BadgeHelpIcon, HelpCircle } from "lucide-react";
 import React from "react";
+import { LuBadgeHelp, LuCircleHelp } from "react-icons/lu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -32,11 +32,11 @@ export function HelpTooltip({
     <TooltipProvider {...tooltipProviderProps}>
       <Tooltip delayDuration={delayDuration} {...tooltipProps}>
         <TooltipTrigger asChild {...tooltipTriggerProps}>
-          <HelpCircle className={finalIconClassName} />
+          <LuCircleHelp className={finalIconClassName} />
         </TooltipTrigger>
         <TooltipContent className={cn("max-w-80 select-none border py-2", tooltipContentClassName)} {...tooltipContentProps}>
           <div className="flex items-center gap-1 ">
-            <BadgeHelpIcon className="h-5 w-5 flex-shrink-0 mr-1 text-muted-foreground text-justify" />
+            <LuBadgeHelp className="h-5 w-5 flex-shrink-0 mr-1 text-muted-foreground text-justify" />
             <div className="text-foreground/80">{children}</div>
           </div>
         </TooltipContent>

@@ -1,4 +1,4 @@
-import { Bot, Code2, GitBranch, Heart, HeartOff, Network, Trash2, Zap } from "lucide-react";
+import { LuBot, LuCode, LuGitBranch, LuHeart, LuHeartOff, LuNetwork, LuTrash2, LuZap } from "react-icons/lu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -37,7 +37,7 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Bot className="h-5 w-5" />
+              <LuBot className="h-5 w-5" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-base line-clamp-1">{agent.name}</h3>
@@ -48,7 +48,7 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
           <div className="flex items-center gap-2">
             {/* Run trigger badge */}
             <Badge variant={runTrigger === "every_message" ? "default" : "secondary"} className="text-xxs flex items-center text-primary-foreground">
-              <Zap className="h-3 w-3 mr-1" />
+              <LuZap className="h-3 w-3 mr-1" />
               {runTrigger === "every_message" ? "Auto" : "Manual"}
             </Badge>
 
@@ -63,7 +63,7 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
               }}
               title={agent.favorite ? "Remove from favorites" : "Add to favorites"}
             >
-              {agent.favorite ? <Heart className="h-4 w-4 fill-primary text-primary" /> : <HeartOff className="h-4 w-4" />}
+              {agent.favorite ? <LuHeart className="h-4 w-4 fill-primary text-primary" /> : <LuHeartOff className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -76,11 +76,11 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
         {/* Node stats */}
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1 text-muted-foreground">
-            <Network className="h-3 w-3" />
+            <LuNetwork className="h-3 w-3" />
             <span>{agent.nodes.length} nodes</span>
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
-            <GitBranch className="h-3 w-3" />
+            <LuGitBranch className="h-3 w-3" />
             <span>{agent.edges.length} connections</span>
           </div>
         </div>
@@ -91,7 +91,7 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
             .slice(0, 3)
             .map(([type, count]) => (
               <Badge key={type} variant="outline" className="text-xxs py-0.5 px-1.5">
-                <Code2 className="h-3 w-3 mr-1" />
+                <LuCode className="h-3 w-3 mr-1" />
                 {type} {count > 1 && `(${count})`}
               </Badge>
             ))}
@@ -127,7 +127,7 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
           }}
           title="Delete Agent"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <LuTrash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
 

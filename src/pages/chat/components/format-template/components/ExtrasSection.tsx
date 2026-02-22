@@ -1,5 +1,5 @@
-import { BrainCircuitIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LuBrainCircuit } from "react-icons/lu";
 import { useDebouncedCallback } from "use-debounce";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,7 +81,7 @@ export function ExtraSections({ formatTemplateID }: ExtraSectionsProps) {
           <Card>
             <CardHeader className="template-card-header">
               <CardTitle className="template-card-title">
-                <BrainCircuitIcon className="h-4 w-4" /> Reasoning
+                <LuBrainCircuit className="h-4 w-4" /> Reasoning
                 <HelpTooltip>
                   <p>
                     Define the markers used to identify reasoning text within the assistant's response.

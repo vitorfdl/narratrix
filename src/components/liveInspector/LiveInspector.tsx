@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
-import { Inbox, SearchX, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { LuInbox, LuSearchX, LuTrash2 } from "react-icons/lu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +70,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
                 onClick={() => clearHistory()}
                 disabled={requests.length === 0}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <LuTrash2 className="h-3.5 w-3.5" />
                 Clear History
               </Button>
             </div>
@@ -78,7 +78,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
               <div className="p-2">
                 {requests.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground p-4 text-center">
-                    <Inbox className="w-10 h-10 mb-3" />
+                    <LuInbox className="w-10 h-10 mb-3" />
                     <span className="text-sm">No requests captured yet.</span>
                   </div>
                 )}
@@ -148,7 +148,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
               </Tabs>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4 text-center">
-                <SearchX className="w-10 h-10 mb-3" />
+                <LuSearchX className="w-10 h-10 mb-3" />
                 <span className="text-sm">Select a request from the list</span>
                 <span className="text-xs mt-1">to view its details here.</span>
               </div>

@@ -53,7 +53,7 @@ export function CharacterSidebar({
               {selectedTags.length} {selectedTags.length === 1 ? "filter" : "filters"}
             </span>
             <Button variant="ghost" size="icon" onClick={onClearTags} className="h-5 w-5 rounded-full bg-accent/50 hover:bg-accent">
-              <X className="h-3 w-3" />
+              <LuX className="h-3 w-3" />
             </Button>
           </div>
         )}

@@ -1,5 +1,5 @@
-import { Bot, ChevronDown, ChevronUp, Merge, Settings, Split, User } from "lucide-react";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { LuBot, LuChevronDown, LuChevronUp, LuMerge, LuSettings, LuSplit, LuUser } from "react-icons/lu";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -229,11 +229,11 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
               <div className="flex justify-center mb-4">
                 <TabsList className="grid w-auto grid-cols-2">
                   <TabsTrigger value="split" className="flex items-center gap-2">
-                    <Split className="h-4 w-4" />
+                    <LuSplit className="h-4 w-4" />
                     Split View
                   </TabsTrigger>
                   <TabsTrigger value="concatenated" className="flex items-center gap-2">
-                    <Merge className="h-4 w-4" />
+                    <LuMerge className="h-4 w-4" />
                     Concatenated
                   </TabsTrigger>
                 </TabsList>
@@ -244,7 +244,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-3 text-base">
                       <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        <Merge className="h-4 w-4" />
+                        <LuMerge className="h-4 w-4" />
                       </div>
                       <span>Concatenated Content</span>
                       <Badge variant="secondary" className="text-xs font-normal">
@@ -265,13 +265,13 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                     <CardTitle className="flex items-center justify-between text-base">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                          <Settings className="h-4 w-4" />
+                          <LuSettings className="h-4 w-4" />
                         </div>
                         <span>System Prompt</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm" onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
-                          {systemPromptCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                          {systemPromptCollapsed ? <LuChevronDown className="h-3.5 w-3.5" /> : <LuChevronUp className="h-3.5 w-3.5" />}
                         </Button>
                       </div>
                     </CardTitle>
@@ -332,7 +332,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className={`p-1.5 rounded-lg ${!isUser ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}>
-                                {isUser ? <User className="h-4 w-4 text-muted-foreground" /> : <Bot className="h-4 w-4" />}
+                                {isUser ? <LuUser className="h-4 w-4 text-muted-foreground" /> : <LuBot className="h-4 w-4" />}
                               </div>
                               <Badge variant={isUser ? "secondary" : "default"} className="text-xs font-medium capitalize">
                                 {message.role}
@@ -341,7 +341,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                             <div className="flex items-center gap-1">
                               {shouldShowCollapse && (
                                 <Button variant="ghost" size="sm" onClick={() => toggleMessageCollapse(actualIndex)} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
-                                  {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                                  {isCollapsed ? <LuChevronDown className="h-3.5 w-3.5" /> : <LuChevronUp className="h-3.5 w-3.5" />}
                                 </Button>
                               )}
                             </div>
@@ -385,13 +385,13 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                   <CardTitle className="flex items-center justify-between text-base">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        <Settings className="h-4 w-4" />
+                        <LuSettings className="h-4 w-4" />
                       </div>
                       <span>System Prompt</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" onClick={() => setSystemPromptCollapsed(!systemPromptCollapsed)} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
-                        {systemPromptCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                        {systemPromptCollapsed ? <LuChevronDown className="h-3.5 w-3.5" /> : <LuChevronUp className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
                   </CardTitle>
@@ -452,7 +452,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className={`p-1.5 rounded-lg ${!isUser ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}>
-                              {isUser ? <User className="h-4 w-4 text-muted-foreground" /> : <Bot className="h-4 w-4" />}
+                              {isUser ? <LuUser className="h-4 w-4 text-muted-foreground" /> : <LuBot className="h-4 w-4" />}
                             </div>
                             <Badge variant={isUser ? "secondary" : "default"} className="text-xs font-medium capitalize">
                               {message.role}
@@ -461,7 +461,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
                           <div className="flex items-center gap-1">
                             {shouldShowCollapse && (
                               <Button variant="ghost" size="sm" onClick={() => toggleMessageCollapse(actualIndex)} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
-                                {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                                {isCollapsed ? <LuChevronDown className="h-3.5 w-3.5" /> : <LuChevronUp className="h-3.5 w-3.5" />}
                               </Button>
                             )}
                           </div>
@@ -508,7 +508,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
           onClick={scrollToTop}
           title="Scroll to top"
         >
-          <ChevronUp className="h-4 w-4" />
+          <LuChevronUp className="h-4 w-4" />
         </Button>
       )}
 
@@ -521,7 +521,7 @@ export const Payload: React.FC<PayloadProps> = ({ selectedRequest, activeTab, se
           onClick={() => scrollToBottom()}
           title="Scroll to bottom"
         >
-          <ChevronDown className="h-4 w-4" />
+          <LuChevronDown className="h-4 w-4" />
         </Button>
       )}
     </div>

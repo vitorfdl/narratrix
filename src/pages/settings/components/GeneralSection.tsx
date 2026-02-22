@@ -1,6 +1,6 @@
 import { Howl } from "howler";
-import { EyeOff, Globe, MessageSquare, Play } from "lucide-react";
 import React, { useCallback, useRef } from "react";
+import { LuEyeOff, LuGlobe, LuMessageSquare, LuPlay } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -61,7 +61,7 @@ export const GeneralSection: React.FC<GeneralSectionProps> = ({ settings, onSett
 
   return (
     <SettingSection title="General">
-      <SettingItem icon={<Globe className="w-4 h-4" />} label="Language">
+      <SettingItem icon={<LuGlobe className="w-4 h-4" />} label="Language">
         <Select value={settings.general.language} onValueChange={(value) => onSettingChange("general", "language", value)}>
           <SelectTrigger className="w-36">
             <SelectValue placeholder="Select language" />
@@ -75,7 +75,7 @@ export const GeneralSection: React.FC<GeneralSectionProps> = ({ settings, onSett
 
       <Separator />
 
-      <SettingCollapsible icon={<MessageSquare className="w-4 h-4" />} label="Chat / Messages">
+      <SettingCollapsible icon={<LuMessageSquare className="w-4 h-4" />} label="Chat / Messages">
         <Separator />
         <SettingItem label="Beep sound when message ends">
           <div className="flex items-center gap-2">
@@ -92,7 +92,7 @@ export const GeneralSection: React.FC<GeneralSectionProps> = ({ settings, onSett
               </SelectContent>
             </Select>
             <Button type="button" size="icon" variant="outline" aria-label="Preview beep sound" onClick={handlePreviewBeep} className="h-7 ml-1" disabled={settings.chat.beepSound === "none"}>
-              <Play className="!w-4 !h-4" />
+              <LuPlay className="!w-4 !h-4" />
             </Button>
           </div>
         </SettingItem>
@@ -114,7 +114,7 @@ export const GeneralSection: React.FC<GeneralSectionProps> = ({ settings, onSett
       </SettingCollapsible>
       <Separator />
 
-      <SettingCollapsible icon={<EyeOff className="w-4 h-4" />} label="Censorship Settings">
+      <SettingCollapsible icon={<LuEyeOff className="w-4 h-4" />} label="Censorship Settings">
         <Separator />
         <SettingItem label="Censored Words" labelClassName="w-40">
           <CommandTagInput value={settings.censorship.customWords} maxTags={50} onChange={(value) => onSettingChange("censorship", "customWords", value)} />

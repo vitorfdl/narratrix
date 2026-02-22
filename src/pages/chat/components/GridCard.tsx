@@ -1,7 +1,7 @@
 // src/components/GridCard.tsx
 
-import { EyeIcon, EyeOffIcon, Grip, PinOffIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LuEye, LuEyeOff, LuGrip, LuPinOff } from "react-icons/lu";
 import { CardProps } from "@/schema/grid";
 import { useLocalGridLayout } from "@/utils/local-storage";
 
@@ -36,7 +36,7 @@ export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, bu
         }
       >
         <div className={`flex items-center gap-2 cursor-grab active:cursor-grabbing w-full ${dragHandleClassName || ""}`}>
-          <Grip className="w-3 h-3 mr-2 text-muted-foreground" />
+          <LuGrip className="w-3 h-3 mr-2 text-muted-foreground" />
           <span className="font-medium text-xs">{title}</span>
         </div>
 
@@ -45,11 +45,11 @@ export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, bu
             <div key={index}>{button}</div>
           ))}
           <button tabIndex={-1} onClick={toggleDecorations} className="p-1 hover:bg-accent rounded" title={isDecorated ? "Hide Decorations" : "Show Decorations"}>
-            {isDecorated ? <EyeOffIcon className="w-3 h-3" /> : <EyeIcon className="w-3 h-3" />}
+            {isDecorated ? <LuEyeOff className="w-3 h-3" /> : <LuEye className="w-3 h-3" />}
           </button>
           {onClose && (
             <button tabIndex={-1} onClick={onClose} className="p-1 hover:bg-accent rounded" title="Pin Card to Sidebar">
-              <PinOffIcon className="w-3 h-3" />
+              <LuPinOff className="w-3 h-3" />
             </button>
           )}
         </div>

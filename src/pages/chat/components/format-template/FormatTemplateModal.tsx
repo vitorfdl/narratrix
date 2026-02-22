@@ -1,5 +1,5 @@
-import { HelpCircle } from "lucide-react";
 import { useCallback, useEffect } from "react";
+import { LuCircleHelp } from "react-icons/lu";
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
@@ -66,7 +66,7 @@ export default function FormatTemplateModal({ open, onOpenChange, selectedTempla
             <DialogTitle className="text-lg font-semibold">Format Template Editor</DialogTitle>
             <Button variant="ghost" size="icon" className="ml-auto" asChild title="Open Format Template Documentation">
               <a href="https://github.com/vitorfdl/narratrix/wiki/Prompt-Format-Template" target="_blank" rel="noopener noreferrer" aria-label="Open Format Template Documentation">
-                <HelpCircle className="h-5 w-5" />
+                <LuCircleHelp className="h-5 w-5" />
               </a>
             </Button>
           </div>

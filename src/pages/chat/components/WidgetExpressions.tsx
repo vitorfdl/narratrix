@@ -1,5 +1,5 @@
-import { Clock, FileText, Image as ImageIcon, Loader2Icon, MessageCircle, Pause, Play, RefreshCw, Settings, Smile, User, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LuClock, LuFileText, LuImage, LuLoaderCircle, LuMessageCircle, LuPause, LuPlay, LuRefreshCw, LuSettings, LuSmile, LuUser, LuWifiOff } from "react-icons/lu";
 import { useThrottledCallback } from "use-debounce";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -454,7 +454,7 @@ const WidgetExpressions = () => {
                         className={cn("w-full h-full transition-opacity duration-200 ease-out opacity-100", imageObjectFitClass)}
                       />
                       <AvatarFallback>
-                        <Loader2Icon className="w-[50%] h-[50%] animate-spin" />
+                        <LuLoaderCircle className="w-[50%] h-[50%] animate-spin" />
                       </AvatarFallback>
                     </Avatar>
                   </div>
@@ -463,7 +463,7 @@ const WidgetExpressions = () => {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-3">
-              <User className="h-16 w-16 text-primary/20" />
+              <LuUser className="h-16 w-16 text-primary/20" />
               <p className="text-base font-medium">No Active Characters</p>
               <p className="text-sm">Character expressions will appear here once characters are added to the chat.</p>
             </div>
@@ -485,7 +485,7 @@ const WidgetExpressions = () => {
                 aria-label={selectedText ? "Generate expression from selection" : "Generate expression for current speaker"}
                 title={selectedText ? "Generate from selection" : "Generate for speaker"}
               >
-                <RefreshCw className="!h-3 !w-3" />
+                <LuRefreshCw className="!h-3 !w-3" />
                 <span className="ml-0.2 hidden sm:inline text-xs">Generate</span>
               </Button>
 
@@ -498,7 +498,7 @@ const WidgetExpressions = () => {
                 aria-label={autoRefreshEnabled ? "Disable auto-refresh" : "Enable auto-refresh"}
                 title={autoRefreshEnabled ? "Auto-refresh on" : "Auto-refresh off"}
               >
-                {autoRefreshEnabled ? <Pause className="!h-3 !w-3" /> : <Play className="!h-3 !w-3" />}
+                {autoRefreshEnabled ? <LuPause className="!h-3 !w-3" /> : <LuPlay className="!h-3 !w-3" />}
                 <span className="ml-0.2 hidden sm:inline text-xs">Auto</span>
               </Button>
             </div>
@@ -514,7 +514,7 @@ const WidgetExpressions = () => {
                       title="Expression service connection error"
                       aria-label="Expression service connection error"
                     >
-                      <WifiOff className="h-4 w-4" aria-hidden="true" />
+                      <LuWifiOff className="h-4 w-4" aria-hidden="true" />
                       <span className="ml-0.2 hidden sm:inline text-xs">Connection</span>
                     </Button>
                   </HoverCardTrigger>
@@ -526,7 +526,7 @@ const WidgetExpressions = () => {
                 <HoverCard openDelay={200}>
                   <HoverCardTrigger asChild>
                     <Button variant="ghost" size="xs" className="w-auto" title="View current character expression" aria-label="View current character expression">
-                      <Smile className="h-4 w-4" />
+                      <LuSmile className="h-4 w-4" />
                       <span className="ml-0.2 hidden sm:inline text-xs">Details</span>
                     </Button>
                   </HoverCardTrigger>
@@ -542,21 +542,21 @@ const WidgetExpressions = () => {
                 </HoverCard>
               ) : (
                 <Button variant="ghost" size="xs" className="w-auto" disabled>
-                  <Smile className="h-4 w-4" />
+                  <LuSmile className="h-4 w-4" />
                   <span className="ml-0.2 hidden sm:inline text-xs">Details</span>
                 </Button>
               )}
               <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="xs" className="w-auto" title="Configure Prompts" aria-label="Open expression settings">
-                    <Settings />
+                    <LuSettings />
                     <span className="ml-0.2 hidden sm:inline text-xs">Settings</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent size="window" className="max-h-[85vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-1 text-lg">
-                      <Settings className="h-4 w-4 text-primary" />
+                      <LuSettings className="h-4 w-4 text-primary" />
                       Configure Expression Settings
                     </DialogTitle>
                     <DialogDescription>Customize the prompts and behavior for character expression generation.</DialogDescription>
@@ -565,15 +565,15 @@ const WidgetExpressions = () => {
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid grid-cols-3 mb-3">
                       <TabsTrigger value="basic" className="flex items-center gap-1 py-1">
-                        <MessageCircle className="h-3 w-3" />
+                        <LuMessageCircle className="h-3 w-3" />
                         <span>Prompts</span>
                       </TabsTrigger>
                       <TabsTrigger value="template" className="flex items-center gap-1 py-1">
-                        <FileText className="h-3 w-3" />
+                        <LuFileText className="h-3 w-3" />
                         <span>Template</span>
                       </TabsTrigger>
                       <TabsTrigger value="advanced" className="flex items-center gap-1 py-1">
-                        <Clock className="h-3 w-3" />
+                        <LuClock className="h-3 w-3" />
                         <span>Advanced</span>
                       </TabsTrigger>
                     </TabsList>
@@ -653,7 +653,7 @@ const WidgetExpressions = () => {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <Label htmlFor="image-object-fit" className="flex items-center gap-1">
-                                <ImageIcon className="h-3 w-3 text-muted-foreground" />
+                                <LuImage className="h-3 w-3 text-muted-foreground" />
                                 <span>Image Fit Mode</span>
                               </Label>
                               {selectedImageFitDescription ? (

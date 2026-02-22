@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { UserCircle, UserPlus, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LuCircleUser, LuUserPlus, LuUserRound, LuX } from "react-icons/lu";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useCharacters } from "@/hooks/characterStore";
@@ -63,7 +63,7 @@ const WidgetCharacterSheet = () => {
     <Card className="w-full border border-border bg-transparent border-none backdrop-blur-sm">
       <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
-          <UserCircle className="h-5 w-5 text-primary" />
+          <LuCircleUser className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">Your Character</CardTitle>
         </div>
         <CardDescription className="text-sm">Set the character you'll play in this chat</CardDescription>
@@ -88,7 +88,7 @@ const WidgetCharacterSheet = () => {
                     setIsEditModalOpen(true);
                   }}
                 >
-                  <UserRound className="h-12 w-12 text-primary/80" strokeWidth={1.5} />
+                  <LuUserRound className="h-12 w-12 text-primary/80" strokeWidth={1.5} />
                 </div>
               )}
             </div>
@@ -119,7 +119,7 @@ const WidgetCharacterSheet = () => {
               }}
               className="relative"
             >
-              <UserRound className="h-24 w-24 text-primary/80" strokeWidth={1.5} />
+              <LuUserRound className="h-24 w-24 text-primary/80" strokeWidth={1.5} />
               <motion.div
                 className="absolute inset-0 rounded-full bg-primary/10"
                 animate={{ scale: [1, 1.2, 1] }}
@@ -142,13 +142,13 @@ const WidgetCharacterSheet = () => {
       <CardFooter className="flex justify-between pt-3">
         {currentCharacter && (
           <Button variant="ghost" size="sm" onClick={handleRemoveCharacter} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-            <X className="mr-1 h-4 w-4" />
+            <LuX className="mr-1 h-4 w-4" />
             Remove
           </Button>
         )}
         <AddParticipantPopover isOpen={isSelectingCharacter} onOpenChange={setIsSelectingCharacter} onSelectCharacter={handleSelectCharacter} existingParticipantIds={[]} title="Change Character">
           <Button variant="outline" size="sm" className="ml-auto">
-            <UserPlus className="mr-2 h-4 w-4" />
+            <LuUserPlus className="mr-2 h-4 w-4" />
             Change Character
           </Button>
         </AddParticipantPopover>

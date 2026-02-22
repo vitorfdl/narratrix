@@ -1,5 +1,5 @@
-import { User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LuUser } from "react-icons/lu";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -37,7 +37,7 @@ const ScopeAvatar: React.FC<ScopeAvatarProps> = ({ scope, isActive, onClick, get
         >
           <Avatar className="h-8 w-8 border border-border/60 shadow-sm">
             <AvatarImage className="object-cover rounded-full" src={avatarUrl} alt={scope.label} />
-            <AvatarFallback className="bg-secondary">{scope.scope === "user" ? <User className="h-6 w-6" /> : getAvatarFallback(scope.label)}</AvatarFallback>
+            <AvatarFallback className="bg-secondary">{scope.scope === "user" ? <LuUser className="h-6 w-6" /> : getAvatarFallback(scope.label)}</AvatarFallback>
           </Avatar>
         </div>
       </TooltipTrigger>

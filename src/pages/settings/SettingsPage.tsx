@@ -1,6 +1,6 @@
 import { getVersion } from "@tauri-apps/api/app";
-import { Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LuSave } from "react-icons/lu";
 import { toast } from "sonner";
 import { useCurrentProfile, useProfileActions } from "@/hooks/ProfileStore";
 import { useThemeStore } from "@/hooks/ThemeContext";
@@ -164,7 +164,7 @@ export default function Settings() {
           <h1 className="title">Settings</h1>
           {isSaving && (
             <div className="text-sm text-muted-foreground animate-pulse flex items-center gap-2">
-              <Save className="w-4 h-4" />
+              <LuSave className="w-4 h-4" />
               Saving...
             </div>
           )}

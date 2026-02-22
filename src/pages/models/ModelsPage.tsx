@@ -1,8 +1,7 @@
-import { Brain, Database, Image, Music, Plus, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { LuArrowDownAZ, LuBrain, LuDatabase, LuImage, LuMusic, LuPlus, LuRefreshCw, LuSearch, LuSettings2 } from "react-icons/lu";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
@@ -11,12 +10,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useModelManifestsActions } from "@/hooks/manifestStore";
 import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { NewModelParams } from "@/services/model-service";
+import type { NewModelParams } from "@/services/model-service";
 import { useLocalModelsPageSettings } from "@/utils/local-storage";
-import { Model, ModelType } from "../../schema/models-schema";
+import type { Model, ModelType } from "../../schema/models-schema";
 import { ModelCard } from "./components/ModelCard";
-import { ModelConfigDialog } from "./components/ModelConfigDialog";
-import { ModelForm } from "./components/ModelForm";
+import { ModelDialog } from "./components/ModelDialog";
 
 export type ModelsPageSettings = {
   view: {
@@ -38,19 +36,17 @@ interface ModelGroup {
 }
 
 export default function Models() {
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [modelDialogOpen, setModelDialogOpen] = useState(false);
+  const [modelDialogMode, setModelDialogMode] = useState<"add" | "edit">("add");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [configDialogOpen, setConfigDialogOpen] = useState(false);
 
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const currentProfile = useCurrentProfile();
-  const { getModelsByProfileGroupedByType, deleteModel, updateModel, createModel } = useModelsActions();
+  const { getModelsByProfileGroupedByType, deleteModel, createModel } = useModelsActions();
   const { fetchManifests } = useModelManifestsActions();
   const [modelGroups, setModelGroups] = useState<ModelGroup[]>([]);
   const [allModels, setAllModels] = useState<Model[]>([]);
   const isLoading = useModelsLoading();
-  const [isUpdating, setIsUpdating] = useState(false);
   const [search, setSearch] = useState("");
   const [settings, setSettings] = useLocalModelsPageSettings();
 
@@ -91,12 +87,12 @@ export default function Models() {
 
   const getModelTypeIcon = (type: ModelType): React.ReactNode => {
     const icons: Record<ModelType, React.ReactNode> = {
-      llm: <Brain className="h-4 w-4 text-primary" />,
-      audio: <Music className="h-4 w-4 text-primary" />,
-      image: <Image className="h-4 w-4 text-primary" />,
-      database: <Database className="h-4 w-4 text-primary" />,
+      llm: <LuBrain className="h-4 w-4 text-primary" />,
+      audio: <LuMusic className="h-4 w-4 text-primary" />,
+      image: <LuImage className="h-4 w-4 text-primary" />,
+      database: <LuDatabase className="h-4 w-4 text-primary" />,
     };
-    return icons[type] || <Brain className="h-4 w-4" />;
+    return icons[type] || <LuBrain className="h-4 w-4" />;
   };
 
   // Filter and sort models
@@ -170,9 +166,16 @@ export default function Models() {
       }));
   }, [filteredAndSortedModels, settings.filter.type]);
 
-  const handleEdit = async (model: Model) => {
+  const openAddDialog = () => {
+    setSelectedModel(null);
+    setModelDialogMode("add");
+    setModelDialogOpen(true);
+  };
+
+  const openEditDialog = (model: Model) => {
     setSelectedModel(model);
-    setEditDialogOpen(true);
+    setModelDialogMode("edit");
+    setModelDialogOpen(true);
   };
 
   const handleDelete = async (model: Model) => {
@@ -222,32 +225,6 @@ export default function Models() {
     }
   };
 
-  const handleConfigSave = async (modelId: string, updates: { max_concurrency: number; inference_template_id?: string | null }) => {
-    setIsUpdating(true);
-    try {
-      await updateModel(modelId, updates);
-      await refreshModels();
-
-      // Update the selected model to reflect changes
-      if (selectedModel && selectedModel.id === modelId) {
-        const updatedModel = {
-          ...selectedModel,
-          ...updates,
-        };
-        setSelectedModel(updatedModel);
-      }
-    } catch (error) {
-      console.error("Failed to update model configuration:", error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleConfigOpen = (model: Model) => {
-    setSelectedModel(model);
-    setConfigDialogOpen(true);
-  };
-
   const handleDuplicate = async (model: Model) => {
     if (!currentProfile?.id) {
       console.error("No current profile available for duplication");
@@ -255,32 +232,23 @@ export default function Models() {
     }
 
     try {
-      setIsUpdating(true);
-
-      // Prepare the model data for duplication
       const duplicateModelData: NewModelParams = {
         profile_id: currentProfile.id,
         name: `${model.name} (Copy)`,
         type: model.type,
-        config: { ...model.config }, // Deep copy the config
+        config: { ...model.config },
         manifest_id: model.manifest_id,
+        max_concurrency: model.max_concurrency,
         inference_template_id: model.inference_template_id!,
       };
 
-      // Create the duplicate model in the database
       const isDuplicate = true;
       const duplicatedModel = await createModel(duplicateModelData, isDuplicate);
 
-      // Refresh the models list to show the new duplicate
       await refreshModels();
-
-      // Set the newly created model as selected and open edit dialog
-      setSelectedModel(duplicatedModel);
-      setEditDialogOpen(true);
+      openEditDialog(duplicatedModel);
     } catch (error) {
       console.error("Failed to duplicate model:", error);
-    } finally {
-      setIsUpdating(false);
     }
   };
 
@@ -293,20 +261,20 @@ export default function Models() {
 
           {/* Search */}
           <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search models..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
           </div>
 
           {/* Refresh */}
           <Button variant="outline" size="icon" onClick={refreshModels} disabled={isLoading} title="Refresh Models">
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <LuRefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
 
           {/* View Settings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" title="Grid Settings">
-                <Settings2 className="h-4 w-4" />
+                <LuSettings2 className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -343,7 +311,7 @@ export default function Models() {
             }}
           >
             <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="Sort Models">
-              <SortAsc className="h-4 w-4" />
+              <LuArrowDownAZ className="h-4 w-4" />
             </SelectTrigger>
             <SelectContent align="end">
               <SelectItem value="name-asc">Name (A-Z)</SelectItem>
@@ -356,8 +324,8 @@ export default function Models() {
           </Select>
 
           {/* Add Model Button */}
-          <Button onClick={() => setAddDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={openAddDialog}>
+            <LuPlus className="h-4 w-4 mr-2" />
             Add Model
           </Button>
         </div>
@@ -417,7 +385,7 @@ export default function Models() {
                     }}
                   >
                     {group.models.map((model) => (
-                      <ModelCard key={model.id} model={model} onEdit={handleEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} setConfigDialogOpen={() => handleConfigOpen(model)} />
+                      <ModelCard key={model.id} model={model} onDelete={handleDelete} onDuplicate={handleDuplicate} onOpenSettings={openEditDialog} />
                     ))}
                   </div>
                 </div>
@@ -427,53 +395,27 @@ export default function Models() {
         ) : (
           <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">
             <div className="rounded-full bg-muted p-4 mb-4">
-              <Search className="h-8 w-8 text-muted-foreground" />
+              <LuSearch className="h-8 w-8 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-semibold mb-1">{search || settings.filter.type !== "all" ? "No models match your filters" : "No models found"}</h3>
             <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
               {search || settings.filter.type !== "all" ? "Try adjusting your search or filter settings." : "Get started by adding your first model to this profile."}
             </p>
-            <Button variant="default" size="lg" onClick={() => setAddDialogOpen(true)}>
-              <Plus size={20} className="mr-2" /> Create Model
+            <Button variant="default" size="lg" onClick={openAddDialog}>
+              <LuPlus size={20} className="mr-2" /> Create Model
             </Button>
           </div>
         )}
       </div>
 
-      {/* Add Model Dialog */}
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Model</DialogTitle>
-          </DialogHeader>
-          <ModelForm
-            mode="add"
-            onSuccess={() => {
-              setAddDialogOpen(false);
-              refreshModels();
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Model Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Model</DialogTitle>
-          </DialogHeader>
-          {selectedModel && (
-            <ModelForm
-              mode="edit"
-              model={selectedModel}
-              onSuccess={() => {
-                setEditDialogOpen(false);
-                refreshModels();
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Unified Model Dialog (Add / Edit) */}
+      <ModelDialog
+        mode={modelDialogMode}
+        model={modelDialogMode === "edit" ? (selectedModel ?? undefined) : undefined}
+        open={modelDialogOpen}
+        onOpenChange={setModelDialogOpen}
+        onSuccess={refreshModels}
+      />
 
       {/* Delete Confirmation Dialog */}
       <DestructiveConfirmDialog
@@ -488,8 +430,6 @@ export default function Models() {
         }
         onConfirm={confirmDelete}
       />
-
-      {selectedModel && <ModelConfigDialog model={selectedModel} open={configDialogOpen} onOpenChange={setConfigDialogOpen} onSave={handleConfigSave} isUpdating={isUpdating} />}
     </div>
   );
 }

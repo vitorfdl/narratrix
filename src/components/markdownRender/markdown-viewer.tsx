@@ -1,6 +1,6 @@
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { Copy } from "lucide-react";
 import { useMemo, useRef } from "react";
+import { LuCopy } from "react-icons/lu";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import RehypeHighlight from "rehype-highlight";
@@ -37,7 +37,7 @@ const PreWithCopy: React.FC<React.PropsWithChildren<React.HTMLAttributes<HTMLPre
   return (
     <pre ref={preRef} className="group relative p-4 bg-accent/50 rounded" {...props}>
       <button className="copy-code-button" type="button" aria-label="Copy code to clipboard" tabIndex={0} onClick={handleCopy}>
-        <Copy className="w-4 h-4" />
+        <LuCopy className="w-4 h-4" />
       </button>
       {children}
     </pre>

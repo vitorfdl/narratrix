@@ -1,5 +1,5 @@
-import { Bot, Cpu, RefreshCw, Search, Settings2, SortAsc } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { LuAArrowDown, LuBot, LuCpu, LuRefreshCw, LuSearch, LuSettings2 } from "react-icons/lu";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -155,20 +155,20 @@ export default function AgentPage() {
 
             {/* Search */}
             <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search agents..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
             </div>
 
             {/* Refresh */}
             <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoading} title="Refresh Agents">
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              <LuRefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </Button>
 
             {/* View Settings */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" title="Grid Settings">
-                  <Settings2 className="h-4 w-4" />
+                  <LuSettings2 className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -205,7 +205,7 @@ export default function AgentPage() {
               }}
             >
               <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="Sort Agents">
-                <SortAsc className="h-4 w-4" />
+                <LuAArrowDown className="h-4 w-4" />
               </SelectTrigger>
               <SelectContent align="end">
                 <SelectItem value="name-asc">Name (A-Z)</SelectItem>
@@ -219,7 +219,7 @@ export default function AgentPage() {
 
             {/* Add Agent Button */}
             <Button onClick={() => setAddDialogOpen(true)} className="bg-primary hover:bg-primary/90">
-              <Cpu className="h-4 w-4 mr-2" />
+              <LuCpu className="h-4 w-4 mr-2" />
               Create Agent
             </Button>
           </div>
@@ -249,14 +249,14 @@ export default function AgentPage() {
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">
               <div className="rounded-full bg-muted p-4 mb-4">
-                <Bot className="h-8 w-8 text-muted-foreground" />
+                <LuBot className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-1">{search || settings.selectedTags.length > 0 ? "No agents match your filters" : "No agents found"}</h3>
               <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
                 {search || settings.selectedTags.length > 0 ? "Try adjusting your search or filter settings." : "Get started by creating your first AI agent!"}
               </p>
               <Button variant="default" size="lg" onClick={() => setAddDialogOpen(true)} className="bg-primary hover:bg-primary/90">
-                <Cpu size={20} className="mr-2" /> Create Your First Agent
+                <LuCpu size={20} className="mr-2" /> Create Your First Agent
               </Button>
             </div>
           )}

@@ -1,5 +1,5 @@
-import { Bot, CheckCircleIcon, XCircleIcon } from "lucide-react";
 import { useState } from "react";
+import { LuBot, LuCircleCheck, LuCircleX } from "react-icons/lu";
 import { toast } from "sonner";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,7 @@ export default function AddAgentDialog({ open, onOpenChange, onSuccess }: AddAge
       <DialogContent size="large">
         <DialogHeader>
           <DialogTitle className="flex gap-2 items-center text-lg font-semibold">
-            <Bot className="h-5 w-5 text-primary" />
+            <LuBot className="h-5 w-5 text-primary" />
             Create New Agent
           </DialogTitle>
         </DialogHeader>
@@ -170,11 +170,11 @@ export default function AddAgentDialog({ open, onOpenChange, onSuccess }: AddAge
           </DialogBody>
           <DialogFooter>
             <Button variant="ghost" type="button" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-              <XCircleIcon className="h-4 w-4" />
+              <LuCircleX className="h-4 w-4" />
               Cancel
             </Button>
             <Button type="submit" size="dialog" disabled={isSubmitting || !name.trim()} className="bg-primary hover:bg-primary/90">
-              <CheckCircleIcon className="h-4 w-4" />
+              <LuCircleCheck className="h-4 w-4" />
               Create Agent
             </Button>
           </DialogFooter>

@@ -1,5 +1,5 @@
-import { Loader2, Send, StopCircle } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { LuCircleStop, LuLoaderCircle, LuSend } from "react-icons/lu";
 import { toast } from "sonner";
 import type { MarkdownEditorRef } from "@/components/markdownRender/markdown-editor";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
@@ -325,7 +325,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       ) : (
         <div className="flex-1 h-full overflow-none pb-9">
           <div className="h-full w-full flex items-center justify-center">
-            <Loader2 className="w-4! h-4! animate-spin" />
+            <LuLoaderCircle className="w-4! h-4! animate-spin" />
           </div>
         </div>
       )}
@@ -338,12 +338,12 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         </div>
         {isAnyCharacterStreaming() ? (
           <Button variant="destructive" size="xs" onClick={handleCancel} title="Cancel Generation" className="ml-auto">
-            <StopCircle className="!w-3.5 !h-3.5 mr-1" />
+            <LuCircleStop className="!w-3.5 !h-3.5 mr-1" />
             Cancel
           </Button>
         ) : (
           <Button variant="default" size="xs" onClick={() => handleSubmit(text)} title={`Send Message (${sendCommand || "Ctrl+Enter"})`} className="ml-auto" disabled={!text.trim()}>
-            <Send className="!w-3.5 !h-3.5 mr-1" />
+            <LuSend className="!w-3.5 !h-3.5 mr-1" />
             Send
           </Button>
         )}

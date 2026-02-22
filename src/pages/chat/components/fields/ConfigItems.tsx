@@ -1,4 +1,4 @@
-import { Trash } from "lucide-react";
+import { LuTrash } from "react-icons/lu";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -80,7 +80,7 @@ export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false,
         </div>
         {!isNested && onRemove && (
           <Button variant="ghost" className="w-6 h-6" size="icon" onClick={onRemove}>
-            <Trash className="h-4 w-4" />
+            <LuTrash className="h-4 w-4" />
           </Button>
         )}
       </div>

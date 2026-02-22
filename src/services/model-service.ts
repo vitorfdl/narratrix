@@ -12,6 +12,7 @@ export interface NewModelParams {
   type: ModelType;
   config: Record<string, any>;
   manifest_id: string;
+  max_concurrency?: number;
   inference_template_id?: string;
 }
 
@@ -67,6 +68,7 @@ export async function createModel(modelData: NewModelParams, disableEncryption?:
     type: modelData.type,
     manifest_id: modelData.manifest_id,
     config: modelData.config,
+    max_concurrency: modelData.max_concurrency ?? 1,
     inference_template_id: modelData.inference_template_id,
     created_at: new Date(now),
     updated_at: new Date(now),

@@ -3,8 +3,8 @@ import { restrictToFirstScrollableAncestor, restrictToParentElement, restrictToV
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
-import { Bot, Cpu, GripVertical, PlayCircleIcon, Settings, Sparkles, StopCircleIcon, Trash2, UserPlus, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { LuBot, LuCirclePlay, LuCircleStop, LuCpu, LuGripVertical, LuSettings, LuSparkles, LuTrash2, LuUserPlus, LuZap } from "react-icons/lu";
 import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -73,7 +73,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
   };
 
   // Agent icon variations for visual interest
-  const agentIcons = [Bot, Cpu, Zap];
+  const agentIcons = [LuBot, LuCpu, LuZap];
   const AgentIcon = agentIcons[participant.id.charCodeAt(0) % agentIcons.length];
 
   const getAvatarContent = () => {
@@ -86,7 +86,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
         <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 relative overflow-hidden rounded-none">
           <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 animate-pulse" />
           <AgentIcon className="h-4 w-4 text-primary relative z-10" />
-          <Sparkles className="absolute -top-1 -right-1 h-2 w-2 text-primary/60" />
+          <LuSparkles className="absolute -top-1 -right-1 h-2 w-2 text-primary/60" />
         </AvatarFallback>
       );
     }
@@ -107,7 +107,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
       {inInferenceQueue && <BorderBeam colorFrom="hsl(var(--primary))" size={60} duration={1.5} />}
       <div className="flex items-center gap-2 flex-shrink-0 justify-center self-center h-full">
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing flex items-center">
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <LuGripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
         <Avatar
           onClick={handleAvatarClick}
@@ -130,7 +130,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
             <div className="font-medium truncate text-xs">{participant.name}</div>
             {participant.type === "agent" && participant.isEnabled && (
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 25 }}>
-                <Sparkles className="h-3 w-3 text-primary/60 flex-shrink-0" />
+                <LuSparkles className="h-3 w-3 text-primary/60 flex-shrink-0" />
               </motion.div>
             )}
           </div>
@@ -149,10 +149,10 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
                     ease: "easeInOut",
                   }}
                 >
-                  <StopCircleIcon className="!h-5 !w-5 text-destructive" />
+                  <LuCircleStop className="!h-5 !w-5 text-destructive" />
                 </motion.div>
               ) : (
-                <PlayCircleIcon className="!h-5 !w-5" />
+                <LuCirclePlay className="!h-5 !w-5" />
               )}
             </Button>
           )}
@@ -170,7 +170,7 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
                 size={"xs"}
               />
               <Button variant="ghost" size="icon" className="w-4 h-4 hover:text-destructive" onClick={() => onRemoveParticipant?.(participant.id)} title="Remove">
-                <Trash2 className="!h-3 !w-3" />
+                <LuTrash2 className="!h-3 !w-3" />
               </Button>
             </div>
             <div className={cn("text-xxs capitalize truncate flex items-center gap-1", participant.type === "agent" ? "text-primary/80 font-medium" : "text-muted-foreground")}>{participant.type}</div>
@@ -446,12 +446,12 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
       <div className="py-0 px-1 border-t flex justify-start gap-2">
         <AddParticipantPopover isOpen={isAddParticipantOpen} onOpenChange={setIsAddParticipantOpen} onSelectCharacter={handleAddParticipant} existingParticipantIds={participants.map((p) => p.id)}>
           <Button variant="ghost" size="icon" title="Add Participant">
-            <UserPlus className="h-4 w-4" />
+            <LuUserPlus className="h-4 w-4" />
           </Button>
         </AddParticipantPopover>
         {/* TODO: Add settings support */}
         <Button disabled variant="ghost" size="icon" onClick={onOpenConfig} title="Settings">
-          <Settings className="h-4 w-4" />
+          <LuSettings className="h-4 w-4" />
         </Button>
       </div>
 

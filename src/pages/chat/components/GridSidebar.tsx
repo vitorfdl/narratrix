@@ -1,6 +1,6 @@
 import { PopoverArrow } from "@radix-ui/react-popover";
-import { BugIcon, Pin } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
+import { LuBug, LuPin } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
@@ -62,7 +62,7 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
                   <div className="flex items-top justify-between px-2 py-1">
                     <span className="text-xs ml-2 font-semibold">{widgetTitles[widget.id as WidgetId]}</span>
                     <button onClick={() => toggleCard(widget.id)} className="p-1 hover:bg-accent rounded">
-                      <Pin className="w-3 h-3" />
+                      <LuPin className="w-3 h-3" />
                     </button>
                   </div>
                   <hr className="mb-1 mt-0.2 border-t border-border" />
@@ -83,7 +83,7 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
             className="m-1 h-auto bg-transparent whitespace-nowrap text-sm p-0.5 pt-1 pb-1 font-light"
             onClick={() => onToggleInspector()}
           >
-            <BugIcon className="w-4 h-4" />
+            <LuBug className="w-4 h-4" />
           </Button>
         </div>
       </div>
