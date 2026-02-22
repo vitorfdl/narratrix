@@ -361,15 +361,12 @@ const WidgetMessages: React.FC = () => {
 
   // Only auto-scroll during active streaming to avoid fighting with manual scroll
   // on item height re-measurements (which Virtuoso triggers followOutput for).
-  const followOutput = useCallback(
-    (atBottom: boolean) => {
-      if (atBottom && streamingMessageIdRef.current) {
-        return "smooth" as const;
-      }
-      return false as const;
-    },
-    [],
-  );
+  const followOutput = useCallback((atBottom: boolean) => {
+    if (atBottom && streamingMessageIdRef.current) {
+      return "smooth" as const;
+    }
+    return false as const;
+  }, []);
 
   const handleAtBottomChange = useCallback((atBottom: boolean) => {
     setIsAtBottom(atBottom);

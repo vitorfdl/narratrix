@@ -16,12 +16,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
+import { useChatInferenceState } from "@/hooks/useChatInference";
 import { useMultipleImageUrls } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
 import { basicPromptSuggestionList, ChatMessage } from "@/schema/chat-message-schema";
-import { useChatInferenceState } from "@/hooks/useChatInference";
 import { useBackgroundInference } from "@/services/background-inference-service";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { findClosestExpressionMatch } from "@/utils/fuzzy-search";
@@ -667,7 +667,9 @@ const WidgetExpressions = () => {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <Label htmlFor="auto-run-after-complete">Run After Completion</Label>
-                              <HelpTooltip>When enabled, auto mode waits for the full response to finish before generating an expression, instead of updating periodically during streaming.</HelpTooltip>
+                              <HelpTooltip>
+                                When enabled, auto mode waits for the full response to finish before generating an expression, instead of updating periodically during streaming.
+                              </HelpTooltip>
                             </div>
                             <div className="flex items-center space-x-2 h-8">
                               <Switch id="auto-run-after-complete" checked={tempAutoRunAfterComplete} onCheckedChange={setTempAutoRunAfterComplete} />

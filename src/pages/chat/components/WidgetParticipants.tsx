@@ -15,10 +15,10 @@ import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
+import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
-import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { Character } from "@/schema/characters-schema";
 import AddParticipantPopover from "./AddParticipantPopover";
 

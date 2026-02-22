@@ -6,9 +6,9 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { Button } from "@/components/ui/button";
 import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { cn } from "@/lib/utils";
 import type { GenerationOptions, StreamingState } from "@/hooks/useChatInference";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
+import { cn } from "@/lib/utils";
 import { QuickAction } from "@/schema/profiles-schema";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import QuickActions from "./utils-generate/QuickActions";

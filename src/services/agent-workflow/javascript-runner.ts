@@ -49,7 +49,7 @@ export async function runJavascript(code: string, args?: unknown): Promise<unkno
 
   // Create an async function with a strict, explicit parameter list
   // eslint-disable-next-line @typescript-eslint/no-implied-eval
-  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...args: string[]) => (...fnArgs: unknown[]) => Promise<unknown>;
+  const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor as new (...args: string[]) => (...fnArgs: unknown[]) => Promise<unknown>;
 
   const fn = new AsyncFunction("input", "args", "stores", "utils", `"use strict";\n${code}`);
 

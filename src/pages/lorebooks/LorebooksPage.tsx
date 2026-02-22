@@ -15,8 +15,8 @@ import { useIsLoadingLorebooks, useLorebookStoreActions, useLorebooks, useSelect
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { Lorebook } from "@/schema/lorebook-schema";
 import { exportLorebook } from "@/services/imports/shared/lorebook-export";
-import { useLocalLorebookPageSettings } from "@/utils/local-storage";
 import type { LorebookPageSettings } from "@/utils/local-storage";
+import { useLocalLorebookPageSettings } from "@/utils/local-storage";
 import { LorebookEntries } from "./components/LorebookEntries";
 import { LorebookFormDialog } from "./components/LorebookFormDialog";
 import { LorebookImport, LorebookImportHandle } from "./components/LorebookImport";
