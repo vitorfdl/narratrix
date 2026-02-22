@@ -42,7 +42,7 @@
       "request": {
         "label": "Get Models",
         "method": "GET",
-        "url": "{base_url}/api/tags",
+        "url": "http://127.0.0.1:11434/api/tags",
         "response": {
           "label": "name",
           "value": "name",

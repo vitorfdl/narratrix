@@ -107,7 +107,7 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="connection">Connection</TabsTrigger>
-            <TabsTrigger value="inference">Inference</TabsTrigger>
+            <TabsTrigger value="inference" disabled={mode === "add"}>Inference</TabsTrigger>
           </TabsList>
 
           <TabsContent value="connection" className="flex-1 overflow-hidden">
