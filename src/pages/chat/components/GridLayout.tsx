@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Layout, Responsive, WidthProvider } from "react-grid-layout";
+import { type Layout, type LayoutItem, Responsive, useContainerWidth } from "react-grid-layout";
+import { absoluteStrategy, verticalCompactor } from "react-grid-layout/core";
 // Import the grid layout CSS
 import { GridPosition } from "@/schema/grid";
 import { useLocalGridLayout } from "@/utils/local-storage";
@@ -8,8 +9,6 @@ import { GridCard } from "./GridCard";
 import { GridSidebar } from "./GridSidebar";
 import "react-grid-layout/css/styles.css";
 import "../styles/react-grid-overrides.css";
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
 
 const COLUMNS = {
   lg: 12,
@@ -27,13 +26,13 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
   const [layoutReady, setLayoutReady] = useState(false);
   const [currentBreakpoint, setCurrentBreakpoint] = useState<keyof typeof COLUMNS>("lg");
   const [maxRows, setMaxRows] = useState(21);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { width, containerRef, mounted } = useContainerWidth();
   const rowHeight = 32;
   const margin = 4;
   // Add a ref to track if we're currently changing breakpoints
   const isBreakpointChanging = useRef(false);
   // Store last layout to compare for genuine changes
-  const lastLayout = useRef<Layout[]>([]);
+  const lastLayout = useRef<Layout>([] as Layout);
 
   // Calculate maxRows based on container height
   const calculateMaxRows = useCallback(() => {
@@ -93,7 +92,7 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
   function sanitizeWidgetPositions(positions: GridPosition[], maxRows: number, columns: Record<string, number>): GridPosition[] {
     return positions.map((pos: GridPosition) => {
       const newPos: any = { ...pos };
-      ["lg", "md", "sm", "xs", "xxs"].forEach((breakpoint) => {
+      for (const breakpoint of ["lg", "md", "sm", "xs", "xxs"]) {
         const colCount = columns[breakpoint];
         if (newPos[breakpoint]) {
           let { x = 0, y = 0, w = 2, h = 1 } = newPos[breakpoint];
@@ -124,7 +123,7 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
           }
           newPos[breakpoint] = { x, y, w, h };
         }
-      });
+      }
       return newPos;
     });
   }
@@ -158,7 +157,7 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
           minW: 1,
           minH: 1,
         };
-      });
+      }) as Layout;
     };
     // Return optimized layouts for each breakpoint
     return {
@@ -170,8 +169,8 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
     };
   }, [visibleWidgets, maxRows]);
 
-  // Handle layout changes from drag/resize operations
-  const handleLayoutChange = (currentLayout: Layout[]) => {
+  // Handle layout changes from drag/resize operations (v2 signature: layout, layouts)
+  const handleLayoutChange = (currentLayout: Layout, _layouts?: Record<string, Layout>) => {
     // Skip empty layouts
     if (!currentLayout.length || !layoutReady) {
       return;
@@ -223,12 +222,15 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
     lastLayout.current = currentLayout;
   };
 
-  // Custom handler for drag stop to enforce maxRows
-  const handleDragStop = (layout: Layout[], _oldItem: Layout, newItem: Layout) => {
+  // Custom handler for drag stop to enforce maxRows (v2: params are immutable)
+  const handleDragStop = (layout: Layout, _oldItem: LayoutItem | null, newItem: LayoutItem | null) => {
+    if (!newItem) {
+      return;
+    }
     // Check if the dragged item is now extending beyond maxRows
     if (newItem.y + newItem.h > maxRows) {
-      // Adjust its position to fit within maxRows
-      const adjustedLayouts = layout.map((item) => {
+      // Adjust its position to fit within maxRows (create new array - params are immutable)
+      const adjustedLayouts: LayoutItem[] = layout.map((item) => {
         if (item.i === newItem.i) {
           return {
             ...item,
@@ -363,28 +365,25 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
       </div>
 
       {/* Grid Container - with independent scrolling */}
-      <div ref={containerRef} className="flex-1 overflow-hidden overflow-y-auto">
-        {layoutReady && (
-          <ResponsiveGridLayout
+      <div ref={containerRef as React.RefObject<HTMLDivElement>} className="flex-1 overflow-hidden overflow-y-auto">
+        {mounted && layoutReady && (
+          <Responsive
             className="layout"
+            width={width}
             layouts={generateLayouts()}
             breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
             cols={COLUMNS}
             rowHeight={rowHeight}
             margin={[margin, margin]}
             containerPadding={[margin, margin]}
+            maxRows={maxRows}
+            compactor={verticalCompactor}
+            positionStrategy={absoluteStrategy}
+            dragConfig={{ enabled: true, bounded: false, handle: `.${dragHandleClass}` }}
+            resizeConfig={{ enabled: true, handles: ["se"] }}
             onLayoutChange={handleLayoutChange}
             onBreakpointChange={handleBreakpointChange}
             onDragStop={handleDragStop}
-            draggableHandle={`.${dragHandleClass}`}
-            compactType={null}
-            preventCollision={true}
-            useCSSTransforms={false}
-            isBounded={false}
-            isDraggable={true}
-            isResizable={true}
-            resizeHandles={["se"]}
-            maxRows={maxRows}
           >
             {visibleWidgets.map((widget) => (
               <div key={widget.id}>
@@ -393,7 +392,7 @@ export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void
                 </GridCard>
               </div>
             ))}
-          </ResponsiveGridLayout>
+          </Responsive>
         )}
       </div>
     </div>

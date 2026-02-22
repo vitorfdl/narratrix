@@ -184,7 +184,7 @@ export const Stats: React.FC<StatsProps> = ({ selectedRequest }) => {
                 <div className="flex-shrink-0 w-[250px]">
                   <ChartContainer config={chartConfig} className="aspect-square max-h-[250px]">
                     <PieChart>
-                      <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                      <ChartTooltip cursor={false} content={({ content: _content, ...tooltipProps }) => <ChartTooltipContent {...tooltipProps} hideLabel />} />
                       <Pie data={tokenBreakdown} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
                         <Label
                           content={({ viewBox }) => {

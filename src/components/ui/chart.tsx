@@ -1,4 +1,5 @@
 import * as React from "react";
+import type { DefaultLegendContentProps } from "recharts";
 import * as RechartsPrimitive from "recharts";
 
 import { cn } from "@/lib/utils";
@@ -90,9 +91,10 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+// TODO: Review those weird typing later.
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+  (Parameters<Extract<React.ComponentProps<typeof RechartsPrimitive.Tooltip>["content"], (...a: never[]) => unknown>>[0] extends infer P ? P : never) &
     React.ComponentProps<"div"> & {
       hideLabel?: boolean;
       hideIndicator?: boolean;
@@ -140,7 +142,10 @@ const ChartTooltipContent = React.forwardRef<
           const indicatorColor = color || item.payload.fill || item.color;
 
           return (
-            <div key={item.dataKey} className={cn("flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground", indicator === "dot" && "items-center")}>
+            <div
+              key={typeof item.dataKey === "string" || typeof item.dataKey === "number" ? item.dataKey : `${String(item.name ?? item.dataKey)}-${index}`}
+              className={cn("flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground", indicator === "dot" && "items-center")}
+            >
               {formatter && item?.value !== undefined && item.name ? (
                 formatter(item.value, item.name, item, index, item.payload)
               ) : (
@@ -188,7 +193,7 @@ const ChartLegend = RechartsPrimitive.Legend;
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &
-    Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+    Pick<DefaultLegendContentProps, "payload" | "verticalAlign"> & {
       hideIcon?: boolean;
       nameKey?: string;
     }
