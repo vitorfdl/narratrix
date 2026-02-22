@@ -380,7 +380,8 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
           if (field.field_type === "url" && fieldValue) {
             configFields[field.key] = formatUrl(String(fieldValue).trim());
           } else if (field.field_type === "secret" && fieldValue) {
-            configFields[field.key] = await encryptApiKey(fieldValue as string);
+            // Only encrypt in edit mode — createModel service handles encryption for new models
+            configFields[field.key] = mode === "edit" ? await encryptApiKey(fieldValue as string) : fieldValue;
           } else {
             configFields[field.key] = fieldValue;
           }
