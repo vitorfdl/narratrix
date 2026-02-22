@@ -18,7 +18,7 @@ import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
-import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
+import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { Character } from "@/schema/characters-schema";
 import AddParticipantPopover from "./AddParticipantPopover";
 

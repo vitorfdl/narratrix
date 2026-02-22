@@ -9,7 +9,7 @@ import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
-export const executeChatInputNode: NodeExecutor = async (_node, _inputs, context): Promise<NodeExecutionResult> => {
+const executeChatInputNode: NodeExecutor = async (_node, _inputs, context): Promise<NodeExecutionResult> => {
   const workflowInput = context.nodeValues.get("workflow-input") || "";
   return { success: true, value: workflowInput };
 };
@@ -31,7 +31,7 @@ const CHAT_INPUT_NODE_METADATA = {
 };
 
 // Configuration provider namespace
-export namespace ChatInputNodeConfigProvider {
+namespace ChatInputNodeConfigProvider {
   export function getDefaultConfig() {
     return {
       label: CHAT_INPUT_NODE_METADATA.label,

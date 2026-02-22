@@ -23,7 +23,7 @@ export interface AgentNodeConfig {
 /**
  * Node Execution
  */
-export const executeAgentNode: NodeExecutor = async (node, inputs, _ctx, _agent, deps): Promise<NodeExecutionResult> => {
+const executeAgentNode: NodeExecutor = async (node, inputs, _ctx, _agent, deps): Promise<NodeExecutionResult> => {
   const cfg = (node.config as AgentNodeConfig) || {};
 
   let inputPrompt: string = (cfg.inputPrompt as string) || "{{input}}";
@@ -140,7 +140,7 @@ const AGENT_NODE_METADATA = {
 };
 
 // Configuration provider namespace
-export namespace AgentNodeConfigProvider {
+namespace AgentNodeConfigProvider {
   export function getDefaultConfig() {
     return {
       label: AGENT_NODE_METADATA.label,
@@ -162,7 +162,7 @@ const DEFAULT_CONFIG_STATE: AgentNodeConfig = {
   inputPrompt: "",
 };
 
-export const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ open, config, onSave, onCancel }) => {
+const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ open, config, onSave, onCancel }) => {
   const [currentConfig, setCurrentConfig] = useState<AgentNodeConfig>(DEFAULT_CONFIG_STATE);
 
   useEffect(() => {

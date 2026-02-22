@@ -12,7 +12,7 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-export const executeChatOutputNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
+const executeChatOutputNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
   if (inputs.characterId && typeof inputs.characterId !== "string") {
     return { success: false, error: "Character ID must be a string" };
   }
@@ -72,7 +72,7 @@ const CHAT_OUTPUT_NODE_METADATA = {
 };
 
 // Configuration provider namespace
-export namespace ChatOutputNodeConfigProvider {
+namespace ChatOutputNodeConfigProvider {
   export function getDefaultConfig() {
     return {
       label: CHAT_OUTPUT_NODE_METADATA.label,

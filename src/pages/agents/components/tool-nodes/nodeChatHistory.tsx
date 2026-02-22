@@ -16,7 +16,7 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-export const executeChatHistoryNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
+const executeChatHistoryNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
   try {
     const { selectedChatMessages } = useChatStore.getState();
     let history = Array.isArray(selectedChatMessages) ? selectedChatMessages : [];
@@ -66,7 +66,7 @@ const CHAT_HISTORY_NODE_METADATA = {
 };
 
 // Configuration provider namespace
-export namespace ChatHistoryNodeConfigProvider {
+namespace ChatHistoryNodeConfigProvider {
   export function getDefaultConfig() {
     return {
       label: CHAT_HISTORY_NODE_METADATA.label,
@@ -85,7 +85,7 @@ export interface ChatHistoryNodeConfigDialogProps {
   onCancel: () => void;
 }
 
-export const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
+const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
   const {
     control,
     handleSubmit,

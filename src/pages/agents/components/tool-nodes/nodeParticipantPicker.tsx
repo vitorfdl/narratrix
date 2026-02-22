@@ -88,7 +88,7 @@ function pickFromParticipants(mode: ParticipantPickerMode, agentId: string | und
   return null;
 }
 
-export const executeParticipantPickerNode: NodeExecutor = async (node, _inputs, _ctx, agent): Promise<NodeExecutionResult> => {
+const executeParticipantPickerNode: NodeExecutor = async (node, _inputs, _ctx, agent): Promise<NodeExecutionResult> => {
   try {
     const cfg = (node.config as ParticipantPickerConfig) || {};
     const mode = (cfg.mode as ParticipantPickerMode) || "user";
@@ -123,7 +123,7 @@ const PARTICIPANT_PICKER_NODE_METADATA = {
   } as ParticipantPickerConfig,
 };
 
-export namespace ParticipantPickerConfigProvider {
+namespace ParticipantPickerConfigProvider {
   export function getDefaultConfig() {
     return {
       label: PARTICIPANT_PICKER_NODE_METADATA.label,

@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
 import { basicPromptSuggestionList, ChatMessage } from "@/schema/chat-message-schema";
-import { useChatInferenceState } from "@/providers/inferenceChatProvider";
+import { useChatInferenceState } from "@/hooks/useChatInference";
 import { useBackgroundInference } from "@/services/background-inference-service";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
 import { findClosestExpressionMatch } from "@/utils/fuzzy-search";

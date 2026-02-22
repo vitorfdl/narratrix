@@ -16,27 +16,10 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { Lorebook } from "@/schema/lorebook-schema";
 import { exportLorebook } from "@/services/imports/shared/lorebook-export";
 import { useLocalLorebookPageSettings } from "@/utils/local-storage";
+import type { LorebookPageSettings } from "@/utils/local-storage";
 import { LorebookEntries } from "./components/LorebookEntries";
 import { LorebookFormDialog } from "./components/LorebookFormDialog";
 import { LorebookImport, LorebookImportHandle } from "./components/LorebookImport";
-
-// Settings type for lorebook page view preferences
-export type LorebookPageSettings = {
-  sort: {
-    field: "name" | "category" | "updated_at" | "created_at";
-    direction: "asc" | "desc";
-  };
-  listWidth: "full" | "wide" | "medium" | "narrow";
-};
-
-// Default settings
-export const defaultLorebookPageSettings: LorebookPageSettings = {
-  sort: {
-    field: "updated_at",
-    direction: "desc",
-  },
-  listWidth: "full",
-};
 
 // Map categories to icons
 const categoryIcons: Record<NonNullable<Lorebook["category"]>, React.ElementType> = {

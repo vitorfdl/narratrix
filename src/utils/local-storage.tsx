@@ -1,16 +1,17 @@
-import { Theme } from "@tauri-apps/api/window";
+import type { Theme } from "@tauri-apps/api/window";
 import { produce } from "immer";
 import { useAtom } from "jotai";
-import { atomFamily, atomWithStorage } from "jotai/utils";
+import { atomWithStorage } from "jotai/utils";
+import { atomFamily } from "jotai-family";
 import { useMemo } from "react";
-import { AgentPageSettings } from "@/pages/agents/AgentPage";
-import { CharacterPageSettings } from "@/pages/characters/CharactersPage";
-import { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
-import { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
-import { defaultLorebookPageSettings, LorebookPageSettings } from "@/pages/lorebooks/LorebooksPage";
-import { ModelsPageSettings } from "@/pages/models/ModelsPage";
-import { defaultPositions, GridPosition } from "@/schema/grid";
-import { QuickAction } from "@/schema/profiles-schema";
+import type { AgentPageSettings } from "@/pages/agents/AgentPage";
+import type { CharacterPageSettings } from "@/pages/characters/CharactersPage";
+import type { SummarySettings } from "@/pages/chat/components/message-controls/SummaryDialog";
+import type { ExpressionGenerateSettings } from "@/pages/chat/components/WidgetExpressions";
+import type { ModelsPageSettings } from "@/pages/models/ModelsPage";
+import type { GridPosition } from "@/schema/grid";
+import { defaultPositions } from "@/schema/grid";
+import type { QuickAction } from "@/schema/profiles-schema";
 
 /**
  * Local storage for characters pages settings
@@ -52,10 +53,26 @@ export function useLocalAgentPageSettings() {
   return useAtom(agentPageSettingsAtom);
 }
 
+export type LorebookPageSettings = {
+  sort: {
+    field: "name" | "category" | "updated_at" | "created_at";
+    direction: "asc" | "desc";
+  };
+  listWidth: "full" | "wide" | "medium" | "narrow";
+};
+
+const DEFAULT_LOREBOOK_PAGE_SETTINGS: LorebookPageSettings = {
+  sort: {
+    field: "updated_at",
+    direction: "desc",
+  },
+  listWidth: "full",
+};
+
 /**
  * Local storage for lorebook page settings
  */
-const lorebookPageSettingsAtom = atomWithStorage<LorebookPageSettings>("lorebookPageSettings", defaultLorebookPageSettings);
+const lorebookPageSettingsAtom = atomWithStorage<LorebookPageSettings>("lorebookPageSettings", DEFAULT_LOREBOOK_PAGE_SETTINGS);
 
 export function useLocalLorebookPageSettings() {
   return useAtom(lorebookPageSettingsAtom);

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatId, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
-import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
+import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { getCharacterById } from "@/services/character-service";
 import { replaceStringPlaceholders } from "@/services/inference/formatter/replace-text-placeholders";
 

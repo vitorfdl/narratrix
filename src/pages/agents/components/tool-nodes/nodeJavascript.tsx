@@ -16,7 +16,7 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-export const executeJavascriptNode: NodeExecutor = async (node, inputs, context, _agent, _deps): Promise<NodeExecutionResult> => {
+const executeJavascriptNode: NodeExecutor = async (node, inputs, context, _agent, _deps): Promise<NodeExecutionResult> => {
   const cfg = (node.config as JavascriptNodeConfig) || {};
   const code = typeof cfg?.code === "string" ? cfg.code : "";
 
@@ -93,7 +93,7 @@ const JAVASCRIPT_NODE_METADATA = {
 };
 
 // Configuration provider namespace
-export namespace JavascriptNodeConfigProvider {
+namespace JavascriptNodeConfigProvider {
   export function getDefaultConfig() {
     return {
       label: JAVASCRIPT_NODE_METADATA.label,
@@ -112,7 +112,7 @@ export interface JavascriptNodeConfigDialogProps {
   onCancel: () => void;
 }
 
-export const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
+const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
   const {
     control,
     handleSubmit,

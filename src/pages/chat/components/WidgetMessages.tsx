@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
-import { useInferenceServiceFromContext } from "@/providers/inferenceChatProvider";
+import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import type { ChatMessage } from "@/services/chat-message-service";
 import { updateChatMessagesUsingFilter } from "@/services/chat-message-service";
 import MessageItem from "./message-controls/MessageItem";
@@ -15,7 +15,8 @@ import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
 import type { SummarySettings } from "./message-controls/SummaryDialog";
 
 const MESSAGE_CONTAINER_STYLES = "relative flex flex-col h-full @container";
-const MESSAGE_GROUP_STYLES = "message-group relative group/message transition-all pb-2";
+// Use padding instead of margin - Virtuoso's ResizeObserver excludes margins, causing height miscalculation and scroll blink
+const MESSAGE_GROUP_STYLES = "message-group relative group/message transition-all py-1";
 const SCROLL_BUTTON_STYLES = "absolute bottom-4 right-4 rounded-full shadow-md bg-background z-10 opacity-80 hover:opacity-100";
 
 const WidgetMessages: React.FC = () => {
@@ -39,6 +40,8 @@ const WidgetMessages: React.FC = () => {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const selectionTimeoutRef = useRef<number | null>(null);
   const streamingMessageIdRef = useRef<string | null>(null);
+  const isAtBottomRef = useRef(true);
+  const prevMessageCountRef = useRef(messages.length);
 
   const handleCancelEdit = useCallback(() => {
     setIsEditingID(null);
@@ -356,12 +359,30 @@ const WidgetMessages: React.FC = () => {
     [messages, streamingMessageId, messageReasonings, isEditingID, editedContent, handleCancelEdit, handleSaveEdit, handleSwipe, handleMessageSelection, handleSummarizeMessages, onRegenerateMessage],
   );
 
-  const followOutput = useCallback((atBottom: boolean) => {
-    if (atBottom) {
-      return "smooth" as const;
-    }
-    return false as const;
+  // Only auto-scroll during active streaming to avoid fighting with manual scroll
+  // on item height re-measurements (which Virtuoso triggers followOutput for).
+  const followOutput = useCallback(
+    (atBottom: boolean) => {
+      if (atBottom && streamingMessageIdRef.current) {
+        return "smooth" as const;
+      }
+      return false as const;
+    },
+    [],
+  );
+
+  const handleAtBottomChange = useCallback((atBottom: boolean) => {
+    setIsAtBottom(atBottom);
+    isAtBottomRef.current = atBottom;
   }, []);
+
+  // Scroll to bottom when new messages arrive and user was at bottom (non-streaming case)
+  useEffect(() => {
+    if (messages.length > prevMessageCountRef.current && isAtBottomRef.current) {
+      virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: "smooth", align: "end" });
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages.length]);
 
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: "smooth", align: "end" });
@@ -378,14 +399,15 @@ const WidgetMessages: React.FC = () => {
         ref={virtuosoRef}
         data={messages}
         computeItemKey={(_index, message) => message.id}
+        defaultItemHeight={150}
         initialTopMostItemIndex={messages.length - 1}
         followOutput={followOutput}
-        atBottomStateChange={setIsAtBottom}
-        atBottomThreshold={50}
+        atBottomStateChange={handleAtBottomChange}
+        atBottomThreshold={30}
         itemContent={itemContent}
         className="messages-container"
         style={{ height: "100%", padding: "0.25rem", overflowX: "hidden" }}
-        increaseViewportBy={{ top: 200, bottom: 200 }}
+        increaseViewportBy={{ top: 1500, bottom: 1500 }}
       />
 
       {!isAtBottom && (
