@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useModelManifestsActions } from "@/hooks/manifestStore";
+import { useModelManifests, useModelManifestsActions } from "@/hooks/manifestStore";
 import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import type { NewModelParams } from "@/services/model-service";
@@ -21,7 +21,7 @@ export type ModelsPageSettings = {
     cardsPerRow: number;
   };
   sort: {
-    field: "name" | "type" | "updated_at" | "created_at";
+    field: "name" | "type" | "engine" | "updated_at" | "created_at";
     direction: "asc" | "desc";
   };
   filter: {
@@ -44,6 +44,7 @@ export default function Models() {
   const currentProfile = useCurrentProfile();
   const { getModelsByProfileGroupedByType, deleteModel, createModel } = useModelsActions();
   const { fetchManifests } = useModelManifestsActions();
+  const manifests = useModelManifests();
   const [modelGroups, setModelGroups] = useState<ModelGroup[]>([]);
   const [allModels, setAllModels] = useState<Model[]>([]);
   const isLoading = useModelsLoading();
@@ -118,6 +119,11 @@ export default function Models() {
           return direction * a.name.localeCompare(b.name);
         case "type":
           return direction * a.type.localeCompare(b.type);
+        case "engine": {
+          const engineA = manifests.find((m) => m.id === a.manifest_id)?.engine ?? "";
+          const engineB = manifests.find((m) => m.id === b.manifest_id)?.engine ?? "";
+          return direction * engineA.localeCompare(engineB);
+        }
         case "created_at":
           return direction * (new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         case "updated_at":
@@ -128,7 +134,7 @@ export default function Models() {
     });
 
     return sorted;
-  }, [allModels, search, settings.filter.type, settings.sort]);
+  }, [allModels, search, settings.filter.type, settings.sort, manifests]);
 
   // Group filtered models by type for display
   const filteredGroups = useMemo(() => {
@@ -318,6 +324,8 @@ export default function Models() {
               <SelectItem value="name-desc">Name (Z-A)</SelectItem>
               <SelectItem value="type-asc">Type (A-Z)</SelectItem>
               <SelectItem value="type-desc">Type (Z-A)</SelectItem>
+              <SelectItem value="engine-asc">Engine (A-Z)</SelectItem>
+              <SelectItem value="engine-desc">Engine (Z-A)</SelectItem>
               <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
               <SelectItem value="created_at-desc">Recently Created</SelectItem>
             </SelectContent>
