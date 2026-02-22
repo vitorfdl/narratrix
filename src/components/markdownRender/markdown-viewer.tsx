@@ -1,5 +1,5 @@
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { useMemo, useRef } from "react";
+import { memo, useMemo, useRef } from "react";
 import { LuCopy } from "react-icons/lu";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
@@ -18,6 +18,8 @@ export interface MarkdownViewerProps {
   content: string;
   className?: string;
   label?: string;
+  /** Optional: pass from outside to avoid an internal store subscription per viewer instance */
+  delimiterHighlighting?: DelimiterHighlighting;
 }
 
 const PreWithCopy: React.FC<React.PropsWithChildren<React.HTMLAttributes<HTMLPreElement>>> = ({ children, ...props }) => {
@@ -44,6 +46,16 @@ const PreWithCopy: React.FC<React.PropsWithChildren<React.HTMLAttributes<HTMLPre
   );
 };
 
+// Module-scope constant -- no closures, stable reference across all renders
+const MARKDOWN_COMPONENTS: Components = {
+  pre: PreWithCopy,
+  code: ({ className, children, ...props }) => (
+    <code className={cn("font-mono text-sm !whitespace-pre-wrap !break-words relative", className)} {...props}>
+      {children}
+    </code>
+  ),
+};
+
 const DELIMITER_SETTING_MAP: Record<keyof DelimiterHighlighting, DelimiterType> = {
   quoteDouble: "quote-double",
   quoteLeft: "quote-left",
@@ -61,9 +73,10 @@ function getEnabledDelimiterTypes(highlighting: DelimiterHighlighting | undefine
   return enabled.length === Object.keys(DELIMITER_SETTING_MAP).length ? undefined : enabled;
 }
 
-export function MarkdownViewer({ content, className, label }: MarkdownViewerProps) {
+export const MarkdownViewer = memo(function MarkdownViewer({ content, className, label, delimiterHighlighting: delimiterHighlightingProp }: MarkdownViewerProps) {
+  // Fall back to reading the profile store only when the prop is not provided
   const currentProfile = useCurrentProfile();
-  const delimiterHighlighting = currentProfile?.settings.appearance.delimiterHighlighting;
+  const delimiterHighlighting = delimiterHighlightingProp ?? currentProfile?.settings.appearance.delimiterHighlighting;
 
   const rehypePlugins = useMemo(() => {
     const enabledTypes = getEnabledDelimiterTypes(delimiterHighlighting);
@@ -79,23 +92,14 @@ export function MarkdownViewer({ content, className, label }: MarkdownViewerProp
     ] as NonNullable<React.ComponentProps<typeof ReactMarkdown>["rehypePlugins"]>;
   }, [delimiterHighlighting]);
 
-  const markdownComponents: Components = {
-    pre: PreWithCopy,
-    code: ({ className, children, ...props }) => (
-      <code className={cn("font-mono text-sm !whitespace-pre-wrap !break-words relative", className)} {...props}>
-        {children}
-      </code>
-    ),
-  };
-
   return (
     <div className="flex flex-col">
       {label && <div className="text-sm font-medium text-foreground mb-0 flex-none">{label}</div>}
       <div className={cn("custom-scrollbar font-sans rounded-sm markdown-body h-full w-full px-3 py-2 overflow-auto prose prose-sm dark:prose-invert max-w-none", className)}>
-        <ReactMarkdown remarkPlugins={[RemarkGfm, RemarkBreaks]} rehypePlugins={rehypePlugins} components={markdownComponents}>
+        <ReactMarkdown remarkPlugins={[RemarkGfm, RemarkBreaks]} rehypePlugins={rehypePlugins} components={MARKDOWN_COMPONENTS}>
           {content}
         </ReactMarkdown>
       </div>
     </div>
   );
-}
+});

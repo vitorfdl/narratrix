@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LuChevronDown } from "react-icons/lu";
-import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useCharacters } from "@/hooks/characterStore";
+import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
+import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useImageUrl } from "@/hooks/useImageUrl";
 import type { ChatMessage } from "@/services/chat-message-service";
 import { updateChatMessagesUsingFilter } from "@/services/chat-message-service";
 import MessageItem from "./message-controls/MessageItem";
@@ -15,9 +16,11 @@ import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
 import type { SummarySettings } from "./message-controls/SummaryDialog";
 
 const MESSAGE_CONTAINER_STYLES = "relative flex flex-col h-full @container";
-// Use padding instead of margin - Virtuoso's ResizeObserver excludes margins, causing height miscalculation and scroll blink
-const MESSAGE_GROUP_STYLES = "message-group relative group/message transition-all py-1";
+const MESSAGE_GROUP_STYLES = "message-group relative group/message";
 const SCROLL_BUTTON_STYLES = "absolute bottom-4 right-4 rounded-full shadow-md bg-background z-10 opacity-80 hover:opacity-100";
+
+// In column-reverse, scrollTop ~0 means the user is at the visual bottom
+const AT_BOTTOM_THRESHOLD = 30;
 
 const WidgetMessages: React.FC = () => {
   const inferenceService = useInferenceServiceFromContext();
@@ -25,11 +28,16 @@ const WidgetMessages: React.FC = () => {
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const currentChatId = useCurrentChatId();
   const currentChatActiveChapterID = useCurrentChatActiveChapterID();
-  const characters = useCharacters();
   const messages = useCurrentChatMessages();
-  const { updateChatMessage, addChatMessage, fetchChatMessages } = useChatActions();
+  const { updateChatMessage, addChatMessage, fetchChatMessages, deleteChatMessage } = useChatActions();
   const setSelectedText = useExpressionStore((state) => state.setSelectedText);
   const currentChatParticipants = useCurrentChatParticipants();
+
+  // Lifted from MessageItem -- computed once for all messages
+  const characters = useCharacters();
+  const { urlMap: avatarUrlMap } = useCharacterAvatars();
+  const currentProfile = useCurrentProfile();
+  const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
 
   const [isEditingID, setIsEditingID] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
@@ -37,11 +45,9 @@ const WidgetMessages: React.FC = () => {
   const [messageReasonings, setMessageReasonings] = useState<Record<string, string>>({});
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const selectionTimeoutRef = useRef<number | null>(null);
   const streamingMessageIdRef = useRef<string | null>(null);
-  const isAtBottomRef = useRef(true);
-  const prevMessageCountRef = useRef(messages.length);
 
   const handleCancelEdit = useCallback(() => {
     setIsEditingID(null);
@@ -85,50 +91,53 @@ const WidgetMessages: React.FC = () => {
         toast.error("Message cannot be empty");
       }
     },
-    [editedContent, setIsEditingID, setEditedContent, onEditMessage],
+    [editedContent, onEditMessage],
   );
 
-  const onRegenerateMessage = async (messageId: string, targetIndex?: number) => {
-    try {
-      setStreamingMessageId(messageId);
+  const onRegenerateMessage = useCallback(
+    async (messageId: string, targetIndex?: number) => {
+      try {
+        setStreamingMessageId(messageId);
 
-      const message = messages.find((m) => m.id === messageId);
-      if (!message || message.type !== "character" || !message.character_id) {
-        setStreamingMessageId(null);
-        return;
-      }
+        const message = messages.find((m) => m.id === messageId);
+        if (!message || message.type !== "character" || !message.character_id) {
+          setStreamingMessageId(null);
+          return;
+        }
 
-      const character = characters.find((c) => c.id === message.character_id);
-      if (!character) {
-        console.error("Character not found");
-        setStreamingMessageId(null);
-        return;
-      }
+        const character = characters.find((c) => c.id === message.character_id);
+        if (!character) {
+          console.error("Character not found");
+          setStreamingMessageId(null);
+          return;
+        }
 
-      if (messageReasonings[messageId]) {
-        setMessageReasonings((prev) => {
-          const newReasonings = { ...prev };
-          delete newReasonings[messageId];
-          return newReasonings;
+        if (messageReasonings[messageId]) {
+          setMessageReasonings((prev) => {
+            const newReasonings = { ...prev };
+            delete newReasonings[messageId];
+            return newReasonings;
+          });
+        }
+
+        await inferenceService.regenerateMessage(messageId, {
+          chatId: currentChatId,
+          characterId: message.character_id,
+          messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
+          onStreamingStateChange: (state) => {
+            if (!state) {
+              setStreamingMessageId(null);
+            }
+          },
         });
+      } catch (error) {
+        console.error("Failed to regenerate message:", error);
+        toast.error(error instanceof Error ? error.message : "An unknown error occurred");
+        setStreamingMessageId(null);
       }
-
-      await inferenceService.regenerateMessage(messageId, {
-        chatId: currentChatId,
-        characterId: message.character_id,
-        messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
-        onStreamingStateChange: (state) => {
-          if (!state) {
-            setStreamingMessageId(null);
-          }
-        },
-      });
-    } catch (error) {
-      console.error("Failed to regenerate message:", error);
-      toast.error(error instanceof Error ? error.message : "An unknown error occurred");
-      setStreamingMessageId(null);
-    }
-  };
+    },
+    [messages, characters, messageReasonings, inferenceService, currentChatId],
+  );
 
   const handleSwipe = useCallback(
     (messageId: string, direction: "left" | "right") => {
@@ -162,8 +171,6 @@ const WidgetMessages: React.FC = () => {
     [messages, streamingMessageId, updateChatMessage, onRegenerateMessage],
   );
 
-  // Subscribe to streaming state changes scoped to this chat.
-  // Uses a ref to track streamingMessageId so the effect doesn't re-subscribe on every state change.
   useEffect(() => {
     const currentState = inferenceService.getStreamingState(currentChatId);
     const initialId = currentState.messageId || null;
@@ -322,68 +329,21 @@ const WidgetMessages: React.FC = () => {
     }
   }, [isEditingID]);
 
-  const itemContent = useCallback(
-    (index: number, message: ChatMessage) => {
-      const isLastMessage = index === messages.length - 1 || message.type === "system";
-      const isStreaming = streamingMessageId === message.id;
-      const hasReasoningData = !!messageReasonings[message.id];
-      const reasoningContent = messageReasonings[message.id] || "";
-
-      const showMidLayer = index > 0 && !message.disabled && messages[index - 1] && !messages[index - 1].disabled;
-
-      return (
-        <div className={MESSAGE_GROUP_STYLES}>
-          {showMidLayer && <MidMessageLayerWrapper messageBefore={messages[index - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
-
-          <MessageItem
-            message={message}
-            index={index}
-            isContextCut={false}
-            isLastMessage={isLastMessage}
-            isStreaming={isStreaming}
-            hasReasoningData={hasReasoningData}
-            reasoningContent={reasoningContent}
-            isEditingID={isEditingID}
-            editedContent={editedContent}
-            setEditedContent={setEditedContent}
-            handleCancelEdit={handleCancelEdit}
-            handleSaveEdit={handleSaveEdit}
-            handleSwipe={handleSwipe}
-            handleMessageSelection={handleMessageSelection}
-            onRegenerateMessage={onRegenerateMessage}
-            setIsEditingID={setIsEditingID}
-          />
-        </div>
-      );
-    },
-    [messages, streamingMessageId, messageReasonings, isEditingID, editedContent, handleCancelEdit, handleSaveEdit, handleSwipe, handleMessageSelection, handleSummarizeMessages, onRegenerateMessage],
-  );
-
-  // Only auto-scroll during active streaming to avoid fighting with manual scroll
-  // on item height re-measurements (which Virtuoso triggers followOutput for).
-  const followOutput = useCallback((atBottom: boolean) => {
-    if (atBottom && streamingMessageIdRef.current) {
-      return "smooth" as const;
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) {
+      return;
     }
-    return false as const;
-  }, []);
-
-  const handleAtBottomChange = useCallback((atBottom: boolean) => {
+    const atBottom = Math.abs(el.scrollTop) <= AT_BOTTOM_THRESHOLD;
     setIsAtBottom(atBottom);
-    isAtBottomRef.current = atBottom;
   }, []);
-
-  // Scroll to bottom when new messages arrive and user was at bottom (non-streaming case)
-  useEffect(() => {
-    if (messages.length > prevMessageCountRef.current && isAtBottomRef.current) {
-      virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: "smooth", align: "end" });
-    }
-    prevMessageCountRef.current = messages.length;
-  }, [messages.length]);
 
   const scrollToBottom = useCallback(() => {
-    virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: "smooth", align: "end" });
-  }, [messages.length]);
+    const el = scrollContainerRef.current;
+    if (el) {
+      el.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
 
   if (messages.length === 0) {
     return <NoMessagePlaceholder />;
@@ -391,21 +351,65 @@ const WidgetMessages: React.FC = () => {
 
   return (
     <div className={MESSAGE_CONTAINER_STYLES}>
-      <Virtuoso
+      <div
         key={currentChatId}
-        ref={virtuosoRef}
-        data={messages}
-        computeItemKey={(_index, message) => message.id}
-        defaultItemHeight={150}
-        initialTopMostItemIndex={messages.length - 1}
-        followOutput={followOutput}
-        atBottomStateChange={handleAtBottomChange}
-        atBottomThreshold={30}
-        itemContent={itemContent}
-        className="messages-container"
-        style={{ height: "100%", padding: "0.25rem", overflowX: "hidden" }}
-        increaseViewportBy={{ top: 1500, bottom: 1500 }}
-      />
+        ref={scrollContainerRef}
+        className="messages-container flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full p-1"
+        onScroll={handleScroll}
+      >
+        <div className="flex flex-col gap-2">
+          {messages.map((message, index) => {
+            const isLastMessage = index === messages.length - 1 || message.type === "system";
+            const isStreaming = streamingMessageId === message.id;
+            const hasReasoningData = !!messageReasonings[message.id];
+            const reasoningContent = messageReasonings[message.id] || "";
+            const showMidLayer = index > 0 && !message.disabled && messages[index - 1] && !messages[index - 1].disabled;
+            const isEditing = isEditingID === message.id;
+
+            // Pre-compute avatar path once per message, avoiding per-item hook calls
+            let avatarPath: string | null = null;
+            if (message.type === "user") {
+              if (currentChatUserCharacterID) {
+                const userCharacter = characters.find((c) => c.id === currentChatUserCharacterID);
+                avatarPath = avatarUrlMap[userCharacter?.id || ""] || currentProfileAvatarUrl || null;
+              } else {
+                avatarPath = currentProfileAvatarUrl || null;
+              }
+            } else if (message.type === "character" && message.character_id) {
+              const character = characters.find((c) => c.id === message.character_id);
+              avatarPath = avatarUrlMap[character?.id || ""] || null;
+            }
+
+            return (
+              <div key={message.id} className={MESSAGE_GROUP_STYLES} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 200px" }}>
+                {showMidLayer && <MidMessageLayerWrapper messageBefore={messages[index - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
+
+                <MessageItem
+                  message={message}
+                  index={index}
+                  isContextCut={false}
+                  isLastMessage={isLastMessage}
+                  isStreaming={isStreaming}
+                  hasReasoningData={hasReasoningData}
+                  reasoningContent={reasoningContent}
+                  isEditing={isEditing}
+                  editedContent={editedContent}
+                  avatarPath={avatarPath}
+                  setEditedContent={setEditedContent}
+                  handleCancelEdit={handleCancelEdit}
+                  handleSaveEdit={handleSaveEdit}
+                  handleSwipe={handleSwipe}
+                  handleMessageSelection={handleMessageSelection}
+                  onRegenerateMessage={onRegenerateMessage}
+                  setIsEditingID={setIsEditingID}
+                  updateChatMessage={updateChatMessage}
+                  deleteChatMessage={deleteChatMessage}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {!isAtBottom && (
         <Button variant="outline" size="icon" className={SCROLL_BUTTON_STYLES} onClick={scrollToBottom} title="Scroll to latest messages">
