@@ -112,7 +112,7 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="connection" className="flex-1 overflow-hidden">
+          <TabsContent forceMount value="connection" className={`flex-1 overflow-hidden ${activeTab !== "connection" ? "hidden" : ""}`}>
             <DialogBody>
               <ModelForm
                 ref={formRef}
