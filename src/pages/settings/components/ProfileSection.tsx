@@ -259,7 +259,7 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
       <SettingItem icon={<UserCircle className="w-4 h-4" />} label="Avatar">
         <div className="flex items-center gap-2">
           {currentProfileAvatarUrl && (
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+            <div className="w-8 h-8 overflow-hidden border border-border" style={{ borderRadius: "var(--avatar-border-radius, 50%)" }}>
               <img src={currentProfileAvatarUrl} alt={`${currentProfile.name}'s avatar`} className="w-full h-full object-cover" />
             </div>
           )}
@@ -275,7 +275,7 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
               <div className="py-4">
                 <div className="space-y-2">
                   <div className="flex justify-center">
-                    <div className="w-24 h-24 rounded-full overflow-hidden">
+                    <div className="w-24 h-24 overflow-hidden" style={{ borderRadius: "var(--avatar-border-radius, 50%)" }}>
                       <AvatarCrop onCropComplete={handleAvatarChange} existingImage={currentProfileAvatarUrl || ""} cropShape="round" className="w-full h-full" />
                     </div>
                   </div>
