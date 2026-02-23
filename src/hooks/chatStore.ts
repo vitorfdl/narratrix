@@ -7,8 +7,8 @@ import { Chat, ChatParticipant, CreateChatParams } from "@/schema/chat-schema";
 import {
   createChatChapter as apiCreateChatChapter,
   deleteChatChapter as apiDeleteChatChapter,
-  updateChatChapter as apiUpdateChatChapter,
   duplicateChatChapter as apiDuplicateChatChapter,
+  updateChatChapter as apiUpdateChatChapter,
   getChaptersByChatId,
   getNextChapterSequence,
 } from "@/services/chat-chapter-service";
