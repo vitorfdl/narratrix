@@ -9,7 +9,7 @@ export const configFields: ConfigFields = [
     default: 1,
     min: 0,
     max: 5,
-    step: 0.25,
+    step: 0.1,
   },
   {
     name: "top_p",
@@ -18,7 +18,7 @@ export const configFields: ConfigFields = [
     description: "Nucleus sampling: Selects the smallest set of tokens whose cumulative probability exceeds the threshold p. 1 = disabled.",
     min: 0,
     max: 1,
-    step: 0.25,
+    step: 0.1,
     default: 1,
   },
   {
@@ -38,7 +38,7 @@ export const configFields: ConfigFields = [
     description: "Minimum P sampling: Sets a minimum probability threshold relative to the most likely token's probability. Tokens below this are excluded.",
     min: 0,
     max: 1,
-    step: 0.25,
+    step: 0.1,
     default: 0,
   },
   {
@@ -48,7 +48,7 @@ export const configFields: ConfigFields = [
     description: "Top A sampling: Filters tokens based on their probability relative to the top token's probability squared. Used in some specific model architectures.",
     min: 0,
     max: 1,
-    step: 0.25,
+    step: 0.1,
     default: 0,
   },
   {
@@ -58,7 +58,7 @@ export const configFields: ConfigFields = [
     description: "Scales logits by their standard deviation. Higher values flatten the distribution (more random), lower values sharpen it. 1 = no effect.",
     min: 0,
     max: 10,
-    step: 0.15,
+    step: 0.1,
     default: 1.67,
   },
   {
@@ -68,7 +68,7 @@ export const configFields: ConfigFields = [
     description: "Penalizes new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.",
     min: -2,
     max: 2,
-    step: 0.25,
+    step: 0.1,
     default: 0,
   },
   {
@@ -78,7 +78,7 @@ export const configFields: ConfigFields = [
     description: "Penalizes new tokens based on whether they have appeared in the text so far, increasing the model's likelihood to talk about new topics.",
     min: -2,
     max: 2,
-    step: 0.25,
+    step: 0.1,
     default: 0,
   },
   {
@@ -88,7 +88,7 @@ export const configFields: ConfigFields = [
     description: "Penalizes the probability of repeating tokens that have recently appeared. 1 = no penalty.",
     min: 1,
     max: 3,
-    step: 0.25,
+    step: 0.1,
     default: 1,
   },
   {
