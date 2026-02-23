@@ -16,6 +16,7 @@ export const defaultSettings = AppSettingsSchema.parse({
   chat: {
     timestampFormat: "24h",
     showAvatars: true,
+    avatarBorderRadius: 50,
     sendShortcut: "Ctrl+Enter",
   },
   censorship: {

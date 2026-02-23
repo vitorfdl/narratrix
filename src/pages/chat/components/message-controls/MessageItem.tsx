@@ -119,6 +119,7 @@ interface MessageItemProps {
   isEditing: boolean;
   editedContent: string;
   avatarPath: string | null;
+  showAvatar: boolean;
   setEditedContent: (content: string) => void;
   handleCancelEdit: () => void;
   handleSaveEdit: (messageId: string) => Promise<void>;
@@ -140,6 +141,7 @@ const MessageItem = ({
   isEditing,
   editedContent,
   avatarPath,
+  showAvatar,
   setEditedContent,
   handleCancelEdit,
   handleSaveEdit,
@@ -256,7 +258,7 @@ const MessageItem = ({
           </>
         )}
 
-        {(message.type === "user" || message.type === "character") && <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />}
+        {showAvatar && (message.type === "user" || message.type === "character") && <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />}
 
         {shouldRenderFull ? (
           <div onMouseUp={() => handleMessageSelection(message.character_id || undefined)} className={contentClassName}>
@@ -351,6 +353,7 @@ export default memo(MessageItem, (prevProps, nextProps) => {
     (prevProps.hasReasoningData === false || prevProps.reasoningContent === nextProps.reasoningContent) &&
     prevProps.message.messages === nextProps.message.messages &&
     prevProps.avatarPath === nextProps.avatarPath &&
+    prevProps.showAvatar === nextProps.showAvatar &&
     (!prevProps.isEditing || prevProps.editedContent === nextProps.editedContent)
   );
 });

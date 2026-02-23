@@ -368,12 +368,12 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(({
           <Label htmlFor="avatar" className="mb-2">
             Avatar
           </Label>
-          <Card className="relative w-32 h-32 ring-2 ring-border overflow-hidden rounded-full">
+          <Card className="relative w-32 h-32 ring-2 ring-border overflow-hidden" style={{ borderRadius: "var(--avatar-border-radius, 50%)" }}>
             <AvatarCrop
               onCropComplete={(image) => setAvatarImage(image)}
               cropShape="round"
               existingImage={avatarUrl || avatarImage}
-              className={`overflow-hidden h-full w-full rounded-full ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
+              className={`overflow-hidden h-full w-full ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
             />
           </Card>
         </div>

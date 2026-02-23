@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LuChevronDown } from "react-icons/lu";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ const WidgetMessages: React.FC = () => {
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
   const currentProfile = useCurrentProfile();
   const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
+  const showAvatars = currentProfile?.settings?.chat?.showAvatars ?? true;
 
   const [isEditingID, setIsEditingID] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
@@ -365,7 +366,7 @@ const WidgetMessages: React.FC = () => {
   return (
     <div className={MESSAGE_CONTAINER_STYLES}>
       <div ref={scrollContainerRef} className="messages-container flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full p-1" onScroll={handleScroll}>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           {messages.map((message, index) => {
             const isLastMessage = index === messages.length - 1 || message.type === "system";
             const isStreaming = streamingMessageId === message.id;
@@ -374,7 +375,6 @@ const WidgetMessages: React.FC = () => {
             const showMidLayer = index > 0 && !message.disabled && messages[index - 1] && !messages[index - 1].disabled;
             const isEditing = isEditingID === message.id;
 
-            // Pre-compute avatar path once per message, avoiding per-item hook calls
             let avatarPath: string | null = null;
             if (message.type === "user") {
               if (currentChatUserCharacterID) {
@@ -389,30 +389,33 @@ const WidgetMessages: React.FC = () => {
             }
 
             return (
-              <div key={message.id} className={MESSAGE_GROUP_STYLES} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 200px" }}>
+              <div key={message.id}>
                 {showMidLayer && <MidMessageLayerWrapper messageBefore={messages[index - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
 
-                <MessageItem
-                  message={message}
-                  index={index}
-                  isContextCut={false}
-                  isLastMessage={isLastMessage}
-                  isStreaming={isStreaming}
-                  hasReasoningData={hasReasoningData}
-                  reasoningContent={reasoningContent}
-                  isEditing={isEditing}
-                  editedContent={editedContent}
-                  avatarPath={avatarPath}
-                  setEditedContent={setEditedContent}
-                  handleCancelEdit={handleCancelEdit}
-                  handleSaveEdit={handleSaveEdit}
-                  handleSwipe={handleSwipe}
-                  handleMessageSelection={handleMessageSelection}
-                  onRegenerateMessage={onRegenerateMessage}
-                  setIsEditingID={setIsEditingID}
-                  updateChatMessage={updateChatMessage}
-                  deleteChatMessage={deleteChatMessage}
-                />
+                <div className={MESSAGE_GROUP_STYLES} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 200px" }}>
+                  <MessageItem
+                    message={message}
+                    index={index}
+                    isContextCut={false}
+                    isLastMessage={isLastMessage}
+                    isStreaming={isStreaming}
+                    hasReasoningData={hasReasoningData}
+                    reasoningContent={reasoningContent}
+                    isEditing={isEditing}
+                    editedContent={editedContent}
+                    avatarPath={avatarPath}
+                    showAvatar={showAvatars}
+                    setEditedContent={setEditedContent}
+                    handleCancelEdit={handleCancelEdit}
+                    handleSaveEdit={handleSaveEdit}
+                    handleSwipe={handleSwipe}
+                    handleMessageSelection={handleMessageSelection}
+                    onRegenerateMessage={onRegenerateMessage}
+                    setIsEditingID={setIsEditingID}
+                    updateChatMessage={updateChatMessage}
+                    deleteChatMessage={deleteChatMessage}
+                  />
+                </div>
               </div>
             );
           })}

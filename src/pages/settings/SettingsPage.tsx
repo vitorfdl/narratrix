@@ -8,6 +8,7 @@ import { defaultSettings } from "@/schema/default-settings";
 import { AppSettings } from "@/schema/profiles-schema";
 import { updateProfileSettings } from "@/services/profile-service";
 import { AppearanceSection } from "./components/AppearanceSection";
+import { ChatSection } from "./components/ChatSection";
 import { GeneralSection } from "./components/GeneralSection";
 import { ProfileSection } from "./components/ProfileSection";
 import { SystemSection } from "./components/SystemSection";
@@ -15,7 +16,7 @@ import "./styles/settings.css";
 
 export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const { setTheme, setFontSize } = useThemeStore();
+  const { setTheme, setFontSize, setAvatarBorderRadius } = useThemeStore();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
 
   const currentProfile = useCurrentProfile();
@@ -54,12 +55,15 @@ export default function Settings() {
   useEffect(() => {
     if (currentProfile?.settings) {
       setSettings(currentProfile.settings);
-      // Also sync the theme to ThemeStore
       setTheme(currentProfile.settings.appearance.theme);
+      if (currentProfile.settings.appearance.fontSize != null) {
+        setFontSize(currentProfile.settings.appearance.fontSize);
+      }
+      setAvatarBorderRadius(currentProfile.settings.chat.avatarBorderRadius ?? 50);
     } else {
       setSettings(defaultSettings);
     }
-  }, [currentProfile, setTheme]);
+  }, [currentProfile, setTheme, setFontSize, setAvatarBorderRadius]);
 
   // Get app version on component mount
   useEffect(() => {
@@ -105,6 +109,10 @@ export default function Settings() {
       if (section === "appearance" && key === "fontSize") {
         setFontSize(value);
       }
+      // Sync avatarBorderRadius changes with ThemeStore immediately for preview
+      if (section === "chat" && key === "avatarBorderRadius") {
+        setAvatarBorderRadius(value);
+      }
 
       // Clear any existing timeout
       if (saveTimeoutRef.current) {
@@ -116,7 +124,7 @@ export default function Settings() {
         debouncedSave(updatedSettings);
       }, 800) as unknown as number;
     },
-    [settings, setTheme, setFontSize, debouncedSave],
+    [settings, setTheme, setFontSize, setAvatarBorderRadius, debouncedSave],
   );
 
   // const selectDirectory = useCallback(async () => {
@@ -175,22 +183,7 @@ export default function Settings() {
 
           <GeneralSection settings={settings} onSettingChange={handleSettingChange} />
 
-          {/* <div className="space-y-3">
-            <h2 className="text-lg font-medium">Integrations</h2>
-            <Card>
-              <CardContent className="p-4">
-                <Collapsible className="w-full">
-                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
-                    <div className="flex items-center space-x-2">
-                      <UserCircle className="w-4 h-4" />
-                      <Label>Accounts</Label>
-                    </div>
-                    <div className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded">Move to page Settings {">>"} Accounts</div>
-                  </CollapsibleTrigger>
-                </Collapsible>
-              </CardContent>
-            </Card>
-          </div> */}
+          <ChatSection settings={settings} onSettingChange={handleSettingChange} />
 
           <AppearanceSection settings={settings} onSettingChange={handleSettingChange} />
 

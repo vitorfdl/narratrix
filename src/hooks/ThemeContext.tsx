@@ -11,10 +11,12 @@ interface ThemeState {
   theme: Theme;
   fontSize: number;
   originalFontSize: number | null;
+  avatarBorderRadius: number;
 
   // Actions
   setTheme: (theme: Theme) => void;
   setFontSize: (fontSize: number) => void;
+  setAvatarBorderRadius: (radius: number) => void;
 }
 
 /**
@@ -28,6 +30,7 @@ export const useThemeStore = create<ThemeState>()(
       theme: "system",
       fontSize: 16,
       originalFontSize: null,
+      avatarBorderRadius: 50,
 
       // Actions
       setTheme: (theme) => {
@@ -52,6 +55,10 @@ export const useThemeStore = create<ThemeState>()(
         set({ fontSize });
         document.documentElement.style.fontSize = `${fontSize}px`;
       },
+      setAvatarBorderRadius: (radius) => {
+        set({ avatarBorderRadius: radius });
+        document.documentElement.style.setProperty("--avatar-border-radius", `${radius}%`);
+      },
     }),
     {
       name: "theme-storage",
@@ -64,7 +71,7 @@ export const useThemeStore = create<ThemeState>()(
  * This function needs to be called once when the app starts
  */
 export function initializeTheme(): void {
-  const { theme, fontSize, setFontSize } = useThemeStore.getState();
+  const { theme, fontSize, setFontSize, avatarBorderRadius, setAvatarBorderRadius } = useThemeStore.getState();
 
   // Apply theme to document
   if (theme === "system") {
@@ -83,6 +90,9 @@ export function initializeTheme(): void {
 
   // Apply font size
   setFontSize(fontSize ?? 16);
+
+  // Apply avatar border radius
+  setAvatarBorderRadius(avatarBorderRadius ?? 50);
 }
 
 /**
@@ -90,6 +100,6 @@ export function initializeTheme(): void {
  * @deprecated Use useThemeStore directly instead
  */
 export function useTheme() {
-  const { theme, setTheme, fontSize, setFontSize, originalFontSize } = useThemeStore();
-  return { theme, setTheme, fontSize, setFontSize, originalFontSize };
+  const { theme, setTheme, fontSize, setFontSize, originalFontSize, avatarBorderRadius, setAvatarBorderRadius } = useThemeStore();
+  return { theme, setTheme, fontSize, setFontSize, originalFontSize, avatarBorderRadius, setAvatarBorderRadius };
 }
