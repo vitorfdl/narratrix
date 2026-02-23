@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCharacterActions, useCharacterTagList } from "@/hooks/characterStore";
 import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useThemeStore } from "@/hooks/ThemeContext";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { LorebookEntries } from "@/pages/lorebooks/components/LorebookEntries";
 import { Character } from "@/schema/characters-schema";
@@ -167,7 +168,6 @@ function LorebookContent({ selectedLorebookId, onLorebookSelect, profileId }: { 
       });
       if (newLorebook) {
         onLorebookSelect(newLorebook.id);
-        toast.success(`Lorebook "${name}" created successfully!`);
       }
     } catch (error) {
       toast.error(`Failed to create lorebook: ${error instanceof Error ? error.message : String(error)}`);
@@ -177,7 +177,6 @@ function LorebookContent({ selectedLorebookId, onLorebookSelect, profileId }: { 
   const handleDeleteLorebook = async (id: string) => {
     try {
       await deleteLorebook(id);
-      toast.success("Lorebook deleted successfully!");
       if (selectedLorebookId === id) {
         onLorebookSelect(null); // Deselect if the current one is deleted
       }
@@ -189,7 +188,6 @@ function LorebookContent({ selectedLorebookId, onLorebookSelect, profileId }: { 
   const handleEditLorebookName = async (id: string, newName: string) => {
     try {
       await updateLorebook(id, { name: newName });
-      toast.success("Lorebook renamed successfully!");
     } catch (error) {
       toast.error(`Failed to rename lorebook: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -224,6 +222,7 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(({
   const isEditMode = mode === "edit";
   const { createCharacter, updateCharacter } = useCharacterActions();
   const currentProfile = useCurrentProfile();
+  const avatarBorderRadius = useThemeStore((state) => state.avatarBorderRadius);
   const profileId = currentProfile!.id;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const tagList = useCharacterTagList();
@@ -313,10 +312,8 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(({
       let characterId: string | undefined = initialData?.id;
       if (isEditMode && initialData) {
         await updateCharacter(profileId, initialData.id, formData);
-        toast.success("Character updated successfully!");
       } else {
         ({ id: characterId } = await createCharacter(formData as any));
-        toast.success("Character created successfully!");
       }
 
       setIsEditing(false); // Explicitly reset editing state after successful submission
@@ -371,7 +368,7 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(({
           <Card className="relative w-32 h-32 ring-2 ring-border overflow-hidden" style={{ borderRadius: "var(--avatar-border-radius, 50%)" }}>
             <AvatarCrop
               onCropComplete={(image) => setAvatarImage(image)}
-              cropShape="round"
+              cropShape={avatarBorderRadius >= 50 ? "round" : "rect"}
               existingImage={avatarUrl || avatarImage}
               className={`overflow-hidden h-full w-full ${isLoadingAvatar ? "opacity-70" : "opacity-100"} transition-opacity duration-200`}
             />

@@ -4,6 +4,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
+import { BiSolidZap } from "react-icons/bi";
 import { LuCirclePlay, LuCircleStop, LuGripVertical, LuSettings, LuTrash2, LuUserPlus, LuZap } from "react-icons/lu";
 import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
@@ -101,17 +102,17 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
   return (
     <div
       className={cn(
-        "flex items-center gap-2 px-2 h-9 rounded-lg transition-colors min-w-0 relative overflow-hidden group/char",
+        "flex items-center gap-2 px-1 h-9 rounded-lg transition-colors min-w-0 relative overflow-hidden group/char",
         isEnabled ? "bg-muted/50 hover:bg-muted/80" : "bg-muted/30 text-muted-foreground",
       )}
     >
       {inInferenceQueue && <BorderBeam colorFrom="hsl(var(--primary))" size={60} duration={1.5} />}
 
-      <Avatar onClick={() => onEdit(participant.id)} className={cn("w-7 h-7 flex-shrink-0 rounded-md cursor-pointer hover:scale-110 transition-all duration-200", !isEnabled && "opacity-50")}>
+      <Avatar onClick={() => onEdit(participant.id)} className={cn("w-7 h-7 flex-shrink-0 rounded-xl cursor-pointer hover:scale-110 transition-all duration-200", !isEnabled && "opacity-50")}>
         {participant.avatar ? (
-          <AvatarImage className="object-cover rounded-md" src={participant.avatar} alt={participant.name} />
+          <AvatarImage className="object-cover rounded-xl" src={participant.avatar} alt={participant.name} />
         ) : (
-          <AvatarFallback className="bg-secondary text-xs rounded-md">{participant.name[0]}</AvatarFallback>
+          <AvatarFallback className="bg-secondary text-xs rounded-xl">{participant.name[0]}</AvatarFallback>
         )}
       </Avatar>
 
@@ -128,7 +129,7 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
       </div>
 
       {/* Play/Stop — always visible */}
-      <Button variant="ghost" size="icon" className="w-6 h-6 flex-shrink-0" disabled={!isEnabled} onClick={() => onTrigger(participant.id)} title="Trigger Message">
+      <Button variant="ghost" size="icon" className="w-7 h-7 flex-shrink-0" disabled={!isEnabled} onClick={() => onTrigger(participant.id)} title="Trigger Message">
         {inInferenceQueue ? (
           <motion.div
             initial={{ scale: 1 }}
@@ -138,7 +139,7 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
             <LuCircleStop className="!h-4 !w-4 text-destructive" />
           </motion.div>
         ) : (
-          <LuCirclePlay className="!h-4 !w-4" />
+          <LuCirclePlay className="!h-5 !w-5" />
         )}
       </Button>
     </div>
@@ -189,7 +190,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
         {isRunning && <BorderBeam colorFrom="hsl(var(--primary))" size={50} duration={1} />}
 
         {/* Bot icon — clickable to edit */}
-        <LuZap onClick={() => onEdit(participant.id)} className={cn("h-3.5 w-3.5 flex-shrink-0 cursor-pointer", isEnabled ? "text-primary" : "text-muted-foreground")} />
+        <BiSolidZap onClick={() => onEdit(participant.id)} className={cn("h-3.5 w-3.5 flex-shrink-0 cursor-pointer", isEnabled ? "text-primary" : "text-muted-foreground")} />
 
         {/* Name */}
         <span onClick={() => onEdit(participant.id)} className={cn("text-xs font-medium truncate cursor-pointer flex-1 min-w-0", !isEnabled && "text-muted-foreground")}>

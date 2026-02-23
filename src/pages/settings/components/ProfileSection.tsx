@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useProfileActions } from "@/hooks/ProfileStore";
+import { useThemeStore } from "@/hooks/ThemeContext";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { ProfileListItem, ProfileResponse } from "@/schema/profiles-schema";
 import { saveImage } from "@/services/file-system-service";
@@ -34,6 +35,7 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
 
   const { logout, setCurrentProfile } = useProfileActions();
   const { url: currentProfileAvatarUrl, reload: reloadAvatarImage } = useImageUrl(currentProfile?.avatar_path);
+  const avatarBorderRadius = useThemeStore((state) => state.avatarBorderRadius);
   const [_savedProfile, setSessionProfile] = useSessionProfile();
 
   // State for controlling dialog visibility
@@ -276,7 +278,7 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
                 <div className="space-y-2">
                   <div className="flex justify-center">
                     <div className="w-24 h-24 overflow-hidden" style={{ borderRadius: "var(--avatar-border-radius, 50%)" }}>
-                      <AvatarCrop onCropComplete={handleAvatarChange} existingImage={currentProfileAvatarUrl || ""} cropShape="round" className="w-full h-full" />
+                      <AvatarCrop onCropComplete={handleAvatarChange} existingImage={currentProfileAvatarUrl || ""} cropShape={avatarBorderRadius >= 50 ? "round" : "rect"} className="w-full h-full" />
                     </div>
                   </div>
                 </div>

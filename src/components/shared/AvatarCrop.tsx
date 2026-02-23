@@ -145,8 +145,9 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
   const renderUploadArea = () => (
     <label
       className={`flex flex-col items-center justify-center p-4 border-2 border-dashed transition-all h-full w-full
-        border-muted-foreground/20 hover:border-primary hover:bg-primary/5 ${cropShape === "round" ? "rounded-full" : "rounded-md"} ${uploadPlaceholderClassName}
+        border-muted-foreground/20 hover:border-primary hover:bg-primary/5 ${uploadPlaceholderClassName}
         cursor-pointer`}
+      style={cropShape === "round" ? { borderRadius: "var(--avatar-border-radius, 50%)" } : { borderRadius: "0.375rem" }}
       // onDragOver={handleDragOver}
       // onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -168,7 +169,10 @@ export const AvatarCrop: React.FC<AvatarCropProps> = ({
       // onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className={`h-full w-full overflow-hidden flex items-center justify-center ${cropShape === "round" ? "rounded-full" : "rounded-md"}`}>
+      <div
+        className="h-full w-full overflow-hidden flex items-center justify-center"
+        style={cropShape === "round" ? { borderRadius: "var(--avatar-border-radius, 50%)" } : { borderRadius: "0.375rem" }}
+      >
         <img src={displayImage || ""} alt="Avatar" className={`object-cover ${cropShape === "round" ? "h-full w-full" : "max-h-full max-w-full"}`} />
       </div>
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
