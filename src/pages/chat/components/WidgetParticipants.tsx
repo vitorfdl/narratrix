@@ -4,7 +4,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
-import { LuBot, LuCirclePlay, LuCircleStop, LuCpu, LuGripVertical, LuSettings, LuSparkles, LuTrash2, LuUserPlus, LuZap } from "react-icons/lu";
+import { LuCirclePlay, LuCircleStop, LuGripVertical, LuSettings, LuTrash2, LuUserPlus, LuZap } from "react-icons/lu";
 import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,13 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useAgents } from "@/hooks/agentStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatId, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
+import { type AgentWorkflowState, useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
+import type { AgentType } from "@/schema/agent-schema";
 import { Character } from "@/schema/characters-schema";
 import AddParticipantPopover from "./AddParticipantPopover";
 
@@ -35,28 +36,15 @@ interface WidgetParticipantsProps {
   onOpenConfig?: () => void;
 }
 
-interface SortableParticipantProps {
-  participant: Participant;
-  onToggleParticipant?: (id: string) => void;
-  onTriggerMessage?: (id: string) => void;
-  onRemoveParticipant?: (id: string) => void;
-  inInferenceQueue: boolean;
-  setIsEditCharacterModalOpen: (characterId: string) => void;
-  setIsEditAgentModalOpen: (agentId: string) => void;
+// ─── Shared DnD Wrapper ───────────────────────────────────────────────────────
+
+interface SortableParticipantWrapperProps {
+  id: string;
+  children: React.ReactNode;
 }
 
-const SortableParticipant: React.FC<SortableParticipantProps> = ({
-  participant,
-  onToggleParticipant,
-  onTriggerMessage,
-  onRemoveParticipant,
-  inInferenceQueue,
-  setIsEditCharacterModalOpen,
-  setIsEditAgentModalOpen,
-}) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: participant.id,
-  });
+const SortableParticipantWrapper: React.FC<SortableParticipantWrapperProps> = ({ id, children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -64,130 +52,191 @@ const SortableParticipant: React.FC<SortableParticipantProps> = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleAvatarClick = () => {
-    if (participant.type === "character") {
-      setIsEditCharacterModalOpen(participant.id);
-    } else if (participant.type === "agent") {
-      setIsEditAgentModalOpen(participant.id);
-    }
-  };
-
-  // Agent icon variations for visual interest
-  const agentIcons = [LuBot, LuCpu, LuZap];
-  const AgentIcon = agentIcons[participant.id.charCodeAt(0) % agentIcons.length];
-
-  const getAvatarContent = () => {
-    if (participant.avatar) {
-      return <AvatarImage className="object-cover rounded-full" src={participant.avatar} alt={participant.name} />;
-    }
-
-    if (participant.type === "agent") {
-      return (
-        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 relative overflow-hidden rounded-none">
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 animate-pulse" />
-          <AgentIcon className="h-4 w-4 text-primary relative z-10" />
-          <LuSparkles className="absolute -top-1 -right-1 h-2 w-2 text-primary/60" />
-        </AvatarFallback>
-      );
-    }
-
-    return <AvatarFallback className="bg-secondary">{participant.name[0]}</AvatarFallback>;
-  };
-
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "flex items-start gap-2 px-2 py-1 rounded-lg transition-colors min-w-0 relative overflow-hidden",
-        participant.type !== "user" && !participant.isEnabled ? "bg-muted/30 text-muted-foreground" : "bg-muted/50 hover:bg-muted/80",
-        participant.type === "agent" && participant.isEnabled && "bg-gradient-to-r from-primary/5 to-transparent",
-      )}
-    >
-      {inInferenceQueue && <BorderBeam colorFrom="hsl(var(--primary))" size={60} duration={1.5} />}
-      <div className="flex items-center gap-2 flex-shrink-0 justify-center self-center h-full">
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing flex items-center">
-          <LuGripVertical className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <Avatar
-          onClick={handleAvatarClick}
-          className={cn(
-            "w-8 h-8",
-            participant.type !== "user" && "cursor-pointer hover:scale-110 transition-all duration-300",
-            !participant.isEnabled && "opacity-50",
-            participant.type === "agent" && "ring-1 ring-primary/20",
-          )}
-        >
-          {getAvatarContent()}
-        </Avatar>
+    <div ref={setNodeRef} style={style} className="flex items-stretch gap-1.5 group/row">
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing flex items-center flex-shrink-0 opacity-30 group-hover/row:opacity-70 transition-opacity">
+        <LuGripVertical className="h-4 w-4 text-muted-foreground" />
       </div>
-
-      {/* Column 2: Content and Actions */}
-      <div className={cn("flex flex-col min-w-0 flex-1", participant.type !== "user" && !participant.isEnabled && "opacity-70")}>
-        {/* Row 1: Name */}
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1 min-w-0 flex-1">
-            <div className="font-medium truncate text-xs">{participant.name}</div>
-            {participant.type === "agent" && participant.isEnabled && (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 25 }}>
-                <LuSparkles className="h-3 w-3 text-primary/60 flex-shrink-0" />
-              </motion.div>
-            )}
-          </div>
-          {participant.type !== "user" && (
-            <Button variant="ghost" size="icon" className="w-5 h-5" disabled={!participant.isEnabled} onClick={() => onTriggerMessage?.(participant.id)} title="Trigger Message">
-              {inInferenceQueue ? (
-                <motion.div
-                  initial={{ scale: 1 }}
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 0, 0, 0, 0, -10, 10, -10, 10, 0],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <LuCircleStop className="!h-5 !w-5 text-destructive" />
-                </motion.div>
-              ) : (
-                <LuCirclePlay className="!h-5 !w-5" />
-              )}
-            </Button>
-          )}
-        </div>
-
-        {/* Row 2: Buttons and Type - Only for non-user types */}
-        {participant.type !== "user" && (
-          <div className="flex items-center justify-between mt-0 text-xs">
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={participant.isEnabled}
-                onCheckedChange={() => onToggleParticipant?.(participant.id)}
-                className="data-[state=checked]:bg-primary"
-                aria-label={participant.isEnabled ? "Disable" : "Enable"}
-                size={"xs"}
-              />
-              <Button variant="ghost" size="icon" className="w-4 h-4 hover:text-destructive" onClick={() => onRemoveParticipant?.(participant.id)} title="Remove">
-                <LuTrash2 className="!h-3 !w-3" />
-              </Button>
-            </div>
-            <div className={cn("text-xxs capitalize truncate flex items-center gap-1", participant.type === "agent" ? "text-primary/80 font-medium" : "text-muted-foreground")}>{participant.type}</div>
-          </div>
-        )}
-
-        {/* Row 2: User Character if it exists */}
-        {participant.type === "user" && (
-          <div className="flex items-center justify-between mt-0 text-xs">
-            <div className="text-xxs text-muted-foreground capitalize truncate">You</div>
-            <div className="text-xxs capitalize truncate text-muted-foreground justify-between">{participant.type}</div>
-          </div>
-        )}
-      </div>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 };
+
+// ─── User Card ────────────────────────────────────────────────────────────────
+
+interface UserParticipantCardProps {
+  participant: Participant;
+}
+
+const UserParticipantCard: React.FC<UserParticipantCardProps> = ({ participant }) => {
+  return (
+    <div className="flex items-center gap-2 px-2 h-9 rounded-lg bg-muted/30">
+      <Avatar className="w-7 h-7 flex-shrink-0 rounded-md">
+        {participant.avatar ? <AvatarImage className="object-cover rounded-md" src={participant.avatar} alt={participant.name} /> : <AvatarFallback className="bg-secondary text-xs rounded-md">{participant.name[0]}</AvatarFallback>}
+      </Avatar>
+      <span className="font-medium truncate text-sm flex-1 min-w-0">{participant.name}</span>
+      <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 uppercase tracking-wider">You</span>
+    </div>
+  );
+};
+
+// ─── Character Card ───────────────────────────────────────────────────────────
+
+interface CharacterParticipantCardProps {
+  participant: Participant;
+  inInferenceQueue: boolean;
+  onToggle: (id: string) => void;
+  onTrigger: (id: string) => void;
+  onRemove: (id: string) => void;
+  onEdit: (id: string) => void;
+}
+
+const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ participant, inInferenceQueue, onToggle, onTrigger, onRemove, onEdit }) => {
+  const isEnabled = participant.isEnabled ?? true;
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 px-2 h-9 rounded-lg transition-colors min-w-0 relative overflow-hidden group/char",
+        isEnabled ? "bg-muted/50 hover:bg-muted/80" : "bg-muted/30 text-muted-foreground",
+      )}
+    >
+      {inInferenceQueue && <BorderBeam colorFrom="hsl(var(--primary))" size={60} duration={1.5} />}
+
+      <Avatar onClick={() => onEdit(participant.id)} className={cn("w-7 h-7 flex-shrink-0 rounded-md cursor-pointer hover:scale-110 transition-all duration-200", !isEnabled && "opacity-50")}>
+        {participant.avatar ? <AvatarImage className="object-cover rounded-md" src={participant.avatar} alt={participant.name} /> : <AvatarFallback className="bg-secondary text-xs rounded-md">{participant.name[0]}</AvatarFallback>}
+      </Avatar>
+
+      <span onClick={() => onEdit(participant.id)} className={cn("text-sm font-medium truncate flex-1 min-w-0 cursor-pointer", !isEnabled && "opacity-60")}>
+        {participant.name}
+      </span>
+
+      {/* Hover controls */}
+      <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover/char:opacity-100 transition-opacity">
+        <Button variant="ghost" size="icon" className="w-5 h-5 hover:text-destructive" onClick={() => onRemove(participant.id)} title="Remove">
+          <LuTrash2 className="!h-3 !w-3" />
+        </Button>
+        <Switch checked={isEnabled} onCheckedChange={() => onToggle(participant.id)} className="data-[state=checked]:bg-primary" aria-label={isEnabled ? "Disable" : "Enable"} size={"xs"} />
+      </div>
+
+      {/* Play/Stop — always visible */}
+      <Button variant="ghost" size="icon" className="w-6 h-6 flex-shrink-0" disabled={!isEnabled} onClick={() => onTrigger(participant.id)} title="Trigger Message">
+        {inInferenceQueue ? (
+          <motion.div
+            initial={{ scale: 1 }}
+            animate={{ scale: [1, 1.2, 1], rotate: [0, 0, 0, 0, 0, -10, 10, -10, 10, 0] }}
+            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+          >
+            <LuCircleStop className="!h-4 !w-4 text-destructive" />
+          </motion.div>
+        ) : (
+          <LuCirclePlay className="!h-4 !w-4" />
+        )}
+      </Button>
+    </div>
+  );
+};
+
+// ─── Agent Card ───────────────────────────────────────────────────────────────
+
+type TriggerType = "manual" | "every_message" | "scheduled";
+
+const TRIGGER_LABEL: Record<TriggerType, string> = {
+  manual: "Manual",
+  every_message: "Auto",
+  scheduled: "Timed",
+};
+
+interface AgentParticipantCardProps {
+  participant: Participant;
+  agent: AgentType;
+  workflowState: AgentWorkflowState;
+  inQueue: boolean;
+  onToggle: (id: string) => void;
+  onTrigger: (id: string) => void;
+  onRemove: (id: string) => void;
+  onEdit: (id: string) => void;
+}
+
+const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant, agent, workflowState, inQueue, onToggle, onTrigger, onRemove, onEdit }) => {
+  const isEnabled = participant.isEnabled ?? true;
+  const triggerType: TriggerType = (agent.settings?.run_on?.type as TriggerType) ?? "manual";
+  const triggerLabel = TRIGGER_LABEL[triggerType] ?? TRIGGER_LABEL.manual;
+  const isRunning = workflowState.isRunning && inQueue;
+
+  const nodeCount = agent.nodes?.length ?? 0;
+  const executedCount = workflowState.executedNodes.length;
+  const progressPct = nodeCount > 0 ? Math.round((executedCount / nodeCount) * 100) : 0;
+
+  return (
+    <div className="flex flex-col gap-0.5 group/agent">
+      {/* Single-row chip */}
+      <div
+        className={cn(
+          "flex items-center gap-1.5 h-9 pl-2 pr-1 rounded-md border border-dashed transition-all min-w-0 relative overflow-hidden",
+          isEnabled ? "border-primary/40 bg-primary/5 hover:bg-primary/10" : "border-muted-foreground/20 bg-muted/20 opacity-60",
+          isRunning && "border-primary border-solid bg-primary/10",
+        )}
+      >
+        {isRunning && <BorderBeam colorFrom="hsl(var(--primary))" size={50} duration={1} />}
+
+        {/* Bot icon — clickable to edit */}
+        <LuZap
+          onClick={() => onEdit(participant.id)}
+          className={cn("h-3.5 w-3.5 flex-shrink-0 cursor-pointer", isEnabled ? "text-primary" : "text-muted-foreground")}
+        />
+
+        {/* Name */}
+        <span
+          onClick={() => onEdit(participant.id)}
+          className={cn("text-sm font-medium truncate cursor-pointer flex-1 min-w-0", !isEnabled && "text-muted-foreground")}
+        >
+          {participant.name}
+        </span>
+
+        {/* Trigger label — subtle, always visible */}
+        <span className="text-[10px] text-muted-foreground/70 flex-shrink-0 uppercase tracking-wider">{triggerLabel}</span>
+
+        {/* Hover controls: toggle + delete */}
+        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover/agent:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="w-5 h-5 hover:text-destructive" onClick={() => onRemove(participant.id)} title="Remove">
+            <LuTrash2 className="!h-3 !w-3" />
+          </Button>
+          <Switch checked={isEnabled} onCheckedChange={() => onToggle(participant.id)} className="data-[state=checked]:bg-primary" aria-label={isEnabled ? "Disable" : "Enable"} size={"xs"} />
+        </div>
+
+        {/* Play/Stop — always visible */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-6 h-6 flex-shrink-0"
+          disabled={!isEnabled}
+          onClick={() => onTrigger(participant.id)}
+          title={isRunning ? "Stop Agent" : "Run Agent"}
+        >
+          {isRunning ? (
+            <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}>
+              <LuCircleStop className="!h-4 !w-4 text-destructive" />
+            </motion.div>
+          ) : (
+            <LuCirclePlay className="!h-4 !w-4" />
+          )}
+        </Button>
+      </div>
+
+      {/* Progress bar — only when running */}
+      {isRunning && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-1">
+          <div className="h-0.5 bg-muted rounded-full overflow-hidden">
+            <motion.div className="h-full bg-primary rounded-full" initial={{ width: 0 }} animate={{ width: `${progressPct}%` }} transition={{ duration: 0.3 }} />
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main Widget ──────────────────────────────────────────────────────────────
 
 const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
   const characterList = useCharacters();
@@ -198,7 +247,6 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
   const [isEditAgentModalOpen, setIsEditAgentModalOpen] = useState<string | null>(null);
 
   const currentChatId = useCurrentChatId();
-  const messages = useCurrentChatMessages();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const participants = useCurrentChatParticipants() || [];
   const { addParticipant, removeParticipant, toggleParticipantEnabled, updateSelectedChat } = useChatActions();
@@ -209,9 +257,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
 
   const [streamingState, setStreamingState] = useState(() => inferenceService.getStreamingState(currentChatId));
 
-  // Get user character if it exists
   const userCharacter = currentChatUserCharacterID ? characterList.find((char) => char.id === currentChatUserCharacterID) : null;
-
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
 
   useEffect(() => {
@@ -224,13 +270,10 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     return unsubscribe;
   }, [inferenceService, currentChatId]);
 
-  // Map chat participants to the Participant interface for this component
   const mappedParticipants: Participant[] = participants.map((p) => {
-    // Find the associated character or agent
     const associatedCharacter = characterList.find((char) => char.id === p.id);
     const associatedAgent = agentList.find((agent) => agent.id === p.id);
 
-    // Determine the type and get the appropriate data
     let name = "Unknown";
     let type: "character" | "agent" = "character";
     let avatar = "";
@@ -242,19 +285,12 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     } else if (associatedAgent) {
       name = associatedAgent.name;
       type = "agent";
-      avatar = ""; // Agents don't have avatars currently
+      avatar = "";
     }
 
-    return {
-      id: p.id,
-      name,
-      type,
-      avatar,
-      isEnabled: p.enabled,
-    };
+    return { id: p.id, name, type, avatar, isEnabled: p.enabled };
   });
 
-  // If no user is in the participants, add one
   const hasUser = mappedParticipants.some((p) => p.id === "user");
   const displayedParticipants: Participant[] = hasUser
     ? mappedParticipants
@@ -270,61 +306,26 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
       ];
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Require 8px of movement before activating
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (over && active.id !== over.id) {
       const oldIndex = displayedParticipants.findIndex((item) => item.id === active.id);
       const newIndex = displayedParticipants.findIndex((item) => item.id === over.id);
-
-      // Create a new order using arrayMove
       const newParticipantsOrder = arrayMove(displayedParticipants, oldIndex, newIndex);
-
-      // Get the actual participants to update in the store (excluding visual-only participants)
-      // and maintaining their original properties
       const currentParticipants = participants.slice();
-
-      // Create a new array with the updated order
       const reorderedParticipants = newParticipantsOrder
         .filter((p) => p.id !== "user" || participants.some((storeP) => storeP.id === "user"))
-        .map((p) => {
-          // Find the original participant data
-          const originalParticipant = currentParticipants.find((storeP) => storeP.id === p.id);
-          // If found, return it, otherwise it's probably the user that's not in the store yet
-          return (
-            originalParticipant || {
-              id: p.id,
-              enabled: true,
-              settings: {},
-            }
-          );
-        });
-
-      // Update the chat with the new participants order
-      updateSelectedChat({
-        participants: reorderedParticipants,
-      });
+        .map((p) => currentParticipants.find((storeP) => storeP.id === p.id) || { id: p.id, enabled: true, settings: {} });
+      updateSelectedChat({ participants: reorderedParticipants });
     }
   };
 
   const handleAddParticipant = (participantId: string) => {
-    // Add participant to chat
-    addParticipant({
-      id: participantId,
-      enabled: true,
-      settings: {},
-    });
-
+    addParticipant({ id: participantId, enabled: true, settings: {} });
     setIsAddParticipantOpen(false);
   };
 
@@ -342,7 +343,6 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
 
   const handleTriggerMessage = useCallback(
     async (participantId: string) => {
-      // Don't allow triggering for user or if already in progress
       if (participantId === "user") {
         return;
       }
@@ -353,9 +353,8 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
       }
 
       try {
-        // Find the associated character or agent
         const character = characterList.find((char) => char.id === participantId);
-        const agent = agentList.find((agent) => agent.id === participantId);
+        const agent = agentList.find((a) => a.id === participantId);
 
         if (!character && !agent) {
           console.error("Character or agent not found");
@@ -363,58 +362,85 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         }
 
         if (agent) {
-          // Execute agent workflow
-          console.log("Executing agent workflow:", agent.name);
-
+          if (workflowState.isRunning) {
+            return;
+          }
           try {
-            const result = await executeAgentWorkflow(
-              agent,
-              "", // No initial input for now
-              (nodeId, result) => {
-                console.log(`Node ${nodeId} executed:`, result);
-              },
-            );
-
+            const result = await executeAgentWorkflow(agent, "", (nodeId, result) => {
+              console.log(`Node ${nodeId} executed:`, result);
+            });
             if (result) {
-              console.log("Agent workflow completed with result:", result);
               toast.success(`Agent ${agent.name} completed successfully`);
             } else {
-              console.log("Agent workflow completed with no output");
               toast.success(`Agent ${agent.name} completed`);
             }
           } catch (error) {
-            console.error("Agent workflow execution failed:", error);
             toast.error(`Agent ${agent.name} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
           }
         } else if (character) {
-          await inferenceService.generateMessage({
-            chatId: currentChatId,
-            characterId: participantId,
-          });
+          await inferenceService.generateMessage({ chatId: currentChatId, characterId: participantId });
         }
       } catch (error) {
         console.error("Error triggering message:", error);
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
       }
     },
-    [characterList, agentList, messages, inferenceService, streamingState.characterId, currentChatId],
+    [characterList, agentList, inferenceService, streamingState.characterId, currentChatId, workflowState.isRunning, executeAgentWorkflow],
   );
 
-  const isInQueue = (participantId: string) => {
-    // Check if character is in inference queue
+  const isInQueue = (participantId: string): boolean => {
     const inCharacterQueue =
-      (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") || (participantId === "user" && streamingState.messageId === "generate-input-area");
-
-    // Check if agent is in workflow execution
+      (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") ||
+      (participantId === "user" && streamingState.messageId === "generate-input-area");
     const agent = agentList.find((a) => a.id === participantId);
-    const inAgentQueue = agent && workflowState.isRunning;
-
+    const inAgentQueue = !!(agent && workflowState.isRunning);
     return inCharacterQueue || inAgentQueue;
+  };
+
+  const renderParticipantCard = (participant: Participant) => {
+    const inQueue = isInQueue(participant.id);
+
+    if (participant.type === "user") {
+      return <UserParticipantCard participant={participant} />;
+    }
+
+    if (participant.type === "character") {
+      return (
+        <CharacterParticipantCard
+          participant={participant}
+          inInferenceQueue={inQueue}
+          onToggle={handleToggleParticipant}
+          onTrigger={handleTriggerMessage}
+          onRemove={handleRemoveParticipant}
+          onEdit={setIsEditCharacterModalOpen}
+        />
+      );
+    }
+
+    if (participant.type === "agent") {
+      const agent = agentList.find((a) => a.id === participant.id);
+      if (!agent) {
+        return null;
+      }
+      return (
+        <AgentParticipantCard
+          participant={participant}
+          agent={agent}
+          workflowState={workflowState}
+          inQueue={inQueue}
+          onToggle={handleToggleParticipant}
+          onTrigger={handleTriggerMessage}
+          onRemove={handleRemoveParticipant}
+          onEdit={setIsEditAgentModalOpen}
+        />
+      );
+    }
+
+    return null;
   };
 
   return (
     <div className="flex flex-col h-full bg-none">
-      {/* Participants List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-0.5 custom-scrollbar">
         <DndContext
           sensors={sensors}
@@ -426,55 +452,37 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
           <SortableContext items={displayedParticipants.map((p) => p.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-1">
               {displayedParticipants.map((participant) => (
-                <SortableParticipant
-                  key={participant.id}
-                  participant={participant}
-                  onToggleParticipant={handleToggleParticipant}
-                  onTriggerMessage={handleTriggerMessage}
-                  onRemoveParticipant={handleRemoveParticipant}
-                  inInferenceQueue={isInQueue(participant.id) || false}
-                  setIsEditCharacterModalOpen={setIsEditCharacterModalOpen}
-                  setIsEditAgentModalOpen={setIsEditAgentModalOpen}
-                />
+                <SortableParticipantWrapper key={participant.id} id={participant.id}>
+                  {renderParticipantCard(participant)}
+                </SortableParticipantWrapper>
               ))}
             </div>
           </SortableContext>
         </DndContext>
       </div>
 
-      {/* Footer */}
       <div className="py-0 px-1 border-t flex justify-start gap-2">
         <AddParticipantPopover isOpen={isAddParticipantOpen} onOpenChange={setIsAddParticipantOpen} onSelectCharacter={handleAddParticipant} existingParticipantIds={participants.map((p) => p.id)}>
           <Button variant="ghost" size="icon" title="Add Participant">
             <LuUserPlus className="h-4 w-4" />
           </Button>
         </AddParticipantPopover>
-        {/* TODO: Add settings support */}
         <Button disabled variant="ghost" size="icon" onClick={onOpenConfig} title="Settings">
           <LuSettings className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Edit Character Dialog */}
       <CharacterForm
         open={isEditCharacterModalOpen !== null}
         onOpenChange={(open: boolean) => setIsEditCharacterModalOpen(open ? isEditCharacterModalOpen : null)}
         mode="edit"
         initialData={characterList.find((char) => char.id === isEditCharacterModalOpen) as Character}
         setIsEditing={() => {}}
-        onSuccess={() => {
-          setIsEditCharacterModalOpen(null);
-          // Optionally refresh the character data
-        }}
+        onSuccess={() => setIsEditCharacterModalOpen(null)}
       />
 
       {/* TODO: Add Agent Edit Dialog when available */}
-      {isEditAgentModalOpen && (
-        <div className="hidden">
-          {/* Placeholder for agent edit modal */}
-          {/* This will be implemented when agent editing is available */}
-        </div>
-      )}
+      {isEditAgentModalOpen && <div className="hidden" />}
     </div>
   );
 };
