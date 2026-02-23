@@ -5,7 +5,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BiSolidZap } from "react-icons/bi";
-import { LuCirclePlay, LuCircleStop, LuGripVertical, LuSettings, LuTrash2, LuUserPlus, LuZap } from "react-icons/lu";
+import { LuCirclePlay, LuCircleStop, LuGripVertical, LuSettings, LuTrash2, LuUserPlus } from "react-icons/lu";
+import { RiArrowLeftRightLine } from "react-icons/ri";
 import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -67,12 +68,17 @@ const SortableParticipantWrapper: React.FC<SortableParticipantWrapperProps> = ({
 
 interface UserParticipantCardProps {
   participant: Participant;
+  onEdit?: () => void;
+  onChangeCharacter?: (characterId: string) => void;
+  characterIds?: string[];
 }
 
-const UserParticipantCard: React.FC<UserParticipantCardProps> = ({ participant }) => {
+const UserParticipantCard: React.FC<UserParticipantCardProps> = ({ participant, onEdit, onChangeCharacter, characterIds }) => {
+  const [isChangeOpen, setIsChangeOpen] = useState(false);
+
   return (
-    <div className="flex items-center gap-2 px-2 h-9 rounded-lg bg-muted/30">
-      <Avatar className="w-7 h-7 flex-shrink-0 rounded-md">
+    <div className="flex items-center gap-2 pr-1 h-9 rounded-sm bg-muted/30 group/user">
+      <Avatar onClick={onEdit} className={cn("w-8 h-8 flex-shrink-0 rounded-sm", onEdit && "cursor-pointer hover:scale-110 transition-all duration-200")}>
         {participant.avatar ? (
           <AvatarImage className="object-cover rounded-md" src={participant.avatar} alt={participant.name} />
         ) : (
@@ -80,7 +86,25 @@ const UserParticipantCard: React.FC<UserParticipantCardProps> = ({ participant }
         )}
       </Avatar>
       <span className="font-medium truncate text-xs flex-1 min-w-0">{participant.name}</span>
-      <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 uppercase tracking-wider">You</span>
+
+      {onChangeCharacter ? (
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <AddParticipantPopover
+            isOpen={isChangeOpen}
+            onOpenChange={setIsChangeOpen}
+            onSelectCharacter={onChangeCharacter}
+            existingParticipantIds={[]}
+            pickableParticipantIds={characterIds}
+            title="Set Your Character"
+          >
+            <Button variant="ghost" size="icon" className="w-5 h-5" title="Change Character">
+              <RiArrowLeftRightLine className="!h-4 !w-4" />
+            </Button>
+          </AddParticipantPopover>
+        </div>
+      ) : (
+        <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 uppercase tracking-wider">You</span>
+      )}
     </div>
   );
 };
@@ -102,17 +126,17 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
   return (
     <div
       className={cn(
-        "flex items-center gap-2 px-1 h-9 rounded-lg transition-colors min-w-0 relative overflow-hidden group/char",
-        isEnabled ? "bg-muted/50 hover:bg-muted/80" : "bg-muted/30 text-muted-foreground",
+        "flex items-center gap-2  h-9 rounded-lg transition-colors min-w-0 relative overflow-hidden group/char",
+        isEnabled ? "bg-muted/50 hover:bg-muted/80 border" : "bg-muted/30 text-muted-foreground",
       )}
     >
       {inInferenceQueue && <BorderBeam colorFrom="hsl(var(--primary))" size={60} duration={1.5} />}
 
-      <Avatar onClick={() => onEdit(participant.id)} className={cn("w-7 h-7 flex-shrink-0 rounded-xl cursor-pointer hover:scale-110 transition-all duration-200", !isEnabled && "opacity-50")}>
+      <Avatar onClick={() => onEdit(participant.id)} className={cn("w-8 h-8 flex-shrink-0 rounded-sm cursor-pointer hover:scale-110 transition-all duration-200", !isEnabled && "opacity-50")}>
         {participant.avatar ? (
-          <AvatarImage className="object-cover rounded-xl" src={participant.avatar} alt={participant.name} />
+          <AvatarImage className="object-cover rounded-sm" src={participant.avatar} alt={participant.name} />
         ) : (
-          <AvatarFallback className="bg-secondary text-xs rounded-xl">{participant.name[0]}</AvatarFallback>
+          <AvatarFallback className="bg-secondary text-xs rounded-sm">{participant.name[0]}</AvatarFallback>
         )}
       </Avatar>
 
@@ -125,7 +149,7 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
         <Button variant="ghost" size="icon" className="w-5 h-5 hover:text-destructive" onClick={() => onRemove(participant.id)} title="Remove">
           <LuTrash2 className="!h-3 !w-3" />
         </Button>
-        <Switch checked={isEnabled} onCheckedChange={() => onToggle(participant.id)} className="data-[state=checked]:bg-primary" aria-label={isEnabled ? "Disable" : "Enable"} size={"xs"} />
+        <Switch checked={isEnabled} onCheckedChange={() => onToggle(participant.id)} className="data-[state=checked]:bg-primary" aria-label={isEnabled ? "Disable" : "Enable"} size={"sm"} />
       </div>
 
       {/* Play/Stop — always visible */}
@@ -182,7 +206,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
       {/* Single-row chip */}
       <div
         className={cn(
-          "flex items-center gap-1.5 h-9 pl-2 pr-1 rounded-md border border-dashed transition-all min-w-0 relative overflow-hidden",
+          "flex items-center gap-1.5 h-9 p-1 rounded-md border border-dashed transition-all min-w-0 relative overflow-hidden",
           isEnabled ? "border-primary/40 bg-primary/5 hover:bg-primary/10" : "border-muted-foreground/20 bg-muted/20 opacity-60",
           isRunning && "border-primary border-solid bg-primary/10",
         )}
@@ -190,7 +214,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
         {isRunning && <BorderBeam colorFrom="hsl(var(--primary))" size={50} duration={1} />}
 
         {/* Bot icon — clickable to edit */}
-        <BiSolidZap onClick={() => onEdit(participant.id)} className={cn("h-3.5 w-3.5 flex-shrink-0 cursor-pointer", isEnabled ? "text-primary" : "text-muted-foreground")} />
+        <BiSolidZap onClick={() => onEdit(participant.id)} className={cn("h-5 w-4 flex-shrink-0 cursor-pointer", isEnabled ? "text-primary" : "text-muted-foreground")} />
 
         {/* Name */}
         <span onClick={() => onEdit(participant.id)} className={cn("text-xs font-medium truncate cursor-pointer flex-1 min-w-0", !isEnabled && "text-muted-foreground")}>
@@ -205,7 +229,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
           <Button variant="ghost" size="icon" className="w-5 h-5 hover:text-destructive" onClick={() => onRemove(participant.id)} title="Remove">
             <LuTrash2 className="!h-3 !w-3" />
           </Button>
-          <Switch checked={isEnabled} onCheckedChange={() => onToggle(participant.id)} className="data-[state=checked]:bg-primary" aria-label={isEnabled ? "Disable" : "Enable"} size={"xs"} />
+          <Switch checked={isEnabled} onCheckedChange={() => onToggle(participant.id)} className="data-[state=checked]:bg-primary" aria-label={isEnabled ? "Disable" : "Enable"} size={"sm"} />
         </div>
 
         {/* Play/Stop — always visible */}
@@ -418,7 +442,16 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
     const inQueue = isInQueue(participant.id);
 
     if (participant.type === "user") {
-      return <UserParticipantCard participant={participant} />;
+      const handleEditUserCharacter = currentChatUserCharacterID ? () => setIsEditCharacterModalOpen(currentChatUserCharacterID) : undefined;
+      const handleChangeUserCharacter = async (characterId: string) => {
+        try {
+          await updateSelectedChat({ user_character_id: characterId });
+        } catch (error) {
+          console.error("Failed to update user character:", error);
+        }
+      };
+      const characterOnlyIds = characterList.filter((c) => c.type === "character").map((c) => c.id);
+      return <UserParticipantCard participant={participant} onEdit={handleEditUserCharacter} onChangeCharacter={handleChangeUserCharacter} characterIds={characterOnlyIds} />;
     }
 
     if (participant.type === "character") {
