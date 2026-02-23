@@ -8,7 +8,7 @@ use argon2::{
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use env_vars::get_master_key;
-use rand::{rngs::OsRng, RngCore};
+use argon2::password_hash::rand_core::{OsRng, RngCore};
 use std::convert::TryInto; // Required for try_into()
 
 mod env_vars;
@@ -143,7 +143,7 @@ fn derive_encryption_key_with_salt(salt_phc_string: &str) -> Result<[u8; 32], St
     let master_key = get_master_key("MASTER_KEY");
 
     // Parse the full PHC string. Use 'new' as it handles PHC format.
-    let salt = SaltString::new(salt_phc_string)
+    let salt = SaltString::from_b64(salt_phc_string)
         .map_err(|e| format!("Failed to parse salt PHC string: {}", e))?;
 
     let argon2 = Argon2::default();

@@ -27,7 +27,6 @@ tauri-plugin-http = "2"
 argon2 = { version = "0.5.3" }
 tauri-plugin-single-instance = "2"
 # time = { version = "0.3.38", features = ["serde"] }
-rand = "0.8"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
