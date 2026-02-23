@@ -9,10 +9,7 @@ export const MessageAvatar = ({ avatarPath, messageType, isStreaming }: { avatar
     <Dialog>
       <DialogTrigger asChild>
         <button className="transition-transform" style={{ borderRadius: "var(--avatar-border-radius, 50%)" }} title="View Full Size Avatar">
-          <Avatar
-            className={cn("w-24 h-24 ring-2 ring-border overflow-hidden hover:ring-primary", isStreaming && "ring-primary")}
-            style={{ borderRadius: "var(--avatar-border-radius, 50%)" }}
-          >
+          <Avatar className={cn("w-24 h-24 ring-2 ring-border overflow-hidden hover:ring-primary", isStreaming && "ring-primary")} style={{ borderRadius: "var(--avatar-border-radius, 50%)" }}>
             <AvatarImage src={avatarPath} alt={`${messageType} avatar`} className="hover:cursor-pointer" />
             <AvatarFallback className="bg-secondary text-secondary-foreground">
               <AvatarImage src="/avatars/default.jpg" alt={`Default ${messageType} avatar`} />

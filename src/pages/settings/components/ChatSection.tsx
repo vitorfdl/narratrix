@@ -25,9 +25,7 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ settings, onSettingCha
   const soundRef = useRef<Howl | null>(null);
 
   const avatarBorderRadius: number =
-    typeof settings.chat.avatarBorderRadius === "number" && !Number.isNaN(settings.chat.avatarBorderRadius)
-      ? Math.min(50, Math.max(0, settings.chat.avatarBorderRadius))
-      : 50;
+    typeof settings.chat.avatarBorderRadius === "number" && !Number.isNaN(settings.chat.avatarBorderRadius) ? Math.min(50, Math.max(0, settings.chat.avatarBorderRadius)) : 50;
 
   const delimiterHighlighting: DelimiterHighlighting = settings.appearance.delimiterHighlighting ?? DEFAULT_DELIMITER_HIGHLIGHTING;
 

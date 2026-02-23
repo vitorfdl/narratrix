@@ -688,7 +688,9 @@ const WidgetExpressions = () => {
                           <div className="flex flex-row items-center justify-between rounded-lg border p-3">
                             <div className="flex items-center gap-1">
                               <Label htmlFor="auto-run-after-complete">Run After Completion</Label>
-                              <HelpTooltip>When enabled, auto mode waits for the full response to finish before generating an expression, instead of updating periodically during streaming.</HelpTooltip>
+                              <HelpTooltip>
+                                When enabled, auto mode waits for the full response to finish before generating an expression, instead of updating periodically during streaming.
+                              </HelpTooltip>
                             </div>
                             <Switch id="auto-run-after-complete" checked={tempAutoRunAfterComplete} onCheckedChange={setTempAutoRunAfterComplete} />
                           </div>

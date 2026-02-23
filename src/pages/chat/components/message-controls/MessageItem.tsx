@@ -258,7 +258,9 @@ const MessageItem = ({
           </>
         )}
 
-        {showAvatar && (message.type === "user" || message.type === "character") && <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />}
+        {showAvatar && (message.type === "user" || message.type === "character") && (
+          <MessageAvatar avatarPath={avatarPath || "/avatars/default.jpg"} messageType={message.type} isStreaming={isStreaming} />
+        )}
 
         {shouldRenderFull ? (
           <div onMouseUp={() => handleMessageSelection(message.character_id || undefined)} className={contentClassName}>
