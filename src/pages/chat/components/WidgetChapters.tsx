@@ -166,7 +166,7 @@ const WidgetChapters = () => {
   const chapters = useCurrentChatChapters();
   const activeChapterId = useCurrentChatActiveChapterID();
   const currentChatId = useCurrentChatId();
-  const { switchChatChapter, addChatChapter, deleteChatChapter, updateChatChapter, fetchChatMessages } = useChatActions();
+  const { switchChatChapter, addChatChapter, duplicateChatChapter, deleteChatChapter, updateChatChapter, fetchChatMessages } = useChatActions();
 
   const [isCreatingChapter, setIsCreatingChapter] = useState(false);
   const [isEditingChapter, setIsEditingChapter] = useState(false);
@@ -340,7 +340,7 @@ const WidgetChapters = () => {
     };
 
     return (
-      <div ref={setNodeRef} style={style} className={cn("flex items-center py-0 px-1 rounded-lg border", chapter.id === activeChapterId ? "bg-primary/10 border-primary" : "bg-card")}>
+      <div ref={setNodeRef} style={style} className={cn("flex items-center py-0 px-1 rounded-md border", chapter.id === activeChapterId ? "bg-primary/10 border-primary" : "bg-card")}>
         <div className="mr-2 cursor-grab" {...attributes} {...listeners} tabIndex={0} aria-label="Drag to reorder chapter">
           <GripVertical className="!h-5 !w-5 text-muted-foreground" />
         </div>
@@ -354,12 +354,6 @@ const WidgetChapters = () => {
         </div>
 
         <div className="flex items-center gap-2 ml-4">
-          {chapter.id === activeChapterId && (
-            <Badge variant="outline" className="bg-primary/20 max-h-4 text-primary p-0.5 text-xxs font-mono border-primary">
-              Active
-            </Badge>
-          )}
-
           <Button variant="ghost" size="icon" onClick={() => startEditChapter(chapter)}>
             <Settings className="h-4 w-4" />
           </Button>
@@ -372,15 +366,13 @@ const WidgetChapters = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onClick={() => {
-                  addChatChapter({
-                    title: `${chapter.title} (Copy)`,
-                    sequence: chapters?.length ? Math.max(...chapters.map((c) => c.sequence)) + 1 : 1,
-                    scenario: chapter.scenario,
-                    instructions: chapter.instructions,
-                    start_message: chapter.start_message,
-                    custom: chapter.custom,
-                  });
+                onClick={async () => {
+                  try {
+                    await duplicateChatChapter(chapter.id);
+                    toast.success(`Chapter "${chapter.title}" duplicated`);
+                  } catch {
+                    toast.error(`Failed to duplicate chapter "${chapter.title}"`);
+                  }
                 }}
               >
                 <Copy className="h-4 w-4 mr-2" />
@@ -414,7 +406,7 @@ const WidgetChapters = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1 h-8">
+                <Button variant="outline" size="sm" className="gap-1 h-7">
                   Sort
                   <ArrowUpDown className="!h-4 !w-4 text-muted-foreground" />
                 </Button>
@@ -452,7 +444,7 @@ const WidgetChapters = () => {
 
             <Dialog open={isCreatingChapter} onOpenChange={setIsCreatingChapter}>
               <DialogTrigger asChild>
-                <Button className="gap-1 h-8" size="sm">
+                <Button className="gap-1 h-7" size="sm">
                   <Plus className="!h-4 !w-4" />
                   New Chapter
                 </Button>

@@ -8,6 +8,7 @@ import {
   createChatChapter as apiCreateChatChapter,
   deleteChatChapter as apiDeleteChatChapter,
   updateChatChapter as apiUpdateChatChapter,
+  duplicateChatChapter as apiDuplicateChatChapter,
   getChaptersByChatId,
   getNextChapterSequence,
 } from "@/services/chat-chapter-service";
@@ -58,6 +59,7 @@ interface chatState {
 
     // Chapters
     addChatChapter: (chapter: AddChatChapterParams) => Promise<ChatChapter>;
+    duplicateChatChapter: (chapterId: string) => Promise<ChatChapter>;
     deleteChatChapter: (chapterId: string) => Promise<boolean>;
     updateChatChapter: (chapterId: string, chapter: Partial<ChatChapter>) => Promise<ChatChapter | null>;
     fetchChatChapters: (chatId: string) => Promise<ChatChapter[]>;
@@ -603,6 +605,47 @@ export const useChatStore = create<chatState>((set, get) => ({
         toast.error(error instanceof Error ? error.message : "Failed to add chat chapter");
         set({
           error: error instanceof Error ? error.message : "Failed to add chat chapter",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    duplicateChatChapter: async (chapterId: string) => {
+      try {
+        set({ isLoading: true, error: null });
+        const currentChat = get().selectedChat;
+
+        if (!currentChat) {
+          throw new Error("No chat selected");
+        }
+
+        const newChapter = await apiDuplicateChatChapter(currentChat.id, chapterId);
+
+        // Add the new chapter to store and switch to it
+        set((state) => ({
+          selectedChatChapters: [...state.selectedChatChapters, newChapter],
+        }));
+
+        // Switch the active chapter to the new one
+        await get().actions.updateSelectedChat({ active_chapter_id: newChapter.id });
+
+        // Load messages for the new chapter (they were just copied, so fetch fresh)
+        const messages = await getChatMessagesByChatId(currentChat.id, newChapter.id);
+        const memories = await getShortTermMemories(currentChat.id, newChapter.id);
+
+        set({
+          selectedChatMessages: messages,
+          selectedChatMemories: memories,
+          participantIndex: 0,
+          isLoading: false,
+        });
+
+        return newChapter;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to duplicate chapter");
+        set({
+          error: error instanceof Error ? error.message : "Failed to duplicate chapter",
           isLoading: false,
         });
         throw error;

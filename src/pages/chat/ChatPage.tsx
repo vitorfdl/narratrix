@@ -9,6 +9,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import type { Chat } from "@/schema/chat-schema";
 import { ChatTab, CreateChatParams } from "@/schema/chat-schema";
 import { createChatChapter, listChatChapters } from "@/services/chat-chapter-service";
+import { createChatMessage, listChatMessages } from "@/services/chat-message-service";
 import { getChatById, listChats, updateChat } from "@/services/chat-service";
 import { useLocalChatTabs } from "@/utils/local-storage";
 import { Chatbox } from "./ChatBox";
@@ -211,7 +212,7 @@ export default function ChatPage() {
         // Create chat without default chapter to avoid conflicts when duplicating
         const newChat = await createChat(duplicateChatData, true);
 
-        // Create all chapters from the original chat
+        // Create all chapters from the original chat (with their messages)
         let activeChapterId: string | null = null;
         for (const chapter of chapters) {
           const newChapter = await createChatChapter({
@@ -222,6 +223,23 @@ export default function ChatPage() {
           // Keep track of which chapter should be active
           if (chapter.id === originalChat.active_chapter_id) {
             activeChapterId = newChapter.id;
+          }
+
+          // Copy all messages from the original chapter to the new chapter
+          const originalMessages = await listChatMessages({ chat_id: tabId, chapter_id: chapter.id });
+          for (const msg of originalMessages) {
+            await createChatMessage({
+              chat_id: newChat.id,
+              chapter_id: newChapter.id,
+              character_id: msg.character_id ?? null,
+              type: msg.type,
+              position: msg.position,
+              messages: msg.messages,
+              message_index: msg.message_index,
+              disabled: msg.disabled ?? false,
+              tokens: msg.tokens ?? undefined,
+              extra: msg.extra ?? {},
+            });
           }
         }
 
