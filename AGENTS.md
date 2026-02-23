@@ -13,6 +13,8 @@ AGENTS guide for Narratrix (React + Tauri)
 
 ## Core Application Structure
 
+Package Manager: PNPM
+
 ### Frontend Architecture (`src/`)
 
 - **Main Entry**: `App.tsx` handles profile authentication and theme
@@ -32,4 +34,4 @@ AGENTS guide for Narratrix (React + Tauri)
 - **Security**: Encryption utilities in `utils/`
 
 ## Notes
-- Also follow: defensive programming (validation, null safety, resource cleanup), single-responsibility, reusable components, hook/service abstraction, and DI-friendly code. Keep PRs small; run lint/tests before pushing.
+- Also follow: defensive programming (validation, null safety, resource cleanup), single-responsibility, reusable components, hook/service abstraction, and DI-friendly code. Keep PRs small; run pnpm and biome lint/tests before pushing.

@@ -1,3 +1,8 @@
+---
+description: Guidance for Claude/claude.ai/code on working with the chat module (React, Zustand, react-grid-layout, inference services)
+alwaysApply: true
+---
+
 # CLAUDE.md - Chat Module Architecture
 
 This file provides guidance to Claude Code (claude.ai/code) when working with the chat module in this repository.

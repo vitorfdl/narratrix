@@ -7,7 +7,7 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -291,7 +291,12 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex items-center justify-between">
-                          <FormLabel>Content</FormLabel>
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Content</FormLabel>
+                            <HelpTooltip>
+                              <p>The actual text that will be inserted into the context when this entry is triggered.</p>
+                            </HelpTooltip>
+                          </div>
                           <span className="text-xs text-muted-foreground">{estimateTokens(field.value || "", 0)} tokens</span>
                         </div>
                         <FormControl>
@@ -304,7 +309,6 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             editable={true}
                           />
                         </FormControl>
-                        <FormDescription>The actual text that will be inserted into the context.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -317,8 +321,12 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                           <div className="space-y-0.5">
-                            <FormLabel>Enabled</FormLabel>
-                            <FormDescription>Activate entry.</FormDescription>
+                            <div className="flex items-center gap-1">
+                              <FormLabel>Enabled</FormLabel>
+                              <HelpTooltip>
+                                <p>When disabled, this entry will never be included in the context regardless of keyword matches.</p>
+                              </HelpTooltip>
+                            </div>
                           </div>
                           <FormControl>
                             <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -339,7 +347,6 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                                 <p>If enabled, this entry is always included, ignoring keywords.</p>
                               </HelpTooltip>
                             </div>
-                            <FormDescription>Always include.</FormDescription>
                           </div>
                           <FormControl>
                             <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -374,7 +381,6 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                               }}
                             />
                           </FormControl>
-                          <FormDescription>Type to create or select group.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -402,7 +408,6 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                               value={field.value ?? 0}
                             />
                           </FormControl>
-                          <FormDescription>Higher = more priority.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -460,7 +465,6 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                                 <p>If enabled, keyword matching will respect case sensitivity (e.g., "Apple" won't match "apple").</p>
                               </HelpTooltip>
                             </div>
-                            <FormDescription>Match keyword case exactly.</FormDescription>
                           </div>
                           <FormControl>
                             <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -481,7 +485,6 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                                 <p>If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word matches occur.</p>
                               </HelpTooltip>
                             </div>
-                            <FormDescription>Allow keywords within larger words.</FormDescription>
                           </div>
                           <FormControl>
                             <Switch checked={field.value} onCheckedChange={field.onChange} />

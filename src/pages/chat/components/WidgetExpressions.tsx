@@ -640,7 +640,7 @@ const WidgetExpressions = () => {
                       <TabsContent value="advanced" className="space-y-3 my-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <Label htmlFor="throttle-interval">Auto Refresh Interval (ms)</Label>
                               <HelpTooltip>How often auto mode updates expressions during streaming. Default: 8000ms (8 seconds).</HelpTooltip>
                             </div>
@@ -652,43 +652,18 @@ const WidgetExpressions = () => {
                               step="1000"
                               value={tempThrottleInterval}
                               onChange={(e) => setTempThrottleInterval(Number(e.target.value))}
-                              className="h-8"
                             />
                           </div>
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Label htmlFor="disable-logs">Disable Logs</Label>
-                              <HelpTooltip>Disable logging for background inference operations.</HelpTooltip>
-                            </div>
-                            <div className="flex items-center space-x-2 h-8">
-                              <Switch id="disable-logs" checked={tempDisableLogs} onCheckedChange={setTempDisableLogs} />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Label htmlFor="auto-run-after-complete">Run After Completion</Label>
-                              <HelpTooltip>
-                                When enabled, auto mode waits for the full response to finish before generating an expression, instead of updating periodically during streaming.
-                              </HelpTooltip>
-                            </div>
-                            <div className="flex items-center space-x-2 h-8">
-                              <Switch id="auto-run-after-complete" checked={tempAutoRunAfterComplete} onCheckedChange={setTempAutoRunAfterComplete} />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <Label htmlFor="image-object-fit" className="flex items-center gap-1">
                                 <LuImage className="h-3 w-3 text-muted-foreground" />
                                 <span>Image Fit Mode</span>
                               </Label>
-                              {selectedImageFitDescription ? (
-                                <HelpTooltip>{selectedImageFitDescription}</HelpTooltip>
-                              ) : (
-                                <HelpTooltip>Choose how expression images scale within the avatar frame.</HelpTooltip>
-                              )}
+                              <HelpTooltip>{selectedImageFitDescription || "Choose how expression images scale within the avatar frame."}</HelpTooltip>
                             </div>
                             <Select value={tempImageObjectFit} onValueChange={(value) => setTempImageObjectFit(value as ExpressionImageFit)}>
-                              <SelectTrigger id="image-object-fit" className="h-8">
+                              <SelectTrigger id="image-object-fit">
                                 <SelectValue placeholder="Select image fit" />
                               </SelectTrigger>
                               <SelectContent>
@@ -699,6 +674,23 @@ const WidgetExpressions = () => {
                                 ))}
                               </SelectContent>
                             </Select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                          <div className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="flex items-center gap-1">
+                              <Label htmlFor="disable-logs">Disable Logs</Label>
+                              <HelpTooltip>Disable logging for background inference operations.</HelpTooltip>
+                            </div>
+                            <Switch id="disable-logs" checked={tempDisableLogs} onCheckedChange={setTempDisableLogs} />
+                          </div>
+                          <div className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="flex items-center gap-1">
+                              <Label htmlFor="auto-run-after-complete">Run After Completion</Label>
+                              <HelpTooltip>When enabled, auto mode waits for the full response to finish before generating an expression, instead of updating periodically during streaming.</HelpTooltip>
+                            </div>
+                            <Switch id="auto-run-after-complete" checked={tempAutoRunAfterComplete} onCheckedChange={setTempAutoRunAfterComplete} />
                           </div>
                         </div>
                       </TabsContent>

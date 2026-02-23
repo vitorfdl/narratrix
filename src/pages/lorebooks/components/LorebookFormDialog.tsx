@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -214,7 +215,12 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                 name="max_tokens"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Max Tokens</FormLabel>
+                    <div className="flex items-center gap-1">
+                      <FormLabel>Max Tokens</FormLabel>
+                      <HelpTooltip>
+                        <p>The maximum number of tokens this lorebook can inject into the context. Entries are included in priority order until this limit is reached.</p>
+                      </HelpTooltip>
+                    </div>
                     <FormControl>
                       <Input type="number" min={1} max={10000} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 1000)} value={field.value} />
                     </FormControl>
@@ -228,7 +234,12 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                 name="max_depth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Max Depth</FormLabel>
+                    <div className="flex items-center gap-1">
+                      <FormLabel>Max Depth</FormLabel>
+                      <HelpTooltip>
+                        <p>How many recent chat messages are scanned for keyword matches. Higher values check further back in the conversation history.</p>
+                      </HelpTooltip>
+                    </div>
                     <FormControl>
                       <Input type="number" min={1} max={100} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 25)} value={field.value} />
                     </FormControl>

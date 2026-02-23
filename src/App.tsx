@@ -3,6 +3,7 @@ import { InferenceServiceProvider } from "@/providers/inferenceChatProvider";
 import Content from "./components/layout/Content";
 import Sidebar from "./components/layout/Sidebar";
 import { Toaster } from "./components/ui/sonner";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { useCurrentProfile, useInitializeProfiles, useIsAuthenticated, useProfileSynchronization } from "./hooks/ProfileStore";
 import { initializeTheme } from "./hooks/ThemeContext";
 import ProfilePicker from "./pages/profileLogin/ProfilePage";
@@ -44,10 +45,10 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <>
+    <TooltipProvider>
       <AppContent />
       <Toaster richColors closeButton position="bottom-right" />
-    </>
+    </TooltipProvider>
   );
 };
 
