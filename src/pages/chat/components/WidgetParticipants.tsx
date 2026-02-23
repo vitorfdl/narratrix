@@ -3,7 +3,7 @@ import { restrictToFirstScrollableAncestor, restrictToParentElement, restrictToV
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BiSolidZap } from "react-icons/bi";
 import { LuCirclePlay, LuCircleStop, LuGripVertical, LuSettings, LuTrash2, LuUserPlus, LuZap } from "react-icons/lu";
 import { toast } from "sonner";
@@ -129,7 +129,7 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
       </div>
 
       {/* Play/Stop — always visible */}
-      <Button variant="ghost" size="icon" className="w-7 h-7 flex-shrink-0" disabled={!isEnabled} onClick={() => onTrigger(participant.id)} title="Trigger Message">
+      <Button variant="ghost" size="icon" className="w-7 h-7 flex-shrink-0" disabled={!isEnabled} onClick={() => onTrigger(participant.id)} title="Start Generation">
         {inInferenceQueue ? (
           <motion.div
             initial={{ scale: 1 }}
@@ -215,7 +215,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
               <LuCircleStop className="!h-4 !w-4 text-destructive" />
             </motion.div>
           ) : (
-            <LuCirclePlay className="!h-4 !w-4" />
+            <LuCirclePlay className="!h-5 !w-5" />
           )}
         </Button>
       </div>
@@ -303,16 +303,41 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
+  // Local order state drives SortableContext to prevent the visual jump on drop.
+  // Without this, the Zustand store update in handleDragEnd causes an immediate DOM
+  // reorder while dnd-kit is still mid-animation, producing a noticeable jump.
+  const [localOrder, setLocalOrder] = useState<string[]>(() => displayedParticipants.map((p) => p.id));
+  const prevIdSetRef = useRef<Set<string>>(new Set(localOrder));
+
+  // Sync localOrder when participants are added/removed or the chat changes,
+  // but NOT when we triggered the change ourselves via a drag reorder.
+  useEffect(() => {
+    const newIds = displayedParticipants.map((p) => p.id);
+    const newIdSet = new Set(newIds);
+    const prevIdSet = prevIdSetRef.current;
+    const membershipChanged = newIds.some((id) => !prevIdSet.has(id)) || [...prevIdSet].some((id) => !newIdSet.has(id));
+    if (membershipChanged) {
+      setLocalOrder(newIds);
+      prevIdSetRef.current = newIdSet;
+    }
+  }, [displayedParticipants]);
+
+  const sortedParticipants = localOrder.map((id) => displayedParticipants.find((p) => p.id === id)).filter((p): p is Participant => p !== undefined);
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIndex = displayedParticipants.findIndex((item) => item.id === active.id);
-      const newIndex = displayedParticipants.findIndex((item) => item.id === over.id);
-      const newParticipantsOrder = arrayMove(displayedParticipants, oldIndex, newIndex);
-      const currentParticipants = participants.slice();
-      const reorderedParticipants = newParticipantsOrder
-        .filter((p) => p.id !== "user" || participants.some((storeP) => storeP.id === "user"))
-        .map((p) => currentParticipants.find((storeP) => storeP.id === p.id) || { id: p.id, enabled: true, settings: {} });
+      const oldIndex = localOrder.indexOf(active.id as string);
+      const newIndex = localOrder.indexOf(over.id as string);
+      const newOrder = arrayMove(localOrder, oldIndex, newIndex);
+
+      // Update local order first so dnd-kit sees items already in final positions
+      setLocalOrder(newOrder);
+      prevIdSetRef.current = new Set(newOrder);
+
+      const reorderedParticipants = newOrder
+        .filter((id) => id !== "user" || participants.some((storeP) => storeP.id === "user"))
+        .map((id) => participants.find((storeP) => storeP.id === id) || { id, enabled: true, settings: {} });
       updateSelectedChat({ participants: reorderedParticipants });
     }
   };
@@ -441,9 +466,9 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
           autoScroll={false}
           modifiers={[restrictToVerticalAxis, restrictToParentElement, restrictToFirstScrollableAncestor]}
         >
-          <SortableContext items={displayedParticipants.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={localOrder} strategy={verticalListSortingStrategy}>
             <div className="space-y-1">
-              {displayedParticipants.map((participant) => (
+              {sortedParticipants.map((participant) => (
                 <SortableParticipantWrapper key={participant.id} id={participant.id}>
                   {renderParticipantCard(participant)}
                 </SortableParticipantWrapper>
