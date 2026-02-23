@@ -78,7 +78,7 @@ const UserParticipantCard: React.FC<UserParticipantCardProps> = ({ participant }
           <AvatarFallback className="bg-secondary text-xs rounded-md">{participant.name[0]}</AvatarFallback>
         )}
       </Avatar>
-      <span className="font-medium truncate text-sm flex-1 min-w-0">{participant.name}</span>
+      <span className="font-medium truncate text-xs flex-1 min-w-0">{participant.name}</span>
       <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 uppercase tracking-wider">You</span>
     </div>
   );
@@ -115,7 +115,7 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
         )}
       </Avatar>
 
-      <span onClick={() => onEdit(participant.id)} className={cn("text-sm font-medium truncate flex-1 min-w-0 cursor-pointer", !isEnabled && "opacity-60")}>
+      <span onClick={() => onEdit(participant.id)} className={cn("text-xs font-medium truncate flex-1 min-w-0 cursor-pointer", !isEnabled && "opacity-60")}>
         {participant.name}
       </span>
 
@@ -192,7 +192,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
         <LuZap onClick={() => onEdit(participant.id)} className={cn("h-3.5 w-3.5 flex-shrink-0 cursor-pointer", isEnabled ? "text-primary" : "text-muted-foreground")} />
 
         {/* Name */}
-        <span onClick={() => onEdit(participant.id)} className={cn("text-sm font-medium truncate cursor-pointer flex-1 min-w-0", !isEnabled && "text-muted-foreground")}>
+        <span onClick={() => onEdit(participant.id)} className={cn("text-xs font-medium truncate cursor-pointer flex-1 min-w-0", !isEnabled && "text-muted-foreground")}>
           {participant.name}
         </span>
 
