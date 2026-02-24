@@ -55,6 +55,7 @@ function SortableTab({ tab, index, activeTab, onTabChange, onCloseTab, onRenameR
               isSortableDragging && "cursor-grabbing",
             )}
             onClick={() => !isSortableDragging && onTabChange(tab.id)}
+            onDoubleClick={() => !isSortableDragging && onRenameRequest(tab.id)}
             onMouseDown={(e) => {
               if (e.button === 1) {
                 // Middle mouse button
