@@ -1,6 +1,6 @@
 [package]
 name = "narratrix"
-version = "0.14.2"
+version = "0.14.3"
 description = "Multi-Platform AI Client focused in Roleplay and Tabletop experience"
 authors = ["vitorfdl"]
 edition = "2021"
