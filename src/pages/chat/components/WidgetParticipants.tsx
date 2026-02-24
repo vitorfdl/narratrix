@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BiSolidZap } from "react-icons/bi";
 import { LuCirclePlay, LuCircleStop, LuGripVertical, LuSettings, LuTrash2, LuUserPlus } from "react-icons/lu";
-import { RiArrowLeftRightLine } from "react-icons/ri";
+import { RiArrowLeftRightLine, RiCloseLine } from "react-icons/ri";
 import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -70,10 +70,11 @@ interface UserParticipantCardProps {
   participant: Participant;
   onEdit?: () => void;
   onChangeCharacter?: (characterId: string) => void;
+  onRemoveCharacter?: () => void;
   characterIds?: string[];
 }
 
-const UserParticipantCard: React.FC<UserParticipantCardProps> = ({ participant, onEdit, onChangeCharacter, characterIds }) => {
+const UserParticipantCard: React.FC<UserParticipantCardProps> = ({ participant, onEdit, onChangeCharacter, onRemoveCharacter, characterIds }) => {
   const [isChangeOpen, setIsChangeOpen] = useState(false);
 
   return (
@@ -86,6 +87,12 @@ const UserParticipantCard: React.FC<UserParticipantCardProps> = ({ participant, 
         )}
       </Avatar>
       <span className="font-medium truncate text-xs flex-1 min-w-0">{participant.name}</span>
+
+      {onRemoveCharacter && (
+        <Button variant="ghost" size="icon" className="w-5 h-5" title="Remove Character" onClick={onRemoveCharacter}>
+          <RiCloseLine className="!h-4 !w-4" />
+        </Button>
+      )}
 
       {onChangeCharacter ? (
         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -450,8 +457,25 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
           console.error("Failed to update user character:", error);
         }
       };
+      const handleRemoveUserCharacter = currentChatUserCharacterID
+        ? async () => {
+            try {
+              await updateSelectedChat({ user_character_id: null });
+            } catch (error) {
+              console.error("Failed to remove user character:", error);
+            }
+          }
+        : undefined;
       const characterOnlyIds = characterList.filter((c) => c.type === "character").map((c) => c.id);
-      return <UserParticipantCard participant={participant} onEdit={handleEditUserCharacter} onChangeCharacter={handleChangeUserCharacter} characterIds={characterOnlyIds} />;
+      return (
+        <UserParticipantCard
+          participant={participant}
+          onEdit={handleEditUserCharacter}
+          onChangeCharacter={handleChangeUserCharacter}
+          onRemoveCharacter={handleRemoveUserCharacter}
+          characterIds={characterOnlyIds}
+        />
+      );
     }
 
     if (participant.type === "character") {
