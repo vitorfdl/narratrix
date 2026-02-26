@@ -23,6 +23,12 @@ importers:
       '@codemirror/autocomplete':
         specifier: ^6.20.0
         version: 6.20.0
+      '@codemirror/commands':
+        specifier: ^6.10.2
+        version: 6.10.2
+      '@codemirror/lang-javascript':
+        specifier: ^6.2.4
+        version: 6.2.4
       '@codemirror/lang-markdown':
         specifier: ^6.5.0
         version: 6.5.0
@@ -32,6 +38,9 @@ importers:
       '@codemirror/language-data':
         specifier: ^6.5.2
         version: 6.5.2
+      '@codemirror/lint':
+        specifier: ^6.9.4
+        version: 6.9.4
       '@codemirror/state':
         specifier: ^6.5.4
         version: 6.5.4
@@ -188,6 +197,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      eslint-linter-browserify:
+        specifier: ^10.0.2
+        version: 10.0.2
       framer-motion:
         specifier: ^12.34.3
         version: 12.34.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -2410,6 +2422,9 @@ packages:
   escape-string-regexp@5.0.0:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
+
+  eslint-linter-browserify@10.0.2:
+    resolution: {integrity: sha512-xkuniYxjG+4TxQiV/Zg+9DGGWahGK/SmnAGHff1kbbohrbwEl808h8Wom+QzflzYktP35tlZ7HLlGlsUc5g+tA==}
 
   estree-util-is-identifier-name@3.0.0:
     resolution: {integrity: sha512-hFtqIDZTIUZ9BXLb8y4pYGyk6+wekIivNVTcmvk8NoOh+VeRn5y6cEHzbURrWbfp1fIqdVipilzj+lfaadNZmg==}
@@ -5819,6 +5834,8 @@ snapshots:
   escalade@3.2.0: {}
 
   escape-string-regexp@5.0.0: {}
+
+  eslint-linter-browserify@10.0.2: {}
 
   estree-util-is-identifier-name@3.0.0: {}
 

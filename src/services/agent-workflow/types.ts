@@ -1,5 +1,8 @@
-import { AgentNodeType, AgentType } from "@/schema/agent-schema";
-import { PromptFormatterConfig } from "../inference/formatter";
+import type { AgentNodeType, AgentType, TriggerContext } from "@/schema/agent-schema";
+import type { PromptFormatterConfig } from "../inference/formatter";
+
+// Re-export TriggerContext so callers can import from this module
+export type { TriggerContext };
 
 export interface WorkflowExecutionContext {
   agentId: string;

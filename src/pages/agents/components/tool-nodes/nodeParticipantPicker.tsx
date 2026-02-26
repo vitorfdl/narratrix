@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCharacterStore } from "@/hooks/characterStore";
 import { useChatStore } from "@/hooks/chatStore";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { NodeBase, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeOutput, stopNodeEventPropagation, useNodeRef } from "../tool-components/NodeBase";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -227,7 +227,7 @@ const ParticipantPickerContent = memo<{ config: ParticipantPickerConfig; onConfi
       <div className="space-y-2" ref={(el) => registerElementRef?.("out-section", el)}>
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Participant Selection</label>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} title="Configure picker settings">
+          <Button variant="ghost" size="sm" className="nodrag h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} onPointerDown={stopNodeEventPropagation} title="Configure picker settings">
             <Settings className="h-3 w-3" />
           </Button>
         </div>

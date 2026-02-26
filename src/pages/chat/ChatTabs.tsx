@@ -7,7 +7,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator,
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Chat, ChatTab } from "@/schema/chat-schema";
-import { ChatMenuDropdown } from "./components/ChatMenuDropdown";
+import { ChatMenuDropdown } from "./components/ChatMenuPopover";
 
 interface ChatTabsProps {
   tabs: ChatTab[];

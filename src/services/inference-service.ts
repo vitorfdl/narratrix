@@ -4,6 +4,7 @@ import { useCurrentChatActiveChapterID, useCurrentChatId } from "@/hooks/chatSto
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInference } from "@/hooks/useInference";
 import type { ModelSpecs } from "@/schema/inference-engine-schema";
+import { chatEventBus } from "./chat-event-bus";
 import { formatFinalText } from "./inference/formatter/format-response";
 import { removeNestedFields } from "./inference/formatter/remove-nested-fields";
 import { useMessageManager } from "./inference/message-manager";
@@ -82,6 +83,17 @@ export function useInferenceService() {
         streamingManager.resetSessionByRequest(requestId);
         messageSnapshotsRef.current.delete(requestId);
         playBeepSound(currentProfile.settings.chat.beepSound);
+
+        // Emit after_participant_message event so agent triggers can react.
+        // The emitChatEvents flag is stored on the session so the onComplete handler can read it.
+        if (session.chatId && session.characterId !== "generate-input-area" && session.emitChatEvents !== false) {
+          chatEventBus.emit({
+            type: "after_participant_message",
+            chatId: session.chatId,
+            message: finalText,
+            participantId: session.characterId,
+          });
+        }
       }
     },
 
@@ -121,6 +133,7 @@ export function useInferenceService() {
         onStreamingStateChange,
         extraSuggestions = {},
         messageHistoryOverride,
+        emitChatEvents = true,
       } = options;
 
       const chatId = optionsChatId ?? currentChatId;
@@ -139,6 +152,7 @@ export function useInferenceService() {
           characterId,
           messageId: existingMessageId,
           messageIndex,
+          emitChatEvents,
         });
 
         if (onStreamingStateChange) {
@@ -165,6 +179,24 @@ export function useInferenceService() {
 
         if (userMessage && !quietUserMessage) {
           await messageManager.createUserMessage(userMessage);
+          // Emit after_user_message so agents can react to the user's input
+          if (emitChatEvents) {
+            chatEventBus.emit({
+              type: "after_user_message",
+              chatId,
+              message: userMessage,
+              participantId: "user",
+            });
+          }
+        }
+
+        // Emit before_participant_message before inference starts
+        if (emitChatEvents) {
+          chatEventBus.emit({
+            type: "before_participant_message",
+            chatId,
+            participantId: characterId,
+          });
         }
 
         if (existingMessageId) {

@@ -10,7 +10,7 @@ import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
-import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeInput, NodeOutput, stopNodeEventPropagation, useNodeRef } from "../tool-components/NodeBase";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -23,7 +23,7 @@ export interface AgentNodeConfig {
 /**
  * Node Execution
  */
-const executeAgentNode: NodeExecutor = async (node, inputs, _ctx, _agent, deps): Promise<NodeExecutionResult> => {
+const executeAgentNode: NodeExecutor = async (node, inputs, ctx, _agent, deps): Promise<NodeExecutionResult> => {
   const cfg = (node.config as AgentNodeConfig) || {};
 
   let inputPrompt: string = (cfg.inputPrompt as string) || "{{input}}";
@@ -104,6 +104,12 @@ const executeAgentNode: NodeExecutor = async (node, inputs, _ctx, _agent, deps):
     });
     if (typeof result === "string" && result.length > 0) {
       return { success: true, value: result };
+    }
+
+    // null result means inference was cancelled — exit cleanly so the runner
+    // breaks on its isRunning check without treating this as a failure.
+    if (result === null && !ctx.isRunning) {
+      return { success: true };
     }
 
     return { success: false, error: "Agent inference returned no result" };
@@ -293,7 +299,7 @@ const AgentContent = memo<{
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Chat Template</label>
-          <Button variant="ghost" size="sm" onClick={handleConfigButtonClick} className="h-6 w-6 p-0 hover:bg-primary/10">
+          <Button variant="ghost" size="sm" onClick={handleConfigButtonClick} onPointerDown={stopNodeEventPropagation} className="nodrag h-6 w-6 p-0 hover:bg-primary/10">
             <Settings className="h-3 w-3" />
           </Button>
         </div>

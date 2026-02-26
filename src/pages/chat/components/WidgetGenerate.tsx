@@ -4,12 +4,16 @@ import { toast } from "sonner";
 import type { MarkdownEditorRef } from "@/components/markdownRender/markdown-editor";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants } from "@/hooks/chatStore";
+import { useAgents } from "@/hooks/agentStore";
+import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import type { GenerationOptions, StreamingState } from "@/hooks/useChatInference";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
+import { useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
+import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { cn } from "@/lib/utils";
 import { QuickAction } from "@/schema/profiles-schema";
+import { orchestrateGeneration } from "@/services/chat-generation-orchestrator";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import QuickActions from "./utils-generate/QuickActions";
 
@@ -19,23 +23,24 @@ interface WidgetGenerateProps {
 
 const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const inferenceService = useInferenceServiceFromContext();
-  // const { generateQuietly } = useBackgroundInference();
   const [text, setText] = React.useState("");
   const [generationInputHistory, setGenerationInputHistory] = useLocalGenerationInputHistory();
-  // const [autoTranslate, setAutoTranslate] = React.useState(false);
   const [streamingCharacters, setStreamingCharacters] = useState<Record<string, boolean>>({});
+  const [isOrchestrating, setIsOrchestrating] = useState(false);
   const quietResponseRef = useRef<boolean>(false);
   const [inputStreamingText, setInputStreamingText] = useState<string>("");
   const rotationAbortRef = useRef<boolean>(false);
-  // Track history navigation
 
   const currentProfile = useCurrentProfile();
   const currentChatId = useCurrentChatId();
   const sendCommand = currentProfile?.settings.chat.sendShortcut;
   const participants = useCurrentChatParticipants();
   const chatMessages = useCurrentChatMessages();
+  const userCharacterId = useCurrentChatUserCharacterID() ?? null;
+  const agentList = useAgents();
 
   const { addChatMessage } = useChatActions();
+  const { executeWorkflow, cancelWorkflow } = useAgentWorkflow();
 
   // Get enabled participants for message generation
   const enabledParticipants = participants?.filter((p) => p.enabled) || [];
@@ -88,7 +93,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   // Global tab-to-focus handler
   useEffect(() => {
     const handleTabFocus = (e: KeyboardEvent) => {
-      // Only trigger if not inside an input/textarea/select/button
       const active = document.activeElement;
       const isInput = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT" || (active as HTMLElement).isContentEditable);
 
@@ -108,7 +112,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       quietResponseRef.current = true;
       setInputStreamingText(state.accumulatedText);
     } else if (quietResponseRef.current && !state) {
-      // Reset when streaming ends
       quietResponseRef.current = false;
     }
   }, []);
@@ -154,75 +157,80 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       };
 
       rotationAbortRef.current = false;
+      setIsOrchestrating(true);
 
-      for (let i = 0; i < enabledParticipants.length; i++) {
-        if (rotationAbortRef.current) {
-          break;
-        }
+      try {
+        await orchestrateGeneration(submittedText.trim(), {
+          chatId: targetChatId,
+          participants: participants ?? [],
+          agents: agentList,
+          userCharacterId,
+          addUserMessage: async (text) => {
+            await addChatMessage({
+              character_id: null,
+              type: "user",
+              messages: [text],
+              extra: {},
+            });
+          },
+          executeWorkflow,
+          generateMessage: (opts: GenerationOptions) => inferenceService.generateMessage(opts),
+          waitForGenerationToFinish,
+          isAborted: () => rotationAbortRef.current,
+        });
 
-        const participant = enabledParticipants[i];
-        if (!participant?.id) {
-          continue;
-        }
-
-        try {
-          const isFirst = i === 0;
-          const userMsg = isFirst ? structuredClone(submittedText.trim()) : "";
-
-          await inferenceService.generateMessage({
-            chatId: targetChatId,
-            characterId: participant.id,
-            userMessage: userMsg,
-            quietUserMessage: !isFirst,
-            stream: true,
-            onStreamingStateChange: handleStreamingStateChange,
-          });
-
-          if (isFirst && !quietResponseRef.current) {
-            if (!generationInputHistory.length || generationInputHistory.at(-1) !== submittedText) {
-              const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
-              setGenerationInputHistory(newHistory);
-            }
+        if (!rotationAbortRef.current) {
+          if (!generationInputHistory.length || generationInputHistory.at(-1) !== submittedText) {
+            const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
+            setGenerationInputHistory(newHistory);
+          }
+          if (!quietResponseRef.current) {
             setText("");
           }
-
-          await waitForGenerationToFinish();
-
-          if (rotationAbortRef.current) {
-            break;
-          }
-        } catch (error) {
-          toast.error(`${error}`);
-          break;
         }
+      } catch (error) {
+        toast.error(`${error}`);
+      } finally {
+        setIsOrchestrating(false);
       }
     },
-    [enabledParticipants, inferenceService, handleStreamingStateChange, generationInputHistory, setGenerationInputHistory, currentChatId],
+    [enabledParticipants, participants, agentList, userCharacterId, inferenceService, addChatMessage, executeWorkflow, generationInputHistory, setGenerationInputHistory, currentChatId],
   );
 
-  // Function to check if any character is currently streaming
+  // Returns true while the full generation loop is active (agent phases + inference streaming)
   const isAnyCharacterStreaming = useCallback(() => {
     return Object.keys(streamingCharacters).length > 0;
   }, [streamingCharacters]);
 
+  const isGenerating = isOrchestrating || isAnyCharacterStreaming();
+
   const handleCancel = useCallback(async () => {
     try {
       rotationAbortRef.current = true;
+      setIsOrchestrating(false);
+
+      // Cancel any agent workflows that are currently running
+      const agentStates = useAgentWorkflowStore.getState().states;
+      for (const [agentId, state] of Object.entries(agentStates)) {
+        if (state.isRunning) {
+          cancelWorkflow(agentId);
+        }
+      }
+
+      // Cancel inference if active (may not be running during a pure-agent phase)
       const success = await inferenceService.cancelGeneration(currentChatId);
       if (success) {
         setStreamingCharacters({});
         if (quietResponseRef.current) {
           quietResponseRef.current = false;
         }
-        toast.success("Generation cancelled");
-      } else {
-        toast.error("Failed to cancel generation");
       }
+      toast.success("Generation cancelled");
     } catch (error) {
       console.error("Error cancelling generation:", error);
       toast.error("Error cancelling generation");
     }
-  }, [inferenceService, currentChatId]);
+  }, [inferenceService, currentChatId, cancelWorkflow]);
 
   useEffect(() => {
     if (text.length > 0) {
@@ -233,7 +241,6 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const executeQuickAction = async (action: QuickAction, participantId?: string) => {
     const nextCharacter = participantId ? enabledParticipants.find((p) => p.id === participantId) : enabledParticipants[0];
 
-    // Determine if the response should be quiet
     const quietResponse = action.streamOption === "textarea";
 
     const generationConfig: GenerationOptions = {
@@ -255,17 +262,14 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       const participantMessageType = action.participantMessageType;
 
       if (participantMessageType === "swap") {
-        // Generate a new variation of the last character message (like swiping right)
         const lastMessage = chatMessages?.[chatMessages.length - 1];
         if (lastMessage && lastMessage.type === "character") {
           generationConfig.characterId = lastMessage.character_id!;
           generationConfig.existingMessageId = lastMessage.id;
-          // Calculate the next index to generate a new message variation
           const newIndex = lastMessage.messages.length;
           generationConfig.messageIndex = newIndex;
           generationConfig.extraSuggestions!.last_message = lastMessage.messages[lastMessage.message_index];
         } else if (participantId) {
-          // If no previous character message exists but user selected a participant, target that participant
           generationConfig.characterId = participantId;
         }
       }
@@ -305,19 +309,18 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
 
   return (
     <div className="flex h-full flex-col relative">
-      {!isAnyCharacterStreaming() || quietResponseRef.current ? (
+      {!isGenerating || quietResponseRef.current ? (
         <MarkdownTextArea
           ref={markdownRef}
           key={editorKey}
           initialValue={text}
           onChange={(e) => setText(e)}
           editable={true}
-          // editable={!isAnyCharacterStreaming() || quietResponseRef.current}
           placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
           sendShortcut={sendCommand}
           className={cn(
-            "flex-1 h-full overflow-none pb-9", // Add bottom padding to prevent overlap with absolute bar
-            isAnyCharacterStreaming() && "animate-pulse",
+            "flex-1 h-full overflow-none pb-9",
+            isGenerating && "animate-pulse",
           )}
           onSubmit={handleSubmit}
           enableHistory={true}
@@ -332,11 +335,8 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       <div className="absolute bottom-0 left-0 w-full flex items-center gap-2 p-2 bg-background/95 border-t border-border justify-between z-10">
         <div className="flex items-center gap-2 ring-none">
           <QuickActions handleExecuteAction={executeQuickAction} />
-          {/* <Toggle tabIndex={-1} pressed={autoTranslate} onPressedChange={setAutoTranslate} title="Auto Translate" size="xs">
-            <Languages className="!w-3.5 !h-3.5" />
-          </Toggle> */}
         </div>
-        {isAnyCharacterStreaming() ? (
+        {isGenerating ? (
           <Button variant="destructive" size="xs" onClick={handleCancel} title="Cancel Generation" className="ml-auto">
             <LuCircleStop className="!w-3.5 !h-3.5 mr-1" />
             Cancel

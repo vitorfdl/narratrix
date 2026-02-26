@@ -1,16 +1,18 @@
-import { Bot, Search, User, UserRound } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Fragment, ReactNode, useEffect, useState } from "react";
+import { BiSolidZap } from "react-icons/bi";
+import { LuSearch, LuUser } from "react-icons/lu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAgents } from "@/hooks/agentStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
-import { AgentType } from "@/schema/agent-schema";
-import { Character } from "@/schema/characters-schema";
+import { cn } from "@/lib/utils";
+import type { AgentType } from "@/schema/agent-schema";
+import type { Character } from "@/schema/characters-schema";
 import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
 
-// Unified participant type for the popover
 type ParticipantItem = {
   id: string;
   name: string;
@@ -29,17 +31,25 @@ interface AddParticipantPopoverProps {
   title?: string;
 }
 
+const FILTER_TABS = ["all", "characters", "agents"] as const;
+type FilterTab = (typeof FILTER_TABS)[number];
+
+const FILTER_LABELS: Record<FilterTab, string> = {
+  all: "All",
+  characters: "Chars",
+  agents: "Agents",
+};
+
 const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharacter, existingParticipantIds, pickableParticipantIds, title }: AddParticipantPopoverProps) => {
   const characters = useCharacters();
   const agents = useAgents();
   const { urlMap: avatarUrlMap } = useCharacterAvatars();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "characters" | "agents">("all");
+  const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [filteredParticipants, setFilteredParticipants] = useState<ParticipantItem[]>([]);
 
   useEffect(() => {
-    // Convert characters and agents to unified participant items
     const characterItems: ParticipantItem[] = characters.map((character: Character) => ({
       id: character.id,
       name: character.name,
@@ -52,41 +62,19 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
       id: agent.id,
       name: agent.name,
       type: "agent" as const,
-      avatar_path: null, // Agents don't have avatars currently
+      avatar_path: null,
       description: agent.description,
     }));
 
     const allParticipants = sortTemplatesByFavoriteAndName([...characterItems, ...agentItems]);
 
-    // Filter participants based on search term and tab
     const filtered = allParticipants.filter((participant) => {
-      // Filter out already added participants
-      if (existingParticipantIds.includes(participant.id)) {
-        return false;
-      }
-
-      if (pickableParticipantIds && !pickableParticipantIds.includes(participant.id)) {
-        return false;
-      }
-
-      // Filter by search term
-      const nameMatches = participant.name.toLowerCase().includes(searchTerm.toLowerCase());
-      if (!nameMatches) {
-        return false;
-      }
-
-      // Filter by tab selection
-      if (activeTab === "all") {
-        return true;
-      }
-      if (activeTab === "characters") {
-        return participant.type === "character";
-      }
-      if (activeTab === "agents") {
-        return participant.type === "agent";
-      }
-
-      return false;
+      if (existingParticipantIds.includes(participant.id)) { return false; }
+      if (pickableParticipantIds && !pickableParticipantIds.includes(participant.id)) { return false; }
+      if (!participant.name.toLowerCase().includes(searchTerm.toLowerCase())) { return false; }
+      if (activeTab === "characters") { return participant.type === "character"; }
+      if (activeTab === "agents") { return participant.type === "agent"; }
+      return true;
     });
 
     setFilteredParticipants(filtered);
@@ -97,73 +85,67 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
     onOpenChange(false);
   };
 
-  const renderParticipantItem = (participant: ParticipantItem) => {
-    // Get the avatar URL from the cached map for characters or use default
-    const avatarUrl = participant.type === "character" ? avatarUrlMap[participant.id] || participant.avatar_path : null;
-
-    const getIcon = () => {
-      if (participant.type === "agent") {
-        return <Bot size={16} className="text-primary" />;
-      }
-      return <User size={16} className="text-muted-foreground" />;
-    };
-
-    return (
-      <div key={participant.id} className="flex items-center gap-1.5 hover:bg-accent/30 rounded-md cursor-pointer py-1 px-2" onClick={() => handleSelect(participant)}>
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={participant.name} className="w-6 h-6 rounded-full object-cover" />
-        ) : (
-          <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xs">{getIcon()}</div>
-        )}
-        <div className="flex flex-col min-w-0">
-          <span className="text-xs font-medium truncate">{participant.name}</span>
-          <span className="text-[10px] text-muted-foreground capitalize">{participant.type}</span>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <Popover open={isOpen} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-64 p-2 rounded-md bg-muted" align="end" side="top" sideOffset={10}>
-        <div className="flex items-center gap-2 mb-2">
-          <UserRound size={14} className="text-primary" />
-          <h4 className="text-sm font-medium">{title || "Add Participant"}</h4>
-          <div className="text-xs text-muted-foreground ml-auto">{filteredParticipants.length} available</div>
-        </div>
-
-        <Separator className="my-2 relative" />
-
-        <div className="relative mb-1">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 z-10 text-muted-foreground pointer-events-none" />
-          <Input placeholder="Search participants..." className="pl-7 text-xs" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} autoFocus />
-        </div>
-
-        <Tabs defaultValue="all" value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "characters" | "agents")}>
-          <TabsList className="grid grid-cols-3 mb-2 h-7">
-            <TabsTrigger value="all" className="text-xs">
-              All
-            </TabsTrigger>
-            <TabsTrigger value="characters" className="text-xs">
-              Characters
-            </TabsTrigger>
-            <TabsTrigger value="agents" className="text-xs">
-              Agents
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-0.5">
-            {filteredParticipants.length > 0 ? (
-              filteredParticipants.map(renderParticipantItem)
-            ) : (
-              <div className="text-center py-1 text-muted-foreground text-sm">
-                No participants found
-                <div className="text-xs text-muted-foreground/70">Try a different search term</div>
-              </div>
-            )}
+      <PopoverContent className="p-0 w-[300px]" align="end" side="top" sideOffset={10}>
+        <Command className="rounded-lg border shadow-lg bg-accent">
+          {/* Search + filter row */}
+          <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
+            <LuSearch className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+            <input
+              autoFocus
+              placeholder={title ? `Search ${title.toLowerCase()}...` : "Search participants..."}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-transparent border-none outline-none focus:ring-0 text-xs h-6 flex-1 min-w-0 placeholder:text-muted-foreground/50"
+            />
+            <div className="flex items-center shrink-0 rounded-md bg-muted/50 p-0.5 gap-0.5">
+              {FILTER_TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={cn("px-1.5 py-0.5 rounded text-[11px] transition-colors", activeTab === tab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+                >
+                  {FILTER_LABELS[tab]}
+                </button>
+              ))}
+            </div>
           </div>
-        </Tabs>
+
+          {/* Participant list */}
+          <CommandList>
+            <ScrollArea className="h-[260px]">
+              {filteredParticipants.length > 0 ? (
+                <CommandGroup className="p-1">
+                  {filteredParticipants.map((participant) => {
+                    const avatarUrl = participant.type === "character" ? avatarUrlMap[participant.id] || participant.avatar_path : null;
+                    return (
+                      <Fragment key={participant.id}>
+                        <CommandItem value={`${participant.id}-${participant.name}`} className="flex items-center gap-2.5 px-2 py-1.5 cursor-pointer rounded-md" onSelect={() => handleSelect(participant)}>
+                          <Avatar className="w-6 h-6 shrink-0 rounded-full">
+                            {avatarUrl ? <AvatarImage className="object-cover" src={avatarUrl} alt={participant.name} /> : null}
+                            <AvatarFallback className="text-[10px] bg-muted font-medium flex items-center justify-center">
+                              {participant.type === "agent" ? <BiSolidZap size={12} className="text-primary" /> : <LuUser className="h-3 w-3 text-muted-foreground" />}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                            <span className="text-xs font-bold truncate leading-tight">{participant.name}</span>
+                            <span className="text-[11px] text-muted-foreground/50 shrink-0 capitalize">· {participant.type}</span>
+                          </div>
+                        </CommandItem>
+                        <Separator className="bg-foreground/10" />
+                      </Fragment>
+                    );
+                  })}
+                </CommandGroup>
+              ) : (
+                <div className="p-6 text-center text-xs text-muted-foreground">{searchTerm ? "No participants found" : "No participants available"}</div>
+              )}
+            </ScrollArea>
+          </CommandList>
+        </Command>
       </PopoverContent>
     </Popover>
   );

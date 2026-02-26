@@ -8,8 +8,32 @@ export function mapHandleToInputName(handle: string): string {
     response: "response",
     "in-character": "characterId",
     "in-toolset": "toolset",
+    // Trigger node outputs
+    "out-participant": "participantId",
   };
   return mapping[handle] || handle;
+}
+
+/**
+ * Maps a source handle ID to a human-readable camelCase key for use in the
+ * JavaScript node's `input` object. This is intentionally separate from
+ * `mapHandleToInputName` (which maps target handles) so other nodes are unaffected.
+ */
+export function mapSourceHandleToReadableName(sourceHandle: string): string {
+  const mapping: Record<string, string> = {
+    "out-messages": "chatHistory",
+    "out-chat-id": "chatId",
+    "out-participant": "participantId",
+    "out-string": "text",
+    "out-toolset": "toolset",
+    "out-text": "text",
+  };
+  if (mapping[sourceHandle]) {
+    return mapping[sourceHandle];
+  }
+  // Fallback: strip "out-" prefix and camelCase the rest
+  const stripped = sourceHandle.replace(/^out-/, "");
+  return stripped.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
 }
 
 export function getNodeInputs(node: AgentNodeType, edges: AgentEdgeType[], contextValues: Map<string, any>): Record<string, any> {

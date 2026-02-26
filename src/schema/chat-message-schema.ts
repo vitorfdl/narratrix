@@ -50,6 +50,7 @@ export type ChatMessageType = z.infer<typeof ChatMessageTypeSchema>;
 
 const extraSchema = z.object({
   script: z.enum(["agent", "summary", "start_chapter"]).optional(),
+  name: z.string().optional(),
   startPosition: z.number().int().optional(),
   endPosition: z.number().int().optional(),
 });

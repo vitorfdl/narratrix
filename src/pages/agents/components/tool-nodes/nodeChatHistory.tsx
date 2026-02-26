@@ -9,17 +9,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useChatStore } from "@/hooks/chatStore";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeInput, NodeOutput, stopNodeEventPropagation, useNodeRef } from "../tool-components/NodeBase";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 /**
  * Node Execution
  */
-const executeChatHistoryNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
+const executeChatHistoryNode: NodeExecutor = async (node, inputs): Promise<NodeExecutionResult> => {
   try {
     const { selectedChatMessages } = useChatStore.getState();
     let history = Array.isArray(selectedChatMessages) ? selectedChatMessages : [];
+
+    const config: ChatHistoryNodeConfig = {
+      name: "Chat History Node",
+      depth: 10,
+      messageType: "all",
+      ...(node.config as Partial<ChatHistoryNodeConfig>),
+    };
 
     // Optional participant filter: if inputs.characterId or inputs.participantId is provided
     const participantId: string | undefined = (inputs.characterId as string) || (inputs.participantId as string);
@@ -29,6 +36,18 @@ const executeChatHistoryNode: NodeExecutor = async (_node, inputs): Promise<Node
       } else {
         history = history.filter((m) => m.character_id === participantId);
       }
+    }
+
+    // Apply messageType filter from config
+    if (config.messageType !== "all") {
+      // ChatMessageType uses "character" for AI/assistant messages
+      const targetType = config.messageType === "assistant" ? "character" : config.messageType;
+      history = history.filter((m) => m.type === targetType);
+    }
+
+    // Apply depth: take the last N messages
+    if (config.depth > 0) {
+      history = history.slice(-config.depth);
     }
 
     return { success: true, value: history };
@@ -226,7 +245,7 @@ const ChatHistoryContent = memo<{ config: ChatHistoryNodeConfig; onConfigure: ()
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Configuration</label>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} title="Configure chat history settings">
+          <Button variant="ghost" size="sm" className="nodrag h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} onPointerDown={stopNodeEventPropagation} title="Configure chat history settings">
             <Settings className="h-3 w-3" />
           </Button>
         </div>

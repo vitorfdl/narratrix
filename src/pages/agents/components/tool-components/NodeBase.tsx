@@ -77,6 +77,13 @@ export const useNodeDelete = () => {
   return useContext(NodeDeleteContext);
 };
 
+// Stops pointer events from bubbling to ReactFlow's node selection/drag handlers.
+// Use on interactive elements (buttons, inputs) inside nodes so that clicking them
+// does not cause ReactFlow to select/deselect the node before the click fires.
+export const stopNodeEventPropagation = (e: React.PointerEvent | React.MouseEvent) => {
+  e.stopPropagation();
+};
+
 // Provider for node deletion
 export const NodeDeleteProvider: React.FC<{
   onDelete: (nodeId: string) => void;
@@ -85,7 +92,7 @@ export const NodeDeleteProvider: React.FC<{
   return <NodeDeleteContext.Provider value={onDelete}>{children}</NodeDeleteContext.Provider>;
 };
 
-export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, selected, children, onRegisterRef }) => {
+export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, children, onRegisterRef }) => {
   const { getNode, getEdges, getNodes } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const [isHovered, setIsHovered] = useState(false);
@@ -103,7 +110,9 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, selected, children, 
     return null;
   }
 
-  const { label: title, icon, deletable = true, inputs = [], outputs = [] } = nodeMetadata;
+  const { label: title, icon, deletable = true, inputs = [] } = nodeMetadata;
+  // Allow nodes to override outputs at runtime via data.dynamicOutputs (e.g. Trigger node)
+  const outputs = (data.dynamicOutputs as NodeOutput[] | undefined) ?? nodeMetadata.outputs ?? [];
 
   // Register element refs
   const registerElementRef = useCallback(
@@ -378,7 +387,8 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, selected, children, 
               variant="ghost"
               size="sm"
               onClick={handleDelete}
-              className={cn("h-6 w-6 p-0 hover:bg-destructive/10 transition-opacity duration-200", isHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}
+              onPointerDown={stopNodeEventPropagation}
+              className={cn("nodrag h-6 w-6 p-0 hover:bg-destructive/10 transition-opacity duration-200", isHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}
             >
               <Trash2 className="h-2 w-2 text-destructive" />
             </Button>

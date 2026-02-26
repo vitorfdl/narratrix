@@ -41,9 +41,10 @@ function buildUtils(): JavascriptRunnerUtils {
 
 /**
  * Execute arbitrary javascript code in a constrained async function scope.
- * The runner exposes only the provided arguments: input, args, stores, utils.
+ * The runner exposes `input` (the data from connected nodes), `stores`, and `utils`.
+ * `args` is kept as a deprecated alias for `input` for backward compatibility.
  */
-export async function runJavascript(code: string, args?: unknown): Promise<unknown> {
+export async function runJavascript(code: string, input?: unknown): Promise<unknown> {
   const stores = buildStores();
   const utils = buildUtils();
 
@@ -53,5 +54,5 @@ export async function runJavascript(code: string, args?: unknown): Promise<unkno
 
   const fn = new AsyncFunction("input", "args", "stores", "utils", `"use strict";\n${code}`);
 
-  return await fn(args, args, stores, utils);
+  return await fn(input, input, stores, utils);
 }

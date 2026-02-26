@@ -25,8 +25,9 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
     {} as Record<string, number>,
   );
 
-  // Get run trigger type
-  const runTrigger = agent.settings?.run_on?.type || "manual";
+  // Get run trigger type — prefer trigger node config over legacy settings
+  const triggerNodeConfig = agent.nodes?.find((n) => n.type === "trigger")?.config as { triggerType?: string } | undefined;
+  const runTrigger = triggerNodeConfig?.triggerType ?? agent.settings?.run_on?.type ?? "manual";
 
   return (
     <Card
@@ -47,9 +48,9 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
 
           <div className="flex items-center gap-2">
             {/* Run trigger badge */}
-            <Badge variant={runTrigger === "every_message" ? "default" : "secondary"} className="text-xxs flex items-center text-primary-foreground">
+            <Badge variant={runTrigger !== "manual" ? "default" : "secondary"} className="text-xxs flex items-center text-primary-foreground">
               <LuZap className="h-3 w-3 mr-1" />
-              {runTrigger === "every_message" ? "Auto" : "Manual"}
+              {runTrigger !== "manual" ? "Auto" : "Manual"}
             </Badge>
 
             {/* Favorite button */}

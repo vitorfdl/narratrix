@@ -6,7 +6,8 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
+import type { NodeExecutor } from "@/services/agent-workflow/types";
+import { NodeBase, NodeOutput, stopNodeEventPropagation } from "../tool-components/NodeBase";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -147,7 +148,7 @@ const TextContent = memo<{ config: TextNodeConfig; onConfigure: () => void }>(({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium">Content</label>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} title="Configure text content">
+          <Button variant="ghost" size="sm" className="nodrag h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} onPointerDown={stopNodeEventPropagation} title="Configure text content">
             <Settings className="h-3 w-3" />
           </Button>
         </div>
@@ -198,9 +199,16 @@ export const TextNode = memo(({ id, data, selected }: NodeProps) => {
 
 TextNode.displayName = "TextNode";
 
+const textNodeExecutor: NodeExecutor = async (node) => {
+  const config = node.config as TextNodeConfig | undefined;
+  const content = config?.content ?? "";
+  return { success: true, value: content };
+};
+
 // Register the node
 NodeRegistry.register({
   metadata: TEXT_NODE_METADATA,
   component: TextNode,
   configProvider: TextNodeConfigProvider,
+  executor: textNodeExecutor,
 });

@@ -2,12 +2,20 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { NodeRegistry } from "./node-registry";
-import { NodePickerProps } from "./types";
+import type { NodePickerProps } from "./types";
+
+/** Node types that may only appear once per workflow */
+const SINGLETON_NODE_TYPES = new Set(["trigger"]);
 
 // Node picker component for selecting node types when creating new nodes
-export const NodePicker: React.FC<NodePickerProps> = ({ position, onSelect, onCancel }) => {
-  // Get node options from registry
-  const nodeOptions = NodeRegistry.getNodeOptions();
+export const NodePicker: React.FC<NodePickerProps> = ({ position, onSelect, onCancel, existingNodeTypes }) => {
+  // Get node options from registry, filtering out already-placed singleton nodes
+  const nodeOptions = NodeRegistry.getNodeOptions().filter((option) => {
+    if (SINGLETON_NODE_TYPES.has(option.value) && existingNodeTypes?.has(option.value)) {
+      return false;
+    }
+    return true;
+  });
 
   const comboboxItems = nodeOptions.map((option) => ({
     label: option.label,

@@ -1,4 +1,4 @@
-import { useReactFlow } from "@xyflow/react";
+import { useNodes, useReactFlow } from "@xyflow/react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,14 +28,19 @@ interface CategoryGroup {
 
 export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd }) => {
   const { screenToFlowPosition, addNodes } = useReactFlow();
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(["Inference", "Chat"]));
+  const currentNodes = useNodes();
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(["Trigger", "Chat", "Inference"]));
+
+  // Track which singleton node types are already placed (only one allowed per workflow)
+  const singletonNodeTypes = useMemo(() => new Set(["trigger"]), []);
+  const placedNodeTypes = useMemo(() => new Set(currentNodes.map((n) => n.type).filter(Boolean) as string[]), [currentNodes]);
 
   // Get all node options grouped by category
   const categorizedNodes = useMemo(() => {
     const nodeOptions = NodeRegistry.getNodeOptions();
     const categories = new Map<string, NodeOption[]>();
 
-    nodeOptions.forEach((option) => {
+    for (const option of nodeOptions) {
       const category = option.category || "Other";
       if (!categories.has(category)) {
         categories.set(category, []);
@@ -47,7 +52,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
         icon: option.icon,
         category,
       });
-    });
+    }
 
     // Convert to array and sort categories
     const sortedCategories: CategoryGroup[] = Array.from(categories.entries())
@@ -56,8 +61,8 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
         nodes: nodes.sort((a, b) => a.label.localeCompare(b.label)),
       }))
       .sort((a, b) => {
-        // Prioritize certain categories
-        const priority = ["Chat", "Text Inference", "Code Runner"];
+        // Prioritize certain categories — Trigger always comes first
+        const priority = ["Trigger", "Chat", "Text Inference", "Code Runner"];
         const aIndex = priority.indexOf(a.category);
         const bIndex = priority.indexOf(b.category);
 
@@ -93,6 +98,11 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
   // Handle node click to add to canvas
   const handleNodeClick = useCallback(
     (nodeType: string) => {
+      // Prevent adding a second singleton node (e.g. trigger)
+      if (singletonNodeTypes.has(nodeType) && placedNodeTypes.has(nodeType)) {
+        return;
+      }
+
       // Create node at center of viewport
       const centerPosition = screenToFlowPosition({
         x: window.innerWidth / 2,
@@ -115,7 +125,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
       addNodes([newNode]);
       onNodeAdd?.(nodeType);
     },
-    [screenToFlowPosition, addNodes, onNodeAdd],
+    [screenToFlowPosition, addNodes, onNodeAdd, singletonNodeTypes, placedNodeTypes],
   );
 
   return (
@@ -146,17 +156,17 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
                   <div className="ml-2 space-y-0.5">
                     {nodes.map((node) => {
                       const Icon = node.icon;
+                      const isDisabled = singletonNodeTypes.has(node.type) && placedNodeTypes.has(node.type);
 
                       return (
                         <div
                           key={node.type}
-                          onClick={() => handleNodeClick(node.type)}
+                          onClick={() => !isDisabled && handleNodeClick(node.type)}
                           className={cn(
-                            "group flex items-center gap-2 px-1 py-0.5 rounded-md cursor-pointer",
-                            "hover:bg-accent/70 transition-colors border border-transparent",
-                            "hover:border-border/50",
+                            "group flex items-center gap-2 px-1 py-0.5 rounded-md transition-colors border border-transparent",
+                            isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-accent/70 hover:border-border/50",
                           )}
-                          title={node.description}
+                          title={isDisabled ? "Only one Trigger node allowed per workflow" : node.description}
                         >
                           {/* Node Icon */}
                           <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
@@ -166,22 +176,23 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
                           {/* Node Info */}
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-medium text-foreground truncate">{node.label}</div>
-                            {/* {node.description && <div className="text-xs text-muted-foreground truncate">{node.description}</div>} */}
                           </div>
 
-                          {/* Add Button (visible on hover) */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 flex-shrink-0 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNodeClick(node.type);
-                            }}
-                            title="Add node to canvas"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
+                          {/* Add Button (visible on hover, hidden when disabled) */}
+                          {!isDisabled && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 flex-shrink-0 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNodeClick(node.type);
+                              }}
+                              title="Add node to canvas"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       );
                     })}

@@ -12,7 +12,7 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-const executeChatOutputNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
+const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, agent): Promise<NodeExecutionResult> => {
   if (inputs.characterId && typeof inputs.characterId !== "string") {
     return { success: false, error: "Character ID must be a string" };
   }
@@ -42,7 +42,7 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs): Promise<NodeE
       position,
       disabled: false,
       tokens: null,
-      extra: { script: "agent" },
+      extra: { script: "agent", name: agent.name },
     });
 
     return { success: true, value: response };

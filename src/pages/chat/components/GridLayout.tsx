@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { type Layout, type LayoutItem, Responsive, useContainerWidth } from "react-grid-layout";
 import { absoluteStrategy, verticalCompactor } from "react-grid-layout/core";
 // Import the grid layout CSS
+import { useAgentTriggerManager } from "@/hooks/useAgentTriggerManager";
 import { GridPosition } from "@/schema/grid";
 import { useLocalGridLayout } from "@/utils/local-storage";
 import { renderWidget, WidgetId, widgetTitles } from "../hooks/registry";
@@ -22,6 +23,9 @@ const COLUMNS = {
  * I Think I overcomplicated the layout logic. =D
  */
 export const GridLayout: React.FC<{ tabId: string; onToggleInspector: () => void }> = ({ tabId, onToggleInspector }) => {
+  // Mount the agent trigger manager so automatic agent triggers fire for this chat
+  useAgentTriggerManager(tabId);
+
   const [positions, setPositions] = useLocalGridLayout();
   const [layoutReady, setLayoutReady] = useState(false);
   const [currentBreakpoint, setCurrentBreakpoint] = useState<keyof typeof COLUMNS>("lg");

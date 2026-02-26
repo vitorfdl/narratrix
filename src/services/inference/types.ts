@@ -19,6 +19,11 @@ export interface StreamingState {
    */
   formatTemplate: FormatTemplate | null;
   chunkBuffer: string;
+  /**
+   * When false, chatEventBus emissions are suppressed for this session.
+   * Set by the orchestrator to prevent double-firing agent triggers.
+   */
+  emitChatEvents?: boolean;
 }
 
 /**
@@ -58,6 +63,13 @@ export interface GenerationOptions {
   existingMessageId?: string; // Existing Message ID
   messageIndex?: number; // Message Index
   extraSuggestions?: Record<string, any>; // Extra suggestions
+
+  /**
+   * When false, suppresses all chatEventBus emissions from this call.
+   * Used by the orchestrator to prevent double-firing agent triggers.
+   * Defaults to true (events emitted normally).
+   */
+  emitChatEvents?: boolean;
 }
 
 export const DEFAULT_THINKING_CONFIG = {

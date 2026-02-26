@@ -10,6 +10,7 @@ import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import type { ChatMessage } from "@/services/chat-message-service";
 import { updateChatMessagesUsingFilter } from "@/services/chat-message-service";
+import { chatEventBus } from "@/services/chat-event-bus";
 import MessageItem from "./message-controls/MessageItem";
 import MidMessageLayerWrapper from "./message-controls/MidMessageLayerWrapper";
 import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
@@ -121,6 +122,14 @@ const WidgetMessages: React.FC = () => {
           });
         }
 
+        // Emit before_participant_message so agents with "before_character_message" / "before_any_message"
+        // triggers can react to the regeneration. The trigger manager handles execution.
+        chatEventBus.emit({
+          type: "before_participant_message",
+          chatId: currentChatId,
+          participantId: message.character_id,
+        });
+
         await inferenceService.regenerateMessage(messageId, {
           chatId: currentChatId,
           characterId: message.character_id,
@@ -131,6 +140,7 @@ const WidgetMessages: React.FC = () => {
             }
           },
         });
+        // after_participant_message is emitted by inference-service.ts onComplete (emitChatEvents defaults to true for regenerate)
       } catch (error) {
         console.error("Failed to regenerate message:", error);
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");

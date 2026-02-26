@@ -81,19 +81,17 @@ const ScriptIndicator = ({ script }: { script: keyof typeof SCRIPT_CONFIGS }) =>
   );
 };
 
-const ScriptHeader = ({ script, createdAt, messageType }: { script: keyof typeof SCRIPT_CONFIGS; createdAt: Date | string; messageType: string }) => {
+const ScriptHeader = ({ script, createdAt, messageType, name }: { script: keyof typeof SCRIPT_CONFIGS; createdAt: Date | string; messageType: string; name?: string }) => {
   const config = SCRIPT_CONFIGS[script];
   const Icon = config.icon;
+  const label = script === "agent" && name ? name : config.label;
   return (
     <div className={MESSAGE_BASE_CLASSES.scriptHeader}>
       <div className="flex items-center gap-2">
         <div className={cn("p-1.5 rounded-md border", config.className)}>
           <Icon className={cn("h-4 w-4", config.iconClassName)} />
         </div>
-        <div>
-          <div className="font-semibold text-sm">{config.label}</div>
-          <div className="text-xs text-muted-foreground">{config.description}</div>
-        </div>
+        <span className="font-semibold text-sm">{label}</span>
       </div>
       {messageType === "system" && (
         <div className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
@@ -270,7 +268,7 @@ const MessageItem = ({
 
             {message.extra?.script &&
               (message.type === "system" ? (
-                <ScriptHeader script={message.extra.script} createdAt={message.created_at} messageType={message.type} />
+                <ScriptHeader script={message.extra.script} createdAt={message.created_at} messageType={message.type} name={message.extra.name ?? undefined} />
               ) : (
                 <div className={cn("flex mb-3", message.type === "user" ? "justify-end" : "justify-start")}>
                   <ScriptIndicator script={message.extra.script} />

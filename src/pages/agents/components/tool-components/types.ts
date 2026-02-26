@@ -23,4 +23,6 @@ export interface NodePickerProps {
   position: XYPosition;
   onSelect: (type: string) => void;
   onCancel: () => void;
+  /** Node types already present in the graph (used to filter out singletons) */
+  existingNodeTypes?: Set<string>;
 }
