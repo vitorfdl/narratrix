@@ -2,11 +2,11 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useAgents } from "@/hooks/agentStore";
 import { useChatStore } from "@/hooks/chatStore";
-import { getAgentTriggerConfig } from "@/services/chat-generation-orchestrator";
 import type { AgentTriggerType, TriggerContext } from "@/schema/agent-schema";
 import { isWorkflowRunning } from "@/services/agent-workflow/runner";
 import type { ChatEvent } from "@/services/chat-event-bus";
 import { chatEventBus } from "@/services/chat-event-bus";
+import { getAgentTriggerConfig } from "@/services/chat-generation-orchestrator";
 import { useAgentWorkflow } from "./useAgentWorkflow";
 
 /**

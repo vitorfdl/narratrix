@@ -69,11 +69,21 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
     const allParticipants = sortTemplatesByFavoriteAndName([...characterItems, ...agentItems]);
 
     const filtered = allParticipants.filter((participant) => {
-      if (existingParticipantIds.includes(participant.id)) { return false; }
-      if (pickableParticipantIds && !pickableParticipantIds.includes(participant.id)) { return false; }
-      if (!participant.name.toLowerCase().includes(searchTerm.toLowerCase())) { return false; }
-      if (activeTab === "characters") { return participant.type === "character"; }
-      if (activeTab === "agents") { return participant.type === "agent"; }
+      if (existingParticipantIds.includes(participant.id)) {
+        return false;
+      }
+      if (pickableParticipantIds && !pickableParticipantIds.includes(participant.id)) {
+        return false;
+      }
+      if (!participant.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      if (activeTab === "characters") {
+        return participant.type === "character";
+      }
+      if (activeTab === "agents") {
+        return participant.type === "agent";
+      }
       return true;
     });
 
@@ -123,7 +133,11 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
                     const avatarUrl = participant.type === "character" ? avatarUrlMap[participant.id] || participant.avatar_path : null;
                     return (
                       <Fragment key={participant.id}>
-                        <CommandItem value={`${participant.id}-${participant.name}`} className="flex items-center gap-2.5 px-2 py-1.5 cursor-pointer rounded-md" onSelect={() => handleSelect(participant)}>
+                        <CommandItem
+                          value={`${participant.id}-${participant.name}`}
+                          className="flex items-center gap-2.5 px-2 py-1.5 cursor-pointer rounded-md"
+                          onSelect={() => handleSelect(participant)}
+                        >
                           <Avatar className="w-6 h-6 shrink-0 rounded-full">
                             {avatarUrl ? <AvatarImage className="object-cover" src={avatarUrl} alt={participant.name} /> : null}
                             <AvatarFallback className="text-[10px] bg-muted font-medium flex items-center justify-center">

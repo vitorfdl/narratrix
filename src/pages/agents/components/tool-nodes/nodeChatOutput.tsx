@@ -1,11 +1,12 @@
 import { useStore } from "@xyflow/react";
-import { Bot, MessageCircle } from "lucide-react";
+import { Bot, MessageCircle, User } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useChatStore } from "@/hooks/chatStore";
 import { ChatMessageType } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { getNextMessagePosition } from "@/services/chat-message-service";
-import { NodeBase, NodeInput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeInput } from "../tool-components/NodeBase";
+import { NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -85,40 +86,30 @@ namespace ChatOutputNodeConfigProvider {
  * Memoized content component to prevent unnecessary re-renders
  */
 const ChatOutputContent = memo<{ nodeId: string }>(({ nodeId }) => {
-  const registerElementRef = useNodeRef();
-
-  // Subscribe to edges from React Flow store to get real-time updates
   const edges = useStore((state) => state.edges);
-
-  // Count connected tool edges
-  const isResponseConnected = useMemo(() => {
-    return edges.filter((edge) => edge.target === nodeId && edge.targetHandle === "response").length;
-  }, [edges, nodeId]);
-  // Participant handle visibility only; no preview needed here
+  const isResponseConnected = useMemo(() => edges.filter((edge) => edge.target === nodeId && edge.targetHandle === "response").length > 0, [edges, nodeId]);
 
   return (
-    <div className="space-y-4 w-full">
-      {/* Participant Section - This aligns with the "in-character" input handle */}
-      <div ref={(el) => registerElementRef?.("participant-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Participant (optional)</label>
-      </div>
-
-      {/* Response Preview Section - This aligns with the "response" input handle */}
-      <div ref={(el) => registerElementRef?.("response-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Message</label>
-        <div className="p-3 bg-muted/50 rounded-md border-l-2 border-green-400 dark:border-green-500 max-h-32 overflow-y-auto">
-          {!isResponseConnected ? (
-            <div className="flex items-start gap-2">
-              <div className="text-xs  text-muted-foreground whitespace-pre-wrap">Chat Output Configuration will display here</div>
-            </div>
+    <div className="space-y-3 w-full">
+      <NodeField
+        label="Participant"
+        icon={User}
+        optional
+        refId="participant-section"
+        helpText="The character who 'says' this message. Connect a Participant Picker or Trigger output. Leave unconnected to post as system."
+      />
+      <NodeField label="Message" icon={MessageCircle} refId="response-section">
+        <NodeConfigPreview variant="badge">
+          {isResponseConnected ? (
+            <>
+              <Bot className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground italic">Receiving input...</span>
+            </>
           ) : (
-            <div className="flex items-start gap-2">
-              <Bot className="h-3 w-3 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-              <span className="text-xs text-muted-foreground italic">Receiving Input...</span>
-            </div>
+            <span className="text-xs text-muted-foreground">Connect a response source</span>
           )}
-        </div>
-      </div>
+        </NodeConfigPreview>
+      </NodeField>
     </div>
   );
 });

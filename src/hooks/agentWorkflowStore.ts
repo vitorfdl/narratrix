@@ -25,8 +25,7 @@ interface AgentWorkflowStoreState {
 
 export const useAgentWorkflowStore = create<AgentWorkflowStoreState>((set) => ({
   states: {},
-  setAgentState: (agentId, state) =>
-    set((prev) => ({ states: { ...prev.states, [agentId]: state } })),
+  setAgentState: (agentId, state) => set((prev) => ({ states: { ...prev.states, [agentId]: state } })),
   clearAgentState: (agentId) =>
     set((prev) => {
       const next = { ...prev.states };
@@ -36,9 +35,7 @@ export const useAgentWorkflowStore = create<AgentWorkflowStoreState>((set) => ({
 }));
 
 /** Returns the workflow state for a specific agent (defaults to idle). */
-export const useAgentWorkflowStateById = (agentId: string): AgentWorkflowState =>
-  useAgentWorkflowStore((state) => state.states[agentId] ?? DEFAULT_STATE);
+export const useAgentWorkflowStateById = (agentId: string): AgentWorkflowState => useAgentWorkflowStore((state) => state.states[agentId] ?? DEFAULT_STATE);
 
 /** Returns true if ANY agent workflow is currently running. */
-export const useIsAnyAgentRunning = (): boolean =>
-  useAgentWorkflowStore((state) => Object.values(state.states).some((s) => s.isRunning));
+export const useIsAnyAgentRunning = (): boolean => useAgentWorkflowStore((state) => Object.values(state.states).some((s) => s.isRunning));

@@ -35,7 +35,17 @@ export const agentEdgeSchema = z.object({
 /**
  * Trigger type enum for agent run conditions
  */
-export const agentTriggerTypeEnum = z.enum(["manual", "after_user_message", "before_user_message", "after_character_message", "before_character_message", "after_any_message", "before_any_message", "after_all_participants", "every_x_messages"]);
+export const agentTriggerTypeEnum = z.enum([
+  "manual",
+  "after_user_message",
+  "before_user_message",
+  "after_character_message",
+  "before_character_message",
+  "after_any_message",
+  "before_any_message",
+  "after_all_participants",
+  "every_x_messages",
+]);
 
 /**
  * Agent Settings Schema

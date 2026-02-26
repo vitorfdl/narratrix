@@ -18,11 +18,11 @@
  * - Agents never inadvertently trigger other agents (emitChatEvents: false passed to generateMessage)
  */
 
-import type { ChatParticipant } from "@/schema/chat-schema";
+import type { TriggerNodeConfig } from "@/pages/agents/components/tool-nodes/nodeTrigger";
 import type { AgentTriggerType, AgentType, TriggerContext } from "@/schema/agent-schema";
+import type { ChatParticipant } from "@/schema/chat-schema";
 import type { NodeExecutionResult } from "@/services/agent-workflow/types";
 import type { GenerationOptions } from "@/services/inference/types";
-import type { TriggerNodeConfig } from "@/pages/agents/components/tool-nodes/nodeTrigger";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -135,8 +135,7 @@ export async function orchestrateGeneration(userText: string, deps: Orchestratio
       return null;
     });
 
-  const runTriggers = (types: AgentTriggerType[], participantId?: string) =>
-    runAgentsForTriggers(types, agentConfigs, { ...baseCtx, participantId }, { executeWorkflow: safeExec, isAborted });
+  const runTriggers = (types: AgentTriggerType[], participantId?: string) => runAgentsForTriggers(types, agentConfigs, { ...baseCtx, participantId }, { executeWorkflow: safeExec, isAborted });
 
   // ── 1. Before user message agents ─────────────────────────────────────────
   if (!isAborted()) {

@@ -1,5 +1,5 @@
 import { useReactFlow } from "@xyflow/react";
-import { Settings } from "lucide-react";
+import { Settings, Users } from "lucide-react";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCharacterStore } from "@/hooks/characterStore";
 import { useChatStore } from "@/hooks/chatStore";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { NodeBase, NodeOutput, stopNodeEventPropagation, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -196,45 +197,31 @@ const ParticipantPickerConfigDialog: React.FC<ParticipantPickerConfigDialogProps
 };
 
 const ParticipantPickerContent = memo<{ config: ParticipantPickerConfig; onConfigure: () => void }>(({ config, onConfigure }) => {
-  const registerElementRef = useNodeRef();
-
-  const handleConfigureClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigure();
-    },
-    [onConfigure],
-  );
-
   const renderMode = (mode: ParticipantPickerMode) => {
     switch (mode) {
       case "user":
         return "Pick User";
       case "lastMessageCharacter":
-        return "Pick Last Character from message";
+        return "Last Character (from message)";
       case "prevCharacter":
-        return "Pick Last character (before agent)";
+        return "Previous Character (before agent)";
       case "nextCharacter":
-        return "Pick Next character (after agent)";
+        return "Next Character (after agent)";
       default:
         return "Pick User";
     }
   };
 
   return (
-    <div className="space-y-4 w-full">
-      <div className="space-y-2" ref={(el) => registerElementRef?.("out-section", el)}>
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Participant Selection</label>
-          <Button variant="ghost" size="sm" className="nodrag h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} onPointerDown={stopNodeEventPropagation} title="Configure picker settings">
-            <Settings className="h-3 w-3" />
-          </Button>
-        </div>
-        <div className="p-2 bg-muted/50 rounded-md border-l-2 border-indigo-400 dark:border-indigo-500">
-          <span className="text-xxs text-muted-foreground">{renderMode(config.mode)}</span>
-        </div>
-      </div>
+    <div className="space-y-3 w-full">
+      <NodeField
+        label="Selection Mode"
+        icon={Users}
+        action={<NodeConfigButton onClick={onConfigure} title="Configure picker settings" />}
+        helpText="Determines which participant's ID is output from this node."
+      >
+        <NodeConfigPreview variant="text">{renderMode(config.mode)}</NodeConfigPreview>
+      </NodeField>
     </div>
   );
 });

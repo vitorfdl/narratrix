@@ -1,5 +1,5 @@
 import { useReactFlow } from "@xyflow/react";
-import { Settings, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AgentTriggerType, TriggerContext } from "@/schema/agent-schema";
 import type { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { NodeBase, type NodeOutput, stopNodeEventPropagation } from "../tool-components/NodeBase";
+import { NodeBase, type NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import type { NodeProps } from "./nodeTypes";
 
@@ -215,29 +216,16 @@ const TriggerConfigDialog: React.FC<TriggerConfigDialogProps> = ({ open, initial
 // ─── Content ──────────────────────────────────────────────────────────────────
 
 const TriggerContent = memo<{ config: TriggerNodeConfig; onConfigure: () => void }>(({ config, onConfigure }) => {
-  const handleConfigureClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigure();
-    },
-    [onConfigure],
-  );
-
   const label = TRIGGER_TYPE_LABELS[config.triggerType] ?? "Manual";
 
   return (
     <div className="space-y-2 w-full">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-medium">Trigger When</label>
-        <Button variant="ghost" size="sm" className="nodrag h-6 w-6 p-0 hover:bg-red-500/10" onClick={handleConfigureClick} onPointerDown={stopNodeEventPropagation} title="Configure trigger">
-          <Settings className="h-3 w-3" />
-        </Button>
-      </div>
-      <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border-l-2 border-red-400 dark:border-red-500">
-        <span className="text-xs text-muted-foreground font-medium truncate">{label}</span>
-        {config.triggerType === "every_x_messages" && config.messageCount && <span className="text-xxs text-muted-foreground ml-auto flex-shrink-0">×{config.messageCount}</span>}
-      </div>
+      <NodeField label="Trigger When" icon={Zap} action={<NodeConfigButton onClick={onConfigure} title="Configure trigger" />}>
+        <NodeConfigPreview variant="text">
+          {label}
+          {config.triggerType === "every_x_messages" && config.messageCount && <span className="text-xxs text-muted-foreground ml-auto flex-shrink-0">×{config.messageCount}</span>}
+        </NodeConfigPreview>
+      </NodeField>
     </div>
   );
 });

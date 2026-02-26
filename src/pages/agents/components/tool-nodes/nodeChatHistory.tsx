@@ -1,5 +1,5 @@
 import { useReactFlow } from "@xyflow/react";
-import { MessageSquare, Settings } from "lucide-react";
+import { Filter, Layers, MessageSquare, SlidersHorizontal, User } from "lucide-react";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useChatStore } from "@/hooks/chatStore";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { NodeBase, NodeInput, NodeOutput, stopNodeEventPropagation, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -205,18 +206,6 @@ const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogProps> = 
  * Memoized content component to prevent unnecessary re-renders
  */
 const ChatHistoryContent = memo<{ config: ChatHistoryNodeConfig; onConfigure: () => void }>(({ config, onConfigure }) => {
-  const registerElementRef = useNodeRef();
-
-  // Prevent event propagation to React Flow
-  const handleConfigureClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigure();
-    },
-    [onConfigure],
-  );
-
   const getMessageTypeLabel = (type: string) => {
     switch (type) {
       case "all":
@@ -233,34 +222,22 @@ const ChatHistoryContent = memo<{ config: ChatHistoryNodeConfig; onConfigure: ()
   };
 
   return (
-    <div className="space-y-4 w-full">
-      {/* Input Section */}
-      <div className="space-y-2" ref={(el) => registerElementRef?.("character-input-section", el)}>
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Participant ID (Optional)</label>
-        </div>
-      </div>
-
-      {/* Configuration Preview */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Configuration</label>
-          <Button variant="ghost" size="sm" className="nodrag h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} onPointerDown={stopNodeEventPropagation} title="Configure chat history settings">
-            <Settings className="h-3 w-3" />
-          </Button>
-        </div>
-
-        <div className="p-2 bg-muted/50 rounded-md border-l-2 border-green-400 dark:border-green-500">
-          <div className="space-y-0">
-            <div className="text-xxs text-muted-foreground">
-              <span className="font-medium">Depth:</span> {config.depth} messages
-            </div>
-            <div className="text-xxs text-muted-foreground">
-              <span className="font-medium">Type:</span> {getMessageTypeLabel(config.messageType)}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-3 w-full">
+      <NodeField
+        label="Participant ID"
+        icon={User}
+        optional
+        refId="character-input-section"
+        helpText="Filter history to a specific participant. Leave unconnected to include messages from all participants."
+      />
+      <NodeField label="Configuration" icon={SlidersHorizontal} action={<NodeConfigButton onClick={onConfigure} title="Configure chat history settings" />}>
+        <NodeConfigPreview
+          items={[
+            { label: "Depth", value: `${config.depth} messages`, icon: Layers },
+            { label: "Type", value: getMessageTypeLabel(config.messageType), icon: Filter },
+          ]}
+        />
+      </NodeField>
     </div>
   );
 });

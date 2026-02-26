@@ -1,5 +1,5 @@
 import { useReactFlow } from "@xyflow/react";
-import { BookOpen, ChevronDown, Code, List, Maximize2, Minimize2, Save, Settings, X } from "lucide-react";
+import { BookOpen, ChevronDown, Code, List, Maximize2, Minimize2, Save, TableProperties, X } from "lucide-react";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { JavascriptEditor, type JavascriptEditorRef } from "@/components/markdownRender/javascript-editor";
@@ -13,7 +13,8 @@ import { runJavascript } from "@/services/agent-workflow/javascript-runner";
 import { type NodeExecutionResult, type NodeExecutor, type WorkflowToolDefinition } from "@/services/agent-workflow/types";
 import JsonSchemaCreator from "../json-schema/JsonSchemaCreator";
 import type { SchemaDefinition } from "../json-schema/types";
-import { NodeBase, type NodeInput, type NodeOutput, stopNodeEventPropagation, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, type NodeInput, type NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import type { NodeProps } from "./nodeTypes";
 
@@ -521,23 +522,11 @@ const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({
 // Node body content
 // ---------------------------------------------------------------------------
 const JavascriptContent = memo<{ config: JavascriptNodeConfig; onConfigureCode: () => void }>(({ config, onConfigureCode }) => {
-  const registerElementRef = useNodeRef();
-
-  const handleCodeButtonClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigureCode();
-    },
-    [onConfigureCode],
-  );
-
   const mode = config.mode ?? "script";
   const isToolMode = mode === "tool";
 
   return (
     <div className="space-y-3 w-full">
-      {/* Header row: mode badge + settings button */}
       <div className="flex items-center justify-between">
         <span
           className={`inline-flex items-center px-2 py-0.5 rounded text-xxs font-bold tracking-wider uppercase ${
@@ -546,31 +535,24 @@ const JavascriptContent = memo<{ config: JavascriptNodeConfig; onConfigureCode: 
         >
           {isToolMode ? "Tool" : "Script"}
         </span>
-        <Button variant="ghost" size="sm" className="nodrag h-6 w-6 p-0 hover:bg-primary/10" onClick={handleCodeButtonClick} onPointerDown={stopNodeEventPropagation} title="Configure JavaScript code">
-          <Settings className="h-3 w-3" />
-        </Button>
+        <NodeConfigButton onClick={onConfigureCode} title="Configure JavaScript code" />
       </div>
 
-      {/* Tool info (tool mode only) */}
       {isToolMode && (
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 p-1.5 bg-muted/50 rounded-md border-l-2 border-orange-400 dark:border-orange-500">
+        <NodeField label="Input Schema" icon={TableProperties}>
+          <NodeConfigPreview variant="badge">
             <span className="text-xs text-muted-foreground">
               {config.inputSchema ? `${config.inputSchema.title || "Input"} (${Object.keys(config.inputSchema.properties || {}).length} props)` : "No schema defined"}
             </span>
-          </div>
-        </div>
+          </NodeConfigPreview>
+        </NodeField>
       )}
 
-      {/* Code preview */}
-      <div className="space-y-1" ref={(el) => registerElementRef?.("code-section", el)}>
-        <label className="text-xs font-medium text-muted-foreground">Code</label>
-        <div className="p-2 bg-muted/50 rounded-md max-h-16 custom-scrollbar overflow-y-auto font-mono border-l-2 border-orange-400 dark:border-orange-500 overflow-x-hidden">
-          <span className="text-xxs text-muted-foreground whitespace-pre-line leading-tight break-words" style={{ lineHeight: "1.1", display: "block", wordBreak: "break-all" }}>
-            {config.code ? config.code.split("\n").slice(0, 3).join("\n") + (config.code.split("\n").length > 3 ? "\n..." : "") : "// No code configured"}
-          </span>
-        </div>
-      </div>
+      <NodeField label="Code" icon={Code} refId="code-section">
+        <NodeConfigPreview variant="text" className="font-mono" empty="// No code configured">
+          {config.code ? config.code.split("\n").slice(0, 3).join("\n") + (config.code.split("\n").length > 3 ? "\n..." : "") : undefined}
+        </NodeConfigPreview>
+      </NodeField>
     </div>
   );
 });

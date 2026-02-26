@@ -1,5 +1,5 @@
 import { useReactFlow, useStore } from "@xyflow/react";
-import { Bot, MessageCircle, Settings } from "lucide-react";
+import { Bot, Cpu, History as HistoryIcon, MessageCircle, MessageSquare, Settings, ShieldCheck, User, Wrench } from "lucide-react";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -10,7 +10,8 @@ import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
-import { NodeBase, NodeInput, NodeOutput, stopNodeEventPropagation, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -272,72 +273,44 @@ const AgentContent = memo<{
   config: AgentNodeConfig;
   onConfigClick: () => void;
 }>(({ nodeId, config, onConfigClick }) => {
-  const registerElementRef = useNodeRef();
   const chatTemplate = useChatTemplate(config.chatTemplateID || "");
-
-  // Subscribe to edges from React Flow store to get real-time updates
   const edges = useStore((state) => state.edges);
-
-  // Count connected tool edges
-  const connectedToolsCount = useMemo(() => {
-    return edges.filter((edge) => edge.target === nodeId && edge.targetHandle === "in-toolset").length;
-  }, [edges, nodeId]);
-
-  // Prevent event propagation to React Flow
-  const handleConfigButtonClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigClick();
-    },
-    [onConfigClick],
-  );
+  const connectedToolsCount = useMemo(() => edges.filter((edge) => edge.target === nodeId && edge.targetHandle === "in-toolset").length, [edges, nodeId]);
 
   return (
-    <div className="space-y-4 w-full">
-      {/* Chat Template Section */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Chat Template</label>
-          <Button variant="ghost" size="sm" onClick={handleConfigButtonClick} onPointerDown={stopNodeEventPropagation} className="nodrag h-6 w-6 p-0 hover:bg-primary/10">
-            <Settings className="h-3 w-3" />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-          <span className="text-xs text-muted-foreground font-medium">{chatTemplate?.name || "No template selected"}</span>
-        </div>
-      </div>
+    <div className="space-y-3 w-full">
+      <NodeField
+        label="Chat Template"
+        icon={Cpu}
+        action={<NodeConfigButton onClick={onConfigClick} title="Configure agent settings" />}
+        helpText="The model and inference settings used for generation."
+      >
+        <NodeConfigPreview variant="text">{chatTemplate?.name || "No template selected"}</NodeConfigPreview>
+      </NodeField>
 
-      {/* System Prompt Override Section */}
-      <div ref={(el) => registerElementRef?.("system-prompt-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">System Prompt Override</label>
-        <div className="p-2 bg-muted/50 rounded-md max-h-20 overflow-y-auto border-l-2 border-purple-400 dark:border-purple-500">
-          <p className="text-xs text-muted-foreground line-clamp-3">{config.systemPromptOverride || "Using template default"}</p>
-        </div>
-      </div>
+      <NodeField label="System Prompt" icon={ShieldCheck} optional refId="system-prompt-section" helpText="Overrides the template's system prompt. Leave unconnected to use the template default.">
+        <NodeConfigPreview variant="text" empty="Using template default">
+          {config.systemPromptOverride || undefined}
+        </NodeConfigPreview>
+      </NodeField>
 
-      {/* Tools Section - This aligns with the "tools" input handle */}
-      <div ref={(el) => registerElementRef?.("tools-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Toolset{connectedToolsCount > 0 && ` (${connectedToolsCount})`}</label>
-      </div>
+      <NodeField
+        label={`Toolset${connectedToolsCount > 0 ? ` (${connectedToolsCount})` : ""}`}
+        icon={Wrench}
+        optional
+        refId="tools-section"
+        helpText="Connect JavaScript nodes in Tool mode to give the agent callable functions."
+      />
 
-      {/* Participant Section - This aligns with the "in-character" input handle */}
-      <div ref={(el) => registerElementRef?.("participant-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Participant/Character (optional)</label>
-      </div>
+      <NodeField label="Participant" icon={User} optional refId="participant-section" helpText="Character context for prompt formatting and persona." />
 
-      {/* History Section - This aligns with the "history" input handle */}
-      <div ref={(el) => registerElementRef?.("history-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Chat History</label>
-      </div>
+      <NodeField label="Chat History" icon={HistoryIcon} optional refId="history-section" helpText="Connect a Chat History node to include past conversation context." />
 
-      {/* Input Section - This aligns with the "input" input handle */}
-      <div ref={(el) => registerElementRef?.("input-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">User Prompt</label>
-        <div className="p-2 bg-muted/50 rounded-md border-l-2 border-purple-400 dark:border-purple-500">
-          <span className="text-xs italic text-muted-foreground line-clamp-3">{config.inputPrompt || "{{input}}"}</span>
-        </div>
-      </div>
+      <NodeField label="User Prompt" icon={MessageSquare} refId="input-section">
+        <NodeConfigPreview variant="text" empty="{{input}}">
+          {config.inputPrompt || undefined}
+        </NodeConfigPreview>
+      </NodeField>
     </div>
   );
 });

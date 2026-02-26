@@ -12,6 +12,7 @@ export interface NodeTheme {
   hover: string;
   selected: string;
   icon: string;
+  accentBorder: string;
 }
 
 // Utility function to create consistent node themes
@@ -25,6 +26,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-blue-500 dark:hover:border-blue-400",
       selected: "ring-2 ring-blue-400 ring-offset-2 ring-offset-background dark:ring-blue-500",
       icon: "text-blue-600 dark:text-blue-400",
+      accentBorder: "border-blue-400 dark:border-blue-500",
     },
     purple: {
       border: "border-purple-400/60 dark:border-purple-500/60",
@@ -33,6 +35,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-purple-500 dark:hover:border-purple-400",
       selected: "ring-2 ring-purple-400 ring-offset-2 ring-offset-background dark:ring-purple-500",
       icon: "text-purple-600 dark:text-purple-400",
+      accentBorder: "border-purple-400 dark:border-purple-500",
     },
     green: {
       border: "border-green-400/60 dark:border-green-500/60",
@@ -41,6 +44,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-green-500 dark:hover:border-green-400",
       selected: "ring-2 ring-green-400 ring-offset-2 ring-offset-background dark:ring-green-500",
       icon: "text-green-600 dark:text-green-400",
+      accentBorder: "border-green-400 dark:border-green-500",
     },
     orange: {
       border: "border-orange-400/60 dark:border-orange-500/60",
@@ -49,6 +53,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-orange-500 dark:hover:border-orange-400",
       selected: "ring-2 ring-orange-400 ring-offset-2 ring-offset-background dark:ring-orange-500",
       icon: "text-orange-600 dark:text-orange-400",
+      accentBorder: "border-orange-400 dark:border-orange-500",
     },
     red: {
       border: "border-red-400/60 dark:border-red-500/60",
@@ -57,6 +62,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-red-500 dark:hover:border-red-400",
       selected: "ring-2 ring-red-400 ring-offset-2 ring-offset-background dark:ring-red-500",
       icon: "text-red-600 dark:text-red-400",
+      accentBorder: "border-red-400 dark:border-red-500",
     },
     yellow: {
       border: "border-yellow-400/60 dark:border-yellow-500/60",
@@ -65,6 +71,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-yellow-500 dark:hover:border-yellow-400",
       selected: "ring-2 ring-yellow-400 ring-offset-2 ring-offset-background dark:ring-yellow-500",
       icon: "text-yellow-600 dark:text-yellow-400",
+      accentBorder: "border-yellow-400 dark:border-yellow-500",
     },
     indigo: {
       border: "border-indigo-400/60 dark:border-indigo-500/60",
@@ -73,6 +80,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-indigo-500 dark:hover:border-indigo-400",
       selected: "ring-2 ring-indigo-400 ring-offset-2 ring-offset-background dark:ring-indigo-500",
       icon: "text-indigo-600 dark:text-indigo-400",
+      accentBorder: "border-indigo-400 dark:border-indigo-500",
     },
     teal: {
       border: "border-teal-400/60 dark:border-teal-500/60",
@@ -81,6 +89,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-teal-500 dark:hover:border-teal-400",
       selected: "ring-2 ring-teal-400 ring-offset-2 ring-offset-background dark:ring-teal-500",
       icon: "text-teal-600 dark:text-teal-400",
+      accentBorder: "border-teal-400 dark:border-teal-500",
     },
     pink: {
       border: "border-pink-400/60 dark:border-pink-500/60",
@@ -89,6 +98,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-pink-500 dark:hover:border-pink-400",
       selected: "ring-2 ring-pink-400 ring-offset-2 ring-offset-background dark:ring-pink-500",
       icon: "text-pink-600 dark:text-pink-400",
+      accentBorder: "border-pink-400 dark:border-pink-500",
     },
     slate: {
       border: "border-slate-400/60 dark:border-slate-500/60",
@@ -97,6 +107,7 @@ export function createNodeTheme(color: string): NodeTheme {
       hover: "hover:border-slate-500 dark:hover:border-slate-400",
       selected: "ring-2 ring-slate-400 ring-offset-2 ring-offset-background dark:ring-slate-500",
       icon: "text-slate-600 dark:text-slate-400",
+      accentBorder: "border-slate-400 dark:border-slate-500",
     },
   };
 

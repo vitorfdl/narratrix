@@ -67,6 +67,9 @@ const NodeRefContext = createContext<((id: string, element: HTMLElement | null) 
 // Context for node deletion
 const NodeDeleteContext = createContext<((nodeId: string) => void) | null>(null);
 
+// Context for node theme
+const NodeThemeContext = createContext<NodeTheme | null>(null);
+
 // Hook to register element refs
 export const useNodeRef = () => {
   return useContext(NodeRefContext);
@@ -75,6 +78,11 @@ export const useNodeRef = () => {
 // Hook to delete nodes
 export const useNodeDelete = () => {
   return useContext(NodeDeleteContext);
+};
+
+// Hook to access node theme
+export const useNodeTheme = () => {
+  return useContext(NodeThemeContext);
 };
 
 // Stops pointer events from bubbling to ReactFlow's node selection/drag handlers.
@@ -257,6 +265,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
         hover: "hover:border-primary",
         selected: "ring-2 ring-primary ring-offset-2 ring-offset-background",
         icon: "text-primary",
+        accentBorder: "border-primary",
       },
       secondary: {
         border: "border-secondary/60",
@@ -265,6 +274,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
         hover: "hover:border-secondary",
         selected: "ring-2 ring-secondary ring-offset-2 ring-offset-background",
         icon: "text-secondary",
+        accentBorder: "border-secondary",
       },
       accent: {
         border: "border-accent/60",
@@ -273,6 +283,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
         hover: "hover:border-accent",
         selected: "ring-2 ring-accent ring-offset-2 ring-offset-background",
         icon: "text-accent",
+        accentBorder: "border-accent",
       },
       destructive: {
         border: "border-destructive/60",
@@ -281,6 +292,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
         hover: "hover:border-destructive",
         selected: "ring-2 ring-destructive ring-offset-2 ring-offset-background",
         icon: "text-destructive",
+        accentBorder: "border-destructive",
       },
       muted: {
         border: "border-muted-foreground/60",
@@ -289,6 +301,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
         hover: "hover:border-muted-foreground",
         selected: "ring-2 ring-muted-foreground ring-offset-2 ring-offset-background",
         icon: "text-muted-foreground",
+        accentBorder: "border-muted-foreground",
       },
     };
 
@@ -360,115 +373,117 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
   };
 
   return (
-    <NodeRefContext.Provider value={registerElementRef}>
-      <div
-        ref={nodeRef}
-        data-nodetype={nodeType}
-        className={cn(
-          "relative min-w-[280px] max-w-[300px] rounded-lg border-2 transition-all duration-200",
-          theme.border,
-          "bg-background",
-          theme.hover,
-          selected && theme.selected,
-          "shadow-sm hover:shadow-md",
-        )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {/* Header */}
-        <div className={cn("flex items-center justify-between px-4 py-3 rounded-t-md", theme.header)}>
-          <div className="flex items-center gap-2">
-            {icon && React.createElement(icon, { className: cn("h-4 w-4", theme.icon) })}
-            <h3 className="font-medium text-sm">{title}</h3>
-          </div>
-
-          {deletable && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              onPointerDown={stopNodeEventPropagation}
-              className={cn("nodrag h-6 w-6 p-0 hover:bg-destructive/10 transition-opacity duration-200", isHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}
-            >
-              <Trash2 className="h-2 w-2 text-destructive" />
-            </Button>
+    <NodeThemeContext.Provider value={theme}>
+      <NodeRefContext.Provider value={registerElementRef}>
+        <div
+          ref={nodeRef}
+          data-nodetype={nodeType}
+          className={cn(
+            "relative min-w-[280px] max-w-[300px] rounded-lg border-2 transition-all duration-200",
+            theme.border,
+            "bg-background",
+            theme.hover,
+            selected && theme.selected,
+            "shadow-sm hover:shadow-md",
           )}
-        </div>
-
-        {/* Content */}
-        <div className={cn("p-2", "bg-background")}>{children}</div>
-
-        {/* Output Section */}
-        {outputs.length > 0 && (
-          <div className="px-4 pb-3 bg-background border-t border-border/50">
-            <div className="space-y-2 pt-2">
-              {outputs.map((output, index) => (
-                <div
-                  key={`output-label-${output.id}`}
-                  ref={(el) => registerElementRef(`output-${output.id}`, el)}
-                  className="flex items-center justify-end"
-                  style={{
-                    marginBottom: index < outputs.length - 1 ? "16px" : "0",
-                  }}
-                >
-                  <span className="text-xs text-muted-foreground font-medium mr-2">{output.label}</span>
-                  <FileOutput className="h-4 w-4 text-muted-foreground" style={{ transform: "scaleX(-1)" }} />
-                </div>
-              ))}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          {/* Header */}
+          <div className={cn("flex items-center justify-between px-4 py-2 rounded-t-md", theme.header)}>
+            <div className="flex items-center gap-2">
+              {icon && React.createElement(icon, { className: cn("h-4 w-4", theme.icon) })}
+              <h3 className="font-medium text-sm">{title}</h3>
             </div>
+
+            {deletable && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                onPointerDown={stopNodeEventPropagation}
+                className={cn("nodrag h-6 w-6 p-0 hover:bg-destructive/10 transition-opacity duration-200", isHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}
+              >
+                <Trash2 className="h-2 w-2 text-destructive" />
+              </Button>
+            )}
           </div>
-        )}
 
-        {/* Input Handles */}
-        {inputs.map((input) => (
-          <Handle
-            key={`input-${input.id}`}
-            id={input.id}
-            type="target"
-            position={Position.Left}
-            style={getHandleStyle(
-              {
-                ...handlePositions[`input-${input.id}`],
-                background: getHandleColor(input.edgeType),
-                width: "0.9rem",
-                height: "0.9rem",
-                border: "2px solid hsl(var(--background))",
-                left: "-1px",
-              },
-              input.edgeType,
-              true,
-            )}
-            isValidConnection={isValidConnection(input.edgeType)}
-            data-edge-type={input.edgeType}
-            data-handleid={input.id}
-          />
-        ))}
+          {/* Content */}
+          <div className={cn("p-2", "bg-background")}>{children}</div>
 
-        {/* Output Handles */}
-        {outputs.map((output) => (
-          <Handle
-            key={output.id}
-            id={output.id}
-            type="source"
-            position={Position.Right}
-            style={getHandleStyle(
-              {
-                ...handlePositions[`output-${output.id}`],
-                background: getHandleColor(output.edgeType),
-                width: "0.9rem",
-                height: "0.9rem",
-                border: "2px solid hsl(var(--background))",
-                right: "-1px",
-              },
-              output.edgeType,
-              false,
-            )}
-            isValidConnection={isValidConnection(output.edgeType)}
-            data-edge-type={output.edgeType}
-            data-handleid={output.id}
-          />
-        ))}
-      </div>
-    </NodeRefContext.Provider>
+          {/* Output Section */}
+          {outputs.length > 0 && (
+            <div className="px-4 pb-3 bg-background border-t border-border/50">
+              <div className="space-y-2 pt-2">
+                {outputs.map((output, index) => (
+                  <div
+                    key={`output-label-${output.id}`}
+                    ref={(el) => registerElementRef(`output-${output.id}`, el)}
+                    className="flex items-center justify-end"
+                    style={{
+                      marginBottom: index < outputs.length - 1 ? "16px" : "0",
+                    }}
+                  >
+                    <span className="text-xs text-muted-foreground font-medium mr-2">{output.label}</span>
+                    <FileOutput className="h-4 w-4 text-muted-foreground" style={{ transform: "scaleX(-1)" }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Input Handles */}
+          {inputs.map((input) => (
+            <Handle
+              key={`input-${input.id}`}
+              id={input.id}
+              type="target"
+              position={Position.Left}
+              style={getHandleStyle(
+                {
+                  ...handlePositions[`input-${input.id}`],
+                  background: getHandleColor(input.edgeType),
+                  width: "0.9rem",
+                  height: "0.9rem",
+                  border: "2px solid hsl(var(--background))",
+                  left: "-1px",
+                },
+                input.edgeType,
+                true,
+              )}
+              isValidConnection={isValidConnection(input.edgeType)}
+              data-edge-type={input.edgeType}
+              data-handleid={input.id}
+            />
+          ))}
+
+          {/* Output Handles */}
+          {outputs.map((output) => (
+            <Handle
+              key={output.id}
+              id={output.id}
+              type="source"
+              position={Position.Right}
+              style={getHandleStyle(
+                {
+                  ...handlePositions[`output-${output.id}`],
+                  background: getHandleColor(output.edgeType),
+                  width: "0.9rem",
+                  height: "0.9rem",
+                  border: "2px solid hsl(var(--background))",
+                  right: "-1px",
+                },
+                output.edgeType,
+                false,
+              )}
+              isValidConnection={isValidConnection(output.edgeType)}
+              data-edge-type={output.edgeType}
+              data-handleid={output.id}
+            />
+          ))}
+        </div>
+      </NodeRefContext.Provider>
+    </NodeThemeContext.Provider>
   );
 };

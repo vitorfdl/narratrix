@@ -1,12 +1,13 @@
 import { useReactFlow } from "@xyflow/react";
-import { MessageSquare, Settings, User } from "lucide-react";
+import { MessageSquare, User } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { NodeBase, type NodeOutput, stopNodeEventPropagation } from "../tool-components/NodeBase";
+import { NodeBase, type NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import type { NodeProps } from "./nodeTypes";
 
@@ -115,37 +116,19 @@ const ChatInputNodeConfigDialog: React.FC<ChatInputNodeConfigDialogProps> = ({ o
  * Memoized content component to prevent unnecessary re-renders
  */
 const ChatInputContent = memo<{ onConfigure: () => void }>(({ onConfigure }) => {
-  const handleConfigButtonClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigure();
-    },
-    [onConfigure],
-  );
-
   return (
-    <div className="space-y-4 w-full">
-      {/* Input Type Section */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Input Type</label>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="nodrag h-6 w-6 p-0 hover:bg-primary/10"
-            onClick={handleConfigButtonClick}
-            onPointerDown={stopNodeEventPropagation}
-            title="Configure input settings"
-          >
-            <Settings className="h-3 w-3" />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border-l-2 border-blue-400 dark:border-blue-500">
+    <div className="space-y-3 w-full">
+      <NodeField
+        label="Input Type"
+        icon={MessageSquare}
+        action={<NodeConfigButton onClick={onConfigure} title="Configure input settings" />}
+        helpText="Receives the user's message text as input to the workflow."
+      >
+        <NodeConfigPreview variant="badge">
           <User className="h-3 w-3 text-primary" />
           <span className="text-xs text-muted-foreground font-medium">User Message</span>
-        </div>
-      </div>
+        </NodeConfigPreview>
+      </NodeField>
     </div>
   );
 });

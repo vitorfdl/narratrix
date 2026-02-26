@@ -5,12 +5,12 @@ import type { MarkdownEditorRef } from "@/components/markdownRender/markdown-edi
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { useAgents } from "@/hooks/agentStore";
+import { useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
 import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import type { GenerationOptions, StreamingState } from "@/hooks/useChatInference";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
-import { useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
-import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { cn } from "@/lib/utils";
 import { QuickAction } from "@/schema/profiles-schema";
 import { orchestrateGeneration } from "@/services/chat-generation-orchestrator";
@@ -318,10 +318,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           editable={true}
           placeholder={`Type your message here... (${sendCommand || "Ctrl+Enter"} to send)`}
           sendShortcut={sendCommand}
-          className={cn(
-            "flex-1 h-full overflow-none pb-9",
-            isGenerating && "animate-pulse",
-          )}
+          className={cn("flex-1 h-full overflow-none pb-9", isGenerating && "animate-pulse")}
           onSubmit={handleSubmit}
           enableHistory={true}
         />
