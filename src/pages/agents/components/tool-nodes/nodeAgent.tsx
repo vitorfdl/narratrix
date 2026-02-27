@@ -46,6 +46,14 @@ const executeAgentNode: NodeExecutor = async (node, inputs, ctx, _agent, deps): 
     return { success: false, error: "Agent node is missing chat template configuration" };
   }
 
+  // Fetch the full participant character (if connected) and the chat's user character
+  const triggerCtx = ctx.nodeValues.get("workflow-trigger-context") as import("@/schema/agent-schema").TriggerContext | undefined;
+  const [participantCharacter, chat] = await Promise.all([
+    inputs.characterId ? deps.getCharacterById(inputs.characterId).catch(() => null) : Promise.resolve(null),
+    triggerCtx?.chatId ? deps.getChatById(triggerCtx.chatId).catch(() => null) : Promise.resolve(null),
+  ]);
+  const userCharacter = chat?.user_character_id ? await deps.getCharacterById(chat.user_character_id).catch(() => null) : null;
+
   try {
     const chatTemplate = await deps.getChatTemplateById(chatTemplateId);
     if (!chatTemplate) {
@@ -74,8 +82,8 @@ const executeAgentNode: NodeExecutor = async (node, inputs, ctx, _agent, deps): 
       chatTemplate,
       systemOverridePrompt: systemPrompt,
       chatConfig: {
-        character: inputs.characterId && inputs.characterId !== "user" ? ({ id: inputs.characterId } as any) : undefined,
-        user_character: inputs.characterId === "user" ? ({ name: "You", custom: { personality: "" } } as any) : undefined,
+        character: participantCharacter?.type === "character" ? participantCharacter : undefined,
+        user_character: userCharacter ? { name: userCharacter.name, custom: userCharacter.custom, lorebook_id: userCharacter.lorebook_id } : undefined,
       },
     });
 

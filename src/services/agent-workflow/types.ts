@@ -33,6 +33,8 @@ export interface WorkflowDeps {
   getModelById: (id: string) => Promise<any | null>;
   getInferenceTemplateById: (id: string) => Promise<any | null>;
   getFormatTemplateById: (id: string) => Promise<any | null>;
+  getCharacterById: (id: string) => Promise<any | null>;
+  getChatById: (id: string) => Promise<any | null>;
   // model manifests (engine string needed)
   getManifestById: (id: string) => any | null;
   // non-streaming inference

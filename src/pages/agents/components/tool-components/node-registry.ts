@@ -145,6 +145,13 @@ export interface NodeDefinition {
     getDefaultConfig: () => { label: string; config: any };
   };
   executor?: NodeExecutor;
+  /**
+   * When provided, outputs are always derived from the node's config rather than
+   * relying on ephemeral data.dynamicOutputs. This ensures handles survive the
+   * core-format round-trip (serialisation strips dynamicOutputs) and are never
+   * lost on drag or parent re-sync.
+   */
+  getDynamicOutputs?: (config: Record<string, any>) => NodeOutput[];
 }
 
 // Node Registry namespace
@@ -210,6 +217,19 @@ export namespace NodeRegistry {
 
   export function getExecutor(type: string): NodeExecutor | undefined {
     return registry.get(type)?.executor;
+  }
+
+  /**
+   * Returns outputs derived from the node's config using the registered
+   * getDynamicOutputs function, or undefined if no such function exists for
+   * the given node type.
+   */
+  export function getDynamicOutputs(type: string, config?: Record<string, any>): NodeOutput[] | undefined {
+    const def = registry.get(type);
+    if (def?.getDynamicOutputs && config !== undefined) {
+      return def.getDynamicOutputs(config);
+    }
+    return undefined;
   }
 
   export function clear(): void {

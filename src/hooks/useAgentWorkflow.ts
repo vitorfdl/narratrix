@@ -8,6 +8,8 @@ import type { NodeExecutionResult, WorkflowToolDefinition } from "@/services/age
 
 export type { TriggerContext };
 
+import { getCharacterById } from "@/services/character-service";
+import { getChatById } from "@/services/chat-service";
 import { formatPrompt as formatPromptCore, PromptFormatterConfig } from "@/services/inference/formatter";
 import { removeNestedFields } from "@/services/inference/formatter/remove-nested-fields";
 import { getModelById } from "@/services/model-service";
@@ -126,6 +128,8 @@ export function useAgentWorkflow() {
       getModelById,
       getInferenceTemplateById,
       getFormatTemplateById,
+      getCharacterById,
+      getChatById,
       getManifestById: (id: string) => modelManifests.find((m) => m.id === id) || null,
       runInference: async (opts: {
         messages: InferenceMessage[];

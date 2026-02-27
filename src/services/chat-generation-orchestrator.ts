@@ -97,6 +97,95 @@ async function runAgentsForTriggers(
   }
 }
 
+interface CharacterAgentDeps {
+  chatId: string;
+  participants: ChatParticipant[];
+  agents: AgentType[];
+  userCharacterId: string | null;
+  executeWorkflow: OrchestrationDeps["executeWorkflow"];
+  isAborted: () => boolean;
+  /** Optional: text of the triggering user message, forwarded to agent TriggerContext. */
+  message?: string;
+}
+
+/** Build the resolved agent config list from the current participant set. */
+function buildAgentConfigs(deps: CharacterAgentDeps): AgentParticipantConfig[] {
+  const enabledParticipants = deps.participants.filter((p) => p.enabled);
+  return enabledParticipants
+    .map((p): AgentParticipantConfig | null => {
+      const agent = deps.agents.find((a) => a.id === p.id);
+      if (!agent) {
+        return null;
+      }
+      const { triggerType, messageCount } = getAgentTriggerConfig(agent);
+      return { participant: p, agent, triggerType, messageCount };
+    })
+    .filter((x): x is AgentParticipantConfig => x !== null);
+}
+
+/** Wrap executeWorkflow to swallow errors and log them. */
+function makeSafeExec(executeWorkflow: OrchestrationDeps["executeWorkflow"]) {
+  return (agent: AgentType, ctx: TriggerContext) =>
+    executeWorkflow(agent, ctx).catch((err: unknown) => {
+      console.error(`Agent "${agent.name}" failed:`, err);
+      return null;
+    });
+}
+
+/**
+ * Run "before character" agents for a single character participant.
+ * Awaits all matching agents (before_character_message + before_any_message) sequentially
+ * before returning, so callers can safely start character generation afterwards.
+ */
+export async function runBeforeCharacterAgents(characterParticipantId: string, deps: CharacterAgentDeps): Promise<void> {
+  const { chatId, userCharacterId, message, executeWorkflow, isAborted } = deps;
+  const agentConfigs = buildAgentConfigs(deps);
+  const safeExec = makeSafeExec(executeWorkflow);
+  await runAgentsForTriggers(
+    ["before_character_message", "before_any_message"],
+    agentConfigs,
+    { chatId, participantId: characterParticipantId, userCharacterId, message },
+    { executeWorkflow: safeExec, isAborted },
+  );
+}
+
+/**
+ * Run "after character" agents for a single character participant.
+ * Awaits all matching agents (after_character_message + after_any_message) sequentially.
+ */
+export async function runAfterCharacterAgents(characterParticipantId: string, deps: CharacterAgentDeps): Promise<void> {
+  const { chatId, userCharacterId, message, executeWorkflow, isAborted } = deps;
+  const agentConfigs = buildAgentConfigs(deps);
+  const safeExec = makeSafeExec(executeWorkflow);
+  await runAgentsForTriggers(
+    ["after_character_message", "after_any_message"],
+    agentConfigs,
+    { chatId, participantId: characterParticipantId, userCharacterId, message },
+    { executeWorkflow: safeExec, isAborted },
+  );
+}
+
+/**
+ * Full before → generate → after lifecycle for a single character participant.
+ *
+ * Callers must pass `emitChatEvents: false` inside their `generateFn` to prevent
+ * the inference service from re-firing agent events that are already handled here.
+ *
+ * Use this in every place that manually triggers character generation outside of
+ * the main `orchestrateGeneration` loop (WidgetParticipants, WidgetMessages, etc.).
+ */
+export async function generateCharacterWithAgents(characterParticipantId: string, generateFn: () => Promise<unknown>, deps: CharacterAgentDeps): Promise<void> {
+  await runBeforeCharacterAgents(characterParticipantId, deps);
+  if (deps.isAborted()) {
+    return;
+  }
+  await generateFn();
+  if (deps.isAborted()) {
+    return;
+  }
+  await runAfterCharacterAgents(characterParticipantId, deps);
+}
+
 // ─── Main Orchestration ───────────────────────────────────────────────────────
 
 /**
@@ -112,13 +201,13 @@ export async function orchestrateGeneration(userText: string, deps: Orchestratio
   const enabledParticipants = participants.filter((p) => p.enabled);
 
   const agentConfigs: AgentParticipantConfig[] = enabledParticipants
-    .map((p) => {
+    .map((p): AgentParticipantConfig | null => {
       const agent = agents.find((a) => a.id === p.id);
       if (!agent) {
         return null;
       }
       const { triggerType, messageCount } = getAgentTriggerConfig(agent);
-      return { participant: p, agent, triggerType, messageCount } satisfies AgentParticipantConfig;
+      return { participant: p, agent, triggerType, messageCount };
     })
     .filter((x): x is AgentParticipantConfig => x !== null);
 
@@ -186,34 +275,15 @@ export async function orchestrateGeneration(userText: string, deps: Orchestratio
       continue;
     }
 
-    // Character participant
-    if (isAborted()) {
-      break;
-    }
-
-    // ── 4a. Before character agents ──────────────────────────────────────
-    await runTriggers(["before_character_message", "before_any_message"], participant.id);
-
-    if (isAborted()) {
-      break;
-    }
-
-    // ── 4b. Generate character message ───────────────────────────────────
-    await generateMessage({
-      chatId,
-      characterId: participant.id,
-      stream: true,
-      emitChatEvents: false,
-    });
-
-    await waitForGenerationToFinish();
-
-    if (isAborted()) {
-      break;
-    }
-
-    // ── 4c. After character agents ───────────────────────────────────────
-    await runTriggers(["after_character_message", "after_any_message"], participant.id);
+    // ── 4a–4c. Before agents → generate → after agents ──────────────────
+    await generateCharacterWithAgents(
+      participant.id,
+      async () => {
+        await generateMessage({ chatId, characterId: participant.id, stream: true, emitChatEvents: false });
+        await waitForGenerationToFinish();
+      },
+      { chatId, participants, agents, userCharacterId, executeWorkflow, isAborted, message: userText },
+    );
   }
 
   if (isAborted()) {

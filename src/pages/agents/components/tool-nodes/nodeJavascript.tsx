@@ -599,4 +599,7 @@ NodeRegistry.register({
   component: JavascriptNode,
   configProvider: JavascriptNodeConfigProvider,
   executor: executeJavascriptNode,
+  getDynamicOutputs: (config) => {
+    return getOutputsForMode((config as JavascriptNodeConfig)?.mode);
+  },
 });

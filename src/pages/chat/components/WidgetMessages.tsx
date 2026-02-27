@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuChevronDown } from "react-icons/lu";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useAgents } from "@/hooks/agentStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import {
   useChatActions,
@@ -14,9 +15,10 @@ import {
 } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
-import { chatEventBus } from "@/services/chat-event-bus";
+import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import type { ChatMessage } from "@/services/chat-message-service";
 import { updateChatMessagesUsingFilter } from "@/services/chat-message-service";
 import MessageItem from "./message-controls/MessageItem";
@@ -42,6 +44,8 @@ const WidgetMessages: React.FC = () => {
   const { updateChatMessage, addChatMessage, fetchChatMessages, deleteChatMessage } = useChatActions();
   const setSelectedText = useExpressionStore((state) => state.setSelectedText);
   const currentChatParticipants = useCurrentChatParticipants();
+  const agentList = useAgents();
+  const { executeWorkflow } = useAgentWorkflow();
 
   // Lifted from MessageItem -- computed once for all messages
   const characters = useCharacters();
@@ -143,32 +147,39 @@ const WidgetMessages: React.FC = () => {
           });
         }
 
-        // Emit before_participant_message so agents with "before_character_message" / "before_any_message"
-        // triggers can react to the regeneration. The trigger manager handles execution.
-        chatEventBus.emit({
-          type: "before_participant_message",
-          chatId: currentChatId,
-          participantId: message.character_id,
-        });
-
-        await inferenceService.regenerateMessage(messageId, {
-          chatId: currentChatId,
-          characterId: message.character_id,
-          messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
-          onStreamingStateChange: (state) => {
-            if (!state) {
-              setStreamingMessageId(null);
-            }
+        // Run before agents → regenerate → run after agents, with emitChatEvents: false
+        // to prevent the inference service from re-firing agent events that are already
+        // handled here, which would cause double-execution via useAgentTriggerManager.
+        await generateCharacterWithAgents(
+          message.character_id,
+          () =>
+            inferenceService.regenerateMessage(messageId, {
+              chatId: currentChatId,
+              characterId: message.character_id as string,
+              messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
+              emitChatEvents: false,
+              onStreamingStateChange: (state) => {
+                if (!state) {
+                  setStreamingMessageId(null);
+                }
+              },
+            }),
+          {
+            chatId: currentChatId,
+            participants: currentChatParticipants ?? [],
+            agents: agentList,
+            userCharacterId: currentChatUserCharacterID ?? null,
+            executeWorkflow,
+            isAborted: () => false,
           },
-        });
-        // after_participant_message is emitted by inference-service.ts onComplete (emitChatEvents defaults to true for regenerate)
+        );
       } catch (error) {
         console.error("Failed to regenerate message:", error);
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
         setStreamingMessageId(null);
       }
     },
-    [messages, characters, messageReasonings, inferenceService, currentChatId],
+    [messages, characters, messageReasonings, inferenceService, currentChatId, currentChatParticipants, agentList, currentChatUserCharacterID, executeWorkflow],
   );
 
   const handleSwipe = useCallback(

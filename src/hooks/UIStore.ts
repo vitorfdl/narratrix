@@ -17,6 +17,6 @@ export const useUIStore = create<UIState>((set) => ({
   activeSection: "chat",
   navigationContext: null,
   setActiveSection: (section) => set({ activeSection: section, navigationContext: null }),
-  navigateToSection: (section, context = null) => set({ activeSection: section, navigationContext: context }),
+  navigateToSection: (section, context = undefined) => set({ activeSection: section, navigationContext: context }),
   clearNavigationContext: () => set({ navigationContext: null }),
 }));

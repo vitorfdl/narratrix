@@ -119,8 +119,9 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
   }
 
   const { label: title, icon, deletable = true, inputs = [] } = nodeMetadata;
-  // Allow nodes to override outputs at runtime via data.dynamicOutputs (e.g. Trigger node)
-  const outputs = (data.dynamicOutputs as NodeOutput[] | undefined) ?? nodeMetadata.outputs ?? [];
+  // Priority: registry-derived outputs (from config) > ephemeral dynamicOutputs > static metadata outputs.
+  // Using the registry as primary source ensures handles survive the core-format round-trip.
+  const outputs = NodeRegistry.getDynamicOutputs(nodeType, data.config as Record<string, any> | undefined) ?? (data.dynamicOutputs as NodeOutput[] | undefined) ?? nodeMetadata.outputs ?? [];
 
   // Register element refs
   const registerElementRef = useCallback(

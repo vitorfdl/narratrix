@@ -239,12 +239,6 @@ export const TriggerNode = memo(({ id, data, selected }: NodeProps) => {
   const config = (data.config || TRIGGER_NODE_METADATA.defaultConfig) as TriggerNodeConfig;
   const { setNodes, setEdges } = useReactFlow();
 
-  // Sync dynamic outputs whenever trigger type changes
-  useEffect(() => {
-    const newOutputs = TRIGGER_OUTPUT_MAP[config.triggerType] ?? [];
-    setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, dynamicOutputs: newOutputs } } : node)));
-  }, [id, config.triggerType, setNodes]);
-
   const handleConfigSave = useCallback(
     (newConfig: TriggerNodeConfig) => {
       const newOutputs = TRIGGER_OUTPUT_MAP[newConfig.triggerType] ?? [];
@@ -290,4 +284,8 @@ NodeRegistry.register({
   component: TriggerNode,
   configProvider: TriggerNodeConfigProvider,
   executor: executeTriggerNode,
+  getDynamicOutputs: (config) => {
+    const triggerConfig = config as TriggerNodeConfig;
+    return TRIGGER_OUTPUT_MAP[triggerConfig?.triggerType] ?? PARTICIPANT_OUTPUT;
+  },
 });

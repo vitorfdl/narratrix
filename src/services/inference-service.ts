@@ -304,6 +304,7 @@ export function useInferenceService() {
         existingMessageId: messageId,
         messageIndex: options.messageIndex !== undefined ? options.messageIndex : 0,
         onStreamingStateChange: options.onStreamingStateChange,
+        emitChatEvents: options.emitChatEvents,
       });
     },
     [cancelRequest, generateMessage, streamingManager, currentChatId],

@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import type { AgentTriggerType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import { Character } from "@/schema/characters-schema";
+import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import AddParticipantPopover from "./AddParticipantPopover";
 
 // Types
@@ -438,14 +439,21 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
             toast.error(`Agent ${agent.name} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
           }
         } else if (character) {
-          await inferenceService.generateMessage({ chatId: currentChatId, characterId: participantId });
+          await generateCharacterWithAgents(participantId, () => inferenceService.generateMessage({ chatId: currentChatId, characterId: participantId, emitChatEvents: false }), {
+            chatId: currentChatId,
+            participants: participants ?? [],
+            agents: agentList,
+            userCharacterId: currentChatUserCharacterID ?? null,
+            executeWorkflow: executeAgentWorkflow,
+            isAborted: () => false,
+          });
         }
       } catch (error) {
         console.error("Error triggering message:", error);
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
       }
     },
-    [characterList, agentList, inferenceService, streamingState.characterId, currentChatId, currentChatUserCharacterID, executeAgentWorkflow, cancelAgentWorkflow],
+    [characterList, agentList, participants, inferenceService, streamingState.characterId, currentChatId, currentChatUserCharacterID, executeAgentWorkflow, cancelAgentWorkflow],
   );
 
   const isInQueue = (participantId: string): boolean => {
