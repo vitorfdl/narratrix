@@ -65,6 +65,11 @@ const TYPE_CLASSES = {
   system: "bg-gradient-to-br from-card to-card/80",
 };
 
+const PROMPT_INJECTION_CONTAINER_CLASSES = {
+  next: "border-indigo-500/50 shadow-md shadow-indigo-500/20 bg-gradient-to-b from-indigo-500/5 to-indigo-500/3",
+  global: "border-violet-500/50 shadow-md shadow-violet-500/20 bg-gradient-to-b from-violet-500/10 to-violet-500/3",
+} as const;
+
 const STATE_CLASSES = {
   streaming: "border-primary/60 shadow-primary/20 shadow-md transition-all",
   editing: "text-left ring-2 ring-primary/30 rounded-xl h-auto bg-background/95",
@@ -273,17 +278,21 @@ const MessageItem = ({
     [displayContent, setEditedContent, setIsEditingID],
   );
 
+  const isPromptInjection = message.extra?.script === "agent" && !!message.extra?.promptConfig;
+  const promptInjectionBehavior = isPromptInjection ? (message.extra?.promptConfig?.behavior ?? "next") : null;
+
   const containerClassName = React.useMemo(() => {
     return cn(
       MESSAGE_BASE_CLASSES.container,
       TYPE_CLASSES[message.type],
       !isDisabled && message.type === "character" && "shadow-sm",
       !isDisabled && message.type === "user" && "shadow-sm",
-      message.type === "system" && "shadow-inner",
+      message.type === "system" && !isPromptInjection && "shadow-inner",
+      isPromptInjection && promptInjectionBehavior && PROMPT_INJECTION_CONTAINER_CLASSES[promptInjectionBehavior],
       isStreaming && STATE_CLASSES.streaming,
       isDisabled && STATE_CLASSES.disabled,
     );
-  }, [message.type, isStreaming, isDisabled]);
+  }, [message.type, isStreaming, isDisabled, isPromptInjection, promptInjectionBehavior]);
 
   const contentClassName = React.useMemo(() => {
     return cn(MESSAGE_BASE_CLASSES.content, message.type === "user" && !isEditing && "flex justify-end", message.type === "system" && "text-center", isDisabled && "relative");
