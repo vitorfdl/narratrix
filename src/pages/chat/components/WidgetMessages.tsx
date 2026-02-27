@@ -1,13 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuChevronDown } from "react-icons/lu";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useAgents } from "@/hooks/agentStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import {
+  useChatActions,
+  useCurrentChatActiveChapterID,
+  useCurrentChatId,
+  useCurrentChatMessages,
+  useCurrentChatParticipants,
+  useCurrentChatSettings,
+  useCurrentChatUserCharacterID,
+} from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
+import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import type { ChatMessage } from "@/services/chat-message-service";
 import { updateChatMessagesUsingFilter } from "@/services/chat-message-service";
 import MessageItem from "./message-controls/MessageItem";
@@ -29,9 +40,12 @@ const WidgetMessages: React.FC = () => {
   const currentChatId = useCurrentChatId();
   const currentChatActiveChapterID = useCurrentChatActiveChapterID();
   const messages = useCurrentChatMessages();
+  const chatSettings = useCurrentChatSettings();
   const { updateChatMessage, addChatMessage, fetchChatMessages, deleteChatMessage } = useChatActions();
   const setSelectedText = useExpressionStore((state) => state.setSelectedText);
   const currentChatParticipants = useCurrentChatParticipants();
+  const agentList = useAgents();
+  const { executeWorkflow } = useAgentWorkflow();
 
   // Lifted from MessageItem -- computed once for all messages
   const characters = useCharacters();
@@ -39,6 +53,18 @@ const WidgetMessages: React.FC = () => {
   const currentProfile = useCurrentProfile();
   const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
   const showAvatars = currentProfile?.settings?.chat?.showAvatars ?? true;
+
+  const filteredMessages = useMemo(() => {
+    return messages.filter((m) => {
+      if (chatSettings?.hideDisabledMessages && m.disabled) {
+        return false;
+      }
+      if (chatSettings?.hideScriptMessages && m.extra?.script === "agent") {
+        return false;
+      }
+      return true;
+    });
+  }, [messages, chatSettings]);
 
   const [isEditingID, setIsEditingID] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
@@ -121,23 +147,39 @@ const WidgetMessages: React.FC = () => {
           });
         }
 
-        await inferenceService.regenerateMessage(messageId, {
-          chatId: currentChatId,
-          characterId: message.character_id,
-          messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
-          onStreamingStateChange: (state) => {
-            if (!state) {
-              setStreamingMessageId(null);
-            }
+        // Run before agents → regenerate → run after agents, with emitChatEvents: false
+        // to prevent the inference service from re-firing agent events that are already
+        // handled here, which would cause double-execution via useAgentTriggerManager.
+        await generateCharacterWithAgents(
+          message.character_id,
+          () =>
+            inferenceService.regenerateMessage(messageId, {
+              chatId: currentChatId,
+              characterId: message.character_id as string,
+              messageIndex: targetIndex !== undefined ? targetIndex : message.message_index,
+              emitChatEvents: false,
+              onStreamingStateChange: (state) => {
+                if (!state) {
+                  setStreamingMessageId(null);
+                }
+              },
+            }),
+          {
+            chatId: currentChatId,
+            participants: currentChatParticipants ?? [],
+            agents: agentList,
+            userCharacterId: currentChatUserCharacterID ?? null,
+            executeWorkflow,
+            isAborted: () => false,
           },
-        });
+        );
       } catch (error) {
         console.error("Failed to regenerate message:", error);
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
         setStreamingMessageId(null);
       }
     },
-    [messages, characters, messageReasonings, inferenceService, currentChatId],
+    [messages, characters, messageReasonings, inferenceService, currentChatId, currentChatParticipants, agentList, currentChatUserCharacterID, executeWorkflow],
   );
 
   const handleSwipe = useCallback(
@@ -279,8 +321,6 @@ const WidgetMessages: React.FC = () => {
               extraSuggestions: {},
               messageHistoryOverride: messagesToSummarize,
             });
-
-            toast.success("Summary generated successfully");
           } catch (error) {
             console.error("Error generating summary:", error);
             toast.error("Failed to generate summary");
@@ -367,12 +407,12 @@ const WidgetMessages: React.FC = () => {
     <div className={MESSAGE_CONTAINER_STYLES}>
       <div ref={scrollContainerRef} className="messages-container flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full p-1" onScroll={handleScroll}>
         <div className="flex flex-col">
-          {messages.map((message, index) => {
-            const isLastMessage = index === messages.length - 1 || message.type === "system";
+          {filteredMessages.map((message, index) => {
+            const isLastMessage = index === filteredMessages.length - 1 || message.type === "system";
             const isStreaming = streamingMessageId === message.id;
             const hasReasoningData = !!messageReasonings[message.id];
             const reasoningContent = messageReasonings[message.id] || "";
-            const showMidLayer = index > 0 && !message.disabled && messages[index - 1] && !messages[index - 1].disabled;
+            const showMidLayer = index > 0 && !message.disabled && filteredMessages[index - 1] && !filteredMessages[index - 1].disabled;
             const isEditing = isEditingID === message.id;
 
             let avatarPath: string | null = null;
@@ -390,7 +430,7 @@ const WidgetMessages: React.FC = () => {
 
             return (
               <div key={message.id}>
-                {showMidLayer && <MidMessageLayerWrapper messageBefore={messages[index - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
+                {showMidLayer && <MidMessageLayerWrapper messageBefore={filteredMessages[index - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
 
                 <div className={MESSAGE_GROUP_STYLES} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 200px" }}>
                   <MessageItem

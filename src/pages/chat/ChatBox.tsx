@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { Chat } from "@/schema/chat-schema";
 import { ChatTab } from "@/schema/chat-schema";
 import { ChatTabs } from "./ChatTabs";
-import { ChatMenuDropdown } from "./components/ChatMenuDropdown";
+import { ChatMenuDropdown } from "./components/ChatMenuPopover";
 import { GridLayout } from "./components/GridLayout";
 
 interface ChatboxProps {

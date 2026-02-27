@@ -1,5 +1,5 @@
 import { useReactFlow } from "@xyflow/react";
-import { MessageSquare, Settings } from "lucide-react";
+import { Filter, Layers, MessageSquare, SlidersHorizontal, User } from "lucide-react";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -7,19 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { useChatStore } from "@/hooks/chatStore";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 /**
  * Node Execution
  */
-const executeChatHistoryNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
+const executeChatHistoryNode: NodeExecutor = async (node, inputs): Promise<NodeExecutionResult> => {
   try {
     const { selectedChatMessages } = useChatStore.getState();
     let history = Array.isArray(selectedChatMessages) ? selectedChatMessages : [];
+
+    const config: ChatHistoryNodeConfig = {
+      name: "Chat History Node",
+      depth: 10,
+      messageType: "all",
+      ...(node.config as Partial<ChatHistoryNodeConfig>),
+    };
 
     // Optional participant filter: if inputs.characterId or inputs.participantId is provided
     const participantId: string | undefined = (inputs.characterId as string) || (inputs.participantId as string);
@@ -29,6 +38,18 @@ const executeChatHistoryNode: NodeExecutor = async (_node, inputs): Promise<Node
       } else {
         history = history.filter((m) => m.character_id === participantId);
       }
+    }
+
+    // Apply messageType filter from config
+    if (config.messageType !== "all") {
+      // ChatMessageType uses "character" for AI/assistant messages
+      const targetType = config.messageType === "assistant" ? "character" : config.messageType;
+      history = history.filter((m) => m.type === targetType);
+    }
+
+    // Apply depth: take the last N messages
+    if (config.depth > 0) {
+      history = history.slice(-config.depth);
     }
 
     return { success: true, value: history };
@@ -101,7 +122,7 @@ const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogProps> = 
     if (open) {
       reset(initialConfig);
     }
-  }, [open, reset]);
+  }, [open, reset, initialConfig]);
 
   // Save handler
   const onSubmit = (data: ChatHistoryNodeConfig) => {
@@ -122,29 +143,19 @@ const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogProps> = 
                 <Controller name="name" control={control} render={({ field }) => <Input {...field} placeholder="Enter node name" className="text-xs" maxLength={64} autoFocus />} />
               </div>
 
-              <div>
-                <Label className="text-xs font-medium text-foreground mb-1 block">Message Depth</Label>
-                <Controller
-                  name="depth"
-                  control={control}
-                  rules={{
-                    required: "Depth is required",
-                    min: { value: 1, message: "Depth must be at least 1" },
-                    max: { value: 1000, message: "Depth cannot exceed 1000" },
-                  }}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      type="number"
-                      placeholder="Number of messages to retrieve"
-                      className="text-xs"
-                      min={1}
-                      max={1000}
-                      onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 1)}
-                    />
-                  )}
-                />
-              </div>
+              <Controller
+                name="depth"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs font-medium">Message Depth</Label>
+                      <span className="text-xs font-medium bg-primary/20 text-primary px-2 py-0.5 rounded-md">{field.value}</span>
+                    </div>
+                    <Slider min={1} max={500} step={1} value={[field.value]} onValueChange={(v) => field.onChange(v[0])} className="py-1" />
+                  </div>
+                )}
+              />
 
               <div>
                 <Label className="text-xs font-medium text-foreground mb-1 block">Message Type</Label>
@@ -186,18 +197,6 @@ const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogProps> = 
  * Memoized content component to prevent unnecessary re-renders
  */
 const ChatHistoryContent = memo<{ config: ChatHistoryNodeConfig; onConfigure: () => void }>(({ config, onConfigure }) => {
-  const registerElementRef = useNodeRef();
-
-  // Prevent event propagation to React Flow
-  const handleConfigureClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigure();
-    },
-    [onConfigure],
-  );
-
   const getMessageTypeLabel = (type: string) => {
     switch (type) {
       case "all":
@@ -214,34 +213,22 @@ const ChatHistoryContent = memo<{ config: ChatHistoryNodeConfig; onConfigure: ()
   };
 
   return (
-    <div className="space-y-4 w-full">
-      {/* Input Section */}
-      <div className="space-y-2" ref={(el) => registerElementRef?.("character-input-section", el)}>
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Participant ID (Optional)</label>
-        </div>
-      </div>
-
-      {/* Configuration Preview */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Configuration</label>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} title="Configure chat history settings">
-            <Settings className="h-3 w-3" />
-          </Button>
-        </div>
-
-        <div className="p-2 bg-muted/50 rounded-md border-l-2 border-green-400 dark:border-green-500">
-          <div className="space-y-0">
-            <div className="text-xxs text-muted-foreground">
-              <span className="font-medium">Depth:</span> {config.depth} messages
-            </div>
-            <div className="text-xxs text-muted-foreground">
-              <span className="font-medium">Type:</span> {getMessageTypeLabel(config.messageType)}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-3 w-full">
+      <NodeField
+        label="Participant ID"
+        icon={User}
+        optional
+        refId="character-input-section"
+        helpText="Filter history to a specific participant. Leave unconnected to include messages from all participants."
+      />
+      <NodeField label="Configuration" icon={SlidersHorizontal} action={<NodeConfigButton onClick={onConfigure} title="Configure chat history settings" />}>
+        <NodeConfigPreview
+          items={[
+            { label: "Depth", value: `${config.depth} messages`, icon: Layers },
+            { label: "Type", value: getMessageTypeLabel(config.messageType), icon: Filter },
+          ]}
+        />
+      </NodeField>
     </div>
   );
 });

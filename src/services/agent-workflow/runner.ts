@@ -1,8 +1,8 @@
 import "@/pages/agents/components/tool-nodes";
 import { NodeRegistry } from "@/pages/agents/components/tool-components/node-registry";
-import { AgentEdgeType, AgentNodeType, AgentType } from "@/schema/agent-schema";
+import type { AgentEdgeType, AgentNodeType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import { getNodeInputs } from "./handles";
-import { NodeExecutionResult, WorkflowDeps, WorkflowExecutionContext } from "./types";
+import type { NodeExecutionResult, WorkflowDeps, WorkflowExecutionContext } from "./types";
 
 const contexts = new Map<string, WorkflowExecutionContext>();
 
@@ -43,16 +43,7 @@ async function executeNode(node: AgentNodeType, edges: AgentEdgeType[], context:
     return { success: false, error: `No executor registered for node type: ${node.type}` };
   }
 
-  // For javascript node, annotate inputs with which outputs are actually wired
-  let inputs = baseInputs;
-  if (node.type === "javascript") {
-    const outgoing = edges.filter((e) => e.source === node.id);
-    const hasTextOut = outgoing.some((e) => e.sourceHandle === "out-string");
-    const hasToolOut = outgoing.some((e) => e.sourceHandle === "out-toolset");
-    inputs = { ...baseInputs, __wantText: hasTextOut, __wantTool: hasToolOut } as any;
-  }
-
-  const res = await executor(node, inputs, context, agent, deps);
+  const res = await executor(node, baseInputs, context, agent, deps);
   // Preserve multi-output behavior for javascript nodes by reflecting onto handle-scoped keys
   if (node.type === "javascript" && res.success) {
     if (typeof res.value === "string") {
@@ -75,7 +66,12 @@ async function executeNode(node: AgentNodeType, edges: AgentEdgeType[], context:
   return res;
 }
 
-export async function executeWorkflow(agent: AgentType, initialInput?: string, deps?: WorkflowDeps, onNodeExecuted?: (nodeId: string, result: NodeExecutionResult) => void): Promise<string | null> {
+export async function executeWorkflow(
+  agent: AgentType,
+  triggerContext?: TriggerContext | string,
+  deps?: WorkflowDeps,
+  onNodeExecuted?: (nodeId: string, result: NodeExecutionResult) => void,
+): Promise<string | null> {
   const context: WorkflowExecutionContext = {
     agentId: agent.id,
     nodeValues: new Map(),
@@ -85,8 +81,17 @@ export async function executeWorkflow(agent: AgentType, initialInput?: string, d
   contexts.set(agent.id, context);
 
   try {
-    if (typeof initialInput === "string" && initialInput.length > 0) {
-      context.nodeValues.set("workflow-input", initialInput);
+    // Normalize triggerContext: accept legacy string (backward compat) or typed TriggerContext
+    if (typeof triggerContext === "string") {
+      if (triggerContext.length > 0) {
+        context.nodeValues.set("workflow-input", triggerContext);
+      }
+      context.nodeValues.set("workflow-trigger-context", { type: "manual", message: triggerContext } satisfies TriggerContext);
+    } else if (triggerContext) {
+      context.nodeValues.set("workflow-trigger-context", triggerContext);
+      if (triggerContext.message) {
+        context.nodeValues.set("workflow-input", triggerContext.message);
+      }
     }
 
     const order = getTopologicalOrder(agent.nodes, agent.edges);
@@ -99,7 +104,18 @@ export async function executeWorkflow(agent: AgentType, initialInput?: string, d
         continue;
       }
       context.currentNodeId = nodeId;
+      const nodeStartTime = Date.now();
       const result = await executeNode(node, agent.edges, context, agent, deps!);
+      deps?.onLog?.({
+        type: "node-execution",
+        agentId: agent.id,
+        nodeId: nodeId,
+        nodeLabel: node.label || node.type,
+        title: `Node: ${node.label || node.type}`,
+        output: result.success ? (typeof result.value === "string" ? result.value?.slice(0, 200) : JSON.stringify(result.value)?.slice(0, 200)) : undefined,
+        error: result.error,
+        durationMs: Date.now() - nodeStartTime,
+      });
       if (onNodeExecuted) {
         onNodeExecuted(nodeId, result);
       }

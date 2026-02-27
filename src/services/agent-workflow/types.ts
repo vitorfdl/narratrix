@@ -1,5 +1,9 @@
-import { AgentNodeType, AgentType } from "@/schema/agent-schema";
-import { PromptFormatterConfig } from "../inference/formatter";
+import type { ConsoleLogEntry } from "@/hooks/consoleStore";
+import type { AgentNodeType, AgentType, TriggerContext } from "@/schema/agent-schema";
+import type { PromptFormatterConfig } from "../inference/formatter";
+
+// Re-export TriggerContext so callers can import from this module
+export type { TriggerContext };
 
 export interface WorkflowExecutionContext {
   agentId: string;
@@ -30,6 +34,8 @@ export interface WorkflowDeps {
   getModelById: (id: string) => Promise<any | null>;
   getInferenceTemplateById: (id: string) => Promise<any | null>;
   getFormatTemplateById: (id: string) => Promise<any | null>;
+  getCharacterById: (id: string) => Promise<any | null>;
+  getChatById: (id: string) => Promise<any | null>;
   // model manifests (engine string needed)
   getManifestById: (id: string) => any | null;
   // non-streaming inference
@@ -41,6 +47,7 @@ export interface WorkflowDeps {
     stream?: boolean;
     toolset?: WorkflowToolDefinition[];
   }) => Promise<string | null>;
+  onLog?: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => void;
 }
 
 export type NodeExecutor = (node: AgentNodeType, inputs: Record<string, any>, context: WorkflowExecutionContext, agent: AgentType, deps: WorkflowDeps) => Promise<NodeExecutionResult>;

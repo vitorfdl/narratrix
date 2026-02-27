@@ -6,7 +6,7 @@ const chatTemplateCustomPromptSchema = z.object({
   name: z.string(),
   role: z.enum(["user", "character", "system"]),
   filter: z.record(z.string(), z.unknown()).optional().default({}),
-  position: z.enum(["top", "bottom", "depth"]),
+  position: z.enum(["top", "bottom", "depth", "before_user_input", "after_user_input"]),
   depth: z.number().optional().default(1), // Depth only applies to depth position
   prompt: z.string().default(""),
   enabled: z.boolean().optional().default(true),

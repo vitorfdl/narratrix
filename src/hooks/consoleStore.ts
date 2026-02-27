@@ -16,16 +16,36 @@ export interface ConsoleRequest {
   fullResponse?: string;
 }
 
+export type ConsoleLogType = "tool-call" | "node-execution" | "js-console";
+
+export interface ConsoleLogEntry {
+  id: string;
+  timestamp: number;
+  type: ConsoleLogType;
+  agentId?: string;
+  nodeId?: string;
+  nodeLabel?: string;
+  title: string;
+  input?: string;
+  output?: string;
+  error?: string;
+  durationMs?: number;
+}
+
 /**
  * Console store state interface
  */
 interface ConsoleState {
   requests: ConsoleRequest[];
+  logs: ConsoleLogEntry[];
   actions: {
     addRequest: (request: Omit<ConsoleRequest, "timestamp">) => void;
     updateRequestResponse: (id: string, response: InferenceResponse) => void;
     clearHistory: () => void;
     getRequestById: (id: string) => ConsoleRequest | undefined;
+    addLog: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => void;
+    updateLog: (id: string, updates: Partial<ConsoleLogEntry>) => void;
+    clearLogs: () => void;
   };
 }
 
@@ -33,12 +53,14 @@ interface ConsoleState {
  * Maximum number of requests to store in history
  */
 const MAX_HISTORY_LENGTH = 15;
+const MAX_LOGS_LENGTH = 50;
 
 /**
  * Console store for tracking inference requests
  */
 export const useConsoleStore = create<ConsoleState>((set, get) => ({
   requests: [],
+  logs: [],
   actions: {
     /**
      * Add a new request to the console history
@@ -127,8 +149,26 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
     getRequestById: (id) => {
       return get().requests.find((req) => req.id === id);
     },
+
+    addLog: (entry) =>
+      set((state) => {
+        const newEntry: ConsoleLogEntry = {
+          ...entry,
+          id: entry.id ?? `log_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          timestamp: Date.now(),
+        };
+        return { logs: [newEntry, ...state.logs].slice(0, MAX_LOGS_LENGTH) };
+      }),
+
+    updateLog: (id, updates) =>
+      set((state) => ({
+        logs: state.logs.map((log) => (log.id === id ? { ...log, ...updates } : log)),
+      })),
+
+    clearLogs: () => set({ logs: [] }),
   },
 }));
 
 export const useConsoleStoreActions = () => useConsoleStore((state) => state.actions);
 export const useConsoleStoreRequests = () => useConsoleStore((state) => state.requests);
+export const useConsoleStoreLogs = () => useConsoleStore((state) => state.logs);

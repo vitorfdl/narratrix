@@ -1,12 +1,14 @@
 import { useReactFlow } from "@xyflow/react";
-import { FileText, Settings } from "lucide-react";
+import { AlignLeft, FileText } from "lucide-react";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { NodeExecutor } from "@/services/agent-workflow/types";
 import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
@@ -129,34 +131,13 @@ const TextNodeConfigDialog: React.FC<TextNodeConfigDialogProps> = ({ open, initi
  * Memoized content component to prevent unnecessary re-renders
  */
 const TextContent = memo<{ config: TextNodeConfig; onConfigure: () => void }>(({ config, onConfigure }) => {
-  // const registerElementRef = useNodeRef();
-
-  // Prevent event propagation to React Flow
-  const handleConfigureClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigure();
-    },
-    [onConfigure],
-  );
-
   return (
-    <div className="space-y-4 w-full">
-      {/* Content Preview */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Content</label>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleConfigureClick} title="Configure text content">
-            <Settings className="h-3 w-3" />
-          </Button>
-        </div>
-        <div className="p-2 bg-muted/50 rounded-md max-h-16 custom-scrollbar overflow-y-auto border-l-2 border-blue-400 dark:border-blue-500">
-          <span className="text-xxs  text-muted-foreground whitespace-pre-line leading-tight" style={{ lineHeight: "1.1", display: "block" }}>
-            {config.content ? config.content.split("\n").slice(0, 3).join("\n") + (config.content.split("\n").length > 3 ? "\n..." : "") : "No content configured"}
-          </span>
-        </div>
-      </div>
+    <div className="space-y-3 w-full">
+      <NodeField label="Content" icon={AlignLeft} action={<NodeConfigButton onClick={onConfigure} title="Configure text content" />}>
+        <NodeConfigPreview variant="text" empty="No content configured">
+          {config.content ? config.content.split("\n").slice(0, 3).join("\n") + (config.content.split("\n").length > 3 ? "\n..." : "") : undefined}
+        </NodeConfigPreview>
+      </NodeField>
     </div>
   );
 });
@@ -198,9 +179,16 @@ export const TextNode = memo(({ id, data, selected }: NodeProps) => {
 
 TextNode.displayName = "TextNode";
 
+const textNodeExecutor: NodeExecutor = async (node) => {
+  const config = node.config as TextNodeConfig | undefined;
+  const content = config?.content ?? "";
+  return { success: true, value: content };
+};
+
 // Register the node
 NodeRegistry.register({
   metadata: TEXT_NODE_METADATA,
   component: TextNode,
   configProvider: TextNodeConfigProvider,
+  executor: textNodeExecutor,
 });

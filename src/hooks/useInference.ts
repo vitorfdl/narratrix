@@ -33,6 +33,10 @@ interface UseInferenceOptions {
   onStream?: (partialResponse: InferenceStreamingResponse, requestId: string) => void;
 }
 
+export interface ExecutableToolDefinition extends InferenceToolDefinition {
+  execute?: (args: Record<string, any>) => Promise<unknown>;
+}
+
 interface InferenceParams {
   messages: InferenceMessage[];
   modelSpecs: ModelSpecs;
@@ -41,7 +45,7 @@ interface InferenceParams {
   stream?: boolean;
   requestId?: string;
   disableLogs?: boolean;
-  tools?: InferenceToolDefinition[];
+  tools?: ExecutableToolDefinition[];
 }
 
 interface RequestRuntimeState {

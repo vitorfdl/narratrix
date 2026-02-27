@@ -64,25 +64,23 @@ export function AgentSidebar({
           {uniqueTags.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">No tags available</p>
           ) : (
-            <>
-              {uniqueTags
-                .filter((tag) => tag !== null)
-                .map((tag) => {
-                  const isSelected = selectedTags.includes(tag);
-                  return (
-                    <div
-                      key={tag}
-                      className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:text-primary transition-colors ${isSelected ? "bg-primary/20" : ""}`}
-                      onClick={() => onTagSelect(tag)}
-                    >
-                      {isSelected && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/5 bg-primary rounded-r-sm" />}
-                      <span className="font-light text-sm truncate">
-                        {tag} <span className="text-muted-foreground text-xs">({tagCounts[tag]})</span>
-                      </span>
-                    </div>
-                  );
-                })}
-            </>
+            uniqueTags
+              .filter((tag) => tag !== null)
+              .map((tag) => {
+                const isSelected = selectedTags.includes(tag);
+                return (
+                  <div
+                    key={tag}
+                    className={`relative flex items-center py-0.5 pl-3 cursor-pointer hover:text-primary transition-colors ${isSelected ? "bg-primary/20" : ""}`}
+                    onClick={() => onTagSelect(tag)}
+                  >
+                    {isSelected && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/5 bg-primary rounded-r-sm" />}
+                    <span className="font-light text-sm truncate">
+                      {tag} <span className="text-muted-foreground text-xs">({tagCounts[tag]})</span>
+                    </span>
+                  </div>
+                );
+              })
           )}
         </div>
       </ScrollArea>

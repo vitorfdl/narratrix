@@ -75,5 +75,11 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: include_str!("./migrations/12_create_chat_memories.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 13,
+            description: "add_chat_settings",
+            sql: include_str!("./migrations/13_add_chat_settings.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }

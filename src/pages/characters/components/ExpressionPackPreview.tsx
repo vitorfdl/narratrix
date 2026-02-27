@@ -154,7 +154,6 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
           if (needsUpdate) {
             await updateCharacter(currentProfile!.id, character_id, { expressions: currentExpressions });
-            toast.success("Expressions updated successfully");
           }
         } catch (error) {
           console.error("Error handling file drop:", error);
@@ -212,7 +211,6 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
       await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
       reloadAll();
-      toast.success(`Expression "${expressionToEdit.name}" updated`);
     } catch (error) {
       console.error("Failed to edit expression:", error);
       toast.error(`Failed to edit expression: ${error instanceof Error ? error.message : String(error)}`);
@@ -241,7 +239,6 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
           console.error(`Failed to delete expression image file (${expressionToDelete.image_path}):`, fileError);
         }
       }
-      toast.success(`Expression "${expressionToDelete.name}" deleted`);
     } catch (error) {
       console.error("Failed to delete expression:", error);
       toast.error(`Failed to delete expression: ${error instanceof Error ? error.message : String(error)}`);
@@ -279,7 +276,6 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
       const updatedExpressions = [...(expressions ?? []), newExpression];
       await updateCharacter(currentProfile!.id, character_id, { expressions: updatedExpressions });
       reloadAll();
-      toast.success(`Expression "${expressionName}" added`);
     } catch (error) {
       console.error("Failed to add expression:", error);
       toast.error(`Failed to add expression: ${error instanceof Error ? error.message : String(error)}`);
@@ -312,7 +308,6 @@ export function ExpressionPackPreview({ character_id }: ExpressionPackPreviewPro
 
       await updateCharacter(currentProfile!.id, character_id, { expressions: [] });
       reloadAll();
-      toast.success("All expressions deleted");
     } catch (error) {
       console.error("Failed to delete all expressions:", error);
       toast.error(`Failed to delete all expressions: ${error instanceof Error ? error.message : String(error)}`);

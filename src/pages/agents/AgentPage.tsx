@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Slider } from "@/components/ui/slider";
 import { useAgentActions, useAgentError, useAgentLoading, useAgents } from "@/hooks/agentStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useUIStore } from "@/hooks/UIStore";
 import { AgentType } from "@/schema/agent-schema";
 import { useLocalAgentPageSettings } from "@/utils/local-storage";
 import AddAgentDialog from "./components/AddAgentDialog";
@@ -35,6 +36,7 @@ export default function AgentPage() {
   const error = useAgentError();
   const { fetchAgents, deleteAgent, updateAgent } = useAgentActions();
   const currentProfile = useCurrentProfile();
+  const { navigationContext, clearNavigationContext } = useUIStore();
 
   // Local state
   const [settings, setSettings] = useLocalAgentPageSettings();
@@ -48,6 +50,16 @@ export default function AgentPage() {
       fetchAgents(currentProfile.id);
     }
   }, [currentProfile?.id, fetchAgents]);
+
+  // Auto-select agent when navigated here with a context agentId
+  useEffect(() => {
+    if (navigationContext?.agentId && agents.length > 0) {
+      const target = agents.find((a) => a.id === navigationContext.agentId);
+      if (target) {
+        setSelectedAgent(target);
+      }
+    }
+  }, [navigationContext?.agentId, agents]);
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -91,7 +103,6 @@ export default function AgentPage() {
     if (window.confirm(`Delete agent '${agent.name}'?`)) {
       try {
         await deleteAgent(agent.id);
-        toast.success(`Agent '${agent.name}' deleted successfully`);
       } catch (error) {
         console.error("Failed to delete agent:", error);
         // Error toast is handled by the store's error state
@@ -122,7 +133,6 @@ export default function AgentPage() {
       await updateAgent(currentProfile.id, agent.id, {
         favorite: !agent.favorite,
       });
-      toast.success(`Agent ${agent.favorite ? "removed from" : "added to"} favorites`);
     } catch (error) {
       console.error("Failed to toggle favorite:", error);
       // Error toast is handled by the store's error state
@@ -140,7 +150,16 @@ export default function AgentPage() {
 
   // If an agent is selected, show the ToolList view
   if (selectedAgent) {
-    return <EditAgentPage agent={selectedAgent} onBack={() => setSelectedAgent(null)} />;
+    return (
+      <EditAgentPage
+        agent={selectedAgent}
+        onBack={() => {
+          setSelectedAgent(null);
+          clearNavigationContext();
+        }}
+        returnTo={navigationContext?.returnTo}
+      />
+    );
   }
 
   return (

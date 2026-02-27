@@ -1,10 +1,10 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
-import { LuBot, LuEyeOff, LuFileText, LuPlay } from "react-icons/lu";
+import { LuBot, LuEyeOff, LuFileText, LuPlay, LuRefreshCw, LuZap } from "react-icons/lu";
 import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { useLazyRender } from "@/hooks/useLazyRender";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, UpdateChatMessageParams } from "@/schema/chat-message-schema";
+import type { ChatMessage, PromptConfig, UpdateChatMessageParams } from "@/schema/chat-message-schema";
 import { ContextCutDivider, EditControls, MessageActions, StreamingIndicator } from "./AdditionalActions";
 import { MessageAvatar } from "./MessageAvatar";
 import { ReasoningSection } from "./ReasoningCollapsible";
@@ -35,6 +35,19 @@ const SCRIPT_CONFIGS = {
   },
 } as const;
 
+const PROMPT_INJECTION_BEHAVIOR_CONFIG = {
+  next: {
+    icon: LuZap,
+    label: "Next Gen",
+    className: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  },
+  global: {
+    icon: LuRefreshCw,
+    label: "Global",
+    className: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+  },
+} as const;
+
 // Class name lookup tables
 const MESSAGE_BASE_CLASSES = {
   container: "group relative flex gap-4 p-4 my-1 rounded-xl border border-border/50 hover:border-border transition-colors duration-200 hover:shadow-sm",
@@ -42,7 +55,7 @@ const MESSAGE_BASE_CLASSES = {
   markdown: "select-text text-sm text-foreground leading-relaxed mt-2",
   controlsContainer: "absolute bottom-0 w-full flex justify-between items-center translate-y-3",
   scriptIndicator: "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border backdrop-blur-sm",
-  scriptHeader: "flex items-center justify-between mb-3 pb-2 border-b border-border/70",
+  scriptHeader: "flex items-center justify-between ",
   disabledOverlay: "absolute inset-0 rounded-xl pointer-events-none",
 };
 
@@ -51,6 +64,11 @@ const TYPE_CLASSES = {
   character: "bg-gradient-to-br from-card to-card/80",
   system: "bg-gradient-to-br from-card to-card/80",
 };
+
+const PROMPT_INJECTION_CONTAINER_CLASSES = {
+  next: "border-indigo-500/50 shadow-md shadow-indigo-500/20 bg-gradient-to-b from-indigo-500/5 to-indigo-500/3",
+  global: "border-violet-500/50 shadow-md shadow-violet-500/20 bg-gradient-to-b from-violet-500/10 to-violet-500/3",
+} as const;
 
 const STATE_CLASSES = {
   streaming: "border-primary/60 shadow-primary/20 shadow-md transition-all",
@@ -81,28 +99,72 @@ const ScriptIndicator = ({ script }: { script: keyof typeof SCRIPT_CONFIGS }) =>
   );
 };
 
-const ScriptHeader = ({ script, createdAt, messageType }: { script: keyof typeof SCRIPT_CONFIGS; createdAt: Date | string; messageType: string }) => {
-  const config = SCRIPT_CONFIGS[script];
-  const Icon = config.icon;
+const PromptInjectionBadges = ({ promptConfig }: { promptConfig: PromptConfig }) => {
+  const behaviorCfg = PROMPT_INJECTION_BEHAVIOR_CONFIG[promptConfig.behavior];
+  const BehaviorIcon = behaviorCfg.icon;
+  const positionLabel = promptConfig.position === "depth" ? `Depth ${promptConfig.depth}` : promptConfig.position.charAt(0).toUpperCase() + promptConfig.position.slice(1);
+  const roleLabel = promptConfig.role.charAt(0).toUpperCase() + promptConfig.role.slice(1);
+
   return (
-    <div className={MESSAGE_BASE_CLASSES.scriptHeader}>
-      <div className="flex items-center gap-2">
-        <div className={cn("p-1.5 rounded-md border", config.className)}>
-          <Icon className={cn("h-4 w-4", config.iconClassName)} />
-        </div>
-        <div>
-          <div className="font-semibold text-sm">{config.label}</div>
-          <div className="text-xs text-muted-foreground">{config.description}</div>
-        </div>
-      </div>
-      {messageType === "system" && (
-        <div className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
-          {new Date(createdAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </div>
+    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+      <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border", behaviorCfg.className)}>
+        <BehaviorIcon className="h-2.5 w-2.5" />
+        {behaviorCfg.label}
+      </span>
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/60 text-muted-foreground border border-border/50">
+        {roleLabel} · {positionLabel}
+      </span>
+      {promptConfig.behavior === "global" && promptConfig.globalType && (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/40 text-muted-foreground border border-dashed border-border/60">
+          #{promptConfig.globalType}
+        </span>
       )}
+    </div>
+  );
+};
+
+const ScriptHeader = ({
+  script,
+  createdAt,
+  messageType,
+  name,
+  promptConfig,
+}: {
+  script: keyof typeof SCRIPT_CONFIGS;
+  createdAt: Date | string;
+  messageType: string;
+  name?: string;
+  promptConfig?: PromptConfig;
+}) => {
+  const config = SCRIPT_CONFIGS[script];
+  const isPromptInjection = script === "agent" && !!promptConfig;
+  const Icon = isPromptInjection ? (promptConfig.behavior === "next" ? LuZap : LuRefreshCw) : config.icon;
+  const headerClass = isPromptInjection ? (promptConfig.behavior === "next" ? PROMPT_INJECTION_BEHAVIOR_CONFIG.next.className : PROMPT_INJECTION_BEHAVIOR_CONFIG.global.className) : config.className;
+  const iconClass = isPromptInjection ? "" : config.iconClassName;
+  const label = script === "agent" && name ? name : config.label;
+
+  return (
+    <div className={cn(MESSAGE_BASE_CLASSES.scriptHeader, "flex-col items-start gap-1.5")}>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <div className={cn("p-1.5 rounded-md border", headerClass)}>
+            <Icon className={cn("h-4 w-4", iconClass)} />
+          </div>
+          <div>
+            <span className="font-semibold text-sm">{label}</span>
+            {isPromptInjection && <span className="ml-1.5 text-xs text-muted-foreground">· Prompt Injection</span>}
+          </div>
+        </div>
+        {messageType === "system" && (
+          <div className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
+            {new Date(createdAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
+        )}
+      </div>
+      {isPromptInjection && <PromptInjectionBadges promptConfig={promptConfig} />}
     </div>
   );
 };
@@ -181,7 +243,6 @@ const MessageItem = ({
   const onExcludeFromPrompt = useCallback(async () => {
     try {
       await updateChatMessage(message.id, { disabled: !isDisabled });
-      toast.success("Message excluded from future context");
     } catch (error) {
       console.error("Failed to exclude message:", error);
       toast.error("Failed to exclude message from context");
@@ -216,17 +277,21 @@ const MessageItem = ({
     [displayContent, setEditedContent, setIsEditingID],
   );
 
+  const isPromptInjection = message.extra?.script === "agent" && !!message.extra?.promptConfig;
+  const promptInjectionBehavior = isPromptInjection ? (message.extra?.promptConfig?.behavior ?? "next") : null;
+
   const containerClassName = React.useMemo(() => {
     return cn(
       MESSAGE_BASE_CLASSES.container,
       TYPE_CLASSES[message.type],
       !isDisabled && message.type === "character" && "shadow-sm",
       !isDisabled && message.type === "user" && "shadow-sm",
-      message.type === "system" && "shadow-inner",
+      message.type === "system" && !isPromptInjection && "shadow-inner",
+      isPromptInjection && promptInjectionBehavior && PROMPT_INJECTION_CONTAINER_CLASSES[promptInjectionBehavior],
       isStreaming && STATE_CLASSES.streaming,
       isDisabled && STATE_CLASSES.disabled,
     );
-  }, [message.type, isStreaming, isDisabled]);
+  }, [message.type, isStreaming, isDisabled, isPromptInjection, promptInjectionBehavior]);
 
   const contentClassName = React.useMemo(() => {
     return cn(MESSAGE_BASE_CLASSES.content, message.type === "user" && !isEditing && "flex justify-end", message.type === "system" && "text-center", isDisabled && "relative");
@@ -270,7 +335,13 @@ const MessageItem = ({
 
             {message.extra?.script &&
               (message.type === "system" ? (
-                <ScriptHeader script={message.extra.script} createdAt={message.created_at} messageType={message.type} />
+                <ScriptHeader
+                  script={message.extra.script}
+                  createdAt={message.created_at}
+                  messageType={message.type}
+                  name={message.extra.name ?? undefined}
+                  promptConfig={message.extra.promptConfig ?? undefined}
+                />
               ) : (
                 <div className={cn("flex mb-3", message.type === "user" ? "justify-end" : "justify-start")}>
                   <ScriptIndicator script={message.extra.script} />

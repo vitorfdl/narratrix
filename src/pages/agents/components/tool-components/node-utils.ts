@@ -10,6 +10,9 @@ export const getNodeId = () => `node-${nodeId++}`;
 
 // Convert core node to React Flow format
 export const convertCoreNodeToReactFlow = (coreNode: AgentNodeType): Node<ToolNodeData> => {
+  // Rehydrate dynamicOutputs from the registry so handles are never lost after
+  // the core-format round-trip (serialisation does not persist dynamicOutputs).
+  const dynamicOutputs = NodeRegistry.getDynamicOutputs(coreNode.type, coreNode.config ?? {});
   return {
     id: coreNode.id,
     type: coreNode.type,
@@ -17,6 +20,7 @@ export const convertCoreNodeToReactFlow = (coreNode: AgentNodeType): Node<ToolNo
     data: {
       label: coreNode.label,
       config: coreNode.config,
+      ...(dynamicOutputs !== undefined ? { dynamicOutputs } : {}),
     },
     draggable: true,
     selectable: true,

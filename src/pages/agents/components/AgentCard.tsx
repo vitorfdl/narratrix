@@ -1,4 +1,4 @@
-import { LuBot, LuCode, LuGitBranch, LuHeart, LuHeartOff, LuNetwork, LuTrash2, LuZap } from "react-icons/lu";
+import { LuBot, LuGitBranch, LuHeart, LuHeartOff, LuNetwork, LuTrash2 } from "react-icons/lu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -15,18 +15,6 @@ interface AgentCardProps {
 export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCardProps) {
   // Get tags with null check
   const tags = agent.tags || [];
-
-  // Count nodes by type
-  const nodeTypes = agent.nodes.reduce(
-    (acc, node) => {
-      acc[node.type] = (acc[node.type] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
-  // Get run trigger type
-  const runTrigger = agent.settings?.run_on?.type || "manual";
 
   return (
     <Card
@@ -46,12 +34,6 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Run trigger badge */}
-            <Badge variant={runTrigger === "every_message" ? "default" : "secondary"} className="text-xxs flex items-center text-primary-foreground">
-              <LuZap className="h-3 w-3 mr-1" />
-              {runTrigger === "every_message" ? "Auto" : "Manual"}
-            </Badge>
-
             {/* Favorite button */}
             <Button
               variant="ghost"
@@ -83,23 +65,6 @@ export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCa
             <LuGitBranch className="h-3 w-3" />
             <span>{agent.edges.length} connections</span>
           </div>
-        </div>
-
-        {/* Node type indicators */}
-        <div className="flex flex-wrap gap-1">
-          {Object.entries(nodeTypes)
-            .slice(0, 3)
-            .map(([type, count]) => (
-              <Badge key={type} variant="outline" className="text-xxs py-0.5 px-1.5">
-                <LuCode className="h-3 w-3 mr-1" />
-                {type} {count > 1 && `(${count})`}
-              </Badge>
-            ))}
-          {Object.keys(nodeTypes).length > 3 && (
-            <Badge variant="outline" className="text-xxs py-0.5 px-1.5">
-              +{Object.keys(nodeTypes).length - 3} more
-            </Badge>
-          )}
         </div>
 
         {/* Tags */}

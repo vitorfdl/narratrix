@@ -33,13 +33,33 @@ export const agentEdgeSchema = z.object({
 });
 
 /**
+ * Trigger type enum for agent run conditions
+ */
+export const agentTriggerTypeEnum = z.enum([
+  "manual",
+  "after_user_message",
+  "before_user_message",
+  "after_character_message",
+  "before_character_message",
+  "after_any_message",
+  "before_any_message",
+  "after_all_participants",
+  "every_x_messages",
+]);
+
+/**
  * Agent Settings Schema
  */
 export const agentSettingsSchema = z
   .object({
     run_on: z.object({
-      type: z.enum(["manual", "every_message", "scheduled"]),
-      config: z.record(z.string(), z.any()).optional(),
+      type: agentTriggerTypeEnum,
+      config: z
+        .object({
+          messageCount: z.number().int().positive().optional(),
+          participantId: z.string().optional(),
+        })
+        .optional(),
     }),
     // Additional settings can be added here
   })
@@ -157,6 +177,25 @@ export type NodePositionType = z.infer<typeof nodePositionSchema>;
 export type AgentNodeType = z.infer<typeof agentNodeSchema>;
 export type AgentEdgeType = z.infer<typeof agentEdgeSchema>;
 export type AgentSettingsType = z.infer<typeof agentSettingsSchema>;
+export type AgentTriggerType = z.infer<typeof agentTriggerTypeEnum>;
+
+/**
+ * Context injected into a workflow when triggered by a chat event.
+ * Passed in from the trigger manager and read by the Trigger Node executor.
+ */
+export interface TriggerContext {
+  type: AgentTriggerType;
+  /** The chat ID this trigger fired in */
+  chatId?: string;
+  /** Text of the message that triggered this event */
+  message?: string;
+  /** ID of the triggering participant (character ID, user char ID, or agent ID) */
+  participantId?: string;
+  /** The user's persona character ID (null if not set) */
+  userCharacterId?: string | null;
+  /** Total message count in the chat at time of trigger (used for every_x_messages) */
+  messageCount?: number;
+}
 
 export type AgentType = z.infer<typeof agentSchema>;
 export type CreateAgentParams = z.infer<typeof createAgentSchema>;

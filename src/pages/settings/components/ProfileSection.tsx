@@ -67,7 +67,6 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
       const updatedProfile = await updateProfile(currentProfile.id, { name: newProfileName.trim() });
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
-      toast.success("Profile name updated successfully");
       setIsNameDialogOpen(false); // Close the dialog on success
     } catch (error) {
       console.error("Failed to update profile name:", error);
@@ -104,7 +103,6 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
 
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
-      toast.success("Password updated successfully");
 
       // Reset form
       setCurrentPassword("");
@@ -140,7 +138,6 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
 
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
-      toast.success("Password removed successfully");
 
       // Reset form
       setCurrentPassword("");
@@ -169,7 +166,6 @@ export const ProfileSection = ({ currentProfile, refreshProfiles }: ProfileSecti
       setCurrentProfile(updatedProfile);
       await refreshProfiles();
       await reloadAvatarImage();
-      toast.success("Avatar updated successfully");
       setIsAvatarDialogOpen(false);
     } catch (error) {
       console.error("Failed to update avatar:", error);

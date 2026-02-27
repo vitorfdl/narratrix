@@ -1,11 +1,22 @@
 import { create } from "zustand";
 
+export interface NavigationContext {
+  agentId?: string;
+  returnTo?: string;
+}
+
 interface UIState {
   activeSection: string;
+  navigationContext: NavigationContext | null;
   setActiveSection: (section: string) => void;
+  navigateToSection: (section: string, context?: NavigationContext) => void;
+  clearNavigationContext: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  activeSection: "chat", // Default section
-  setActiveSection: (section) => set({ activeSection: section }),
+  activeSection: "chat",
+  navigationContext: null,
+  setActiveSection: (section) => set({ activeSection: section, navigationContext: null }),
+  navigateToSection: (section, context = undefined) => set({ activeSection: section, navigationContext: context }),
+  clearNavigationContext: () => set({ navigationContext: null }),
 }));

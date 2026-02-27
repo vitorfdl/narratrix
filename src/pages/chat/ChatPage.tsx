@@ -255,7 +255,6 @@ export default function ChatPage() {
         // Refresh the list of all chats
         const refreshedChats = await listChats({ profile_id: profileId });
         setAllChats(refreshedChats);
-        toast.success(`Chat "${originalChat.name}" duplicated successfully.`);
       } catch (error) {
         console.error("Failed to duplicate chat:", error);
         toast.error("Failed to duplicate chat.");
@@ -292,8 +291,6 @@ export default function ChatPage() {
       // We just need to update the local `allChats` state and `openTabIds`
       setAllChats((prev) => prev.filter((chat) => chat.id !== chatToDeleteId));
       setOpenTabIds((prev) => prev.filter((id) => id !== chatToDeleteId));
-
-      toast.success(`"${chatName}" deleted successfully.`);
     } catch (error) {
       console.error("Failed to delete chat:", error);
       toast.error(`Failed to delete "${chatName}".`);
@@ -331,8 +328,6 @@ export default function ChatPage() {
       // Refresh the list of all chats to update the ChatMenuDropdown
       const refreshedChats = await listChats({ profile_id: profileId });
       setAllChats(refreshedChats);
-
-      toast.success(`Chat renamed to "${newName.trim()}".`);
     } catch (error) {
       console.error("Failed to rename chat:", error);
       toast.error("Failed to rename chat.");

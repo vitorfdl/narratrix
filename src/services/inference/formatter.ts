@@ -85,6 +85,11 @@ export function getChatHistory(
         continue;
       }
 
+      // Scripted prompt injections are resolved separately — skip them here
+      if (message.extra?.promptConfig) {
+        continue;
+      }
+
       const character = message.character_name || "";
       const index = message.message_index || 0;
       const messageText = message.messages[index];
@@ -157,6 +162,11 @@ export function createSystemPrompt(config: CreateSystemPromptConfig): string | u
 
     for (const customPrompt of customPrompts) {
       if (customPrompt.role !== "system" || !customPrompt.enabled) {
+        continue;
+      }
+
+      // before_user_input / after_user_input are inline message positions — not valid in the system prompt
+      if (customPrompt.position === "before_user_input" || customPrompt.position === "after_user_input") {
         continue;
       }
 
@@ -304,20 +314,134 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
     };
 
     if (customPrompt.position === "top") {
-      // Insert at the beginning
       result.unshift(promptMessage);
     } else if (customPrompt.position === "bottom") {
-      // Insert at the end
       result.push(promptMessage);
     } else if (customPrompt.position === "depth") {
-      // Insert at specific depth from the end
       const depth = customPrompt.depth || 1;
       const insertPosition = Math.max(0, result.length - depth);
       result.splice(insertPosition, 0, promptMessage);
+    } else if (customPrompt.position === "before_user_input") {
+      // Insert just before the last user-role message (the current user turn)
+      let lastUserIdx = -1;
+      for (let i = result.length - 1; i >= 0; i--) {
+        if (result[i].role === "user") {
+          lastUserIdx = i;
+          break;
+        }
+      }
+      if (lastUserIdx >= 0) {
+        result.splice(lastUserIdx, 0, promptMessage);
+      } else {
+        result.push(promptMessage);
+      }
+    } else if (customPrompt.position === "after_user_input") {
+      // Insert just after the last user-role message (the current user turn)
+      let lastUserIdx = -1;
+      for (let i = result.length - 1; i >= 0; i--) {
+        if (result[i].role === "user") {
+          lastUserIdx = i;
+          break;
+        }
+      }
+      if (lastUserIdx >= 0) {
+        result.splice(lastUserIdx + 1, 0, promptMessage);
+      } else {
+        result.push(promptMessage);
+      }
     }
   });
 
   return result;
+}
+
+/**
+ * Resolve active scripted prompt injections from chat messages.
+ *
+ * "next" prompts: active only if the last scripted-next message in the list
+ *   has no regular user/character message following it (i.e. it's the most
+ *   recent actionable item).
+ * "global" prompts: grouped by globalType (optionally scoped to agentId).
+ *   For each group, only the most recent message is active.
+ *
+ * Disabled messages are ignored.
+ */
+export function resolveScriptedPrompts(messages: ChatMessage[]): ChatTemplateCustomPrompt[] {
+  const activePrompts: ChatTemplateCustomPrompt[] = [];
+
+  // Work through messages in position order (assumed sorted ascending)
+  const ordered = [...messages].sort((a, b) => a.position - b.position);
+
+  // ── "next" behavior ──────────────────────────────────────────────────────────
+  // Find the last non-disabled scripted-next message, then check that nothing
+  // regular (user/character) comes after it in the chat.
+  let lastNextMsg: ChatMessage | null = null;
+  let hasRegularAfterLastNext = false;
+
+  for (const msg of ordered) {
+    if (msg.disabled) {
+      continue;
+    }
+    const pc = msg.extra?.promptConfig;
+    if (pc && pc.behavior === "next") {
+      lastNextMsg = msg;
+      hasRegularAfterLastNext = false;
+    } else if (msg.type === "user" || msg.type === "character") {
+      if (lastNextMsg) {
+        hasRegularAfterLastNext = true;
+      }
+    }
+  }
+
+  if (lastNextMsg && !hasRegularAfterLastNext) {
+    const pc = lastNextMsg.extra!.promptConfig!;
+    activePrompts.push({
+      id: lastNextMsg.id,
+      name: lastNextMsg.extra?.name ?? "Agent Prompt (Next)",
+      role: pc.role,
+      position: pc.position,
+      depth: pc.depth,
+      prompt: lastNextMsg.messages[lastNextMsg.message_index] ?? "",
+      enabled: true,
+      filter: {},
+    });
+  }
+
+  // ── "global" behavior ────────────────────────────────────────────────────────
+  // For each group key (globalType + optional agentId scope), keep only the
+  // most recently positioned message.
+  const globalGroups = new Map<string, ChatMessage>();
+
+  for (const msg of ordered) {
+    if (msg.disabled) {
+      continue;
+    }
+    const pc = msg.extra?.promptConfig;
+    if (!pc || pc.behavior !== "global") {
+      continue;
+    }
+
+    const groupKey = pc.scopeToAgent ? `${pc.globalType ?? "__none__"}::${msg.extra?.agentId ?? "__unknown__"}` : `${pc.globalType ?? "__none__"}`;
+
+    // Later positions overwrite earlier ones (ordered ascending)
+    globalGroups.set(groupKey, msg);
+  }
+
+  for (const msg of globalGroups.values()) {
+    const pc = msg.extra!.promptConfig!;
+    activePrompts.push({
+      id: msg.id,
+      name: msg.extra?.name ?? "Agent Prompt (Global)",
+      role: pc.role,
+      position: pc.position,
+      depth: pc.depth,
+      prompt: msg.messages[msg.message_index] ?? "",
+      enabled: true,
+      filter: {},
+    });
+  }
+
+  return activePrompts;
 }
 
 /**
@@ -326,10 +450,15 @@ export function processCustomPrompts(messages: InferenceMessage[], customPrompts
 export async function formatPrompt(config: PromptFormatterConfig): Promise<FormattedPromptResult> {
   const prefixOption = config.formatTemplate?.config.settings.prefix_messages;
   const contextSeparator = config.formatTemplate?.config.context_separator?.replaceAll("\\n", "\n");
-  // Step 1: Get chat history with user message
+
+  // Resolve active scripted prompt injections from the raw message history
+  const scriptedPrompts = resolveScriptedPrompts(config.messageHistory as ChatMessage[]);
+  const mergedCustomPrompts = [...(config.chatTemplate?.custom_prompts ?? []), ...scriptedPrompts];
+
+  // Step 1: Get chat history with user message (scripted prompt messages are skipped inside)
   const chatHistory = getChatHistory(structuredClone(config.messageHistory), config.userPrompt, prefixOption, config.chatConfig?.injectionPrompts);
-  // Step 2: Process custom prompts from the chat template
-  let processedMessages = processCustomPrompts(chatHistory, config.chatTemplate?.custom_prompts);
+  // Step 2: Process custom prompts (template + resolved scripted prompts)
+  let processedMessages = processCustomPrompts(chatHistory, mergedCustomPrompts);
 
   // Get the order of lorebooks to be used (Character > User > Template)
   const LoreBookOrder = [config.chatConfig?.character?.lorebook_id, config.chatConfig?.user_character?.lorebook_id, ...(config.chatTemplate?.lorebook_list || [])].filter((id) => id) as string[];
@@ -355,9 +484,9 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
     processedMessages = mergeSubsequentMessages(structuredClone(processedMessages), contextSeparator);
   }
 
-  // Step 3: Create system prompt
+  // Step 3: Create system prompt (uses merged custom + scripted prompts)
   const rawSystemPrompt = createSystemPrompt({
-    customPrompts: config.chatTemplate?.custom_prompts,
+    customPrompts: mergedCustomPrompts,
     systemPromptTemplate: config.formatTemplate,
     chatConfig: config.chatConfig,
     lorebookContent: lorebookContent.replacers,
@@ -373,7 +502,7 @@ export async function formatPrompt(config: PromptFormatterConfig): Promise<Forma
 
   const limitedPrompt = await applyContextLimit(formattedPrompt, {
     config: config.chatTemplate?.config || { max_context: 100, max_tokens: 1500, max_depth: 100 },
-    custom_prompts: config.chatTemplate?.custom_prompts || [],
+    custom_prompts: mergedCustomPrompts,
   });
 
   if (!limitedPrompt.inferenceMessages.length) {

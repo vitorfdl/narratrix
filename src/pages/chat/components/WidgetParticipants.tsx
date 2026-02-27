@@ -11,18 +11,22 @@ import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { useAgents } from "@/hooks/agentStore";
+import { useAgentWorkflowStateById, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatId, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatId, useCurrentChatParticipants, useCurrentChatSettings, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
-import { type AgentWorkflowState, useAgentWorkflow } from "@/hooks/useAgentWorkflow";
+import { useUIStore } from "@/hooks/UIStore";
+import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
-import type { AgentType } from "@/schema/agent-schema";
+import type { AgentTriggerType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import { Character } from "@/schema/characters-schema";
+import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import AddParticipantPopover from "./AddParticipantPopover";
 
 // Types
@@ -35,7 +39,7 @@ export interface Participant {
 }
 
 interface WidgetParticipantsProps {
-  onOpenConfig?: () => void;
+  onOpenConfig?: () => void; // reserved for future use
 }
 
 // ─── Shared DnD Wrapper ───────────────────────────────────────────────────────
@@ -179,30 +183,40 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
 
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 
-type TriggerType = "manual" | "every_message" | "scheduled";
-
-const TRIGGER_LABEL: Record<TriggerType, string> = {
+const TRIGGER_LABEL: Record<AgentTriggerType, string> = {
   manual: "Manual",
-  every_message: "Auto",
-  scheduled: "Timed",
+  after_user_message: "After User",
+  before_user_message: "Before User",
+  after_character_message: "After Char",
+  before_character_message: "Before Char",
+  after_any_message: "After Any",
+  before_any_message: "Before Any",
+  after_all_participants: "After All",
+  every_x_messages: "Every X",
 };
 
 interface AgentParticipantCardProps {
   participant: Participant;
   agent: AgentType;
-  workflowState: AgentWorkflowState;
-  inQueue: boolean;
   onToggle: (id: string) => void;
   onTrigger: (id: string) => void;
   onRemove: (id: string) => void;
   onEdit: (id: string) => void;
 }
 
-const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant, agent, workflowState, inQueue, onToggle, onTrigger, onRemove, onEdit }) => {
+const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant, agent, onToggle, onTrigger, onRemove, onEdit }) => {
   const isEnabled = participant.isEnabled ?? true;
-  const triggerType: TriggerType = (agent.settings?.run_on?.type as TriggerType) ?? "manual";
+  // Read per-agent state from the global store so any component executing this agent's
+  // workflow (including WidgetGenerate's orchestrator) triggers the animation here.
+  // This component self-subscribes to the store, so no parent re-render is needed.
+  const workflowState = useAgentWorkflowStateById(agent.id);
+  // Prefer trigger type from the Trigger node config; fall back to settings.run_on
+  const triggerNodeConfig = agent.nodes?.find((n) => n.type === "trigger")?.config as { triggerType?: AgentTriggerType } | undefined;
+  const triggerType: AgentTriggerType = triggerNodeConfig?.triggerType ?? agent.settings?.run_on?.type ?? "manual";
   const triggerLabel = TRIGGER_LABEL[triggerType] ?? TRIGGER_LABEL.manual;
-  const isRunning = workflowState.isRunning && inQueue;
+  const isAutoTrigger = triggerType !== "manual";
+  // isRunning is derived entirely from the store — no parent re-render dependency
+  const isRunning = workflowState.isRunning;
 
   const nodeCount = agent.nodes?.length ?? 0;
   const executedCount = workflowState.executedNodes.length;
@@ -228,8 +242,8 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
           {participant.name}
         </span>
 
-        {/* Trigger label — subtle, always visible */}
-        <span className="text-[10px] text-muted-foreground/70 flex-shrink-0 uppercase tracking-wider">{triggerLabel}</span>
+        {/* Trigger label — subtle, always visible; highlight when auto-trigger is active */}
+        <span className={cn("text-[10px] flex-shrink-0 uppercase tracking-wider", isAutoTrigger ? "text-primary/70 font-semibold" : "text-muted-foreground/70")}>{triggerLabel}</span>
 
         {/* Hover controls: toggle + delete */}
         <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover/agent:opacity-100 transition-opacity">
@@ -265,22 +279,22 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 
-const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
+const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
   const characterList = useCharacters();
   const agentList = useAgents();
   const currentProfile = useCurrentProfile();
   const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
   const [isEditCharacterModalOpen, setIsEditCharacterModalOpen] = useState<string | null>(null);
-  const [isEditAgentModalOpen, setIsEditAgentModalOpen] = useState<string | null>(null);
-
+  const { navigateToSection } = useUIStore();
   const currentChatId = useCurrentChatId();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const participants = useCurrentChatParticipants() || [];
+  const chatSettings = useCurrentChatSettings();
   const { addParticipant, removeParticipant, toggleParticipantEnabled, updateSelectedChat } = useChatActions();
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
   const inferenceService = useInferenceServiceFromContext();
-  const { executeWorkflow: executeAgentWorkflow, workflowState } = useAgentWorkflow();
+  const { executeWorkflow: executeAgentWorkflow, cancelWorkflow: cancelAgentWorkflow } = useAgentWorkflow();
 
   const [streamingState, setStreamingState] = useState(() => inferenceService.getStreamingState(currentChatId));
 
@@ -411,37 +425,43 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         }
 
         if (agent) {
-          if (workflowState.isRunning) {
+          // If already running, stop the agent instead of re-triggering it
+          if (useAgentWorkflowStore.getState().states[agent.id]?.isRunning) {
+            cancelAgentWorkflow(agent.id);
             return;
           }
           try {
-            const result = await executeAgentWorkflow(agent, "", (nodeId, result) => {
+            const manualContext: TriggerContext = { type: "manual", participantId: agent.id, chatId: currentChatId, userCharacterId: currentChatUserCharacterID ?? null };
+            await executeAgentWorkflow(agent, manualContext, (nodeId, result) => {
               console.log(`Node ${nodeId} executed:`, result);
             });
-            if (result) {
-              toast.success(`Agent ${agent.name} completed successfully`);
-            } else {
-              toast.success(`Agent ${agent.name} completed`);
-            }
           } catch (error) {
             toast.error(`Agent ${agent.name} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
           }
         } else if (character) {
-          await inferenceService.generateMessage({ chatId: currentChatId, characterId: participantId });
+          await generateCharacterWithAgents(participantId, () => inferenceService.generateMessage({ chatId: currentChatId, characterId: participantId, emitChatEvents: false }), {
+            chatId: currentChatId,
+            participants: participants ?? [],
+            agents: agentList,
+            userCharacterId: currentChatUserCharacterID ?? null,
+            executeWorkflow: executeAgentWorkflow,
+            isAborted: () => false,
+          });
         }
       } catch (error) {
         console.error("Error triggering message:", error);
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
       }
     },
-    [characterList, agentList, inferenceService, streamingState.characterId, currentChatId, workflowState.isRunning, executeAgentWorkflow],
+    [characterList, agentList, participants, inferenceService, streamingState.characterId, currentChatId, currentChatUserCharacterID, executeAgentWorkflow, cancelAgentWorkflow],
   );
 
   const isInQueue = (participantId: string): boolean => {
     const inCharacterQueue =
       (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") || (participantId === "user" && streamingState.messageId === "generate-input-area");
     const agent = agentList.find((a) => a.id === participantId);
-    const inAgentQueue = !!(agent && workflowState.isRunning);
+    // Use the per-agent store state so the indicator reflects ALL executors (orchestrator + manual)
+    const inAgentQueue = !!(agent && (useAgentWorkflowStore.getState().states[participantId]?.isRunning ?? false));
     return inCharacterQueue || inAgentQueue;
   };
 
@@ -500,12 +520,10 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         <AgentParticipantCard
           participant={participant}
           agent={agent}
-          workflowState={workflowState}
-          inQueue={inQueue}
           onToggle={handleToggleParticipant}
           onTrigger={handleTriggerMessage}
           onRemove={handleRemoveParticipant}
-          onEdit={setIsEditAgentModalOpen}
+          onEdit={(agentId) => navigateToSection("agents", { agentId, returnTo: "chat" })}
         />
       );
     }
@@ -541,9 +559,42 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
             <LuUserPlus className="h-4 w-4" />
           </Button>
         </AddParticipantPopover>
-        <Button disabled variant="ghost" size="icon" onClick={onOpenConfig} title="Settings">
-          <LuSettings className="h-4 w-4" />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" title="Display Settings">
+              <LuSettings className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="start" className="w-56 p-3">
+            <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Display</p>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs">Hide excluded messages</span>
+                <Switch
+                  size="sm"
+                  checked={chatSettings?.hideDisabledMessages ?? false}
+                  onCheckedChange={(checked) =>
+                    updateSelectedChat({
+                      settings: { hideDisabledMessages: checked, hideScriptMessages: chatSettings?.hideScriptMessages ?? false },
+                    })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs">Hide Prompt Injection messages</span>
+                <Switch
+                  size="sm"
+                  checked={chatSettings?.hideScriptMessages ?? false}
+                  onCheckedChange={(checked) =>
+                    updateSelectedChat({
+                      settings: { hideDisabledMessages: chatSettings?.hideDisabledMessages ?? false, hideScriptMessages: checked },
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <CharacterForm
@@ -554,9 +605,6 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
         setIsEditing={() => {}}
         onSuccess={() => setIsEditCharacterModalOpen(null)}
       />
-
-      {/* TODO: Add Agent Edit Dialog when available */}
-      {isEditAgentModalOpen && <div className="hidden" />}
     </div>
   );
 };

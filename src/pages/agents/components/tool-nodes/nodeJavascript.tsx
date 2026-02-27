@@ -1,46 +1,234 @@
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useReactFlow } from "@xyflow/react";
-import { Code, Settings } from "lucide-react";
-import React, { memo, useCallback, useEffect, useState } from "react";
+import { BookOpen, ChevronDown, Code, List, Maximize2, Minimize2, Save, TableProperties, X } from "lucide-react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
+import { JavascriptEditor, type JavascriptEditorRef } from "@/components/markdownRender/javascript-editor";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useConsoleStore } from "@/hooks/consoleStore";
+import { mapSourceHandleToReadableName } from "@/services/agent-workflow/handles";
 import { runJavascript } from "@/services/agent-workflow/javascript-runner";
-import { NodeExecutionResult, NodeExecutor, WorkflowToolDefinition } from "@/services/agent-workflow/types";
+import { type NodeExecutionResult, type NodeExecutor, type WorkflowToolDefinition } from "@/services/agent-workflow/types";
 import JsonSchemaCreator from "../json-schema/JsonSchemaCreator";
-import { SchemaDefinition } from "../json-schema/types";
-import { NodeBase, NodeInput, NodeOutput, useNodeRef } from "../tool-components/NodeBase";
+import type { SchemaDefinition } from "../json-schema/types";
+import { NodeBase, type NodeInput, type NodeOutput } from "../tool-components/NodeBase";
+import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
-import { NodeProps } from "./nodeTypes";
+import type { NodeProps } from "./nodeTypes";
+
+// ---------------------------------------------------------------------------
+// Snippets
+// ---------------------------------------------------------------------------
+const CODE_SNIPPETS: { label: string; code: string; mode?: "script" | "tool"; inputSchema?: SchemaDefinition | null }[] = [
+  {
+    label: "Log Input",
+    code: `// Open the Chat Debugger (bottom panel → Logs tab) to inspect these logs
+console.log("input:", input);
+return input;`,
+  },
+  {
+    label: "Get Character Personality",
+    code: `// Connect Trigger → Participant ID so that \`input\` holds the character ID
+const character = await stores.characters.getCharacterById(String(input));
+if (!character) return "Character not found";
+
+const personality = character.custom?.personality;
+console.log("personality:", personality);
+return personality ?? "";`,
+  },
+  {
+    label: "Dice Roll d20 (Tool)",
+    mode: "tool",
+    inputSchema: {
+      $schema: "http://json-schema.org/draft-07/schema#",
+      type: "object",
+      title: "DiceRoll",
+      description: "Roll a d20 with an attribute modifier against a difficulty class",
+      properties: {
+        attribute: {
+          type: "number",
+          description: "Attribute score — modifier applied is (score − 10) ÷ 2 (default: 10)",
+          default: 10,
+        },
+        difficulty: {
+          type: "number",
+          description: "Difficulty class the total must meet or beat (default: 15)",
+          default: 15,
+        },
+        modifier: {
+          type: "number",
+          description: "Flat bonus or penalty added to the roll (default: 0)",
+          default: 0,
+        },
+      },
+      required: [],
+    },
+    code: `const { attribute = 10, difficulty = 15, modifier = 0 } = input ?? {};
+const roll = Math.floor(Math.random() * 20) + 1;
+const attrMod = Math.floor((attribute - 10) / 2);
+const total = roll + attrMod + modifier;
+const success = total >= difficulty;
+
+return utils.jsonStringify({
+  roll,
+  attribute_modifier: attrMod,
+  modifier,
+  total,
+  difficulty,
+  success,
+  result: success ? "Success" : "Failure",
+});`,
+  },
+  {
+    label: "Filter & Delete Messages",
+    code: `// Fetches all messages for the current chat and deletes those matching a filter.
+// Customize the condition below to suit your use case.
+const messages = await stores.chat.fetchChatMessages();
+const toDelete = messages.filter((msg) => !msg.content?.trim()); // example: remove blank messages
+
+for (const msg of toDelete) {
+  await stores.chat.deleteChatMessage(msg.id);
+}
+
+return \`Deleted \${toDelete.length} of \${messages.length} messages\`;`,
+  },
+  {
+    label: "Add Lorebook Entry",
+    code: `// Connect Trigger → Participant ID so that \`input\` holds the character ID
+const character = await stores.characters.getCharacterById(String(input));
+if (!character) return "Character not found";
+if (!character.lorebook_id) return \`Character "\${character.name}" has no lorebook\`;
+
+const entries = await stores.lorebook.loadLorebookEntries(character.lorebook_id);
+console.log("existing entries:", entries.length);
+
+await stores.lorebook.createLorebookEntry({
+  lorebook_id: character.lorebook_id,
+  keys: ["keyword"],
+  content: "New entry content goes here",
+  enabled: true,
+});
+
+return \`Entry added to lorebook (\${entries.length + 1} total)\`;`,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Executor
+// ---------------------------------------------------------------------------
 
 /**
- * Node Execution
+ * Build a clean input value for user code from the edges connected to this JS node.
+ *
+ * - Single connection: returns the raw value directly (e.g. a string, array).
+ * - Multiple connections: returns a named object using human-readable keys derived
+ *   from the source handle ID (e.g. `out-messages` → `chatHistory`).
+ * - Duplicate keys (two nodes with the same source handle): values are collected
+ *   into an array under that key.
  */
-const executeJavascriptNode: NodeExecutor = async (node, inputs, context, _agent, _deps): Promise<NodeExecutionResult> => {
+function buildJavascriptInput(node: { id: string }, edges: { source: string; sourceHandle?: string | null; target: string; targetHandle?: string | null }[], contextValues: Map<string, any>): unknown {
+  const incoming = edges.filter((e) => e.target === node.id);
+  if (incoming.length === 0) {
+    return undefined;
+  }
+
+  const resolved: { key: string; value: unknown }[] = [];
+  for (const edge of incoming) {
+    const handleScopedKey = `${edge.source}::${edge.sourceHandle}`;
+    const value = contextValues.has(handleScopedKey) ? contextValues.get(handleScopedKey) : contextValues.get(edge.source);
+    if (value !== undefined) {
+      const key = mapSourceHandleToReadableName(edge.sourceHandle ?? "value");
+      resolved.push({ key, value });
+    }
+  }
+
+  if (resolved.length === 0) {
+    return undefined;
+  }
+
+  // Single connection: unwrap the value directly for simplicity
+  if (resolved.length === 1) {
+    return resolved[0].value;
+  }
+
+  // Multiple connections: build a named object, collecting duplicate keys into arrays
+  const result: Record<string, unknown> = {};
+  for (const { key, value } of resolved) {
+    if (key in result) {
+      if (!Array.isArray(result[key])) {
+        result[key] = [result[key]];
+      }
+      (result[key] as unknown[]).push(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+const executeJavascriptNode: NodeExecutor = async (node, _inputs, context, agent, _deps): Promise<NodeExecutionResult> => {
   const cfg = (node.config as JavascriptNodeConfig) || {};
   const code = typeof cfg?.code === "string" ? cfg.code : "";
 
-  const wantText: boolean = Boolean((inputs as any).__wantText);
-  const wantTool: boolean = Boolean((inputs as any).__wantTool);
+  // Determine which outputs are active based on mode (authoritative) or connected edges (legacy fallback)
+  const outgoing = agent.edges.filter((e) => e.source === node.id);
+  let wantText: boolean;
+  let wantTool: boolean;
+  if (cfg?.mode === "script") {
+    wantText = true;
+    wantTool = false;
+  } else if (cfg?.mode === "tool") {
+    wantText = false;
+    wantTool = true;
+  } else {
+    wantText = outgoing.some((e) => e.sourceHandle === "out-string");
+    wantTool = outgoing.some((e) => e.sourceHandle === "out-toolset");
+  }
 
   const toolsetHandleKey = `${node.id}::out-toolset`;
   const textHandleKey = `${node.id}::out-string`;
 
-  const name = cfg?.name || node.label || "javascriptTool";
+  const name = cfg?.inputSchema?.title || node.label || "javascriptTool";
   const tool: WorkflowToolDefinition = {
     name,
     description: "Javascript node tool",
     inputSchema: cfg?.inputSchema || null,
     invoke: async (args: Record<string, any>) => {
-      return await runJavascript(code, args);
+      const { result, consoleLogs } = await runJavascript(code, args);
+      if (consoleLogs.length > 0) {
+        useConsoleStore.getState().actions.addLog({
+          id: `jslog_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          type: "js-console",
+          nodeId: node.id,
+          nodeLabel: node.label || "Javascript",
+          title: `JS Tool: ${name}`,
+          output: consoleLogs.join("\n"),
+        });
+      }
+      return result;
     },
   };
 
-  // Execute code if text is desired
+  // Build a clean, user-friendly input value from connected edges
+  const cleanInput = buildJavascriptInput(node, agent.edges, context.nodeValues);
+
   let textResult: string | undefined;
   if (wantText) {
     try {
-      const result = await runJavascript(code, inputs);
+      const { result, consoleLogs } = await runJavascript(code, cleanInput);
+      if (consoleLogs.length > 0) {
+        useConsoleStore.getState().actions.addLog({
+          id: `jslog_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          type: "js-console",
+          nodeId: node.id,
+          nodeLabel: node.label || "Javascript",
+          title: `JS: ${node.label || "Javascript"}`,
+          output: consoleLogs.join("\n"),
+        });
+      }
       textResult = typeof result === "string" ? result : JSON.stringify(result ?? "");
       context.nodeValues.set(textHandleKey, textResult);
     } catch (e: unknown) {
@@ -50,7 +238,6 @@ const executeJavascriptNode: NodeExecutor = async (node, inputs, context, _agent
   }
 
   if (wantTool && wantText) {
-    // Return both in structured form; runner mirrors to handles
     return { success: true, value: { toolset: [tool], text: textResult } } as any;
   }
 
@@ -59,20 +246,28 @@ const executeJavascriptNode: NodeExecutor = async (node, inputs, context, _agent
     return { success: true, value: [tool] };
   }
 
-  // Only text requested
   return { success: true, value: textResult || "" };
 };
 
-/**
- * UI and Node Configuration
- */
+// ---------------------------------------------------------------------------
+// Config type
+// ---------------------------------------------------------------------------
 export interface JavascriptNodeConfig {
-  name: string;
+  mode: "script" | "tool";
   code: string;
   inputSchema?: SchemaDefinition | null;
 }
 
-// Define the node's metadata and properties
+// ---------------------------------------------------------------------------
+// Node metadata
+// ---------------------------------------------------------------------------
+const SCRIPT_OUTPUTS: NodeOutput[] = [{ id: "out-string", label: "Text", edgeType: "string" }];
+const TOOL_OUTPUTS: NodeOutput[] = [{ id: "out-toolset", label: "Toolset", edgeType: "toolset" }];
+const BOTH_OUTPUTS: NodeOutput[] = [
+  { id: "out-toolset", label: "Toolset", edgeType: "toolset" },
+  { id: "out-string", label: "Text", edgeType: "string" },
+];
+
 const JAVASCRIPT_NODE_METADATA = {
   type: "javascript",
   label: "Javascript",
@@ -82,17 +277,13 @@ const JAVASCRIPT_NODE_METADATA = {
   deletable: true,
   category: "Code Runner",
   inputs: [{ id: "in-code-params", label: "Any", edgeType: "any" as const, targetRef: "code-section", allowMultipleConnections: true }] as NodeInput[],
-  outputs: [
-    { id: "out-toolset", label: "Toolset", edgeType: "toolset" },
-    { id: "out-string", label: "Text", edgeType: "string" },
-  ] as NodeOutput[],
+  outputs: BOTH_OUTPUTS,
   defaultConfig: {
-    name: "Javascript Node",
+    mode: "script",
     code: "// Write your JavaScript code here\nreturn input;",
   } as JavascriptNodeConfig,
 };
 
-// Configuration provider namespace
 namespace JavascriptNodeConfigProvider {
   export function getDefaultConfig() {
     return {
@@ -102,9 +293,23 @@ namespace JavascriptNodeConfigProvider {
   }
 }
 
-/**
- * JavascriptNodeConfigDialog: Dialog for configuring JavaScript node
- */
+// ---------------------------------------------------------------------------
+// Helper: resolve dynamic outputs from mode
+// ---------------------------------------------------------------------------
+function getOutputsForMode(mode?: "script" | "tool"): NodeOutput[] {
+  if (mode === "script") {
+    return SCRIPT_OUTPUTS;
+  }
+  if (mode === "tool") {
+    return TOOL_OUTPUTS;
+  }
+  // Legacy nodes without a mode: keep both
+  return BOTH_OUTPUTS;
+}
+
+// ---------------------------------------------------------------------------
+// Config dialog
+// ---------------------------------------------------------------------------
 export interface JavascriptNodeConfigDialogProps {
   open: boolean;
   initialConfig: JavascriptNodeConfig;
@@ -126,16 +331,21 @@ const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({
   });
 
   const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
-  const currentInputSchema = watch("inputSchema");
+  const [expanded, setExpanded] = useState(false);
+  const [snippetsOpen, setSnippetsOpen] = useState(false);
+  const editorRef = useRef<JavascriptEditorRef>(null);
 
-  // Reset form only when dialog opens (not when it closes or on other changes)
+  const currentInputSchema = watch("inputSchema");
+  const currentMode = watch("mode");
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset only when dialog opens, not on every config change
   useEffect(() => {
     if (open) {
       reset(initialConfig);
+      setExpanded(false);
     }
-  }, [open, reset]); // Removed initialConfig from dependencies
+  }, [open, reset]);
 
-  // Save handler
   const onSubmit = (data: JavascriptNodeConfig) => {
     onSave(data);
   };
@@ -145,80 +355,176 @@ const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({
     setSchemaDialogOpen(false);
   };
 
-  const handleSchemaConfigCancel = () => {
-    setSchemaDialogOpen(false);
-  };
-
   const removeInputSchema = () => {
     setValue("inputSchema", null, { shouldDirty: true });
   };
 
+  const handleInsertSnippet = (snippet: (typeof CODE_SNIPPETS)[number]) => {
+    editorRef.current?.replaceContent(snippet.code);
+    setValue("code", snippet.code, { shouldDirty: true });
+    if (snippet.mode) {
+      setValue("mode", snippet.mode, { shouldDirty: true });
+    }
+    if (snippet.inputSchema !== undefined) {
+      setValue("inputSchema", snippet.inputSchema, { shouldDirty: true });
+    }
+  };
+
+  const editorMinHeight = expanded ? "320px" : "200px";
+
   return (
     <>
       <Dialog open={open} onOpenChange={onCancel}>
-        <DialogContent size="default">
+        <DialogContent size="window" className="overflow-hidden" allowEscapeKeyClose={false} allowClickOutsideClose={false}>
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
             <DialogHeader>
-              <DialogTitle>Configure JavaScript Node</DialogTitle>
+              <div className="flex items-center justify-between w-full">
+                <DialogTitle>Configure JavaScript Node</DialogTitle>
+                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setExpanded((v) => !v)} title={expanded ? "Collapse editor" : "Expand editor"}>
+                  {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
+              </div>
             </DialogHeader>
-            <DialogBody>
+
+            <DialogBody className="max-h-full">
               <div className="flex flex-col gap-4 py-2">
+                {/* Mode selector */}
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1 block">Input Schema</label>
-                  <div className="space-y-1">
-                    {currentInputSchema ? (
-                      <div className="px-3 py-1 bg-muted/50 rounded-md border">
-                        <div className="flex items-center justify-between mb-0">
-                          <span className="text-xs font-medium">{currentInputSchema.title || "Input Schema"}</span>
-                          <div className="flex gap-1">
-                            <Button type="button" variant="ghost" size="sm" onClick={() => setSchemaDialogOpen(true)} className="h-6 px-2 text-xs">
-                              Edit
-                            </Button>
-                            <Button type="button" variant="ghost" size="sm" onClick={removeInputSchema} className="h-6 px-2 text-xs text-destructive hover:text-destructive">
-                              Remove
+                  <div className="flex items-center gap-1 mb-1.5">
+                    <label className="text-xs font-medium text-foreground">Mode</label>
+                    <HelpTooltip>
+                      <p className="mb-1">
+                        <span className="font-semibold">Script</span> — Code runs inline during the workflow. The return value flows to the next node.
+                      </p>
+                      <p>
+                        <span className="font-semibold">Tool</span> — Code is exposed as a callable tool for Agent nodes. Define an input schema and a name.
+                      </p>
+                    </HelpTooltip>
+                  </div>
+                  <Controller
+                    name="mode"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="inline-flex rounded-md border border-border overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => field.onChange("script")}
+                          className={`px-4 py-1.5 text-xs font-medium transition-colors ${
+                            field.value === "script" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          Script
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => field.onChange("tool")}
+                          className={`px-4 py-1.5 text-xs font-medium border-l border-border transition-colors ${
+                            field.value === "tool" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          Tool
+                        </button>
+                      </div>
+                    )}
+                  />
+                </div>
+
+                {/* Input schema — only in tool mode */}
+                {currentMode === "tool" && (
+                  <div>
+                    <label className="text-xs font-medium text-foreground mb-1 block">Input Schema</label>
+                    <div className="space-y-1">
+                      {currentInputSchema ? (
+                        <div className="px-3 py-1 bg-muted/50 rounded-md border">
+                          <div className="flex items-center justify-between mb-0">
+                            <span className="text-xs font-medium">{currentInputSchema.title || "Input Schema"}</span>
+                            <div className="flex gap-1">
+                              <Button type="button" variant="ghost" size="sm" onClick={() => setSchemaDialogOpen(true)} className="h-6 px-2 text-xs">
+                                Edit
+                              </Button>
+                              <Button type="button" variant="ghost" size="sm" onClick={removeInputSchema} className="h-6 px-2 text-xs text-destructive hover:text-destructive">
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                          {currentInputSchema.description && <p className="text-xs text-muted-foreground mb-2">{currentInputSchema.description}</p>}
+                          <div className="text-xs text-muted-foreground">{Object.keys(currentInputSchema.properties || {}).length} properties defined</div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-muted/20 rounded-md border-dashed border">
+                          <div className="text-center">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setSchemaDialogOpen(true)} className="h-7 px-3 text-xs">
+                              Configure Schema
                             </Button>
                           </div>
                         </div>
-                        {currentInputSchema.description && <p className="text-xs text-muted-foreground mb-2">{currentInputSchema.description}</p>}
-                        <div className="text-xs text-muted-foreground">{Object.keys(currentInputSchema.properties || {}).length} properties defined</div>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-muted/20 rounded-md border-dashed border">
-                        <div className="text-center">
-                          <p className="text-xs text-muted-foreground mb-2">No input schema configured</p>
-                          <Button type="button" variant="outline" size="sm" onClick={() => setSchemaDialogOpen(true)} className="h-7 px-3 text-xs">
-                            Configure Schema
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
+                {/* Code editor */}
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1 block">JavaScript Code</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-foreground">JavaScript Code</label>
+                    <div className="flex items-center gap-1">
+                      {/* API Reference — opens wiki in browser */}
+                      <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-xs gap-1" onClick={() => openUrl("https://github.com/vitorfdl/narratrix/wiki/Javascript-Node")}>
+                        <BookOpen className="h-3 w-3" />
+                        API Reference
+                      </Button>
+                      {/* Snippet picker */}
+                      <Popover open={snippetsOpen} onOpenChange={setSnippetsOpen}>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-xs gap-1">
+                            <List className="h-3 w-3" />
+                            Snippets
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" side="bottom" className="w-[220px] p-1 bg-background border border-border shadow-lg">
+                          {CODE_SNIPPETS.map((snippet) => (
+                            <button
+                              key={snippet.label}
+                              type="button"
+                              className="w-full text-left px-3 py-1.5 text-xs rounded-sm hover:bg-muted transition-colors"
+                              onClick={() => {
+                                handleInsertSnippet(snippet);
+                                setSnippetsOpen(false);
+                              }}
+                            >
+                              {snippet.label}
+                            </button>
+                          ))}
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
                   <Controller
                     name="code"
                     control={control}
                     render={({ field }) => (
-                      <MarkdownTextArea
-                        key={open ? "open" : "closed"} // Force remount when dialog opens
-                        initialValue={field.value}
+                      <JavascriptEditor
+                        ref={editorRef}
+                        value={field.value}
                         onChange={field.onChange}
-                        placeholder={"// Write your JavaScript code here\n// Input data will be available as 'input' variable\nreturn input;"}
-                        className="h-full"
-                        useEditorOnly={true}
+                        placeholder={"// Write your JavaScript code here\n// Input data is available as 'input'\nreturn input;"}
+                        minHeight={editorMinHeight}
                       />
                     )}
                   />
                 </div>
               </div>
             </DialogBody>
+
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onCancel} size="dialog">
+                <X className="w-4 h-4 mr-2" />
                 Cancel
               </Button>
               <Button type="submit" size="dialog" disabled={!isDirty || !isValid}>
+                <Save className="w-4 h-4 mr-2" />
                 Save
               </Button>
             </DialogFooter>
@@ -226,94 +532,74 @@ const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      <JsonSchemaCreator open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen} initialSchema={currentInputSchema} onSave={handleSchemaConfigSave} onCancel={handleSchemaConfigCancel} />
+      <JsonSchemaCreator
+        open={schemaDialogOpen}
+        onOpenChange={setSchemaDialogOpen}
+        initialSchema={currentInputSchema ?? null}
+        onSave={handleSchemaConfigSave}
+        onCancel={() => setSchemaDialogOpen(false)}
+      />
     </>
   );
 };
 
-/**
- * Memoized content component to prevent unnecessary re-renders
- */
+// ---------------------------------------------------------------------------
+// Node body content
+// ---------------------------------------------------------------------------
 const JavascriptContent = memo<{ config: JavascriptNodeConfig; onConfigureCode: () => void }>(({ config, onConfigureCode }) => {
-  const registerElementRef = useNodeRef();
-
-  const handleCodeButtonClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfigureCode();
-    },
-    [onConfigureCode],
-  );
+  const mode = config.mode ?? "script";
+  const isToolMode = mode === "tool";
 
   return (
-    <div className="space-y-4 w-full">
-      {/* Input Section - Aligns with input handles */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between ">
-          <label className="text-xs font-medium">Tool Schema</label>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" onClick={handleCodeButtonClick} title="Configure JavaScript code">
-            <Settings className="h-3 w-3" />
-          </Button>
-        </div>
-        <div className="space-y-1 ">
-          <div className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-md border-l-2 border-orange-400 dark:border-orange-500">
-            <span className="text-xs text-muted-foreground">
-              {config.inputSchema ? `${config.inputSchema.title || "Input Schema"} (${Object.keys(config.inputSchema.properties || {}).length} props)` : "JSON Data (No schema)"}
-            </span>
-          </div>
-        </div>
+    <div className="space-y-3 w-full">
+      <div className="flex items-center justify-between">
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xxs font-bold tracking-wider uppercase ${
+            isToolMode ? "bg-orange-400/20 text-orange-400 dark:text-orange-300" : "bg-sky-400/20 text-sky-500 dark:text-sky-400"
+          }`}
+        >
+          {isToolMode ? "Tool" : "Script"}
+        </span>
+        <NodeConfigButton onClick={onConfigureCode} title="Configure JavaScript code" />
       </div>
 
-      {/* Code Preview */}
-      <div className="space-y-2" ref={(el) => registerElementRef?.("code-section", el)}>
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Code</label>
-        </div>
-        <div className="p-2 bg-muted/50 rounded-md max-h-16 custom-scrollbar overflow-y-auto font-mono border-l-2 border-orange-400 dark:border-orange-500 overflow-x-hidden">
-          <span className="text-xxs text-muted-foreground whitespace-pre-line leading-tight break-words" style={{ lineHeight: "1.1", display: "block", wordBreak: "break-all" }}>
-            {config.code ? config.code.split("\n").slice(0, 3).join("\n") + (config.code.split("\n").length > 3 ? "\n..." : "") : "// No code configured"}
-          </span>
-        </div>
-      </div>
+      {isToolMode && (
+        <NodeField label="Input Schema" icon={TableProperties}>
+          <NodeConfigPreview variant="badge">
+            <span className="text-xs text-muted-foreground">
+              {config.inputSchema ? `${config.inputSchema.title || "Input"} (${Object.keys(config.inputSchema.properties || {}).length} props)` : "No schema defined"}
+            </span>
+          </NodeConfigPreview>
+        </NodeField>
+      )}
+
+      <NodeField label="Code" icon={Code} refId="code-section">
+        <NodeConfigPreview variant="text" className="font-mono" empty="// No code configured">
+          {config.code ? config.code.split("\n").slice(0, 3).join("\n") + (config.code.split("\n").length > 3 ? "\n..." : "") : undefined}
+        </NodeConfigPreview>
+      </NodeField>
     </div>
   );
 });
 
 JavascriptContent.displayName = "JavascriptContent";
 
+// ---------------------------------------------------------------------------
+// Node component
+// ---------------------------------------------------------------------------
 export const JavascriptNode = memo(({ id, data, selected }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
-  const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
   const config = (data.config || JAVASCRIPT_NODE_METADATA.defaultConfig) as JavascriptNodeConfig;
 
   const handleConfigSave = useCallback(
     (newConfig: JavascriptNodeConfig) => {
-      // Use React Flow's setNodes to properly update the node
-      setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
+      const dynamicOutputs = getOutputsForMode(newConfig.mode);
+      setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig, dynamicOutputs } } : node)));
       setConfigDialogOpen(false);
     },
     [id, setNodes],
   );
-
-  const handleConfigCancel = useCallback(() => {
-    setConfigDialogOpen(false);
-  }, []);
-
-  const handleSchemaConfigSave = useCallback(
-    (schema: SchemaDefinition) => {
-      // Use React Flow's setNodes to properly update the node
-      const updatedConfig = { ...config, inputSchema: schema };
-      setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: updatedConfig } } : node)));
-      setSchemaDialogOpen(false);
-    },
-    [config, id, setNodes],
-  );
-
-  const handleSchemaConfigCancel = useCallback(() => {
-    setSchemaDialogOpen(false);
-  }, []);
 
   const handleConfigureCode = useCallback(() => {
     setConfigDialogOpen(true);
@@ -325,9 +611,7 @@ export const JavascriptNode = memo(({ id, data, selected }: NodeProps) => {
         <JavascriptContent config={config} onConfigureCode={handleConfigureCode} />
       </NodeBase>
 
-      <JavascriptNodeConfigDialog open={configDialogOpen} initialConfig={config} onSave={handleConfigSave} onCancel={handleConfigCancel} />
-
-      <JsonSchemaCreator open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen} initialSchema={config.inputSchema || null} onSave={handleSchemaConfigSave} onCancel={handleSchemaConfigCancel} />
+      <JavascriptNodeConfigDialog open={configDialogOpen} initialConfig={config} onSave={handleConfigSave} onCancel={() => setConfigDialogOpen(false)} />
     </>
   );
 });
@@ -340,4 +624,7 @@ NodeRegistry.register({
   component: JavascriptNode,
   configProvider: JavascriptNodeConfigProvider,
   executor: executeJavascriptNode,
+  getDynamicOutputs: (config) => {
+    return getOutputsForMode((config as JavascriptNodeConfig)?.mode);
+  },
 });

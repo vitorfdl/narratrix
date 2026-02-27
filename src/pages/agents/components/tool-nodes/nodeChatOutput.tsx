@@ -1,29 +1,30 @@
-import { useStore } from "@xyflow/react";
-import { Bot, MessageCircle } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { MessageCircle, User } from "lucide-react";
+import { memo } from "react";
 import { useChatStore } from "@/hooks/chatStore";
 import { ChatMessageType } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { getNextMessagePosition } from "@/services/chat-message-service";
-import { NodeBase, NodeInput, useNodeRef } from "../tool-components/NodeBase";
+import { NodeBase, NodeInput } from "../tool-components/NodeBase";
+import { NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
 /**
  * Node Execution
  */
-const executeChatOutputNode: NodeExecutor = async (_node, inputs): Promise<NodeExecutionResult> => {
-  if (inputs.characterId && typeof inputs.characterId !== "string") {
-    return { success: false, error: "Character ID must be a string" };
-  }
-
+const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, _agent): Promise<NodeExecutionResult> => {
   const response: string = typeof inputs.response === "string" ? inputs.response : "";
-  const participantId: string | undefined = inputs.characterId ? (inputs.characterId as string) : undefined;
-  const isUser = participantId === "user";
+  const participantId = typeof inputs.characterId === "string" ? inputs.characterId : undefined;
 
   if (!response) {
     return { success: false, error: "Chat output node missing response text" };
   }
+
+  if (!participantId) {
+    return { success: false, error: "Chat output node requires a participant ID" };
+  }
+
+  const isUser = participantId === "user";
 
   try {
     const store = useChatStore.getState();
@@ -37,12 +38,12 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs): Promise<NodeE
     const position = await getNextMessagePosition(chatId, chapterId);
     await store.actions.addChatMessage({
       character_id: isUser ? null : participantId || null,
-      type: (isUser ? "user" : participantId ? "character" : "system") as ChatMessageType,
+      type: (isUser ? "user" : "character") as ChatMessageType,
       messages: [response],
       position,
       disabled: false,
       tokens: null,
-      extra: { script: "agent" },
+      extra: {},
     });
 
     return { success: true, value: response };
@@ -57,9 +58,9 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs): Promise<NodeE
  */
 const CHAT_OUTPUT_NODE_METADATA = {
   type: "chatOutput",
-  label: "Chat Output",
+  label: "Chat Message",
   category: "Chat",
-  description: "Display the final response in the conversation flow",
+  description: "Post a message to the chat as a character or user",
   icon: MessageCircle,
   theme: createNodeTheme("green"),
   deletable: true,
@@ -84,61 +85,18 @@ namespace ChatOutputNodeConfigProvider {
 /**
  * Memoized content component to prevent unnecessary re-renders
  */
-const ChatOutputContent = memo<{ nodeId: string }>(({ nodeId }) => {
-  const registerElementRef = useNodeRef();
-
-  // Subscribe to edges from React Flow store to get real-time updates
-  const edges = useStore((state) => state.edges);
-
-  // Count connected tool edges
-  const isResponseConnected = useMemo(() => {
-    return edges.filter((edge) => edge.target === nodeId && edge.targetHandle === "response").length;
-  }, [edges, nodeId]);
-  // Participant handle visibility only; no preview needed here
-
+const ChatOutputContent = memo<{ nodeId: string }>(() => {
   return (
-    <div className="space-y-4 w-full">
-      {/* Participant Section - This aligns with the "in-character" input handle */}
-      <div ref={(el) => registerElementRef?.("participant-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Participant (optional)</label>
-      </div>
-
-      {/* Response Preview Section - This aligns with the "response" input handle */}
-      <div ref={(el) => registerElementRef?.("response-section", el)} className="space-y-2">
-        <label className="text-xs font-medium">Message</label>
-        <div className="p-3 bg-muted/50 rounded-md border-l-2 border-green-400 dark:border-green-500 max-h-32 overflow-y-auto">
-          {!isResponseConnected ? (
-            <div className="flex items-start gap-2">
-              <div className="text-xs  text-muted-foreground whitespace-pre-wrap">Chat Output Configuration will display here</div>
-            </div>
-          ) : (
-            <div className="flex items-start gap-2">
-              <Bot className="h-3 w-3 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-              <span className="text-xs text-muted-foreground italic">Receiving Input...</span>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="space-y-3 w-full">
+      <NodeField label="Participant" icon={User} refId="participant-section" helpText="The character who 'says' this message. Connect a Participant Picker or Trigger output." />
+      <NodeField label="Message / Text" icon={MessageCircle} refId="response-section"></NodeField>
     </div>
   );
 });
 
 ChatOutputContent.displayName = "ChatOutputContent";
 
-/**
- * ChatOutputNode: Represents the final output in the conversation flow
- * This node receives the processed response and displays it to the user
- */
 export const ChatOutputNode = memo(({ data, selected, id }: NodeProps) => {
-  const [_receivedValue, setReceivedValue] = useState<string>("");
-
-  // Listen for updates to the data (if your system provides runtime values)
-  useEffect(() => {
-    if (typeof data.value === "string") {
-      setReceivedValue(data.value);
-    }
-  }, [data.value]);
-
   return (
     <NodeBase nodeId={id} data={data} selected={!!selected}>
       <ChatOutputContent nodeId={id} />

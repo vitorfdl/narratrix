@@ -48,10 +48,24 @@ export const promptReplacementSuggestionList: SuggestionItem[] = [
 export const ChatMessageTypeSchema = z.enum(["user", "character", "system"]);
 export type ChatMessageType = z.infer<typeof ChatMessageTypeSchema>;
 
+export const promptConfigSchema = z.object({
+  behavior: z.enum(["next", "global"]),
+  role: z.enum(["user", "character", "system"]),
+  position: z.enum(["top", "bottom", "depth", "before_user_input", "after_user_input"]),
+  depth: z.number().int().default(1),
+  globalType: z.string().optional(),
+  scopeToAgent: z.boolean().optional().default(false),
+});
+
+export type PromptConfig = z.infer<typeof promptConfigSchema>;
+
 const extraSchema = z.object({
   script: z.enum(["agent", "summary", "start_chapter"]).optional(),
+  name: z.string().optional(),
   startPosition: z.number().int().optional(),
   endPosition: z.number().int().optional(),
+  agentId: z.string().optional(),
+  promptConfig: promptConfigSchema.optional(),
 });
 
 /**
