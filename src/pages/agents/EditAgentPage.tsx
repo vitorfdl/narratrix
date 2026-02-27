@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Check, Clipboard, Pencil } from "lucide-react";
 import React, { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,6 +110,13 @@ const EditAgentPage: React.FC<EditAgentPageProps> = ({ agent, onBack, returnTo }
     setLastSaved(new Date());
   };
 
+  const [copied, setCopied] = useState(false);
+  const handleCopyConfig = async () => {
+    await navigator.clipboard.writeText(JSON.stringify(currentAgent, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   return (
     <div className="flex flex-col h-full w-full">
       {/* Header with back button and agent name */}
@@ -138,6 +145,9 @@ const EditAgentPage: React.FC<EditAgentPageProps> = ({ agent, onBack, returnTo }
           </h1>
           {hasUnsavedChanges && <span className="text-sm text-muted-foreground">• Unsaved changes</span>}
           {lastSaved && <span className="text-sm text-muted-foreground">• Last saved: {lastSaved.toLocaleTimeString()}</span>}
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={handleCopyConfig} title="Copy agent configuration as JSON">
+            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Clipboard className="h-3.5 w-3.5" />}
+          </Button>
         </div>
 
         {/* Second row: description and tags */}

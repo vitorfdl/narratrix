@@ -1,8 +1,8 @@
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useReactFlow } from "@xyflow/react";
 import { BookOpen, ChevronDown, Code, List, Maximize2, Minimize2, Save, TableProperties, X } from "lucide-react";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { JavascriptEditor, type JavascriptEditorRef } from "@/components/markdownRender/javascript-editor";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
@@ -45,7 +45,7 @@ return personality ?? "";`,
     inputSchema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       type: "object",
-      title: "Dice Roll d20",
+      title: "DiceRoll",
       description: "Roll a d20 with an attribute modifier against a difficulty class",
       properties: {
         attribute: {
