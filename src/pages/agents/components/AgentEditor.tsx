@@ -15,8 +15,6 @@ import {
   reconnectEdge,
   useEdgesState,
   useNodesState,
-  useReactFlow,
-  XYPosition,
 } from "@xyflow/react";
 import { AlertTriangle } from "lucide-react";
 import { useThemeStore } from "@/hooks/ThemeContext";
@@ -28,9 +26,8 @@ import { DeletableEdge } from "./tool-components/DeletableEdge";
 import { AgentSidebar } from "./tool-components/EditorSidebar";
 import { convertCoreEdgeToReactFlow, convertReactFlowEdgeToCore, getEdgeStyle, getEdgeTypeFromHandle, isValidEdgeConnection, updateEdgeStyles, validateAndFixEdge } from "./tool-components/edge-utils";
 import { ConnectionStateProvider, NodeDeleteProvider } from "./tool-components/NodeBase";
-import { NodePicker } from "./tool-components/NodePicker";
 import { NodeRegistry } from "./tool-components/node-registry";
-import { convertCoreNodeToReactFlow, convertReactFlowNodeToCore, getNodeConfig, getNodeId } from "./tool-components/node-utils";
+import { convertCoreNodeToReactFlow, convertReactFlowNodeToCore } from "./tool-components/node-utils";
 import { ToolEditorProps, ToolNodeData } from "./tool-components/types";
 
 // Import all node types to ensure they register themselves
@@ -79,13 +76,6 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<ToolNodeData>>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
-  const [nodePicker, setNodePicker] = useState<{
-    show: boolean;
-    position: XYPosition;
-    connectionState: any;
-  } | null>(null);
-
   // Keep track of the last configuration sent to parent to avoid unnecessary updates
   const lastSentConfigRef = useRef<AgentType | null>(null);
 
@@ -277,170 +267,13 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   }, []);
 
   // Handle connection end to reset visual feedback
-  const onConnectEnd = useCallback((event: any, connectionState: any) => {
-    // Reset connection state
+  const onConnectEnd = useCallback((_event: any, _connectionState: any) => {
     setConnectionState({
       isConnecting: false,
       sourceNodeId: undefined,
       sourceHandleId: undefined,
       sourceEdgeType: undefined,
     });
-
-    // Only proceed if connection is not valid (dropped on empty space) and we have a source node
-    if (!connectionState.isValid && connectionState.fromNode) {
-      // Extract client coordinates
-      const { clientX, clientY } = "changedTouches" in event ? event.changedTouches[0] : event;
-
-      // Get the ReactFlow wrapper bounds
-      const wrapperRect = reactFlowWrapper.current?.getBoundingClientRect();
-      if (!wrapperRect) {
-        return;
-      }
-
-      // Convert screen coordinates to container-relative coordinates
-      let x = clientX - wrapperRect.left;
-      let y = clientY - wrapperRect.top;
-
-      // Account for the toolbar height (approximately 60px based on the UI)
-      const toolbarHeight = 60;
-      y = Math.max(y - toolbarHeight, 10);
-
-      // Ensure the picker stays within bounds (picker is 250px wide)
-      const pickerWidth = 250;
-      const pickerHeight = 120; // Approximate height
-      const containerWidth = wrapperRect.width;
-      const containerHeight = wrapperRect.height - toolbarHeight;
-
-      // Adjust x position to keep picker in bounds
-      if (x + pickerWidth > containerWidth) {
-        x = containerWidth - pickerWidth - 10;
-      }
-      x = Math.max(x, 10);
-
-      // Adjust y position to keep picker in bounds
-      if (y + pickerHeight > containerHeight) {
-        y = containerHeight - pickerHeight - 10;
-      }
-      y = Math.max(y, 10);
-
-      const position = { x, y };
-
-      // Show node picker
-      setNodePicker({
-        show: true,
-        position,
-        connectionState,
-      });
-    }
-  }, []);
-
-  // Create node of selected type
-  const handleNodeTypeSelect = useCallback(
-    (type: string) => {
-      if (!nodePicker) {
-        return;
-      }
-
-      const { position, connectionState } = nodePicker;
-
-      // Create node ID
-      const id = `${type}-${getNodeId()}`;
-
-      // Get node configuration based on type
-      const nodeData = getNodeConfig(type);
-
-      // Convert picker position (container coordinates) back to flow coordinates
-      // Get the ReactFlow wrapper bounds
-      const wrapperRect = reactFlowWrapper.current?.getBoundingClientRect();
-      if (!wrapperRect) {
-        return;
-      }
-
-      // Calculate the center of where the picker was shown as the node position
-      const toolbarHeight = 60;
-      const pickerCenterX = position.x + 125; // Half of picker width (250px)
-      const pickerCenterY = position.y + 60; // Approximate center of picker height
-
-      // Convert to screen coordinates
-      const screenX = pickerCenterX + wrapperRect.left;
-      const screenY = pickerCenterY + wrapperRect.top + toolbarHeight;
-
-      // Convert screen coordinates to flow coordinates
-      const flowPosition = screenToFlowPosition({
-        x: screenX,
-        y: screenY,
-      });
-
-      // Create the new node
-      const newNode: Node<ToolNodeData> = {
-        id,
-        type,
-        position: flowPosition,
-        data: nodeData,
-        // Add required properties for proper React Flow functionality
-        draggable: true,
-        selectable: true,
-        deletable: true,
-      };
-
-      // Add the node to the flow
-      setNodes((nds) => nds.concat(newNode));
-
-      // Validate and create the connection
-      const sourceHandleId = connectionState.fromHandle?.id;
-      const sourceNodeId = connectionState.fromNode.id;
-
-      // Validate the connection direction
-      if (sourceHandleId?.startsWith("in-")) {
-        console.log(connectionState);
-        console.error(`Cannot create edge from input handle "${sourceHandleId}"`);
-        setNodePicker(null);
-        return;
-      }
-
-      // Get the edge type from the source handle
-      // const sourceNode = document.querySelector(`[data-id="${sourceNodeId}"]`);
-      // const sourceHandle = sourceNode?.querySelector(`[data-handleid="${sourceHandleId}"]`);
-      const edgeType = getEdgeTypeFromHandle(sourceNodeId, sourceHandleId);
-      const edgeStyle = getEdgeStyle(edgeType);
-
-      // Determine the appropriate target handle based on edge type and target node type
-      let targetHandle = "";
-      if (edgeType === "toolset" && type === "javascript") {
-        // For toolset connections to javascript nodes, there's no specific input handle
-        targetHandle = "";
-      } else if (edgeType === "toolset" && type === "agent") {
-        targetHandle = "in-toolset";
-      } else if (edgeType === "string" && type === "agent") {
-        targetHandle = "in-input";
-      } else if (edgeType === "string" && type === "chatOutput") {
-        targetHandle = "response";
-      }
-
-      // Add the connection from source to new node
-      const newEdge: Edge = {
-        id: `edge-${sourceNodeId}-${sourceHandleId || "default"}-${id}-${targetHandle || "default"}`,
-        source: sourceNodeId,
-        sourceHandle: sourceHandleId,
-        target: id,
-        targetHandle,
-        style: edgeStyle,
-        data: { edgeType },
-        animated: false,
-        reconnectable: true,
-      };
-
-      setEdges((eds) => updateEdgeStyles(eds.concat(newEdge)));
-
-      // Hide the picker
-      setNodePicker(null);
-    },
-    [nodePicker, screenToFlowPosition, setNodes, setEdges],
-  );
-
-  // Close the picker without creating a node
-  const handleCancelNodePicker = useCallback(() => {
-    setNodePicker(null);
   }, []);
 
   // Delete selected nodes and edges with keyboard
@@ -595,15 +428,6 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
             </ReactFlow>
           </ConnectionStateProvider>
         </NodeDeleteProvider>
-        {!readOnly && nodePicker?.show && (
-          <NodePicker
-            position={nodePicker.position}
-            onSelect={handleNodeTypeSelect}
-            onCancel={handleCancelNodePicker}
-            existingNodeTypes={new Set(nodes.map((n) => n.type).filter(Boolean) as string[])}
-          />
-        )}
-
         {/* Trigger node validation banner */}
         {!readOnly && (!hasTriggerNode || hasDuplicateTriggerNode) && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none">

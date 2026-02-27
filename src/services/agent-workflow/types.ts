@@ -1,3 +1,4 @@
+import type { ConsoleLogEntry } from "@/hooks/consoleStore";
 import type { AgentNodeType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import type { PromptFormatterConfig } from "../inference/formatter";
 
@@ -46,6 +47,7 @@ export interface WorkflowDeps {
     stream?: boolean;
     toolset?: WorkflowToolDefinition[];
   }) => Promise<string | null>;
+  onLog?: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => void;
 }
 
 export type NodeExecutor = (node: AgentNodeType, inputs: Record<string, any>, context: WorkflowExecutionContext, agent: AgentType, deps: WorkflowDeps) => Promise<NodeExecutionResult>;

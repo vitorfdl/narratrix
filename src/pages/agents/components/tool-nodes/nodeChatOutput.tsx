@@ -86,18 +86,11 @@ namespace ChatOutputNodeConfigProvider {
 /**
  * Memoized content component to prevent unnecessary re-renders
  */
-const ChatOutputContent = memo<{ nodeId: string }>(({ nodeId }) => {
-  const edges = useStore((state) => state.edges);
-  const isResponseConnected = useMemo(() => edges.filter((edge) => edge.target === nodeId && edge.targetHandle === "response").length > 0, [edges, nodeId]);
-
+const ChatOutputContent = memo<{ nodeId: string }>(() => {
   return (
     <div className="space-y-3 w-full">
       <NodeField label="Participant" icon={User} refId="participant-section" helpText="The character who 'says' this message. Connect a Participant Picker or Trigger output." />
-      <NodeField label="Message" icon={MessageCircle} refId="response-section">
-        <NodeConfigPreview variant="badge">
-          {isResponseConnected ? <span className="text-xs text-muted-foreground italic">Receiving input...</span> : <span className="text-xs text-muted-foreground">Connect a response source</span>}
-        </NodeConfigPreview>
-      </NodeField>
+      <NodeField label="Message / Text" icon={MessageCircle} refId="response-section"></NodeField>
     </div>
   );
 });

@@ -1,4 +1,3 @@
-import { XYPosition } from "@xyflow/react";
 import { AgentType } from "@/schema/agent-schema";
 
 // Node type keys - updated to match Langflow style
@@ -16,13 +15,4 @@ export interface ToolEditorProps {
   toolConfig: AgentType;
   onChange?: (config: AgentType) => void;
   readOnly?: boolean;
-}
-
-// Node picker component props
-export interface NodePickerProps {
-  position: XYPosition;
-  onSelect: (type: string) => void;
-  onCancel: () => void;
-  /** Node types already present in the graph (used to filter out singletons) */
-  existingNodeTypes?: Set<string>;
 }

@@ -5,8 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type { AgentTriggerType, TriggerContext } from "@/schema/agent-schema";
 import type { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { NodeBase, type NodeOutput } from "../tool-components/NodeBase";
@@ -114,6 +113,82 @@ namespace TriggerNodeConfigProvider {
 
 // ─── Config Dialog ────────────────────────────────────────────────────────────
 
+type TriggerTiming = "before" | "after" | "manual" | "interval" | "round";
+
+interface TriggerTypeConfig {
+  label: string;
+  description: string;
+  timing: TriggerTiming;
+}
+
+const TRIGGER_TYPE_CONFIG: Record<AgentTriggerType, TriggerTypeConfig> = {
+  manual: {
+    label: "Manual",
+    description: "Runs only when triggered from the participants panel, or when reached in participant order. Participant ID outputs the agent's own ID.",
+    timing: "manual",
+  },
+  after_user_message: {
+    label: "After User Message",
+    description: "Fires after the user submits a message, before any character responds. Participant ID outputs the user's persona character ID.",
+    timing: "after",
+  },
+  before_user_message: {
+    label: "Before User Message",
+    description: "Fires before the user's message is created, blocking the chat until this workflow completes. Participant ID outputs the user's persona character ID.",
+    timing: "before",
+  },
+  after_character_message: {
+    label: "After Character Message",
+    description: "Fires each time a character finishes generating a response, in participant order. Participant ID outputs the triggering character's ID.",
+    timing: "after",
+  },
+  before_character_message: {
+    label: "Before Character Message",
+    description: "Fires before a character begins generating, blocking that character's response until complete. Participant ID outputs the character's ID.",
+    timing: "before",
+  },
+  after_any_message: {
+    label: "After Any Message",
+    description: "Fires after any user or character message is created. Agent workflows never trigger other agents. Participant ID outputs the triggering participant's ID.",
+    timing: "after",
+  },
+  before_any_message: {
+    label: "Before Any Message",
+    description: "Fires before any user or character message, blocking generation until complete. Participant ID outputs the triggering participant's ID.",
+    timing: "before",
+  },
+  after_all_participants: {
+    label: "After All Participants",
+    description: "Fires once all enabled participants have completed their messages for the round. Only triggered from normal user message flow.",
+    timing: "round",
+  },
+  every_x_messages: {
+    label: "Every X Messages",
+    description: "Fires automatically after every N messages are added to the chat, regardless of who sent them. Participant ID outputs the agent's own ID.",
+    timing: "interval",
+  },
+};
+
+const TRIGGER_GROUPS: { label: string; items: AgentTriggerType[] }[] = [
+  { label: "User Messages", items: ["after_user_message", "before_user_message"] },
+  { label: "Character Messages", items: ["after_character_message", "before_character_message"] },
+  { label: "Any Message", items: ["after_any_message", "before_any_message"] },
+  { label: "Flow Control", items: ["manual", "after_all_participants", "every_x_messages"] },
+];
+
+const TIMING_STYLES: Record<TriggerTiming, { label: string; className: string }> = {
+  before: { label: "Before", className: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  after: { label: "After", className: "bg-green-500/15 text-green-600 dark:text-green-400" },
+  manual: { label: "Manual", className: "bg-blue-500/15 text-blue-600 dark:text-blue-400" },
+  interval: { label: "Interval", className: "bg-purple-500/15 text-purple-600 dark:text-purple-400" },
+  round: { label: "Round End", className: "bg-teal-500/15 text-teal-600 dark:text-teal-400" },
+};
+
+const TimingBadge = ({ timing }: { timing: TriggerTiming }) => {
+  const style = TIMING_STYLES[timing];
+  return <span className={cn("shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-semibold leading-none", style.className)}>{style.label}</span>;
+};
+
 interface TriggerConfigDialogProps {
   open: boolean;
   initialConfig: TriggerNodeConfig;
@@ -122,18 +197,17 @@ interface TriggerConfigDialogProps {
 }
 
 const TriggerConfigDialog: React.FC<TriggerConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
-  const { control, handleSubmit, reset, watch } = useForm<TriggerNodeConfig>({
+  const { control, handleSubmit, reset } = useForm<TriggerNodeConfig>({
     defaultValues: { messageCount: 5, ...initialConfig },
     mode: "onChange",
   });
 
   useEffect(() => {
     if (open) {
-      reset(initialConfig);
+      reset({ messageCount: 5, ...initialConfig });
     }
   }, [open, reset, initialConfig]);
 
-  const selectedType = watch("triggerType");
   const onSubmit = (data: TriggerNodeConfig) => onSave(data);
 
   return (
@@ -143,61 +217,65 @@ const TriggerConfigDialog: React.FC<TriggerConfigDialogProps> = ({ open, initial
           <DialogHeader>
             <DialogTitle>Configure Trigger</DialogTitle>
           </DialogHeader>
-          <DialogBody>
-            <div className="space-y-4 py-2">
-              <div>
-                <Label className="text-xs font-medium text-foreground mb-1 block">Trigger Type</Label>
-                <Controller
-                  name="triggerType"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="text-xs">
-                        <SelectValue placeholder="Select trigger type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.entries(TRIGGER_TYPE_LABELS) as [AgentTriggerType, string][]).map(([value, label]) => (
-                          <SelectItem key={value} value={value} className="text-xs">
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-
-              {selectedType === "every_x_messages" && (
-                <div>
-                  <Label className="text-xs font-medium text-foreground mb-1 block">Message Count</Label>
-                  <Controller
-                    name="messageCount"
-                    control={control}
-                    rules={{ min: 1 }}
-                    render={({ field }) => <Input type="number" min={1} className="text-xs h-8" value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} />}
-                  />
-                  <p className="text-xxs text-muted-foreground mt-1">Trigger after every N messages in the chat.</p>
+          <DialogBody className="py-4">
+            <Controller
+              name="triggerType"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-3 py-1">
+                  {TRIGGER_GROUPS.map((group) => (
+                    <div key={group.label}>
+                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">{group.label}</p>
+                      <div className="space-y-1">
+                        {group.items.map((value) => {
+                          const cfg = TRIGGER_TYPE_CONFIG[value];
+                          const isSelected = field.value === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => field.onChange(value)}
+                              className={cn(
+                                "w-full rounded-md border px-3 py-2 text-left transition-colors",
+                                isSelected ? "border-primary/40 bg-primary/5" : "border-border/40 hover:border-border/70 hover:bg-muted/40",
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <TimingBadge timing={cfg.timing} />
+                                <span className="text-xs font-medium">{cfg.label}</span>
+                              </div>
+                              <p className="mt-0.5 text-xxs leading-relaxed text-muted-foreground">{cfg.description}</p>
+                              {value === "every_x_messages" && isSelected && (
+                                <div className="mt-2 border-t border-border/30 pt-2">
+                                  <div className="flex w-fit items-center gap-2">
+                                    <Controller
+                                      name="messageCount"
+                                      control={control}
+                                      rules={{ min: 1 }}
+                                      render={({ field }) => (
+                                        <Input
+                                          type="number"
+                                          min={1}
+                                          className="h-7 w-16 text-xs"
+                                          value={field.value}
+                                          onChange={(e) => field.onChange(Number(e.target.value))}
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      )}
+                                    />
+                                    <span className="whitespace-nowrap text-xxs text-muted-foreground">messages between each trigger</span>
+                                  </div>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
-
-              <div className="p-2 bg-muted/40 rounded-md text-xxs text-muted-foreground">
-                {selectedType === "manual" &&
-                  "Workflow only runs when manually triggered via the play button in the participants panel, or at its position in the participant order when the user sends a message. Participant ID outputs the agent's own ID."}
-                {selectedType === "after_user_message" &&
-                  "Workflow runs after the user message is created, before any character responds. Participant ID outputs the user's persona character ID (empty if no persona is set)."}
-                {selectedType === "before_user_message" &&
-                  "Workflow runs before the user message is created, blocking generation until it completes. Participant ID outputs the user's persona character ID."}
-                {selectedType === "after_character_message" && "Workflow runs after a character generates a message, in participant order. Participant ID outputs the triggering character's ID."}
-                {selectedType === "before_character_message" &&
-                  "Workflow runs before a character generates a message, blocking that character's generation until it completes. Participant ID outputs the character's ID."}
-                {selectedType === "after_any_message" &&
-                  "Workflow runs after any user or character message. Participant ID outputs the triggering participant's ID. Agents never trigger other agents."}
-                {selectedType === "before_any_message" &&
-                  "Workflow runs before any user or character message, blocking generation until it completes. Participant ID outputs the triggering participant's ID."}
-                {selectedType === "after_all_participants" && "Workflow runs after all enabled participants have generated their messages for the round. Only triggered from normal user message flow."}
-                {selectedType === "every_x_messages" && "Workflow fires automatically after every N messages added to the chat. Participant ID outputs the agent's own ID."}
-              </div>
-            </div>
+            />
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onCancel} size="dialog">

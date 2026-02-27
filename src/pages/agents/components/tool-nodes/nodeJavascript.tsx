@@ -8,6 +8,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useConsoleStore } from "@/hooks/consoleStore";
 import { mapSourceHandleToReadableName } from "@/services/agent-workflow/handles";
 import { runJavascript } from "@/services/agent-workflow/javascript-runner";
 import { type NodeExecutionResult, type NodeExecutor, type WorkflowToolDefinition } from "@/services/agent-workflow/types";
@@ -190,7 +191,18 @@ const executeJavascriptNode: NodeExecutor = async (node, _inputs, context, agent
     description: "Javascript node tool",
     inputSchema: cfg?.inputSchema || null,
     invoke: async (args: Record<string, any>) => {
-      return await runJavascript(code, args);
+      const { result, consoleLogs } = await runJavascript(code, args);
+      if (consoleLogs.length > 0) {
+        useConsoleStore.getState().actions.addLog({
+          id: `jslog_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          type: "js-console",
+          nodeId: node.id,
+          nodeLabel: node.label || "Javascript",
+          title: `JS Tool: ${name}`,
+          output: consoleLogs.join("\n"),
+        });
+      }
+      return result;
     },
   };
 
@@ -200,7 +212,17 @@ const executeJavascriptNode: NodeExecutor = async (node, _inputs, context, agent
   let textResult: string | undefined;
   if (wantText) {
     try {
-      const result = await runJavascript(code, cleanInput);
+      const { result, consoleLogs } = await runJavascript(code, cleanInput);
+      if (consoleLogs.length > 0) {
+        useConsoleStore.getState().actions.addLog({
+          id: `jslog_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          type: "js-console",
+          nodeId: node.id,
+          nodeLabel: node.label || "Javascript",
+          title: `JS: ${node.label || "Javascript"}`,
+          output: consoleLogs.join("\n"),
+        });
+      }
       textResult = typeof result === "string" ? result : JSON.stringify(result ?? "");
       context.nodeValues.set(textHandleKey, textResult);
     } catch (e: unknown) {

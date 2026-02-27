@@ -170,9 +170,9 @@ export const ChatInputNode = memo(({ data, selected, id }: NodeProps) => {
 ChatInputNode.displayName = "ChatInputNode";
 
 // Register the node
-NodeRegistry.register({
-  metadata: CHAT_INPUT_NODE_METADATA,
-  component: ChatInputNode,
-  configProvider: ChatInputNodeConfigProvider,
-  executor: executeChatInputNode,
-});
+// NodeRegistry.register({
+//   metadata: CHAT_INPUT_NODE_METADATA,
+//   component: ChatInputNode,
+//   configProvider: ChatInputNodeConfigProvider,
+//   executor: executeChatInputNode,
+// });

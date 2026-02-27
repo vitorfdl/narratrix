@@ -136,7 +136,7 @@ const getRoleIcon = (role: string) => {
 };
 
 const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
-  const { control, handleSubmit, reset, watch } = useForm<PromptInjectionNodeConfig>({
+  const { control, handleSubmit, reset, watch, setValue } = useForm<PromptInjectionNodeConfig>({
     defaultValues: { ...DEFAULT_CONFIG, ...initialConfig },
   });
 
@@ -148,6 +148,7 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
 
   const behavior = watch("behavior");
   const position = watch("position");
+  const role = watch("role");
   const onSubmit = (data: PromptInjectionNodeConfig) => onSave(data);
 
   return (
@@ -230,7 +231,15 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                     name="role"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          if ((value === "system" || value === "character") && (position === "before_user_input" || position === "after_user_input")) {
+                            setValue("position", "bottom");
+                          }
+                        }}
+                      >
                         <SelectTrigger className="text-xs">
                           <SelectValue>
                             <div className="flex items-center gap-1.5">
@@ -266,18 +275,6 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
                     <Label className="text-xs font-medium">Position</Label>
-                    <HelpTooltip>
-                      <span className="text-xs">
-                        Where in the context window this prompt is inserted.
-                        <br />
-                        <br />
-                        <strong>Top / Bottom</strong> — start or end of the whole message history.
-                        <br />
-                        <strong>At Depth</strong> — N messages from the end.
-                        <br />
-                        <strong>Before / After User Input</strong> — adjacent to the last user message.
-                      </span>
-                    </HelpTooltip>
                   </div>
                   <Controller
                     name="position"
@@ -297,12 +294,16 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                           <SelectItem value="depth" className="text-xs">
                             At Specific Depth
                           </SelectItem>
-                          <SelectItem value="before_user_input" className="text-xs">
-                            Before User Input
-                          </SelectItem>
-                          <SelectItem value="after_user_input" className="text-xs">
-                            After User Input
-                          </SelectItem>
+                          {role === "user" && (
+                            <SelectItem value="before_user_input" className="text-xs">
+                              Before User Input Text
+                            </SelectItem>
+                          )}
+                          {role === "user" && (
+                            <SelectItem value="after_user_input" className="text-xs">
+                              After User Input Text
+                            </SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     )}
@@ -321,7 +322,7 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                         <Label className="text-xs font-medium">Depth</Label>
                         <span className="text-xs font-medium bg-primary/20 text-primary px-2 py-0.5 rounded-md">{field.value}</span>
                       </div>
-                      <Slider min={1} max={10} step={1} value={[field.value]} onValueChange={(v) => field.onChange(v[0])} className="py-1" />
+                      <Slider min={1} max={50} step={1} value={[field.value]} onValueChange={(v) => field.onChange(v[0])} className="py-1" />
                     </div>
                   )}
                 />

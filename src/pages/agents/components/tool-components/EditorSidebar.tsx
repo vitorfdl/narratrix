@@ -1,6 +1,7 @@
 import { useNodes, useReactFlow } from "@xyflow/react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,16 @@ interface CategoryGroup {
 export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd }) => {
   const { screenToFlowPosition, addNodes } = useReactFlow();
   const currentNodes = useNodes();
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(["Trigger", "Chat", "Inference"]));
+  const allCategories = useMemo(() => {
+    const nodeOptions = NodeRegistry.getNodeOptions();
+    const categories = new Set<string>();
+    for (const option of nodeOptions) {
+      categories.add(option.category || "Other");
+    }
+    return categories;
+  }, []);
+
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(allCategories);
 
   // Track which singleton node types are already placed (only one allowed per workflow)
   const singletonNodeTypes = useMemo(() => new Set(["trigger"]), []);
@@ -131,21 +141,23 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
   return (
     <div className={cn("w-44 bg-background/95 border-r border-border flex flex-col", className)}>
       {/* Header */}
-      <div className="p-2 border-b border-border">
-        <h3 className="font-semibold text-sm text-foreground">Node Library</h3>
-        <p className="text-xxs text-muted-foreground">Click nodes to add to the canvas</p>
+      <div className="p-2 border-b border-border flex flex-col gap-0.5">
+        <div className="flex items-center gap-1">
+          <h3 className="font-semibold text-sm text-foreground">Node Library</h3>
+          <HelpTooltip>Click a node to add it to your workflow canvas.</HelpTooltip>
+        </div>
       </div>
 
       {/* Node Categories */}
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
+        <div className="pr-1 space-y-1">
           {categorizedNodes.map(({ category, nodes }) => {
             const isExpanded = expandedCategories.has(category);
 
             return (
               <div key={category} className="space-y-1">
                 {/* Category Header */}
-                <Button variant="ghost" size="sm" className="w-full justify-start h-8 px-2 text-xs font-medium hover:bg-accent/50" onClick={() => toggleCategory(category)}>
+                <Button variant="ghost" size="sm" className="w-full justify-start h-8 px-2 text-xs font-medium  hover:bg-accent/50" onClick={() => toggleCategory(category)}>
                   {isExpanded ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
                   {category}
                   <span className="ml-auto text-muted-foreground">({nodes.length})</span>

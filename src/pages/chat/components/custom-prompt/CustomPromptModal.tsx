@@ -100,7 +100,14 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
                 <Label htmlFor="role" className="text-sm font-medium">
                   Role
                 </Label>
-                <Select value={prompt.role} onValueChange={(value: "user" | "character" | "system") => setPrompt({ ...prompt, role: value })}>
+                <Select
+                  value={prompt.role}
+                  onValueChange={(value: "user" | "character" | "system") => {
+                    const isInlinePosition = prompt.position === "before_user_input" || prompt.position === "after_user_input";
+                    const newPosition = (value === "system" || value === "character") && isInlinePosition ? "bottom" : prompt.position;
+                    setPrompt({ ...prompt, role: value, position: newPosition });
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select role">
                       <div className="flex items-center gap-2">
@@ -135,7 +142,14 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
                 <Label htmlFor="position" className="text-sm font-medium">
                   Position
                 </Label>
-                <Select value={prompt.position} onValueChange={(value: ChatTemplateCustomPrompt["position"]) => setPrompt({ ...prompt, position: value })}>
+                <Select
+                  value={prompt.position}
+                  onValueChange={(value: ChatTemplateCustomPrompt["position"]) => {
+                    const isInlinePosition = value === "before_user_input" || value === "after_user_input";
+                    const newPosition = (prompt.role === "system" || prompt.role === "character") && isInlinePosition ? "bottom" : value;
+                    setPrompt({ ...prompt, position: newPosition });
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select position" />
                   </SelectTrigger>
@@ -143,8 +157,8 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
                     <SelectItem value="top">Top of Conversation</SelectItem>
                     <SelectItem value="bottom">Bottom of Conversation</SelectItem>
                     <SelectItem value="depth">At Specific Depth</SelectItem>
-                    <SelectItem value="before_user_input">Before User Input</SelectItem>
-                    <SelectItem value="after_user_input">After User Input</SelectItem>
+                    {prompt.role === "user" && <SelectItem value="before_user_input">Before User Input</SelectItem>}
+                    {prompt.role === "user" && <SelectItem value="after_user_input">After User Input</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>

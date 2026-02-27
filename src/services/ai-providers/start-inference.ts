@@ -2,6 +2,7 @@ import { CallSettings, LanguageModel, Prompt, ToolSet } from "ai";
 import { InferenceParams } from "@/hooks/useInference";
 import { Engine } from "@/schema/model-manifest-schema";
 import { toCoreMessages } from "./aisdk/convert-messages";
+import { convertToolsToAISDK } from "./aisdk/convert-tools";
 import { generateResponse } from "./aisdk/non-streaming";
 import { getAISDKModel } from "./aisdk/provider-factory";
 import { getProviderOptions } from "./aisdk/provider-options";
@@ -31,7 +32,7 @@ async function callProviderConverseEndpoint(event: AIEvent, params: InferencePar
     throw new Error("No messages provided");
   }
   const messages = toCoreMessages(isChatModel ? params.systemPrompt : undefined, params.messages);
-  // const tools = params.tools ? convertToolsToAISDK(params.tools) : undefined;
+  const tools = params.tools && params.tools.length > 0 ? convertToolsToAISDK(params.tools) : undefined;
 
   // 3. Prepare Options
   // Extract provider specific options from params.parameters
@@ -42,7 +43,7 @@ async function callProviderConverseEndpoint(event: AIEvent, params: InferencePar
   const finalParams: FinalParams = {
     model,
     messages,
-    // tools,
+    tools,
     system: params.systemPrompt,
     providerOptions,
     maxOutputTokens: parameters.max_tokens || DEFAULT_MAX_TOKENS,

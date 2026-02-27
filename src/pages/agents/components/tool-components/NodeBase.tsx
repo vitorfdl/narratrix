@@ -268,42 +268,6 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
         icon: "text-primary",
         accentBorder: "border-primary",
       },
-      secondary: {
-        border: "border-secondary/60",
-        bg: "bg-secondary/20",
-        header: "bg-secondary/30",
-        hover: "hover:border-secondary",
-        selected: "ring-2 ring-secondary ring-offset-2 ring-offset-background",
-        icon: "text-secondary",
-        accentBorder: "border-secondary",
-      },
-      accent: {
-        border: "border-accent/60",
-        bg: "bg-accent/20",
-        header: "bg-accent/30",
-        hover: "hover:border-accent",
-        selected: "ring-2 ring-accent ring-offset-2 ring-offset-background",
-        icon: "text-accent",
-        accentBorder: "border-accent",
-      },
-      destructive: {
-        border: "border-destructive/60",
-        bg: "bg-destructive/20",
-        header: "bg-destructive/30",
-        hover: "hover:border-destructive",
-        selected: "ring-2 ring-destructive ring-offset-2 ring-offset-background",
-        icon: "text-destructive",
-        accentBorder: "border-destructive",
-      },
-      muted: {
-        border: "border-muted-foreground/60",
-        bg: "bg-muted/20",
-        header: "bg-muted/30",
-        hover: "hover:border-muted-foreground",
-        selected: "ring-2 ring-muted-foreground ring-offset-2 ring-offset-background",
-        icon: "text-muted-foreground",
-        accentBorder: "border-muted-foreground",
-      },
     };
 
     const legacyColor = nodeMetadata.color || "primary";

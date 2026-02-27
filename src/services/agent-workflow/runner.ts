@@ -104,7 +104,18 @@ export async function executeWorkflow(
         continue;
       }
       context.currentNodeId = nodeId;
+      const nodeStartTime = Date.now();
       const result = await executeNode(node, agent.edges, context, agent, deps!);
+      deps?.onLog?.({
+        type: "node-execution",
+        agentId: agent.id,
+        nodeId: nodeId,
+        nodeLabel: node.label || node.type,
+        title: `Node: ${node.label || node.type}`,
+        output: result.success ? (typeof result.value === "string" ? result.value?.slice(0, 200) : JSON.stringify(result.value)?.slice(0, 200)) : undefined,
+        error: result.error,
+        durationMs: Date.now() - nodeStartTime,
+      });
       if (onNodeExecuted) {
         onNodeExecuted(nodeId, result);
       }

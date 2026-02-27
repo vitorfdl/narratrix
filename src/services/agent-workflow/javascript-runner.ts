@@ -39,20 +39,34 @@ function buildUtils(): JavascriptRunnerUtils {
   };
 }
 
+export interface JavascriptRunResult {
+  result: unknown;
+  consoleLogs: string[];
+}
+
 /**
  * Execute arbitrary javascript code in a constrained async function scope.
- * The runner exposes `input` (the data from connected nodes), `stores`, and `utils`.
+ * The runner exposes `input` (the data from connected nodes), `stores`, `utils`, and a sandboxed `console`.
  * `args` is kept as a deprecated alias for `input` for backward compatibility.
  */
-export async function runJavascript(code: string, input?: unknown): Promise<unknown> {
+export async function runJavascript(code: string, input?: unknown): Promise<JavascriptRunResult> {
   const stores = buildStores();
   const utils = buildUtils();
+  const consoleLogs: string[] = [];
 
-  // Create an async function with a strict, explicit parameter list
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
+  const formatArgs = (args: unknown[]) => args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ");
+
+  const sandboxConsole = {
+    log: (...args: unknown[]) => consoleLogs.push(formatArgs(args)),
+    warn: (...args: unknown[]) => consoleLogs.push(`[WARN] ${formatArgs(args)}`),
+    error: (...args: unknown[]) => consoleLogs.push(`[ERROR] ${formatArgs(args)}`),
+    info: (...args: unknown[]) => consoleLogs.push(`[INFO] ${formatArgs(args)}`),
+  };
+
   const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor as new (...args: string[]) => (...fnArgs: unknown[]) => Promise<unknown>;
 
-  const fn = new AsyncFunction("input", "args", "stores", "utils", `"use strict";\n${code}`);
+  const fn = new AsyncFunction("input", "args", "stores", "utils", "console", `"use strict";\n${code}`);
 
-  return await fn(input, input, stores, utils);
+  const result = await fn(input, input, stores, utils, sandboxConsole);
+  return { result, consoleLogs };
 }

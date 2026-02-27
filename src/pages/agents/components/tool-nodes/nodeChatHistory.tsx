@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { useChatStore } from "@/hooks/chatStore";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
@@ -121,7 +122,7 @@ const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogProps> = 
     if (open) {
       reset(initialConfig);
     }
-  }, [open, reset]);
+  }, [open, reset, initialConfig]);
 
   // Save handler
   const onSubmit = (data: ChatHistoryNodeConfig) => {
@@ -142,29 +143,19 @@ const ChatHistoryNodeConfigDialog: React.FC<ChatHistoryNodeConfigDialogProps> = 
                 <Controller name="name" control={control} render={({ field }) => <Input {...field} placeholder="Enter node name" className="text-xs" maxLength={64} autoFocus />} />
               </div>
 
-              <div>
-                <Label className="text-xs font-medium text-foreground mb-1 block">Message Depth</Label>
-                <Controller
-                  name="depth"
-                  control={control}
-                  rules={{
-                    required: "Depth is required",
-                    min: { value: 1, message: "Depth must be at least 1" },
-                    max: { value: 1000, message: "Depth cannot exceed 1000" },
-                  }}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      type="number"
-                      placeholder="Number of messages to retrieve"
-                      className="text-xs"
-                      min={1}
-                      max={1000}
-                      onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 1)}
-                    />
-                  )}
-                />
-              </div>
+              <Controller
+                name="depth"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs font-medium">Message Depth</Label>
+                      <span className="text-xs font-medium bg-primary/20 text-primary px-2 py-0.5 rounded-md">{field.value}</span>
+                    </div>
+                    <Slider min={1} max={500} step={1} value={[field.value]} onValueChange={(v) => field.onChange(v[0])} className="py-1" />
+                  </div>
+                )}
+              />
 
               <div>
                 <Label className="text-xs font-medium text-foreground mb-1 block">Message Type</Label>

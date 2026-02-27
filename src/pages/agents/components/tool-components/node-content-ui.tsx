@@ -114,7 +114,7 @@ export const NodeConfigPreview: React.FC<NodeConfigPreviewProps> = ({ items, chi
 
   // key-value
   return (
-    <div className={cn(base, "p-2 space-y-0.5", className)}>
+    <div className={cn(base, "p-2 space-y-0", className)}>
       {items?.map((item) => (
         <div key={item.label} className="flex items-center gap-1 text-xxs text-muted-foreground">
           {item.icon && React.createElement(item.icon, { className: "h-2.5 w-2.5 flex-shrink-0 opacity-70" })}
