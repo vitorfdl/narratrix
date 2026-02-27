@@ -2,8 +2,8 @@ import { useReactFlow, useStore } from "@xyflow/react";
 import { Cpu, MessageSquareDiff, PersonStanding, Sparkles, UserRound } from "lucide-react";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,9 +99,7 @@ const PROMPT_INJECTION_NODE_METADATA = {
   icon: MessageSquareDiff,
   theme: createNodeTheme("indigo"),
   deletable: true,
-  inputs: [
-    { id: "response", label: "Prompt Content", edgeType: "string" as const, targetRef: "response-section" },
-  ] as NodeInput[],
+  inputs: [{ id: "response", label: "Prompt Content", edgeType: "string" as const, targetRef: "response-section" }] as NodeInput[],
   outputs: [],
   defaultConfig: DEFAULT_CONFIG,
 };
@@ -164,7 +162,6 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
           </DialogHeader>
           <DialogBody>
             <div className="space-y-3 py-2">
-
               {/* Row 1: Behavior */}
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -172,7 +169,8 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                   <HelpTooltip>
                     <span className="text-xs">
                       <strong>Next Generation Only</strong> — injected once for the next character generation after this message. Has no effect if another user or character message follows it first.
-                      <br /><br />
+                      <br />
+                      <br />
                       <strong>Global (Persistent)</strong> — stays active for all future generations until superseded by another injection with the same Global Type tag.
                     </span>
                   </HelpTooltip>
@@ -186,8 +184,12 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="next" className="text-xs">Next Generation Only</SelectItem>
-                        <SelectItem value="global" className="text-xs">Global (Persistent)</SelectItem>
+                        <SelectItem value="next" className="text-xs">
+                          Next Generation Only
+                        </SelectItem>
+                        <SelectItem value="global" className="text-xs">
+                          Global (Persistent)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -204,24 +206,14 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                         <span className="text-xs">Injections with the same tag replace each other. Leave empty to never be replaced by another injection.</span>
                       </HelpTooltip>
                     </div>
-                    <Controller
-                      name="globalType"
-                      control={control}
-                      render={({ field }) => (
-                        <Input {...field} placeholder="e.g. mood, scene, instructions" className="text-xs h-8" />
-                      )}
-                    />
+                    <Controller name="globalType" control={control} render={({ field }) => <Input {...field} placeholder="e.g. mood, scene, instructions" className="text-xs h-8" />} />
                   </div>
                   <div className="flex flex-col items-center gap-1 pt-5">
-                    <Controller
-                      name="scopeToAgent"
-                      control={control}
-                      render={({ field }) => (
-                        <Switch id="scopeToAgent" checked={field.value} onCheckedChange={field.onChange} />
-                      )}
-                    />
+                    <Controller name="scopeToAgent" control={control} render={({ field }) => <Switch id="scopeToAgent" checked={field.value} onCheckedChange={field.onChange} />} />
                     <div className="flex items-center gap-1">
-                      <Label htmlFor="scopeToAgent" className="text-xxs text-muted-foreground cursor-pointer whitespace-nowrap">Agent only</Label>
+                      <Label htmlFor="scopeToAgent" className="text-xxs text-muted-foreground cursor-pointer whitespace-nowrap">
+                        Agent only
+                      </Label>
                       <HelpTooltip>
                         <span className="text-xs">When enabled, the tag is scoped to this specific agent. Injections from other agents with the same tag won't replace this one.</span>
                       </HelpTooltip>
@@ -249,13 +241,22 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="system" className="text-xs">
-                            <div className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5" />System</div>
+                            <div className="flex items-center gap-1.5">
+                              <Sparkles className="h-3.5 w-3.5" />
+                              System
+                            </div>
                           </SelectItem>
                           <SelectItem value="user" className="text-xs">
-                            <div className="flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5" />User</div>
+                            <div className="flex items-center gap-1.5">
+                              <UserRound className="h-3.5 w-3.5" />
+                              User
+                            </div>
                           </SelectItem>
                           <SelectItem value="character" className="text-xs">
-                            <div className="flex items-center gap-1.5"><PersonStanding className="h-3.5 w-3.5" />Character</div>
+                            <div className="flex items-center gap-1.5">
+                              <PersonStanding className="h-3.5 w-3.5" />
+                              Character
+                            </div>
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -267,9 +268,13 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                     <Label className="text-xs font-medium">Position</Label>
                     <HelpTooltip>
                       <span className="text-xs">
-                        Where in the context window this prompt is inserted.<br /><br />
-                        <strong>Top / Bottom</strong> — start or end of the whole message history.<br />
-                        <strong>At Depth</strong> — N messages from the end.<br />
+                        Where in the context window this prompt is inserted.
+                        <br />
+                        <br />
+                        <strong>Top / Bottom</strong> — start or end of the whole message history.
+                        <br />
+                        <strong>At Depth</strong> — N messages from the end.
+                        <br />
                         <strong>Before / After User Input</strong> — adjacent to the last user message.
                       </span>
                     </HelpTooltip>
@@ -283,11 +288,21 @@ const PromptInjectionConfigDialog: React.FC<PromptInjectionConfigDialogProps> = 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="top" className="text-xs">Top of Conversation</SelectItem>
-                          <SelectItem value="bottom" className="text-xs">Bottom of Conversation</SelectItem>
-                          <SelectItem value="depth" className="text-xs">At Specific Depth</SelectItem>
-                          <SelectItem value="before_user_input" className="text-xs">Before User Input</SelectItem>
-                          <SelectItem value="after_user_input" className="text-xs">After User Input</SelectItem>
+                          <SelectItem value="top" className="text-xs">
+                            Top of Conversation
+                          </SelectItem>
+                          <SelectItem value="bottom" className="text-xs">
+                            Bottom of Conversation
+                          </SelectItem>
+                          <SelectItem value="depth" className="text-xs">
+                            At Specific Depth
+                          </SelectItem>
+                          <SelectItem value="before_user_input" className="text-xs">
+                            Before User Input
+                          </SelectItem>
+                          <SelectItem value="after_user_input" className="text-xs">
+                            After User Input
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -348,11 +363,7 @@ const PromptInjectionContent = memo<{ nodeId: string; config: PromptInjectionNod
 
   return (
     <div className="space-y-3 w-full">
-      <NodeField
-        label="Injection Config"
-        icon={Cpu}
-        action={<NodeConfigButton onClick={onConfigure} title="Configure injection" />}
-      >
+      <NodeField label="Injection Config" icon={Cpu} action={<NodeConfigButton onClick={onConfigure} title="Configure injection" />}>
         <NodeConfigPreview
           variant="key-value"
           items={[
@@ -365,11 +376,7 @@ const PromptInjectionContent = memo<{ nodeId: string; config: PromptInjectionNod
       </NodeField>
       <NodeField label="Prompt Content" icon={MessageSquareDiff} refId="response-section">
         <NodeConfigPreview variant="badge">
-          {isResponseConnected ? (
-            <span className="text-xs text-muted-foreground italic">Receiving input...</span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Connect a prompt source</span>
-          )}
+          {isResponseConnected ? <span className="text-xs text-muted-foreground italic">Receiving input...</span> : <span className="text-xs text-muted-foreground">Connect a prompt source</span>}
         </NodeConfigPreview>
       </NodeField>
     </div>
@@ -398,12 +405,7 @@ export const PromptInjectionNode = memo(({ id, data, selected }: NodeProps) => {
       <NodeBase nodeId={id} data={data} selected={!!selected}>
         <PromptInjectionContent nodeId={id} config={config} onConfigure={() => setConfigDialogOpen(true)} />
       </NodeBase>
-      <PromptInjectionConfigDialog
-        open={configDialogOpen}
-        initialConfig={config}
-        onSave={handleConfigSave}
-        onCancel={() => setConfigDialogOpen(false)}
-      />
+      <PromptInjectionConfigDialog open={configDialogOpen} initialConfig={config} onSave={handleConfigSave} onCancel={() => setConfigDialogOpen(false)} />
     </>
   );
 });

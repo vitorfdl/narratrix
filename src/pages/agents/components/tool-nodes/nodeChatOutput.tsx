@@ -92,19 +92,10 @@ const ChatOutputContent = memo<{ nodeId: string }>(({ nodeId }) => {
 
   return (
     <div className="space-y-3 w-full">
-      <NodeField
-        label="Participant"
-        icon={User}
-        refId="participant-section"
-        helpText="The character who 'says' this message. Connect a Participant Picker or Trigger output."
-      />
+      <NodeField label="Participant" icon={User} refId="participant-section" helpText="The character who 'says' this message. Connect a Participant Picker or Trigger output." />
       <NodeField label="Message" icon={MessageCircle} refId="response-section">
         <NodeConfigPreview variant="badge">
-          {isResponseConnected ? (
-            <span className="text-xs text-muted-foreground italic">Receiving input...</span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Connect a response source</span>
-          )}
+          {isResponseConnected ? <span className="text-xs text-muted-foreground italic">Receiving input...</span> : <span className="text-xs text-muted-foreground">Connect a response source</span>}
         </NodeConfigPreview>
       </NodeField>
     </div>

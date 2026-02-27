@@ -3,7 +3,15 @@ import { LuChevronDown } from "react-icons/lu";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatSettings, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import {
+  useChatActions,
+  useCurrentChatActiveChapterID,
+  useCurrentChatId,
+  useCurrentChatMessages,
+  useCurrentChatParticipants,
+  useCurrentChatSettings,
+  useCurrentChatUserCharacterID,
+} from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";

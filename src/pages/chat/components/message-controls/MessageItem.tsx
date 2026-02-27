@@ -118,7 +118,19 @@ const PromptInjectionBadges = ({ promptConfig }: { promptConfig: PromptConfig })
   );
 };
 
-const ScriptHeader = ({ script, createdAt, messageType, name, promptConfig }: { script: keyof typeof SCRIPT_CONFIGS; createdAt: Date | string; messageType: string; name?: string; promptConfig?: PromptConfig }) => {
+const ScriptHeader = ({
+  script,
+  createdAt,
+  messageType,
+  name,
+  promptConfig,
+}: {
+  script: keyof typeof SCRIPT_CONFIGS;
+  createdAt: Date | string;
+  messageType: string;
+  name?: string;
+  promptConfig?: PromptConfig;
+}) => {
   const config = SCRIPT_CONFIGS[script];
   const isPromptInjection = script === "agent" && !!promptConfig;
   const Icon = isPromptInjection ? (promptConfig.behavior === "next" ? LuZap : LuRefreshCw) : config.icon;

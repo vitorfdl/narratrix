@@ -421,9 +421,7 @@ export function resolveScriptedPrompts(messages: ChatMessage[]): ChatTemplateCus
       continue;
     }
 
-    const groupKey = pc.scopeToAgent
-      ? `${pc.globalType ?? "__none__"}::${msg.extra?.agentId ?? "__unknown__"}`
-      : `${pc.globalType ?? "__none__"}`;
+    const groupKey = pc.scopeToAgent ? `${pc.globalType ?? "__none__"}::${msg.extra?.agentId ?? "__unknown__"}` : `${pc.globalType ?? "__none__"}`;
 
     // Later positions overwrite earlier ones (ordered ascending)
     globalGroups.set(groupKey, msg);
