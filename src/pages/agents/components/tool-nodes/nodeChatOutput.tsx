@@ -1,12 +1,11 @@
-import { useStore } from "@xyflow/react";
 import { MessageCircle, User } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import { useChatStore } from "@/hooks/chatStore";
 import { ChatMessageType } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { getNextMessagePosition } from "@/services/chat-message-service";
 import { NodeBase, NodeInput } from "../tool-components/NodeBase";
-import { NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
+import { NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
 
