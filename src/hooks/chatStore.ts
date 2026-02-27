@@ -1029,6 +1029,8 @@ export const useCurrentChatChapters = () => useChatStore((state) => state.select
 
 export const useCurrentChatMessages = () => useChatStore((state) => state.selectedChatMessages);
 
+export const useCurrentChatSettings = () => useChatStore((state) => state.selectedChat?.settings);
+
 export const useCurrentChatParticipantIndex = () => useChatStore((state) => state.participantIndex);
 
 // Memory hooks

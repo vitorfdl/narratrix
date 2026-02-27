@@ -1,3 +1,4 @@
+import type { ChatDisplaySettings } from "@/schema/chat-schema";
 import { Chat, ChatParticipant, ChatUserSettings, CreateChatParams, chatSchema } from "@/schema/chat-schema";
 import { formatDateTime } from "@/utils/date-time";
 import { uuidUtils } from "../schema/utils-schema";
@@ -32,9 +33,10 @@ export async function createChat(chatData: CreateChatParams): Promise<Chat> {
 
   console.log(validatedChat);
 
-  // Convert arrays to JSON strings for storage
+  // Convert arrays/objects to JSON strings for storage
   const participantsStr = JSON.stringify(validatedChat.participants);
   const userCharacterSettingsStr = JSON.stringify(validatedChat.user_character_settings);
+  const settingsStr = validatedChat.settings ? JSON.stringify(validatedChat.settings) : null;
 
   await executeDBQuery(
     `INSERT INTO chats (
@@ -46,9 +48,10 @@ export async function createChat(chatData: CreateChatParams): Promise<Chat> {
       user_character_id, 
       user_character_settings, 
       active_chapter_id,
+      settings,
       created_at, 
       updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       validatedChat.id,
       validatedChat.profile_id,
@@ -58,6 +61,7 @@ export async function createChat(chatData: CreateChatParams): Promise<Chat> {
       validatedChat.user_character_id || null,
       userCharacterSettingsStr,
       validatedChat.active_chapter_id || null,
+      settingsStr,
       now,
       now,
     ],
@@ -82,6 +86,7 @@ export async function getChatById(id: string, profileId?: string): Promise<Chat 
       participants,
       user_character_id,
       user_character_settings,
+      settings,
       created_at, 
       updated_at
     FROM chats 
@@ -102,9 +107,10 @@ export async function getChatById(id: string, profileId?: string): Promise<Chat 
 
   const chat = result[0];
 
-  // Parse JSON strings back to arrays
+  // Parse JSON strings back to arrays/objects
   chat.participants = JSON.parse(chat.participants || "[]");
   chat.user_character_settings = JSON.parse(chat.user_character_settings || "[]");
+  chat.settings = chat.settings ? JSON.parse(chat.settings) : null;
 
   // Convert date strings to Date objects
   chat.created_at = new Date(chat.created_at);
@@ -125,6 +131,7 @@ export async function listChats(filter?: ChatFilter): Promise<Chat[]> {
       participants,
       user_character_id,
       user_character_settings,
+      settings,
       created_at, 
       updated_at
     FROM chats
@@ -164,6 +171,7 @@ export async function listChats(filter?: ChatFilter): Promise<Chat[]> {
     ...chat,
     participants: JSON.parse(chat.participants || "[]"),
     user_character_settings: JSON.parse(chat.user_character_settings || "[]"),
+    settings: chat.settings ? JSON.parse(chat.settings) : null,
     created_at: new Date(chat.created_at),
     updated_at: new Date(chat.updated_at),
   })) as Chat[];
@@ -183,6 +191,7 @@ export async function updateChat(id: string, updateData: Partial<Omit<Chat, "id"
   const fieldMapping = {
     participants: (value: ChatParticipant[]) => JSON.stringify(value),
     user_character_settings: (value: ChatUserSettings[]) => JSON.stringify(value),
+    settings: (value: ChatDisplaySettings | null) => (value ? JSON.stringify(value) : null),
   };
 
   // Build update parameters

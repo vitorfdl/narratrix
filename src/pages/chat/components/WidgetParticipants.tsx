@@ -11,11 +11,12 @@ import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { useAgents } from "@/hooks/agentStore";
 import { useAgentWorkflowStateById, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatId, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatId, useCurrentChatParticipants, useCurrentChatSettings, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useUIStore } from "@/hooks/UIStore";
 import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
@@ -37,7 +38,7 @@ export interface Participant {
 }
 
 interface WidgetParticipantsProps {
-  onOpenConfig?: () => void;
+  onOpenConfig?: () => void; // reserved for future use
 }
 
 // ─── Shared DnD Wrapper ───────────────────────────────────────────────────────
@@ -277,7 +278,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 
-const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig }) => {
+const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
   const characterList = useCharacters();
   const agentList = useAgents();
   const currentProfile = useCurrentProfile();
@@ -287,6 +288,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
   const currentChatId = useCurrentChatId();
   const currentChatUserCharacterID = useCurrentChatUserCharacterID();
   const participants = useCurrentChatParticipants() || [];
+  const chatSettings = useCurrentChatSettings();
   const { addParticipant, removeParticipant, toggleParticipantEnabled, updateSelectedChat } = useChatActions();
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
@@ -549,9 +551,42 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = ({ onOpenConfig })
             <LuUserPlus className="h-4 w-4" />
           </Button>
         </AddParticipantPopover>
-        <Button disabled variant="ghost" size="icon" onClick={onOpenConfig} title="Settings">
-          <LuSettings className="h-4 w-4" />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" title="Display Settings">
+              <LuSettings className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="start" className="w-56 p-3">
+            <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Display</p>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs">Hide excluded messages</span>
+                <Switch
+                  size="sm"
+                  checked={chatSettings?.hideDisabledMessages ?? false}
+                  onCheckedChange={(checked) =>
+                    updateSelectedChat({
+                      settings: { hideDisabledMessages: checked, hideScriptMessages: chatSettings?.hideScriptMessages ?? false },
+                    })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs">Hide Prompt Injection messages</span>
+                <Switch
+                  size="sm"
+                  checked={chatSettings?.hideScriptMessages ?? false}
+                  onCheckedChange={(checked) =>
+                    updateSelectedChat({
+                      settings: { hideDisabledMessages: chatSettings?.hideDisabledMessages ?? false, hideScriptMessages: checked },
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <CharacterForm

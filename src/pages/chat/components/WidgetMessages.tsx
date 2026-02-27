@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuChevronDown } from "react-icons/lu";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatSettings, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useExpressionStore } from "@/hooks/expressionStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
@@ -30,6 +30,7 @@ const WidgetMessages: React.FC = () => {
   const currentChatId = useCurrentChatId();
   const currentChatActiveChapterID = useCurrentChatActiveChapterID();
   const messages = useCurrentChatMessages();
+  const chatSettings = useCurrentChatSettings();
   const { updateChatMessage, addChatMessage, fetchChatMessages, deleteChatMessage } = useChatActions();
   const setSelectedText = useExpressionStore((state) => state.setSelectedText);
   const currentChatParticipants = useCurrentChatParticipants();
@@ -40,6 +41,18 @@ const WidgetMessages: React.FC = () => {
   const currentProfile = useCurrentProfile();
   const { url: currentProfileAvatarUrl } = useImageUrl(currentProfile?.avatar_path);
   const showAvatars = currentProfile?.settings?.chat?.showAvatars ?? true;
+
+  const filteredMessages = useMemo(() => {
+    return messages.filter((m) => {
+      if (chatSettings?.hideDisabledMessages && m.disabled) {
+        return false;
+      }
+      if (chatSettings?.hideScriptMessages && m.extra?.script === "agent") {
+        return false;
+      }
+      return true;
+    });
+  }, [messages, chatSettings]);
 
   const [isEditingID, setIsEditingID] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
@@ -377,12 +390,12 @@ const WidgetMessages: React.FC = () => {
     <div className={MESSAGE_CONTAINER_STYLES}>
       <div ref={scrollContainerRef} className="messages-container flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full p-1" onScroll={handleScroll}>
         <div className="flex flex-col">
-          {messages.map((message, index) => {
-            const isLastMessage = index === messages.length - 1 || message.type === "system";
+          {filteredMessages.map((message, index) => {
+            const isLastMessage = index === filteredMessages.length - 1 || message.type === "system";
             const isStreaming = streamingMessageId === message.id;
             const hasReasoningData = !!messageReasonings[message.id];
             const reasoningContent = messageReasonings[message.id] || "";
-            const showMidLayer = index > 0 && !message.disabled && messages[index - 1] && !messages[index - 1].disabled;
+            const showMidLayer = index > 0 && !message.disabled && filteredMessages[index - 1] && !filteredMessages[index - 1].disabled;
             const isEditing = isEditingID === message.id;
 
             let avatarPath: string | null = null;
@@ -400,7 +413,7 @@ const WidgetMessages: React.FC = () => {
 
             return (
               <div key={message.id}>
-                {showMidLayer && <MidMessageLayerWrapper messageBefore={messages[index - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
+                {showMidLayer && <MidMessageLayerWrapper messageBefore={filteredMessages[index - 1]} messageAfter={message} onSummarize={handleSummarizeMessages} />}
 
                 <div className={MESSAGE_GROUP_STYLES} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 200px" }}>
                   <MessageItem
