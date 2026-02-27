@@ -1,10 +1,10 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
-import { LuBot, LuEyeOff, LuFileText, LuPlay } from "react-icons/lu";
+import { LuBot, LuEyeOff, LuFileText, LuPlay, LuRefreshCw, LuZap } from "react-icons/lu";
 import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { useLazyRender } from "@/hooks/useLazyRender";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, UpdateChatMessageParams } from "@/schema/chat-message-schema";
+import type { ChatMessage, PromptConfig, UpdateChatMessageParams } from "@/schema/chat-message-schema";
 import { ContextCutDivider, EditControls, MessageActions, StreamingIndicator } from "./AdditionalActions";
 import { MessageAvatar } from "./MessageAvatar";
 import { ReasoningSection } from "./ReasoningCollapsible";
@@ -32,6 +32,19 @@ const SCRIPT_CONFIGS = {
     description: "New chapter begins",
     className: "bg-primary/15 text-primary border-primary/30",
     iconClassName: "text-primary",
+  },
+} as const;
+
+const PROMPT_INJECTION_BEHAVIOR_CONFIG = {
+  next: {
+    icon: LuZap,
+    label: "Next Gen",
+    className: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  },
+  global: {
+    icon: LuRefreshCw,
+    label: "Global",
+    className: "bg-violet-500/15 text-violet-400 border-violet-500/30",
   },
 } as const;
 
@@ -81,26 +94,60 @@ const ScriptIndicator = ({ script }: { script: keyof typeof SCRIPT_CONFIGS }) =>
   );
 };
 
-const ScriptHeader = ({ script, createdAt, messageType, name }: { script: keyof typeof SCRIPT_CONFIGS; createdAt: Date | string; messageType: string; name?: string }) => {
-  const config = SCRIPT_CONFIGS[script];
-  const Icon = config.icon;
-  const label = script === "agent" && name ? name : config.label;
+const PromptInjectionBadges = ({ promptConfig }: { promptConfig: PromptConfig }) => {
+  const behaviorCfg = PROMPT_INJECTION_BEHAVIOR_CONFIG[promptConfig.behavior];
+  const BehaviorIcon = behaviorCfg.icon;
+  const positionLabel = promptConfig.position === "depth" ? `Depth ${promptConfig.depth}` : promptConfig.position.charAt(0).toUpperCase() + promptConfig.position.slice(1);
+  const roleLabel = promptConfig.role.charAt(0).toUpperCase() + promptConfig.role.slice(1);
+
   return (
-    <div className={MESSAGE_BASE_CLASSES.scriptHeader}>
-      <div className="flex items-center gap-2">
-        <div className={cn("p-1.5 rounded-md border", config.className)}>
-          <Icon className={cn("h-4 w-4", config.iconClassName)} />
-        </div>
-        <span className="font-semibold text-sm">{label}</span>
-      </div>
-      {messageType === "system" && (
-        <div className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
-          {new Date(createdAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </div>
+    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+      <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border", behaviorCfg.className)}>
+        <BehaviorIcon className="h-2.5 w-2.5" />
+        {behaviorCfg.label}
+      </span>
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/60 text-muted-foreground border border-border/50">
+        {roleLabel} · {positionLabel}
+      </span>
+      {promptConfig.behavior === "global" && promptConfig.globalType && (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/40 text-muted-foreground border border-dashed border-border/60">
+          #{promptConfig.globalType}
+        </span>
       )}
+    </div>
+  );
+};
+
+const ScriptHeader = ({ script, createdAt, messageType, name, promptConfig }: { script: keyof typeof SCRIPT_CONFIGS; createdAt: Date | string; messageType: string; name?: string; promptConfig?: PromptConfig }) => {
+  const config = SCRIPT_CONFIGS[script];
+  const isPromptInjection = script === "agent" && !!promptConfig;
+  const Icon = isPromptInjection ? (promptConfig.behavior === "next" ? LuZap : LuRefreshCw) : config.icon;
+  const headerClass = isPromptInjection ? (promptConfig.behavior === "next" ? PROMPT_INJECTION_BEHAVIOR_CONFIG.next.className : PROMPT_INJECTION_BEHAVIOR_CONFIG.global.className) : config.className;
+  const iconClass = isPromptInjection ? "" : config.iconClassName;
+  const label = script === "agent" && name ? name : config.label;
+
+  return (
+    <div className={cn(MESSAGE_BASE_CLASSES.scriptHeader, "flex-col items-start gap-1.5")}>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <div className={cn("p-1.5 rounded-md border", headerClass)}>
+            <Icon className={cn("h-4 w-4", iconClass)} />
+          </div>
+          <div>
+            <span className="font-semibold text-sm">{label}</span>
+            {isPromptInjection && <span className="ml-1.5 text-xs text-muted-foreground">· Prompt Injection</span>}
+          </div>
+        </div>
+        {messageType === "system" && (
+          <div className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
+            {new Date(createdAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
+        )}
+      </div>
+      {isPromptInjection && <PromptInjectionBadges promptConfig={promptConfig} />}
     </div>
   );
 };
@@ -268,7 +315,13 @@ const MessageItem = ({
 
             {message.extra?.script &&
               (message.type === "system" ? (
-                <ScriptHeader script={message.extra.script} createdAt={message.created_at} messageType={message.type} name={message.extra.name ?? undefined} />
+                <ScriptHeader
+                  script={message.extra.script}
+                  createdAt={message.created_at}
+                  messageType={message.type}
+                  name={message.extra.name ?? undefined}
+                  promptConfig={message.extra.promptConfig ?? undefined}
+                />
               ) : (
                 <div className={cn("flex mb-3", message.type === "user" ? "justify-end" : "justify-start")}>
                   <ScriptIndicator script={message.extra.script} />

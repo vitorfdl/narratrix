@@ -1,6 +1,6 @@
 import { useStore } from "@xyflow/react";
-import { Bot, MessageCircle, User } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { MessageCircle, User } from "lucide-react";
+import { memo, useMemo } from "react";
 import { useChatStore } from "@/hooks/chatStore";
 import { ChatMessageType } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
@@ -13,18 +13,19 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, agent): Promise<NodeExecutionResult> => {
-  if (inputs.characterId && typeof inputs.characterId !== "string") {
-    return { success: false, error: "Character ID must be a string" };
-  }
-
+const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, _agent): Promise<NodeExecutionResult> => {
   const response: string = typeof inputs.response === "string" ? inputs.response : "";
-  const participantId: string | undefined = inputs.characterId ? (inputs.characterId as string) : undefined;
-  const isUser = participantId === "user";
+  const participantId = typeof inputs.characterId === "string" ? inputs.characterId : undefined;
 
   if (!response) {
     return { success: false, error: "Chat output node missing response text" };
   }
+
+  if (!participantId) {
+    return { success: false, error: "Chat output node requires a participant ID" };
+  }
+
+  const isUser = participantId === "user";
 
   try {
     const store = useChatStore.getState();
@@ -38,12 +39,12 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, agen
     const position = await getNextMessagePosition(chatId, chapterId);
     await store.actions.addChatMessage({
       character_id: isUser ? null : participantId || null,
-      type: (isUser ? "user" : participantId ? "character" : "system") as ChatMessageType,
+      type: (isUser ? "user" : "character") as ChatMessageType,
       messages: [response],
       position,
       disabled: false,
       tokens: null,
-      extra: { script: "agent", name: agent.name },
+      extra: {},
     });
 
     return { success: true, value: response };
@@ -58,9 +59,9 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, agen
  */
 const CHAT_OUTPUT_NODE_METADATA = {
   type: "chatOutput",
-  label: "Chat Output",
+  label: "Chat Message",
   category: "Chat",
-  description: "Display the final response in the conversation flow",
+  description: "Post a message to the chat as a character or user",
   icon: MessageCircle,
   theme: createNodeTheme("green"),
   deletable: true,
@@ -94,17 +95,13 @@ const ChatOutputContent = memo<{ nodeId: string }>(({ nodeId }) => {
       <NodeField
         label="Participant"
         icon={User}
-        optional
         refId="participant-section"
-        helpText="The character who 'says' this message. Connect a Participant Picker or Trigger output. Leave unconnected to post as system."
+        helpText="The character who 'says' this message. Connect a Participant Picker or Trigger output."
       />
       <NodeField label="Message" icon={MessageCircle} refId="response-section">
         <NodeConfigPreview variant="badge">
           {isResponseConnected ? (
-            <>
-              <Bot className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground italic">Receiving input...</span>
-            </>
+            <span className="text-xs text-muted-foreground italic">Receiving input...</span>
           ) : (
             <span className="text-xs text-muted-foreground">Connect a response source</span>
           )}
@@ -116,20 +113,7 @@ const ChatOutputContent = memo<{ nodeId: string }>(({ nodeId }) => {
 
 ChatOutputContent.displayName = "ChatOutputContent";
 
-/**
- * ChatOutputNode: Represents the final output in the conversation flow
- * This node receives the processed response and displays it to the user
- */
 export const ChatOutputNode = memo(({ data, selected, id }: NodeProps) => {
-  const [_receivedValue, setReceivedValue] = useState<string>("");
-
-  // Listen for updates to the data (if your system provides runtime values)
-  useEffect(() => {
-    if (typeof data.value === "string") {
-      setReceivedValue(data.value);
-    }
-  }, [data.value]);
-
   return (
     <NodeBase nodeId={id} data={data} selected={!!selected}>
       <ChatOutputContent nodeId={id} />

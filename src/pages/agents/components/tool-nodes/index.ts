@@ -6,6 +6,7 @@ import "./nodeChatOutput";
 import "./nodeJavascript";
 import "./nodeText";
 import "./nodeParticipantPicker";
+import "./nodePromptInjection";
 import "./nodeTrigger";
 
 // Re-export the NodeProps interface

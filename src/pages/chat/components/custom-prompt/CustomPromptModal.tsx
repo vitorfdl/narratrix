@@ -135,7 +135,7 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
                 <Label htmlFor="position" className="text-sm font-medium">
                   Position
                 </Label>
-                <Select value={prompt.position} onValueChange={(value: "top" | "bottom" | "depth") => setPrompt({ ...prompt, position: value })}>
+                <Select value={prompt.position} onValueChange={(value: ChatTemplateCustomPrompt["position"]) => setPrompt({ ...prompt, position: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select position" />
                   </SelectTrigger>
@@ -143,6 +143,8 @@ export function CustomPromptModal({ open, onClose, onSave, initialData }: Custom
                     <SelectItem value="top">Top of Conversation</SelectItem>
                     <SelectItem value="bottom">Bottom of Conversation</SelectItem>
                     <SelectItem value="depth">At Specific Depth</SelectItem>
+                    <SelectItem value="before_user_input">Before User Input</SelectItem>
+                    <SelectItem value="after_user_input">After User Input</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
