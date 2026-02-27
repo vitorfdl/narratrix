@@ -1,4 +1,4 @@
-import { jsonSchema, tool, type ToolSet } from "ai";
+import { jsonSchema, type ToolSet, tool } from "ai";
 import type { ExecutableToolDefinition } from "@/hooks/useInference";
 
 /**
@@ -37,15 +37,19 @@ function convertToolsToAISDK(tools: ExecutableToolDefinition[]): ToolSet {
     const rawSchema = t.parameters && typeof t.parameters === "object" ? (t.parameters as Record<string, unknown>) : {};
     const safeSchema = sanitizeToolSchema(rawSchema);
 
-    toolset[t.name] = tool({
-      description: t.description,
-      inputSchema: jsonSchema(safeSchema),
-      execute: t.execute
-        ? async (args: Record<string, unknown>) => {
-            return t.execute!(args as Record<string, any>);
-          }
-        : undefined,
-    });
+    if (t.execute) {
+      const execFn = t.execute;
+      toolset[t.name] = tool({
+        description: t.description,
+        inputSchema: jsonSchema(safeSchema),
+        execute: async (args: Record<string, unknown>) => execFn(args as Record<string, any>),
+      });
+    } else {
+      toolset[t.name] = tool({
+        description: t.description,
+        inputSchema: jsonSchema(safeSchema),
+      });
+    }
   }
 
   return toolset;

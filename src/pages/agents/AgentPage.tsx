@@ -103,7 +103,6 @@ export default function AgentPage() {
     if (window.confirm(`Delete agent '${agent.name}'?`)) {
       try {
         await deleteAgent(agent.id);
-        toast.success(`Agent '${agent.name}' deleted successfully`);
       } catch (error) {
         console.error("Failed to delete agent:", error);
         // Error toast is handled by the store's error state
@@ -134,7 +133,6 @@ export default function AgentPage() {
       await updateAgent(currentProfile.id, agent.id, {
         favorite: !agent.favorite,
       });
-      toast.success(`Agent ${agent.favorite ? "removed from" : "added to"} favorites`);
     } catch (error) {
       console.error("Failed to toggle favorite:", error);
       // Error toast is handled by the store's error state

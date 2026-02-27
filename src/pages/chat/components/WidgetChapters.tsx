@@ -368,7 +368,6 @@ const WidgetChapters = () => {
                 onClick={async () => {
                   try {
                     await duplicateChatChapter(chapter.id);
-                    toast.success(`Chapter "${chapter.title}" duplicated`);
                   } catch {
                     toast.error(`Failed to duplicate chapter "${chapter.title}"`);
                   }

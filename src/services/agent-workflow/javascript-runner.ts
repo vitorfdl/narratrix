@@ -2,12 +2,32 @@ import { useCharacterStore } from "@/hooks/characterStore";
 import { useChatStore } from "@/hooks/chatStore";
 import { useLorebookStore } from "@/hooks/lorebookStore";
 import { useModelsStore } from "@/hooks/modelsStore";
+import { useProfileStore } from "@/hooks/ProfileStore";
+import type { Character } from "@/schema/characters-schema";
+import type { CharacterFilter } from "@/services/character-service";
+
+type CharacterUpdateData = Partial<Omit<Character, "id" | "profile_id" | "created_at" | "updated_at">>;
+
+type ChatActions = ReturnType<typeof useChatStore.getState>["actions"];
+type CharacterActions = ReturnType<typeof useCharacterStore.getState>["actions"];
+type LorebookActions = ReturnType<typeof useLorebookStore.getState>["actions"];
+type ModelActions = ReturnType<typeof useModelsStore.getState>["actions"];
 
 export interface JavascriptRunnerStores {
-  chat: ReturnType<typeof useChatStore.getState>["actions"];
-  characters: ReturnType<typeof useCharacterStore.getState>["actions"];
-  lorebook: ReturnType<typeof useLorebookStore.getState>["actions"];
-  models: ReturnType<typeof useModelsStore.getState>["actions"];
+  chat: Omit<ChatActions, "fetchChatList" | "setSelectedChatById"> & {
+    fetchChatList: () => ReturnType<ChatActions["fetchChatList"]>;
+    setSelectedChatById: (id: string) => ReturnType<ChatActions["setSelectedChatById"]>;
+  };
+  characters: Omit<CharacterActions, "fetchCharacters" | "updateCharacter"> & {
+    fetchCharacters: (filter?: CharacterFilter) => ReturnType<CharacterActions["fetchCharacters"]>;
+    updateCharacter: (id: string, updateData: CharacterUpdateData) => ReturnType<CharacterActions["updateCharacter"]>;
+  };
+  lorebook: Omit<LorebookActions, "loadLorebooks" | "loadLorebookEntries" | "deleteLorebookEntry"> & {
+    loadLorebooks: () => ReturnType<LorebookActions["loadLorebooks"]>;
+    loadLorebookEntries: (lorebookId: string) => ReturnType<LorebookActions["loadLorebookEntries"]>;
+    deleteLorebookEntry: (id: string, lorebookId: string) => ReturnType<LorebookActions["deleteLorebookEntry"]>;
+  };
+  models: ModelActions;
 }
 
 export interface JavascriptRunnerUtils {
@@ -17,10 +37,28 @@ export interface JavascriptRunnerUtils {
 }
 
 function buildStores(): JavascriptRunnerStores {
+  const profileId = useProfileStore.getState().currentProfile?.id ?? "";
+  const chatActions = useChatStore.getState().actions;
+  const characterActions = useCharacterStore.getState().actions;
+  const lorebookActions = useLorebookStore.getState().actions;
+
   return {
-    chat: useChatStore.getState().actions,
-    characters: useCharacterStore.getState().actions,
-    lorebook: useLorebookStore.getState().actions,
+    chat: {
+      ...chatActions,
+      fetchChatList: () => chatActions.fetchChatList(profileId),
+      setSelectedChatById: (id: string) => chatActions.setSelectedChatById(profileId, id),
+    },
+    characters: {
+      ...characterActions,
+      fetchCharacters: (filter?: CharacterFilter) => characterActions.fetchCharacters(profileId, filter),
+      updateCharacter: (id: string, updateData: CharacterUpdateData) => characterActions.updateCharacter(profileId, id, updateData),
+    },
+    lorebook: {
+      ...lorebookActions,
+      loadLorebooks: () => lorebookActions.loadLorebooks(profileId),
+      loadLorebookEntries: (lorebookId: string) => lorebookActions.loadLorebookEntries(profileId, lorebookId),
+      deleteLorebookEntry: (id: string, lorebookId: string) => lorebookActions.deleteLorebookEntry(profileId, id, lorebookId),
+    },
     models: useModelsStore.getState().actions,
   };
 }
@@ -48,6 +86,7 @@ export interface JavascriptRunResult {
  * Execute arbitrary javascript code in a constrained async function scope.
  * The runner exposes `input` (the data from connected nodes), `stores`, `utils`, and a sandboxed `console`.
  * `args` is kept as a deprecated alias for `input` for backward compatibility.
+ * All store functions that require a profileId have it pre-bound to the current profile automatically.
  */
 export async function runJavascript(code: string, input?: unknown): Promise<JavascriptRunResult> {
   const stores = buildStores();

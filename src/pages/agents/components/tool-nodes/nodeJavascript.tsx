@@ -2,8 +2,8 @@ import { useReactFlow } from "@xyflow/react";
 import { BookOpen, ChevronDown, Code, List, Maximize2, Minimize2, Save, TableProperties, X } from "lucide-react";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { JavascriptEditor, type JavascriptEditorRef } from "@/components/markdownRender/javascript-editor";
-import { MarkdownViewer } from "@/components/markdownRender/markdown-viewer";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
@@ -22,93 +22,99 @@ import type { NodeProps } from "./nodeTypes";
 // ---------------------------------------------------------------------------
 // Snippets
 // ---------------------------------------------------------------------------
-const CODE_SNIPPETS: { label: string; code: string }[] = [
+const CODE_SNIPPETS: { label: string; code: string; mode?: "script" | "tool"; inputSchema?: SchemaDefinition | null }[] = [
   {
-    label: "Echo input",
-    code: "return input;",
+    label: "Log Input",
+    code: `// Open the Chat Debugger (bottom panel → Logs tab) to inspect these logs
+console.log("input:", input);
+return input;`,
   },
   {
-    label: "Use chat history",
-    code: "// When Chat History is connected, input is the messages array\nconst messages = Array.isArray(input) ? input : input.chatHistory;\nreturn utils.jsonStringify(messages);",
+    label: "Get Character Personality",
+    code: `// Connect Trigger → Participant ID so that \`input\` holds the character ID
+const character = await stores.characters.getCharacterById(String(input));
+if (!character) return "Character not found";
+
+const personality = character.custom?.personality;
+console.log("personality:", personality);
+return personality ?? "";`,
   },
   {
-    label: "Use multiple inputs",
-    code: "// When multiple nodes are connected, input is a named object\n// e.g. { chatHistory: [...], chatId: '...', participantId: '...' }\nconst { chatHistory, chatId } = input;\nreturn utils.jsonStringify({ chatId, messageCount: chatHistory?.length });",
+    label: "Dice Roll d20 (Tool)",
+    mode: "tool",
+    inputSchema: {
+      $schema: "http://json-schema.org/draft-07/schema#",
+      type: "object",
+      title: "Dice Roll d20",
+      description: "Roll a d20 with an attribute modifier against a difficulty class",
+      properties: {
+        attribute: {
+          type: "number",
+          description: "Attribute score — modifier applied is (score − 10) ÷ 2 (default: 10)",
+          default: 10,
+        },
+        difficulty: {
+          type: "number",
+          description: "Difficulty class the total must meet or beat (default: 15)",
+          default: 15,
+        },
+        modifier: {
+          type: "number",
+          description: "Flat bonus or penalty added to the roll (default: 0)",
+          default: 0,
+        },
+      },
+      required: [],
+    },
+    code: `const { attribute = 10, difficulty = 15, modifier = 0 } = input ?? {};
+const roll = Math.floor(Math.random() * 20) + 1;
+const attrMod = Math.floor((attribute - 10) / 2);
+const total = roll + attrMod + modifier;
+const success = total >= difficulty;
+
+return utils.jsonStringify({
+  roll,
+  attribute_modifier: attrMod,
+  modifier,
+  total,
+  difficulty,
+  success,
+  result: success ? "Success" : "Failure",
+});`,
   },
   {
-    label: "Get chat messages",
-    code: "const msgs = await stores.chat.fetchChatMessages();\nreturn utils.jsonStringify(msgs);",
+    label: "Filter & Delete Messages",
+    code: `// Fetches all messages for the current chat and deletes those matching a filter.
+// Customize the condition below to suit your use case.
+const messages = await stores.chat.fetchChatMessages();
+const toDelete = messages.filter((msg) => !msg.content?.trim()); // example: remove blank messages
+
+for (const msg of toDelete) {
+  await stores.chat.deleteChatMessage(msg.id);
+}
+
+return \`Deleted \${toDelete.length} of \${messages.length} messages\`;`,
   },
   {
-    label: "Get character by ID",
-    code: "// Connect a Trigger node's Participant ID output to get the ID in `input`\nconst char = await stores.characters.getCharacterById(String(input));\nreturn utils.jsonStringify(char);",
-  },
-  {
-    label: "Add chat memory",
-    code: "// Adds a short memory to the current chat\nawait stores.chat.addChatMemory({ content: String(input), type: 'short' });\nreturn 'Memory added';",
-  },
-  {
-    label: "Delay + return",
-    code: "await utils.delay(1000); // wait 1 second\nreturn input;",
-  },
-  {
-    label: "Named function",
-    code: "async function process(data) {\n  // your logic here\n  return data;\n}\n\nreturn await process(input);",
+    label: "Add Lorebook Entry",
+    code: `// Connect Trigger → Participant ID so that \`input\` holds the character ID
+const character = await stores.characters.getCharacterById(String(input));
+if (!character) return "Character not found";
+if (!character.lorebook_id) return \`Character "\${character.name}" has no lorebook\`;
+
+const entries = await stores.lorebook.loadLorebookEntries(character.lorebook_id);
+console.log("existing entries:", entries.length);
+
+await stores.lorebook.createLorebookEntry({
+  lorebook_id: character.lorebook_id,
+  keys: ["keyword"],
+  content: "New entry content goes here",
+  enabled: true,
+});
+
+return \`Entry added to lorebook (\${entries.length + 1} total)\`;`,
   },
 ];
-
-// ---------------------------------------------------------------------------
-// API Reference content
-// ---------------------------------------------------------------------------
-const API_REFERENCE_MARKDOWN = `
-**\`input\` variable** 
-
-The value of \`input\` depends on how many nodes are connected:
-
-- **No connections** — \`undefined\`
-- **Single connection** — the raw value from that node (e.g. a string, array of messages, or an ID)
-- **Multiple connections** — a named object with one key per connected node:
-
-| Source handle | Key in \`input\` |
-|---------------|-----------------|
-| Chat History → Chat History | \`chatHistory\` |
-| Trigger → Chat ID | \`chatId\` |
-| Trigger → Participant ID | \`participantId\` |
-| Any text/string output | \`text\` |
-| Any toolset output | \`toolset\` |
-
-If two nodes produce the same key, the values are collected into an array.
-
----
-
-**\`stores.chat\`**
-- \`fetchChatMessages(chatId?, chapterId?)\`
-- \`addChatMessage({ content, role, ... })\`
-- \`deleteChatMessage(messageId)\`
-- \`fetchChatList(profileId)\`
-
-**\`stores.characters\`**
-- \`getCharacterById(id)\`
-- \`createCharacter(data)\`
-- \`updateCharacter(profileId, id, data)\`
-- \`deleteCharacter(id)\`
-- \`fetchCharacters(profileId)\`
-
-**\`stores.lorebook\`**
-- \`loadLorebooks(profileId)\`
-- \`createLorebook(data)\` / \`deleteLorebook(id)\`
-- \`createLorebookEntry(data)\` / \`deleteLorebookEntry(profileId, id, lorebookId)\`
-
----
-
-**\`utils\`**
-
-| Function | Returns |
-|----------|---------|
-| \`utils.delay(ms)\` | \`Promise<void>\` |
-| \`utils.jsonParse(text)\` | \`unknown \\| null\` |
-| \`utils.jsonStringify(value)\` | \`string\` |
-`.trim();
 
 // ---------------------------------------------------------------------------
 // Executor
@@ -353,9 +359,15 @@ const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({
     setValue("inputSchema", null, { shouldDirty: true });
   };
 
-  const handleInsertSnippet = (code: string) => {
-    editorRef.current?.replaceContent(code);
-    setValue("code", code, { shouldDirty: true });
+  const handleInsertSnippet = (snippet: (typeof CODE_SNIPPETS)[number]) => {
+    editorRef.current?.replaceContent(snippet.code);
+    setValue("code", snippet.code, { shouldDirty: true });
+    if (snippet.mode) {
+      setValue("mode", snippet.mode, { shouldDirty: true });
+    }
+    if (snippet.inputSchema !== undefined) {
+      setValue("inputSchema", snippet.inputSchema, { shouldDirty: true });
+    }
   };
 
   const editorMinHeight = expanded ? "320px" : "200px";
@@ -456,20 +468,11 @@ const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-foreground">JavaScript Code</label>
                     <div className="flex items-center gap-1">
-                      {/* API Reference popover */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-xs gap-1">
-                            <BookOpen className="h-3 w-3" />
-                            API Reference
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent side="left" align="start" className="w-[420px] p-0 bg-background border border-border shadow-lg">
-                          <div className="max-h-[60vh] overflow-y-auto p-3 custom-scrollbar">
-                            <MarkdownViewer content={API_REFERENCE_MARKDOWN} className="text-xs" />
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      {/* API Reference — opens wiki in browser */}
+                      <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-xs gap-1" onClick={() => openUrl("https://github.com/vitorfdl/narratrix/wiki/Javascript-Node")}>
+                        <BookOpen className="h-3 w-3" />
+                        API Reference
+                      </Button>
                       {/* Snippet picker */}
                       <Popover open={snippetsOpen} onOpenChange={setSnippetsOpen}>
                         <PopoverTrigger asChild>
@@ -486,7 +489,7 @@ const JavascriptNodeConfigDialog: React.FC<JavascriptNodeConfigDialogProps> = ({
                               type="button"
                               className="w-full text-left px-3 py-1.5 text-xs rounded-sm hover:bg-muted transition-colors"
                               onClick={() => {
-                                handleInsertSnippet(snippet.code);
+                                handleInsertSnippet(snippet);
                                 setSnippetsOpen(false);
                               }}
                             >

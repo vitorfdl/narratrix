@@ -111,7 +111,6 @@ export default function AddAgentDialog({ open, onOpenChange, onSuccess }: AddAge
       setName("");
       setDescription("");
       onOpenChange(false);
-      toast.success("Agent created successfully");
     } catch (err) {
       console.error("Failed to create agent:", err);
       toast.error("Failed to create agent", {

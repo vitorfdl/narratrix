@@ -321,8 +321,6 @@ const WidgetMessages: React.FC = () => {
               extraSuggestions: {},
               messageHistoryOverride: messagesToSummarize,
             });
-
-            toast.success("Summary generated successfully");
           } catch (error) {
             console.error("Error generating summary:", error);
             toast.error("Failed to generate summary");

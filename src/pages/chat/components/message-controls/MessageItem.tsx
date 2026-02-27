@@ -55,7 +55,7 @@ const MESSAGE_BASE_CLASSES = {
   markdown: "select-text text-sm text-foreground leading-relaxed mt-2",
   controlsContainer: "absolute bottom-0 w-full flex justify-between items-center translate-y-3",
   scriptIndicator: "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border backdrop-blur-sm",
-  scriptHeader: "flex items-center justify-between mb-3 pb-2 border-b border-border/70",
+  scriptHeader: "flex items-center justify-between ",
   disabledOverlay: "absolute inset-0 rounded-xl pointer-events-none",
 };
 
@@ -243,7 +243,6 @@ const MessageItem = ({
   const onExcludeFromPrompt = useCallback(async () => {
     try {
       await updateChatMessage(message.id, { disabled: !isDisabled });
-      toast.success("Message excluded from future context");
     } catch (error) {
       console.error("Failed to exclude message:", error);
       toast.error("Failed to exclude message from context");

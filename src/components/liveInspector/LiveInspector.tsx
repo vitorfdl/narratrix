@@ -143,8 +143,8 @@ const LogsPanel: React.FC<{ maxHeight: string }> = ({ maxHeight }) => {
                           </Badge>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground font-mono">{formatTimestamp(log.timestamp)}</span>
+                      <div className="flex items-center gap-2 mt-1 min-w-0 overflow-hidden">
+                        <span className="text-xs text-muted-foreground font-mono flex-shrink-0">{formatTimestamp(log.timestamp)}</span>
                         {log.error && <span className="text-xs text-destructive truncate">Error: {log.error}</span>}
                       </div>
                     </div>
@@ -202,7 +202,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
 
   return (
     <Card className="w-full overflow-hidden border rounded-lg">
-      <CardHeader className="p-4 bg-card border-b">
+      <CardHeader className="p-2 bg-card border-b">
         <CardTitle className="flex items-center justify-between gap-2 text-lg">
           <div className="flex items-center gap-2">
             <div className="inline-flex rounded-md border border-border overflow-hidden">
@@ -218,7 +218,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ maxHeight = "100%"
                 onClick={() => setMode("logs")}
                 className={`px-3 py-1 text-xs font-medium border-l border-border transition-colors ${mode === "logs" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
               >
-                Logs
+                Agent Logs
               </button>
             </div>
           </div>

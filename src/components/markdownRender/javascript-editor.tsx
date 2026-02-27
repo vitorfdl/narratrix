@@ -144,7 +144,19 @@ const WRAPPER_PREFIX_LINES = 1; // number of newlines in WRAPPER_PREFIX
 const eslintLinter = new Linter();
 
 const ESLINT_CONFIG = {
-  languageOptions: { ecmaVersion: 2022, sourceType: "script" },
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: "script",
+    globals: {
+      console: "readonly",
+      Math: "readonly",
+      JSON: "readonly",
+      setTimeout: "readonly",
+      clearTimeout: "readonly",
+      setInterval: "readonly",
+      clearInterval: "readonly",
+    },
+  },
   rules: {
     "no-undef": "warn",
     "no-unused-vars": "warn",
