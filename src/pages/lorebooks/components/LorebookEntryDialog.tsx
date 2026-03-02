@@ -55,7 +55,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
   const isEditing = !!entry;
 
   // Set up form with default values or existing entry data
-  const form = useForm<FormValues>({
+  const form = useForm<z.input<typeof formSchema>, unknown, FormValues>({
     resolver: zodResolver(formSchema),
 
     // Default values are derived from the schema itself now

@@ -35,7 +35,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!initialLorebook;
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -202,7 +202,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                 <FormItem>
                   <FormLabel>Tags</FormLabel>
                   <FormControl>
-                    <CommandTagInput placeholder="Add tags..." value={field.value} onChange={field.onChange} />
+                    <CommandTagInput placeholder="Add tags..." value={field.value ?? []} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
