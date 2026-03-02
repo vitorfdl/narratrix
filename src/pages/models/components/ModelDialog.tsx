@@ -39,6 +39,8 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
       return;
     }
 
+    setIsSaving(false);
+
     if (mode === "edit" && model) {
       setMaxConcurrency(model.max_concurrency);
       const templateId = model.inference_template_id || null;
@@ -73,15 +75,15 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      formRef.current?.submit();
+      await formRef.current?.submit();
     } catch (error) {
       console.error("Failed to save model:", error);
+    } finally {
       setIsSaving(false);
     }
   };
 
   const handleSuccess = () => {
-    setIsSaving(false);
     onSuccess();
     onOpenChange(false);
   };

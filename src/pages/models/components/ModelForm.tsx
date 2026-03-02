@@ -22,7 +22,7 @@ import { ModelInputFields } from "./ModelInputFields";
 const MODEL_TYPES: ModelType[] = ["llm"];
 
 export interface ModelFormRef {
-  submit: () => void;
+  submit: () => Promise<void>;
 }
 
 interface ModelFormProps {
@@ -411,6 +411,7 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
       onSuccess();
     } catch (error) {
       console.error(`Failed to ${mode} model:`, error);
+      throw error;
     }
   }
 
