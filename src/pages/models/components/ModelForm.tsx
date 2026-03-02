@@ -132,7 +132,7 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
     if (!selectedManifest) {
       setFormSchema(
         z.object({
-          name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+          name: z.string({ error: "Name is required." }).min(2, { error: "Name must be at least 2 characters." }),
           type: z.enum(MODEL_TYPES as [string, ...string[]]),
           manifest_id: z.string(),
         }),
@@ -141,7 +141,7 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
     }
 
     const schemaObj: Record<string, z.ZodTypeAny> = {
-      name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+      name: z.string({ error: "Name is required." }).min(2, { error: "Name must be at least 2 characters." }),
       type: z.enum(MODEL_TYPES as [string, ...string[]]),
       manifest_id: z.string(),
     };
@@ -149,16 +149,17 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
     for (const field of selectedManifest.fields) {
       switch (field.field_type) {
         case "string":
-          schemaObj[field.key] = field.required ? z.string().min(1, { message: "This field is required." }) : z.string().optional();
+          schemaObj[field.key] = field.required ? z.string({ error: "This field is required." }).min(1, { error: "This field is required." }) : z.string().optional();
           break;
         case "secret":
-          schemaObj[field.key] = mode === "edit" ? z.string().optional() : field.required ? z.string().min(1, { message: "This field is required." }) : z.string().optional();
+          schemaObj[field.key] =
+            mode === "edit" ? z.string().optional() : field.required ? z.string({ error: "This field is required." }).min(1, { error: "This field is required." }) : z.string().optional();
           break;
         case "hidden":
-          schemaObj[field.key] = z.any();
+          schemaObj[field.key] = z.unknown().optional();
           break;
         case "number":
-          schemaObj[field.key] = field.required ? z.number().min(1, { message: "This field is required." }) : z.number().optional();
+          schemaObj[field.key] = field.required ? z.number({ error: "This field is required." }).min(1, { error: "This field is required." }) : z.number().optional();
           break;
         case "boolean":
           schemaObj[field.key] = field.required ? z.boolean() : z.boolean().optional();
@@ -173,15 +174,15 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
             }
           };
           schemaObj[field.key] = field.required
-            ? z.string().min(1, { message: "This field is required." }).refine(urlRefine, { message: "Please enter a valid URL." })
+            ? z.string({ error: "This field is required." }).min(1, { error: "This field is required." }).refine(urlRefine, { error: "Please enter a valid URL." })
             : z
                 .string()
-                .refine((val) => !val || urlRefine(val), { message: "Please enter a valid URL." })
+                .refine((val) => !val || urlRefine(val), { error: "Please enter a valid URL." })
                 .optional();
           break;
         }
         default:
-          schemaObj[field.key] = field.required ? z.string().min(1, { message: "This field is required." }) : z.string().optional();
+          schemaObj[field.key] = field.required ? z.string({ error: "This field is required." }).min(1, { error: "This field is required." }) : z.string().optional();
       }
     }
 
@@ -207,7 +208,7 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
     return initialValues;
   };
 
-  const form = useForm<Record<string, unknown>>({
+  const form = useForm<z.input<z.ZodObject<z.ZodRawShape>>, unknown, z.output<z.ZodObject<z.ZodRawShape>>>({
     resolver: formSchema ? zodResolver(formSchema) : undefined,
     defaultValues: getInitialFormValues(),
   });
