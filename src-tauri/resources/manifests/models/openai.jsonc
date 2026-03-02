@@ -22,7 +22,7 @@
       "placeholder": "The OpenAI model to use",
       "required": true,
       "field_type": "string",
-      "hints": ["gpt-5", "gpt-5-chat","gpt-5-mini","gpt-5-nano","gpt-4o", "gpt-4o-mini", "o3-mini", "o1-mini"],
+      "hints": ["gpt-5.2", "gpt-5-chat-latest","gpt-5-mini","gpt-5-nano","gpt-4o", "gpt-4o-mini", "o3-mini", "o1-mini"],
       "request": {
         "label": "Get Models",
         "method": "GET",

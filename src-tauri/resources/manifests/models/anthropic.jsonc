@@ -29,10 +29,9 @@
       "required": true,
       "field_type": "string",
       "hints": [
-        "claude-3-7-sonnet-20250219",
-        "claude-3-opus-20240229",
-        "claude-3-sonnet-20240229",
-        "claude-3-haiku-20240307"
+        "claude-sonnet-4-6",
+        "claude-opus-4-6",
+        "claude-haiku-4-5-20251001"
       ],
       "request": {
         "label": "Get Models",
