@@ -1,6 +1,6 @@
 [package]
 name = "narratrix"
-version = "0.15.1"
+version = "0.15.2"
 description = "Multi-Platform AI Client focused in Roleplay and Tabletop experience"
 authors = ["vitorfdl"]
 edition = "2021"
@@ -32,7 +32,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 base64 = "0.22.1"
 aes-gcm = "0.10.3"
-tokio = { version = "1.46.1", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 anyhow = "1.0"
 futures = "0.3.31"
 once_cell = "1.21.3"

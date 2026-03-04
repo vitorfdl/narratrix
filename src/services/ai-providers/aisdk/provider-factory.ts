@@ -99,11 +99,7 @@ async function getAISDKModel(modelProvider: ModelSpecs, inferenceParameters?: Re
     fetch: fetchOverride,
   });
 
-  if (modelProvider.model_type === "chat") {
-    return openai.chat(modelName);
-  } else {
-    return openai.completion(modelName);
-  }
+  return openai.chat(modelName);
 }
 
 export { getAISDKModel };
