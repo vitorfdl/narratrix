@@ -36,6 +36,7 @@ export interface WorkflowDeps {
   getFormatTemplateById: (id: string) => Promise<any | null>;
   getCharacterById: (id: string) => Promise<any | null>;
   getChatById: (id: string) => Promise<any | null>;
+  getChatChapterById: (id: string) => Promise<any | null>;
   // model manifests (engine string needed)
   getManifestById: (id: string) => any | null;
   // non-streaming inference

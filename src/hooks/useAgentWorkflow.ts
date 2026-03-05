@@ -11,6 +11,7 @@ import type { NodeExecutionResult, WorkflowToolDefinition } from "@/services/age
 export type { TriggerContext };
 
 import { getCharacterById } from "@/services/character-service";
+import { getChatChapterById } from "@/services/chat-chapter-service";
 import { getChatById } from "@/services/chat-service";
 import { formatPrompt as formatPromptCore, type PromptFormatterConfig } from "@/services/inference/formatter";
 import { removeNestedFields } from "@/services/inference/formatter/remove-nested-fields";
@@ -130,6 +131,7 @@ export function useAgentWorkflow() {
       getFormatTemplateById,
       getCharacterById,
       getChatById,
+      getChatChapterById,
       getManifestById: (id: string) => modelManifests.find((m) => m.id === id) || null,
       onLog: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => {
         useConsoleStore.getState().actions.addLog(entry);
