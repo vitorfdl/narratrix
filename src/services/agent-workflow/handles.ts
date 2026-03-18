@@ -30,7 +30,6 @@ export function mapSourceHandleToReadableName(sourceHandle: string): string {
     "out-string": "text",
     "out-toolset": "toolset",
     "out-text": "text",
-    "out-deleted-count": "deletedCount",
     "out-message-id": "messageId",
   };
   if (mapping[sourceHandle]) {

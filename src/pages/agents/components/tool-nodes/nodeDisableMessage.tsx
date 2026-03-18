@@ -1,5 +1,5 @@
 import { useReactFlow, useStore } from "@xyflow/react";
-import { Filter, Hash, Layers, MessageSquare, SlidersHorizontal, Trash2, User } from "lucide-react";
+import { EyeOff, Filter, Hash, Layers, MessageSquare, SlidersHorizontal, User } from "lucide-react";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { useChatStore } from "@/hooks/chatStore";
 import type { ChatMessage } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { deleteChatMessage as apiDeleteChatMessage, updateChatMessagesUsingFilter } from "@/services/chat-message-service";
+import { updateChatMessage as apiUpdateChatMessage } from "@/services/chat-message-service";
 import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, type NodeInput, type NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
@@ -20,9 +20,9 @@ import { NodeProps } from "./nodeTypes";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface DeleteMessageNodeConfig {
+export interface DisableMessageNodeConfig {
   name: string;
-  deleteMode: "all" | "lastN";
+  disableMode: "all" | "lastN";
   count: number;
   senderFilter: "any" | "user" | "character" | "agent";
 }
@@ -30,42 +30,44 @@ export interface DeleteMessageNodeConfig {
 // ── Executor ──────────────────────────────────────────────────────────────────
 
 /**
- * Resolves message IDs to delete from the provided inputs.
+ * Resolves message IDs to disable from the provided inputs.
  * Priority: history input > messageIds input > config filter.
  */
-function resolveTargetIds(inputs: Record<string, unknown>, allMessages: ChatMessage[], config: DeleteMessageNodeConfig): string[] {
+function resolveTargetMessages(inputs: Record<string, unknown>, allMessages: ChatMessage[], config: DisableMessageNodeConfig): ChatMessage[] {
   // 1. history input (ChatMessage[])
   if (Array.isArray(inputs.history) && inputs.history.length > 0) {
-    return (inputs.history as ChatMessage[]).filter((m) => typeof m?.id === "string" && m.id).map((m) => m.id);
+    return (inputs.history as ChatMessage[]).filter((m) => typeof m?.id === "string" && m.id);
   }
 
   // 2. messageIds input (string | string[])
   const rawIds = inputs.messageIds;
   if (rawIds !== undefined && rawIds !== null && rawIds !== "") {
+    let ids: string[] = [];
     if (Array.isArray(rawIds)) {
-      return rawIds.filter((id): id is string => typeof id === "string" && id.trim() !== "");
-    }
-    if (typeof rawIds === "string") {
+      ids = rawIds.filter((id): id is string => typeof id === "string" && id.trim() !== "");
+    } else if (typeof rawIds === "string") {
       const trimmed = rawIds.trim();
-      // Attempt JSON parse for arrays
       if (trimmed.startsWith("[")) {
         try {
           const parsed = JSON.parse(trimmed);
           if (Array.isArray(parsed)) {
-            return parsed.filter((id): id is string => typeof id === "string" && id.trim() !== "");
+            ids = parsed.filter((id): id is string => typeof id === "string" && id.trim() !== "");
           }
         } catch {
-          // fall through to treating as single ID
+          // fall through to single ID
         }
       }
-      return trimmed ? [trimmed] : [];
+      if (ids.length === 0 && trimmed) {
+        ids = [trimmed];
+      }
     }
+    const idSet = new Set(ids);
+    return allMessages.filter((m) => idSet.has(m.id));
   }
 
   // 3. Config filter mode
   let filtered = [...allMessages];
 
-  // Sender filter
   switch (config.senderFilter) {
     case "user":
       filtered = filtered.filter((m) => m.type === "user");
@@ -77,11 +79,9 @@ function resolveTargetIds(inputs: Record<string, unknown>, allMessages: ChatMess
       filtered = filtered.filter((m) => m.type === "character" && m.extra?.script === "agent");
       break;
     default:
-      // "any" — no type filter
       break;
   }
 
-  // Narrow by character ID if provided
   const characterId = inputs.characterId;
   if (typeof characterId === "string" && characterId.trim()) {
     if (characterId === "user") {
@@ -91,93 +91,58 @@ function resolveTargetIds(inputs: Record<string, unknown>, allMessages: ChatMess
     }
   }
 
-  // Last N
-  if (config.deleteMode === "lastN") {
+  if (config.disableMode === "lastN") {
     filtered = filtered.slice(-Math.max(1, config.count));
   }
 
-  return filtered.map((m) => m.id);
+  return filtered;
 }
 
-const executeDeleteMessageNode: NodeExecutor = async (node, inputs): Promise<NodeExecutionResult> => {
+const executeDisableMessageNode: NodeExecutor = async (node, inputs): Promise<NodeExecutionResult> => {
   try {
     const store = useChatStore.getState();
     const { selectedChatMessages } = store;
     const messages = Array.isArray(selectedChatMessages) ? selectedChatMessages : [];
 
-    const config: DeleteMessageNodeConfig = {
-      name: "Delete Message Node",
-      deleteMode: "all",
+    const config: DisableMessageNodeConfig = {
+      name: "Disable Message Node",
+      disableMode: "all",
       count: 1,
       senderFilter: "any",
-      ...(node.config as Partial<DeleteMessageNodeConfig>),
+      ...(node.config as Partial<DisableMessageNodeConfig>),
     };
 
-    const targetIds = resolveTargetIds(inputs, messages, config);
+    const targets = resolveTargetMessages(inputs, messages, config);
 
-    if (targetIds.length === 0) {
+    // Skip already-disabled messages to avoid redundant writes
+    const toDisable = targets.filter((m) => !m.disabled);
+
+    if (toDisable.length === 0) {
       return { success: true, value: "0" };
     }
 
-    // Build a lookup for fast access
-    const messageMap = new Map(messages.map((m) => [m.id, m]));
+    const results = await Promise.allSettled(toDisable.map((m) => apiUpdateChatMessage(m.id, { disabled: true })));
 
-    let deletedCount = 0;
-    const summaryReEnablePromises: Promise<number>[] = [];
+    const disabledCount = results.filter((r) => r.status === "fulfilled" && r.value !== null).length;
 
-    for (const id of targetIds) {
-      const message = messageMap.get(id);
-
-      // Before deleting a summary, re-enable the messages it covered
-      if (message?.type === "system" && message.extra?.script === "summary") {
-        const startPosition = message.extra?.startPosition;
-        if (typeof startPosition === "number") {
-          summaryReEnablePromises.push(
-            updateChatMessagesUsingFilter(
-              {
-                position_gte: startPosition,
-                position_lt: message.position,
-                not_type: "system",
-              },
-              { disabled: false },
-            ),
-          );
-        }
-      }
-    }
-
-    // Flush all summary re-enables before deleting
-    if (summaryReEnablePromises.length > 0) {
-      await Promise.all(summaryReEnablePromises);
-    }
-
-    // Delete each message; skip silently if not found (already deleted / wrong id)
-    const deleteResults = await Promise.allSettled(targetIds.map((id) => apiDeleteChatMessage(id)));
-    for (const result of deleteResults) {
-      if (result.status === "fulfilled" && result.value === true) {
-        deletedCount++;
-      }
-    }
-
-    // Sync store after bulk operation
     await store.actions.fetchChatMessages();
 
-    return { success: true, value: String(deletedCount) };
+    return { success: true, value: String(disabledCount) };
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Failed to delete messages";
+    const message = e instanceof Error ? e.message : "Failed to disable messages";
     return { success: false, error: message };
   }
 };
 
 // ── Metadata ──────────────────────────────────────────────────────────────────
 
-const DELETE_MESSAGE_NODE_METADATA = {
-  type: "deleteMessage",
-  label: "Delete Message",
+const DISABLE_MESSAGE_NODE_METADATA = {
+  type: "disableMessage",
+  label: "Disable Message",
   category: "Chat",
-  description: "Delete one or more chat messages by ID, history input, or config-based filter",
-  icon: Trash2,
-  theme: createNodeTheme("red"),
+  description: "Disable one or more chat messages by ID, history input, or config-based filter",
+  icon: EyeOff,
+  theme: createNodeTheme("yellow"),
   deletable: true,
   inputs: [
     { id: "in-message-ids", label: "Message IDs", edgeType: "string" as const, targetRef: "message-ids-section" },
@@ -186,46 +151,46 @@ const DELETE_MESSAGE_NODE_METADATA = {
   ] as NodeInput[],
   outputs: [] as NodeOutput[],
   defaultConfig: {
-    name: "Delete Message Node",
-    deleteMode: "all" as const,
+    name: "Disable Message Node",
+    disableMode: "all" as const,
     count: 1,
     senderFilter: "any" as const,
-  } as DeleteMessageNodeConfig,
+  } as DisableMessageNodeConfig,
 };
 
 // ── Config provider ───────────────────────────────────────────────────────────
 
-namespace DeleteMessageNodeConfigProvider {
+namespace DisableMessageNodeConfigProvider {
   export function getDefaultConfig() {
     return {
-      label: DELETE_MESSAGE_NODE_METADATA.label,
-      config: DELETE_MESSAGE_NODE_METADATA.defaultConfig,
+      label: DISABLE_MESSAGE_NODE_METADATA.label,
+      config: DISABLE_MESSAGE_NODE_METADATA.defaultConfig,
     };
   }
 }
 
 // ── Config dialog ─────────────────────────────────────────────────────────────
 
-export interface DeleteMessageNodeConfigDialogProps {
+export interface DisableMessageNodeConfigDialogProps {
   open: boolean;
-  initialConfig: DeleteMessageNodeConfig;
+  initialConfig: DisableMessageNodeConfig;
   hasInputOverride: boolean;
-  onSave: (config: DeleteMessageNodeConfig) => void;
+  onSave: (config: DisableMessageNodeConfig) => void;
   onCancel: () => void;
 }
 
-const DeleteMessageNodeConfigDialog: React.FC<DeleteMessageNodeConfigDialogProps> = ({ open, initialConfig, hasInputOverride, onSave, onCancel }) => {
+const DisableMessageNodeConfigDialog: React.FC<DisableMessageNodeConfigDialogProps> = ({ open, initialConfig, hasInputOverride, onSave, onCancel }) => {
   const {
     control,
     handleSubmit,
     reset,
     formState: { isValid, isDirty },
-  } = useForm<DeleteMessageNodeConfig>({
+  } = useForm<DisableMessageNodeConfig>({
     defaultValues: initialConfig,
     mode: "onChange",
   });
 
-  const deleteMode = useWatch({ control, name: "deleteMode" });
+  const disableMode = useWatch({ control, name: "disableMode" });
 
   useEffect(() => {
     if (open) {
@@ -233,7 +198,7 @@ const DeleteMessageNodeConfigDialog: React.FC<DeleteMessageNodeConfigDialogProps
     }
   }, [open, reset, initialConfig]);
 
-  const onSubmit = (data: DeleteMessageNodeConfig) => {
+  const onSubmit = (data: DisableMessageNodeConfig) => {
     onSave(data);
   };
 
@@ -242,7 +207,7 @@ const DeleteMessageNodeConfigDialog: React.FC<DeleteMessageNodeConfigDialogProps
       <DialogContent size="default">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
           <DialogHeader>
-            <DialogTitle>Configure Delete Message</DialogTitle>
+            <DialogTitle>Configure Disable Message</DialogTitle>
           </DialogHeader>
           <DialogBody>
             <div className="flex flex-col gap-4 py-2">
@@ -279,9 +244,9 @@ const DeleteMessageNodeConfigDialog: React.FC<DeleteMessageNodeConfigDialogProps
                   </div>
 
                   <div>
-                    <Label className="text-xs font-medium text-foreground mb-1 block">Delete Mode</Label>
+                    <Label className="text-xs font-medium text-foreground mb-1 block">Disable Mode</Label>
                     <Controller
-                      name="deleteMode"
+                      name="disableMode"
                       control={control}
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={field.onChange}>
@@ -297,7 +262,7 @@ const DeleteMessageNodeConfigDialog: React.FC<DeleteMessageNodeConfigDialogProps
                     />
                   </div>
 
-                  {deleteMode === "lastN" && (
+                  {disableMode === "lastN" && (
                     <Controller
                       name="count"
                       control={control}
@@ -345,13 +310,13 @@ function getSenderFilterLabel(filter: string): string {
   }
 }
 
-interface DeleteMessageContentProps {
+interface DisableMessageContentProps {
   nodeId: string;
-  config: DeleteMessageNodeConfig;
+  config: DisableMessageNodeConfig;
   onConfigure: () => void;
 }
 
-const DeleteMessageContent = memo<DeleteMessageContentProps>(({ nodeId, config, onConfigure }) => {
+const DisableMessageContent = memo<DisableMessageContentProps>(({ nodeId, config, onConfigure }) => {
   const edges = useStore((state) => state.edges);
   const hasInputOverride = useMemo(() => edges.some((e) => e.target === nodeId && (e.targetHandle === "in-message-ids" || e.targetHandle === "in-history")), [edges, nodeId]);
 
@@ -373,7 +338,7 @@ const DeleteMessageContent = memo<DeleteMessageContentProps>(({ nodeId, config, 
         icon={MessageSquare}
         optional
         refId="history-section"
-        helpText="A ChatMessage[] array. Every message in the array will be deleted. When connected, config filters are ignored."
+        helpText="A ChatMessage[] array. Every message in the array will be disabled. When connected, config filters are ignored."
       />
       <NodeField
         label="Character ID"
@@ -384,10 +349,10 @@ const DeleteMessageContent = memo<DeleteMessageContentProps>(({ nodeId, config, 
         helpText="Narrows config-mode filter to a specific character or 'user'. Has no effect when Message IDs or Chat History inputs are connected."
       />
 
-      <NodeField label="Configuration" icon={SlidersHorizontal} disabled={hasInputOverride} action={<NodeConfigButton onClick={onConfigure} title="Configure delete settings" />}>
+      <NodeField label="Configuration" icon={SlidersHorizontal} disabled={hasInputOverride} action={<NodeConfigButton onClick={onConfigure} title="Configure disable settings" />}>
         <NodeConfigPreview
           items={[
-            { label: "Mode", value: config.deleteMode === "lastN" ? `Last ${config.count}` : "All matching", icon: Layers },
+            { label: "Mode", value: config.disableMode === "lastN" ? `Last ${config.count}` : "All matching", icon: Layers },
             { label: "Filter", value: getSenderFilterLabel(config.senderFilter), icon: Filter },
           ]}
         />
@@ -396,21 +361,20 @@ const DeleteMessageContent = memo<DeleteMessageContentProps>(({ nodeId, config, 
   );
 });
 
-DeleteMessageContent.displayName = "DeleteMessageContent";
+DisableMessageContent.displayName = "DisableMessageContent";
 
 // ── Node component ────────────────────────────────────────────────────────────
 
-export const DeleteMessageNode = memo(({ id, data, selected }: NodeProps) => {
+export const DisableMessageNode = memo(({ id, data, selected }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
-  const config = (data.config || DELETE_MESSAGE_NODE_METADATA.defaultConfig) as DeleteMessageNodeConfig;
+  const config = (data.config || DISABLE_MESSAGE_NODE_METADATA.defaultConfig) as DisableMessageNodeConfig;
   const takeSnapshot = useTakeSnapshot();
 
-  // Derived boolean selector — only re-renders when the value actually changes
   const hasInputOverride = useStore(useCallback((state) => state.edges.some((e) => e.target === id && (e.targetHandle === "in-message-ids" || e.targetHandle === "in-history")), [id]));
 
   const handleConfigSave = useCallback(
-    (newConfig: DeleteMessageNodeConfig) => {
+    (newConfig: DisableMessageNodeConfig) => {
       takeSnapshot();
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
       setConfigDialogOpen(false);
@@ -424,21 +388,21 @@ export const DeleteMessageNode = memo(({ id, data, selected }: NodeProps) => {
   return (
     <>
       <NodeBase nodeId={id} data={data} selected={!!selected}>
-        <DeleteMessageContent nodeId={id} config={config} onConfigure={handleConfigure} />
+        <DisableMessageContent nodeId={id} config={config} onConfigure={handleConfigure} />
       </NodeBase>
 
-      <DeleteMessageNodeConfigDialog open={configDialogOpen} initialConfig={config} hasInputOverride={hasInputOverride} onSave={handleConfigSave} onCancel={handleConfigCancel} />
+      <DisableMessageNodeConfigDialog open={configDialogOpen} initialConfig={config} hasInputOverride={hasInputOverride} onSave={handleConfigSave} onCancel={handleConfigCancel} />
     </>
   );
 });
 
-DeleteMessageNode.displayName = "DeleteMessageNode";
+DisableMessageNode.displayName = "DisableMessageNode";
 
 // ── Registration ──────────────────────────────────────────────────────────────
 
 NodeRegistry.register({
-  metadata: DELETE_MESSAGE_NODE_METADATA,
-  component: DeleteMessageNode,
-  configProvider: DeleteMessageNodeConfigProvider,
-  executor: executeDeleteMessageNode,
+  metadata: DISABLE_MESSAGE_NODE_METADATA,
+  component: DisableMessageNode,
+  configProvider: DisableMessageNodeConfigProvider,
+  executor: executeDisableMessageNode,
 });

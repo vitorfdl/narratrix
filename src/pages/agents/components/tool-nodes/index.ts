@@ -9,6 +9,7 @@ import "./nodePromptInjection";
 import "./nodeTrigger";
 import "./nodeUserChoice";
 import "./nodeDeleteMessage";
+import "./nodeDisableMessage";
 
 // Re-export the NodeProps interface
 export type { NodeProps } from "./nodeTypes";
