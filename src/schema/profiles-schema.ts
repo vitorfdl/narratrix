@@ -17,9 +17,12 @@ const NotificationSettingsSchema = z.object({
   updateNotifications: z.boolean().default(true),
 });
 
+const BeepSoundEnum = z.enum(["none", "longbeep4", "beep1", "beep2", "longbeep3"]);
+
 const ChatSettingsSchema = z.object({
   timestampFormat: z.enum(["12h", "24h"]).default("12h"),
-  beepSound: z.enum(["none", "longbeep4", "beep1", "beep2", "longbeep3"]).default("longbeep4"),
+  beepSound: BeepSoundEnum.default("longbeep4"),
+  agentBeepSound: BeepSoundEnum.default("none"),
   showAvatars: z.boolean().default(true),
   avatarBorderRadius: z.number().min(0).max(50).default(50),
   sendShortcut: z.enum(["Enter", "Ctrl+Enter", "Shift+Enter", "CMD+Enter"]).default("Ctrl+Enter"),
@@ -121,6 +124,7 @@ const UpdatePasswordSchema = z.object({
 type QuickAction = z.infer<typeof QuickActionSchema>;
 type Profile = z.infer<typeof ProfileSchema>;
 type AppSettings = z.infer<typeof AppSettingsSchema>;
+type BeepSound = z.infer<typeof BeepSoundEnum>;
 type DelimiterHighlighting = z.infer<typeof DelimiterHighlightingSchema>;
 
 type ProfileResponse = Omit<Profile, "password"> & { hasPassword: boolean };
@@ -141,6 +145,7 @@ export {
   UpdatePasswordSchema,
   updateProfileSchema,
   type AppSettings,
+  type BeepSound,
   type DelimiterHighlighting,
   type LoginPasswordParams,
   type NewProfileParams,

@@ -18,6 +18,7 @@ export const defaultSettings = AppSettingsSchema.parse({
     showAvatars: true,
     avatarBorderRadius: 50,
     sendShortcut: "Ctrl+Enter",
+    agentBeepSound: "none",
   },
   censorship: {
     enabled: false,

@@ -16,11 +16,13 @@ import { getChatChapterById } from "@/services/chat-chapter-service";
 import { getChatById } from "@/services/chat-service";
 import { formatPrompt as formatPromptCore, type PromptFormatterConfig } from "@/services/inference/formatter";
 import { removeNestedFields } from "@/services/inference/formatter/remove-nested-fields";
+import { playBeepSound } from "@/services/inference/utils";
 import { getModelById } from "@/services/model-service";
 import { getChatTemplateById } from "@/services/template-chat-service";
 import { getFormatTemplateById } from "@/services/template-format-service";
 import { getInferenceTemplateById } from "@/services/template-inference-service";
 import { useAgentWorkflowStore } from "./agentWorkflowStore";
+import { useProfileStore } from "./ProfileStore";
 
 // Re-export from the store so consumers can import from one place
 export type { AgentWorkflowState } from "./agentWorkflowStore";
@@ -240,6 +242,11 @@ export function useAgentWorkflow() {
           setAgentState(agent.id, next);
           return next;
         });
+
+        const agentBeepSound = useProfileStore.getState().currentProfile?.settings?.chat?.agentBeepSound;
+        if (agentBeepSound) {
+          playBeepSound(agentBeepSound);
+        }
 
         return result;
       } catch (error) {

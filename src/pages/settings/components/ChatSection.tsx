@@ -1,12 +1,12 @@
 import { Howl } from "howler";
 import React, { useCallback, useRef } from "react";
-import { LuCircleUser, LuHighlighter, LuKeyboard, LuMessageSquare, LuPlay } from "react-icons/lu";
+import { LuBot, LuCircleUser, LuHighlighter, LuKeyboard, LuMessageSquare, LuPlay } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
 import { Switch } from "@/components/ui/switch";
-import type { AppSettings, DelimiterHighlighting } from "@/schema/profiles-schema";
+import type { AppSettings, BeepSound, DelimiterHighlighting } from "@/schema/profiles-schema";
 import { SettingCollapsible, SettingItem, SettingSection } from "./ui/setting-section";
 
 interface ChatSectionProps {
@@ -21,24 +21,26 @@ const DEFAULT_DELIMITER_HIGHLIGHTING: DelimiterHighlighting = {
   dashEm: true,
 };
 
-export const ChatSection: React.FC<ChatSectionProps> = ({ settings, onSettingChange }) => {
+const BEEP_SOUND_OPTIONS: { value: BeepSound; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "longbeep4", label: "Default" },
+  { value: "beep1", label: "Alt. 1" },
+  { value: "beep2", label: "Alt. 2" },
+  { value: "longbeep3", label: "Alt. 3" },
+];
+
+function BeepSoundSelector({ value, onValueChange, id }: { value: BeepSound; onValueChange: (v: BeepSound) => void; id: string }) {
   const soundRef = useRef<Howl | null>(null);
 
-  const avatarBorderRadius: number =
-    typeof settings.chat.avatarBorderRadius === "number" && !Number.isNaN(settings.chat.avatarBorderRadius) ? Math.min(50, Math.max(0, settings.chat.avatarBorderRadius)) : 50;
-
-  const delimiterHighlighting: DelimiterHighlighting = settings.appearance.delimiterHighlighting ?? DEFAULT_DELIMITER_HIGHLIGHTING;
-
-  const handlePreviewBeep = useCallback(() => {
+  const handlePreview = useCallback(() => {
     try {
       if (soundRef.current) {
         soundRef.current.stop();
       }
-      const soundName = settings.chat.beepSound;
-      if (!soundName || soundName === "none") {
+      if (!value || value === "none") {
         return;
       }
-      const soundPath = `/sounds/${soundName}.mp3`;
+      const soundPath = `/sounds/${value}.mp3`;
       const howl = new Howl({
         src: [soundPath],
         volume: 0.6,
@@ -57,7 +59,34 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ settings, onSettingCha
     } catch (error) {
       console.error("Error playing beep sound preview:", error);
     }
-  }, [settings.chat.beepSound]);
+  }, [value]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="w-36" id={id}>
+          <SelectValue placeholder="Select beep sound" />
+        </SelectTrigger>
+        <SelectContent>
+          {BEEP_SOUND_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button type="button" size="icon" variant="outline" aria-label="Preview beep sound" onClick={handlePreview} className="h-7 ml-1" disabled={value === "none"}>
+        <LuPlay className="!w-4 !h-4" />
+      </Button>
+    </div>
+  );
+}
+
+export const ChatSection: React.FC<ChatSectionProps> = ({ settings, onSettingChange }) => {
+  const avatarBorderRadius: number =
+    typeof settings.chat.avatarBorderRadius === "number" && !Number.isNaN(settings.chat.avatarBorderRadius) ? Math.min(50, Math.max(0, settings.chat.avatarBorderRadius)) : 50;
+
+  const delimiterHighlighting: DelimiterHighlighting = settings.appearance.delimiterHighlighting ?? DEFAULT_DELIMITER_HIGHLIGHTING;
 
   return (
     <SettingSection title="Chat / Messages">
@@ -84,23 +113,13 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ settings, onSettingCha
       <Separator />
 
       <SettingItem icon={<LuMessageSquare className="w-4 h-4" />} label="Beep sound when message ends">
-        <div className="flex items-center gap-2">
-          <Select value={settings.chat.beepSound} onValueChange={(value) => onSettingChange("chat", "beepSound", value)}>
-            <SelectTrigger className="w-36" id="beep-sound">
-              <SelectValue placeholder="Select beep sound" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              <SelectItem value="longbeep4">Default</SelectItem>
-              <SelectItem value="beep1">Alt. 1</SelectItem>
-              <SelectItem value="beep2">Alt. 2</SelectItem>
-              <SelectItem value="longbeep3">Alt. 3</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button type="button" size="icon" variant="outline" aria-label="Preview beep sound" onClick={handlePreviewBeep} className="h-7 ml-1" disabled={settings.chat.beepSound === "none"}>
-            <LuPlay className="!w-4 !h-4" />
-          </Button>
-        </div>
+        <BeepSoundSelector value={settings.chat.beepSound} onValueChange={(value) => onSettingChange("chat", "beepSound", value)} id="beep-sound" />
+      </SettingItem>
+
+      <Separator />
+
+      <SettingItem icon={<LuBot className="w-4 h-4" />} label="Beep sound when agent finishes">
+        <BeepSoundSelector value={settings.chat.agentBeepSound} onValueChange={(value) => onSettingChange("chat", "agentBeepSound", value)} id="agent-beep-sound" />
       </SettingItem>
 
       <Separator />

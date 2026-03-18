@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useProfileStore } from "@/hooks/ProfileStore";
 import { type PendingChoiceOption, useUserChoiceStore } from "@/hooks/userChoiceStore";
 import type { NodeExecutionResult, NodeExecutor, WorkflowToolDefinition } from "@/services/agent-workflow/types";
+import { playBeepSound } from "@/services/inference/utils";
 import { NodeBase, type NodeInput, type NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -90,6 +92,11 @@ function createPendingChoice(agentId: string, executionId: string, prompt: strin
       choices,
       resolve: wrappedResolve,
     });
+
+    const agentBeepSound = useProfileStore.getState().currentProfile?.settings?.chat?.agentBeepSound;
+    if (agentBeepSound) {
+      playBeepSound(agentBeepSound);
+    }
 
     if (timeoutSeconds > 0) {
       timeoutHandle = setTimeout(() => {
