@@ -5,7 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BiSolidZap } from "react-icons/bi";
-import { LuCirclePlay, LuCircleStop, LuGripVertical, LuSettings, LuTrash2, LuUserPlus } from "react-icons/lu";
+import { LuCirclePlay, LuCircleStop, LuEyeOff, LuGripVertical, LuMessageSquareOff, LuSettings, LuTrash2, LuUserPlus } from "react-icons/lu";
 import { RiArrowLeftRightLine, RiCloseLine } from "react-icons/ri";
 import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
@@ -563,11 +563,14 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
               <LuSettings className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-56 p-3">
-            <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Display</p>
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs">Hide excluded messages</span>
+          <PopoverContent side="top" align="start" className="w-64 p-0">
+            <div className="px-3 py-2 border-b border-border/40">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Display</p>
+            </div>
+            <div className="p-2 space-y-0.5">
+              <label className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer">
+                <LuEyeOff className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="text-xs flex-1">Hide excluded messages</span>
                 <Switch
                   size="sm"
                   checked={chatSettings?.hideDisabledMessages ?? false}
@@ -577,9 +580,10 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
                     })
                   }
                 />
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs">Hide Prompt Injection messages</span>
+              </label>
+              <label className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer">
+                <LuMessageSquareOff className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="text-xs flex-1">Hide injection messages</span>
                 <Switch
                   size="sm"
                   checked={chatSettings?.hideScriptMessages ?? false}
@@ -589,7 +593,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
                     })
                   }
                 />
-              </div>
+              </label>
             </div>
           </PopoverContent>
         </Popover>

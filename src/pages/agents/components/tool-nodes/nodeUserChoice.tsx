@@ -3,6 +3,7 @@ import { GripVertical, ListChecks, MessageSquareMore, Plus, Trash2, Type } from 
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { type PendingChoiceOption, useUserChoiceStore } from "@/hooks/userChoiceStore";
 import type { NodeExecutionResult, NodeExecutor, WorkflowToolDefinition } from "@/services/agent-workflow/types";
-import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, type NodeInput, type NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -304,14 +304,20 @@ const UserChoiceConfigDialog: React.FC<UserChoiceConfigDialogProps> = ({ open, i
                     <div className="flex items-center gap-1 mb-1">
                       <Label className="text-xs font-medium">Tool Description</Label>
                       <HelpTooltip>
-                        This description is sent directly to the model. It tells the LLM what this tool does and when to call it — be specific so the agent knows when to invoke it and what to expect
-                        at runtime.
+                        This description is sent directly to the model. It tells the LLM what this tool does and when to call it — be specific so the agent knows when to invoke it and what to expect at runtime.
                       </HelpTooltip>
                     </div>
                     <Controller
                       name="toolDescription"
                       control={control}
-                      render={({ field }) => <Textarea {...field} rows={3} placeholder="Present the user with a multiple-choice prompt and return their selection" className="text-xs resize-none" />}
+                      render={({ field }) => (
+                        <Textarea
+                          {...field}
+                          rows={3}
+                          placeholder="Present the user with a multiple-choice prompt and return their selection"
+                          className="text-xs resize-none"
+                        />
+                      )}
                     />
                   </div>
                 </>
