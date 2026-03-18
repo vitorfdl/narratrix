@@ -4,7 +4,7 @@ import { useChatStore } from "@/hooks/chatStore";
 import { ChatMessageType } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { getNextMessagePosition } from "@/services/chat-message-service";
-import { NodeBase, NodeInput } from "../tool-components/NodeBase";
+import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
 import { NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
 import { NodeProps } from "./nodeTypes";
@@ -12,7 +12,7 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-const executeChatOutputNode: NodeExecutor = async (_node, inputs, context, agent): Promise<NodeExecutionResult> => {
+const executeChatOutputNode: NodeExecutor = async (node, inputs, context, agent): Promise<NodeExecutionResult> => {
   const response: string = typeof inputs.response === "string" ? inputs.response : "";
   const participantId = typeof inputs.characterId === "string" ? inputs.characterId : undefined;
 
@@ -39,7 +39,7 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs, context, agent
     const executionId = context.nodeValues.get("workflow-execution-id") as string | undefined;
 
     const position = await getNextMessagePosition(chatId, chapterId);
-    await store.actions.addChatMessage({
+    const newMessage = await store.actions.addChatMessage({
       character_id: isUser ? null : participantId || null,
       type: (isUser ? "user" : "character") as ChatMessageType,
       messages: [response],
@@ -54,6 +54,8 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs, context, agent
         executionId,
       },
     });
+
+    context.nodeValues.set(`${node.id}::out-message-id`, newMessage.id);
 
     return { success: true, value: response };
   } catch (e: unknown) {
@@ -77,7 +79,7 @@ const CHAT_OUTPUT_NODE_METADATA = {
     { id: "response", label: "Response", edgeType: "string" as const, targetRef: "response-section" },
     { id: "in-character", label: "Participant ID", edgeType: "string" as const, targetRef: "participant-section" },
   ] as NodeInput[],
-  outputs: [],
+  outputs: [{ id: "out-message-id", label: "Message ID", edgeType: "string" as const }] as NodeOutput[],
   defaultConfig: {},
 };
 
