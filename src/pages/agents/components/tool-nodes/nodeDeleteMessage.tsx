@@ -379,13 +379,13 @@ const DeleteMessageContent = memo<DeleteMessageContentProps>(({ nodeId, config, 
         label="Character ID"
         icon={User}
         optional
+        disabled={hasInputOverride}
         refId="character-section"
         helpText="Narrows config-mode filter to a specific character or 'user'. Has no effect when Message IDs or Chat History inputs are connected."
       />
 
-      <NodeField label="Configuration" icon={SlidersHorizontal} action={<NodeConfigButton onClick={onConfigure} title="Configure delete settings" />}>
+      <NodeField label="Configuration" icon={SlidersHorizontal} disabled={hasInputOverride} action={<NodeConfigButton onClick={onConfigure} title="Configure delete settings" />}>
         <NodeConfigPreview
-          className={hasInputOverride ? "opacity-40" : undefined}
           items={[
             { label: "Mode", value: config.deleteMode === "lastN" ? `Last ${config.count}` : "All matching", icon: Layers },
             { label: "Filter", value: getSenderFilterLabel(config.senderFilter), icon: Filter },

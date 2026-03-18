@@ -50,6 +50,7 @@ interface NodeFieldProps {
   label: string;
   icon?: LucideIcon;
   optional?: boolean;
+  disabled?: boolean;
   helpText?: ReactNode;
   refId?: string;
   action?: ReactNode;
@@ -57,11 +58,19 @@ interface NodeFieldProps {
   className?: string;
 }
 
-export const NodeField: React.FC<NodeFieldProps> = ({ label, icon: Icon, optional, helpText, refId, action, children, className }) => {
+export const NodeField: React.FC<NodeFieldProps> = ({ label, icon: Icon, optional, disabled, helpText, refId, action, children, className }) => {
   const registerElementRef = useNodeRef();
 
   return (
-    <div className={cn("space-y-1.5", optional && "border-l-2 border-dashed border-muted-foreground/25 pl-2.5", className)} ref={refId ? (el) => registerElementRef?.(refId, el) : undefined}>
+    <div
+      className={cn(
+        "space-y-1.5 transition-opacity duration-200",
+        optional && "border-l-2 border-dashed border-muted-foreground/25 pl-2.5",
+        disabled && "opacity-35 pointer-events-none select-none",
+        className,
+      )}
+      ref={refId ? (el) => registerElementRef?.(refId, el) : undefined}
+    >
       <div className="flex items-center justify-between min-h-[1.25rem]">
         <div className="flex items-center gap-1">
           {Icon && <Icon className="h-3 w-3 text-muted-foreground/70 flex-shrink-0" />}
