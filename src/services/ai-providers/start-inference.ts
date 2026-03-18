@@ -68,5 +68,5 @@ async function callProviderConverseEndpoint(event: AIEvent, params: InferencePar
   }
 }
 
-export { callProviderConverseEndpoint };
 export type { FinalParams };
+export { callProviderConverseEndpoint };

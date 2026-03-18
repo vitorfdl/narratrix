@@ -88,8 +88,6 @@ const ModelSpecsSchema = z.object({
 
 type ModelSpecs = z.infer<typeof ModelSpecsSchema>;
 
-export { InferenceMessageSchema, InferenceRequestSchema, InferenceResponseSchema, InferenceToolCallSchema, InferenceToolDefinitionSchema, ModelSpecsSchema };
-
 export type {
   InferenceCancelledResponse,
   InferenceCompletedResponse,
@@ -101,3 +99,4 @@ export type {
   InferenceToolDefinition,
   ModelSpecs,
 };
+export { InferenceMessageSchema, InferenceRequestSchema, InferenceResponseSchema, InferenceToolCallSchema, InferenceToolDefinitionSchema, ModelSpecsSchema };

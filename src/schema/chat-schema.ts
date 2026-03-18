@@ -60,8 +60,8 @@ const createChatSchema = chatSchema.omit({
   updated_at: true,
 });
 
-export { chatDisplaySettingsSchema, chatSchema, createChatSchema };
 export type { ChatTab, GridItem };
+export { chatDisplaySettingsSchema, chatSchema, createChatSchema };
 export type CreateChatParams = z.infer<typeof createChatSchema>;
 export type Chat = z.infer<typeof chatSchema>;
 export type ChatDisplaySettings = z.infer<typeof chatDisplaySettingsSchema>;

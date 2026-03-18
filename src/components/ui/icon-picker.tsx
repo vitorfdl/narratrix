@@ -416,4 +416,4 @@ const Icon = React.forwardRef<React.ComponentRef<LucideIcon>, IconProps>(({ name
 });
 Icon.displayName = "Icon";
 
-export { Icon, IconPicker, type IconName };
+export { Icon, type IconName, IconPicker };

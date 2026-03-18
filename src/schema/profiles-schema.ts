@@ -138,21 +138,21 @@ type ProfileListItem = Omit<ProfileResponse, "settings" | "quick_actions">;
 type UpdateProfileParams = z.infer<typeof updateProfileSchema>;
 
 export {
-  AppSettingsSchema,
-  LoginPasswordSchema,
-  ProfileSchema,
-  QuickActionSchema,
-  UpdatePasswordSchema,
-  updateProfileSchema,
   type AppSettings,
+  AppSettingsSchema,
   type BeepSound,
   type DelimiterHighlighting,
   type LoginPasswordParams,
+  LoginPasswordSchema,
   type NewProfileParams,
   type Profile,
   type ProfileListItem,
   type ProfileResponse,
+  ProfileSchema,
   type QuickAction,
+  QuickActionSchema,
   type UpdatePasswordParams,
+  UpdatePasswordSchema,
   type UpdateProfileParams,
+  updateProfileSchema,
 };
