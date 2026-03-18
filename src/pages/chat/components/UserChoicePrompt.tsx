@@ -1,12 +1,24 @@
 import { ListChecks, X } from "lucide-react";
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
 import { usePendingChoices, useUserChoiceActions } from "@/hooks/userChoiceStore";
 import { cn } from "@/lib/utils";
+import { cancelWorkflow } from "@/services/agent-workflow/runner";
 
 const UserChoicePrompt: React.FC = memo(() => {
   const pendingChoices = usePendingChoices();
-  const { resolveChoice } = useUserChoiceActions();
+  const { resolveChoice, cancelChoicesForAgent } = useUserChoiceActions();
+  const setAgentState = useAgentWorkflowStore((s) => s.setAgentState);
+
+  const handleCancel = useCallback(
+    (agentId: string) => {
+      cancelWorkflow(agentId);
+      setAgentState(agentId, { isRunning: false, executedNodes: [] });
+      cancelChoicesForAgent(agentId);
+    },
+    [cancelChoicesForAgent, setAgentState],
+  );
 
   if (pendingChoices.length === 0) {
     return null;
@@ -26,7 +38,7 @@ const UserChoicePrompt: React.FC = memo(() => {
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive flex-shrink-0 -mt-0.5 -mr-1"
-              onClick={() => resolveChoice(choice.id, null)}
+              onClick={() => handleCancel(choice.agentId)}
               title="Cancel"
             >
               <X className="h-3.5 w-3.5" />
