@@ -106,7 +106,7 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="connection">Connection</TabsTrigger>
             <TabsTrigger value="inference" disabled={mode === "add"}>
@@ -114,8 +114,8 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent forceMount value="connection" className={`flex-1 overflow-hidden ${activeTab !== "connection" ? "hidden" : ""}`}>
-            <DialogBody>
+          <DialogBody>
+            <TabsContent forceMount value="connection" className={activeTab !== "connection" ? "hidden" : ""}>
               <ModelForm
                 ref={formRef}
                 mode={mode === "edit" ? "edit" : "add"}
@@ -125,11 +125,9 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
                 onManifestChange={handleManifestChange}
                 onSuccess={handleSuccess}
               />
-            </DialogBody>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="inference" className="flex-1 overflow-hidden">
-            <DialogBody>
+            <TabsContent value="inference">
               <div className="grid gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="concurrency" className="text-sm font-medium">
@@ -164,8 +162,8 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
                   </>
                 )}
               </div>
-            </DialogBody>
-          </TabsContent>
+            </TabsContent>
+          </DialogBody>
         </Tabs>
 
         <DialogFooter className="flex justify-end gap-2">

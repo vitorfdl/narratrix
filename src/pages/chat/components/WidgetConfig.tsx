@@ -783,7 +783,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   };
 
   return (
-    <div className="space-y-1 p-1 @container">
+    <div className="space-y-1 p-1 @container h-full overflow-y-auto custom-scrollbar">
       {/* Template Picker Section */}
       <div className="space-y-1 mb-3 mx-1">
         <TemplatePicker
