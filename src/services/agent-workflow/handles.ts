@@ -10,6 +10,7 @@ export function mapHandleToInputName(handle: string): string {
     "in-toolset": "toolset",
     "in-choices": "choices",
     "in-prompt": "prompt",
+    "in-message-ids": "messageIds",
     // Trigger node outputs
     "out-participant": "participantId",
   };
@@ -29,6 +30,7 @@ export function mapSourceHandleToReadableName(sourceHandle: string): string {
     "out-string": "text",
     "out-toolset": "toolset",
     "out-text": "text",
+    "out-deleted-count": "deletedCount",
   };
   if (mapping[sourceHandle]) {
     return mapping[sourceHandle];
