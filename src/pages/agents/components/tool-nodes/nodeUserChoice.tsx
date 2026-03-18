@@ -140,9 +140,13 @@ const executeUserChoiceNode: NodeExecutor = async (node, inputs, context, agent)
           return "No choices provided";
         }
 
+        if (!context.isRunning) {
+          throw new Error("Workflow cancelled");
+        }
+
         const selected = await createPendingChoice(context.agentId, context.executionId, prompt, choices, cfg.timeoutSeconds);
         if (selected === null) {
-          return "User cancelled the choice";
+          throw new Error("Workflow cancelled");
         }
         return selected;
       },

@@ -19,12 +19,17 @@ const DEFAULT_STATE: AgentWorkflowState = { isRunning: false, executedNodes: [] 
 interface AgentWorkflowStoreState {
   /** Map from agentId → current workflow state */
   states: Record<string, AgentWorkflowState>;
+  /** Map from agentId → full cancel callback (set by useAgentWorkflow on start) */
+  cancelFns: Record<string, () => void>;
   setAgentState: (agentId: string, state: AgentWorkflowState) => void;
   clearAgentState: (agentId: string) => void;
+  registerCancelFn: (agentId: string, fn: () => void) => void;
+  unregisterCancelFn: (agentId: string) => void;
 }
 
 export const useAgentWorkflowStore = create<AgentWorkflowStoreState>((set) => ({
   states: {},
+  cancelFns: {},
   setAgentState: (agentId, state) => set((prev) => ({ states: { ...prev.states, [agentId]: state } })),
   clearAgentState: (agentId) =>
     set((prev) => {
@@ -32,7 +37,20 @@ export const useAgentWorkflowStore = create<AgentWorkflowStoreState>((set) => ({
       delete next[agentId];
       return { states: next };
     }),
+  registerCancelFn: (agentId, fn) => set((prev) => ({ cancelFns: { ...prev.cancelFns, [agentId]: fn } })),
+  unregisterCancelFn: (agentId) =>
+    set((prev) => {
+      const next = { ...prev.cancelFns };
+      delete next[agentId];
+      return { cancelFns: next };
+    }),
 }));
+
+/** Calls the full cancel callback for an agent (including inference cancellation). */
+export function cancelAgentWorkflow(agentId: string): void {
+  const { cancelFns } = useAgentWorkflowStore.getState();
+  cancelFns[agentId]?.();
+}
 
 /** Returns the workflow state for a specific agent (defaults to idle). */
 export const useAgentWorkflowStateById = (agentId: string): AgentWorkflowState => useAgentWorkflowStore((state) => state.states[agentId] ?? DEFAULT_STATE);

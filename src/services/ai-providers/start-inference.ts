@@ -62,7 +62,7 @@ async function callProviderConverseEndpoint(event: AIEvent, params: InferencePar
   if (params.stream) {
     return streamResponse(event, finalParams);
   } else {
-    const response = await generateResponse(finalParams);
+    const response = await generateResponse(finalParams, event);
     event.finish({ fullResponse: response });
     return response;
   }

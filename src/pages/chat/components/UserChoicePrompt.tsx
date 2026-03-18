@@ -1,24 +1,17 @@
 import { ListChecks, X } from "lucide-react";
 import { memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
+import { cancelAgentWorkflow } from "@/hooks/agentWorkflowStore";
 import { usePendingChoices, useUserChoiceActions } from "@/hooks/userChoiceStore";
 import { cn } from "@/lib/utils";
-import { cancelWorkflow } from "@/services/agent-workflow/runner";
 
 const UserChoicePrompt: React.FC = memo(() => {
   const pendingChoices = usePendingChoices();
-  const { resolveChoice, cancelChoicesForAgent } = useUserChoiceActions();
-  const setAgentState = useAgentWorkflowStore((s) => s.setAgentState);
+  const { resolveChoice } = useUserChoiceActions();
 
-  const handleCancel = useCallback(
-    (agentId: string) => {
-      cancelWorkflow(agentId);
-      setAgentState(agentId, { isRunning: false, executedNodes: [] });
-      cancelChoicesForAgent(agentId);
-    },
-    [cancelChoicesForAgent, setAgentState],
-  );
+  const handleCancel = useCallback((agentId: string) => {
+    cancelAgentWorkflow(agentId);
+  }, []);
 
   if (pendingChoices.length === 0) {
     return null;

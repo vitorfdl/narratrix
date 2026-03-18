@@ -44,7 +44,8 @@ export function useAgentWorkflow() {
   const pendingResolvers = useRef<Record<string, PendingResolver>>({});
   const currentAgentRunLogIdRef = useRef<string | undefined>(undefined);
   const currentNodeExecIdRef = useRef<string | undefined>(undefined);
-  const { setAgentState, clearAgentState } = useAgentWorkflowStore();
+  const cancelWorkflowRef = useRef<(agentId: string) => void>(() => {});
+  const { setAgentState, clearAgentState, registerCancelFn, unregisterCancelFn } = useAgentWorkflowStore();
 
   /**
    * Wraps a WorkflowToolDefinition's invoke function with console logging and
@@ -226,6 +227,7 @@ export function useAgentWorkflow() {
       const startState = { isRunning: true, executedNodes: [] as string[], currentNodeId: undefined, error: undefined };
       setWorkflowState(startState);
       setAgentState(agent.id, startState);
+      registerCancelFn(agent.id, () => cancelWorkflowRef.current(agent.id));
 
       try {
         const result = await executeWf(agent, triggerContext, deps, (nodeId: string, nodeResult: NodeExecutionResult) => {
@@ -260,12 +262,13 @@ export function useAgentWorkflow() {
       } finally {
         currentAgentRunLogIdRef.current = undefined;
         currentNodeExecIdRef.current = undefined;
+        unregisterCancelFn(agent.id);
         // Ensure the store is cleaned up after a short delay so the UI can
         // display the final state before the card reverts to idle.
         setTimeout(() => clearAgentState(agent.id), 500);
       }
     },
-    [deps, setAgentState, clearAgentState],
+    [deps, setAgentState, clearAgentState, registerCancelFn, unregisterCancelFn],
   );
 
   /**
@@ -303,6 +306,8 @@ export function useAgentWorkflow() {
     },
     [cancelRequest, setAgentState],
   );
+
+  cancelWorkflowRef.current = cancelWorkflow;
 
   /**
    * Check if a specific workflow is running
