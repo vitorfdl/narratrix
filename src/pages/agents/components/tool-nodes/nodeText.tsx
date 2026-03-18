@@ -7,6 +7,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { NodeExecutor } from "@/services/agent-workflow/types";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -148,14 +149,15 @@ export const TextNode = memo(({ id, data, selected }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
   const config = (data.config || TEXT_NODE_METADATA.defaultConfig) as TextNodeConfig;
+  const takeSnapshot = useTakeSnapshot();
 
   const handleConfigSave = useCallback(
     (newConfig: TextNodeConfig) => {
-      // Use React Flow's setNodes to properly update the node
+      takeSnapshot();
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
       setConfigDialogOpen(false);
     },
-    [id, setNodes],
+    [id, setNodes, takeSnapshot],
   );
 
   const handleConfigCancel = useCallback(() => {

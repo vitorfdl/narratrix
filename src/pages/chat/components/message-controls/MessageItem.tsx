@@ -385,6 +385,7 @@ const MessageItem = ({
                       messageType={message.type}
                       isDisabled={isDisabled}
                       isStreaming={isStreaming}
+                      isAgentMessage={!!message.extra?.agentId && !!message.extra?.triggerContext}
                       onEdit={startEditing}
                       onRegenerateMessage={onRegenerateMessage}
                       onDeleteMessage={onDeleteMessage}

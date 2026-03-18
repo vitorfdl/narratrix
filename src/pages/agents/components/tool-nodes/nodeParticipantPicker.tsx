@@ -8,6 +8,7 @@ import { useCharacterStore } from "@/hooks/characterStore";
 import { useChatStore } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -286,13 +287,15 @@ export const ParticipantPickerNode = memo(({ id, data, selected }: NodeProps) =>
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const config = (data.config || PARTICIPANT_PICKER_NODE_METADATA.defaultConfig) as ParticipantPickerConfig;
   const { setNodes } = useReactFlow();
+  const takeSnapshot = useTakeSnapshot();
 
   const handleConfigSave = useCallback(
     (newConfig: ParticipantPickerConfig) => {
+      takeSnapshot();
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
       setConfigDialogOpen(false);
     },
-    [id, setNodes],
+    [id, setNodes, takeSnapshot],
   );
 
   const handleConfigCancel = useCallback(() => {

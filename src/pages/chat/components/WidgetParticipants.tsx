@@ -432,9 +432,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
           }
           try {
             const manualContext: TriggerContext = { type: "manual", participantId: agent.id, chatId: currentChatId, userCharacterId: currentChatUserCharacterID ?? null };
-            await executeAgentWorkflow(agent, manualContext, (nodeId, result) => {
-              console.log(`Node ${nodeId} executed:`, result);
-            });
+            await executeAgentWorkflow(agent, manualContext);
           } catch (error) {
             toast.error(`Agent ${agent.name} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
           }

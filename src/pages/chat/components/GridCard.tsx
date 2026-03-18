@@ -56,7 +56,7 @@ export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, bu
       </div>
 
       {/* Content */}
-      <div className="p-1 overflow-auto h-full custom-scrollbar">{children}</div>
+      <div className="p-1 flex-1 overflow-hidden min-h-0">{children}</div>
 
       {/* Custom resize indicator */}
       {isDecorated && (

@@ -22,6 +22,7 @@ import { deepEqual } from "@/lib/utils";
 import { AgentType } from "@/schema/agent-schema";
 import "@xyflow/react/dist/style.css";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { UndoRedoProvider, useUndoRedo } from "../hooks/useUndoRedo";
 import { DeletableEdge } from "./tool-components/DeletableEdge";
 import { AgentSidebar } from "./tool-components/EditorSidebar";
 import { convertCoreEdgeToReactFlow, convertReactFlowEdgeToCore, getEdgeStyle, getEdgeTypeFromHandle, isValidEdgeConnection, updateEdgeStyles, validateAndFixEdge } from "./tool-components/edge-utils";
@@ -76,8 +77,9 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<ToolNodeData>>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  // Keep track of the last configuration sent to parent to avoid unnecessary updates
   const lastSentConfigRef = useRef<AgentType | null>(null);
+
+  const { takeSnapshot, undo, redo } = useUndoRedo<Node<ToolNodeData>, Edge>(nodes, edges, setNodes, setEdges, { resetKey: toolConfig?.id });
 
   // Update nodes and edges when toolConfig changes (but avoid double initialization)
   useEffect(() => {
@@ -162,7 +164,6 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
 
   const onConnect = useCallback(
     (params: Edge | Connection) => {
-      // Validate the connection before creating the edge
       const validation = isValidEdgeConnection(params.source!, params.sourceHandle || "", params.target!, params.targetHandle || "", nodes, edges);
 
       if (!validation.valid && !validation.existingEdge) {
@@ -170,7 +171,8 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         return;
       }
 
-      // Get the edge type from the source handle
+      takeSnapshot();
+
       const sourceNodeId = params.source;
       const sourceHandleId = params.sourceHandle;
       const edgeType = getEdgeTypeFromHandle(sourceNodeId!, sourceHandleId!);
@@ -198,13 +200,11 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         return updateEdgeStyles(addEdge(newEdge, updatedEdges));
       });
     },
-    [setEdges, nodes, edges],
+    [setEdges, nodes, edges, takeSnapshot],
   );
 
-  // Handle edge reconnection with validation
   const onReconnect = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
-      // Validate the new connection before allowing reconnection
       const validation = isValidEdgeConnection(
         newConnection.source!,
         newConnection.sourceHandle || "",
@@ -219,7 +219,8 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         return;
       }
 
-      // Get the edge type from the source handle
+      takeSnapshot();
+
       const edgeType = getEdgeTypeFromHandle(newConnection.source!, newConnection.sourceHandle!);
 
       setEdges((eds) => {
@@ -249,7 +250,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         );
       });
     },
-    [setEdges, nodes, edges],
+    [setEdges, nodes, edges, takeSnapshot],
   );
 
   // Handle connection start for visual feedback
@@ -276,54 +277,73 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     });
   }, []);
 
-  // Delete selected nodes and edges with keyboard
+  const isInteractiveTarget = useCallback((target: HTMLElement): boolean => {
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.contentEditable === "true" || target.isContentEditable) {
+      return true;
+    }
+    if (target.closest('[role="dialog"]') || target.closest("[data-radix-dialog-content]") || target.closest(".modal") || target.closest('[aria-modal="true"]')) {
+      return true;
+    }
+    if (
+      target.closest('[role="menu"]') ||
+      target.closest('[role="listbox"]') ||
+      target.closest('[role="combobox"]') ||
+      target.closest("[data-radix-popper-content-wrapper]") ||
+      target.closest("[data-radix-popover-content]")
+    ) {
+      return true;
+    }
+    return false;
+  }, []);
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (readOnly) {
         return;
       }
 
+      const target = event.target as HTMLElement;
+      const isMod = event.ctrlKey || event.metaKey;
+
+      if (isMod && event.key.toLowerCase() === "z") {
+        if (isInteractiveTarget(target)) {
+          return;
+        }
+        event.preventDefault();
+        if (event.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+        return;
+      }
+
+      if (isMod && event.key.toLowerCase() === "y") {
+        if (isInteractiveTarget(target)) {
+          return;
+        }
+        event.preventDefault();
+        redo();
+        return;
+      }
+
       if (event.key === "Delete") {
-        // Check if the user is currently interacting with an input, textarea, or modal
-        const target = event.target as HTMLElement;
-
-        // Don't delete if user is typing in an input field, textarea, or contenteditable element
-        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.contentEditable === "true" || target.isContentEditable) {
+        if (isInteractiveTarget(target)) {
           return;
         }
 
-        // Don't delete if the target is within a modal/dialog
-        const isInModal = target.closest('[role="dialog"]') || target.closest("[data-radix-dialog-content]") || target.closest(".modal") || target.closest('[aria-modal="true"]');
-
-        if (isInModal) {
-          return;
-        }
-
-        // Don't delete if the target is within a dropdown, popover, or similar overlay
-        const isInOverlay =
-          target.closest('[role="menu"]') ||
-          target.closest('[role="listbox"]') ||
-          target.closest('[role="combobox"]') ||
-          target.closest("[data-radix-popper-content-wrapper]") ||
-          target.closest("[data-radix-popover-content]");
-
-        if (isInOverlay) {
-          return;
-        }
-
-        // Get selected nodes and edges
         const selectedNodes = nodes.filter((node) => node.selected);
         const selectedEdges = edges.filter((edge) => edge.selected);
 
         if (selectedNodes.length > 0 || selectedEdges.length > 0) {
-          // Delete selected nodes and their connected edges
+          takeSnapshot();
+
           if (selectedNodes.length > 0) {
             const nodeIdsToDelete = selectedNodes.map((node) => node.id);
             setNodes((nds) => nds.filter((n) => !nodeIdsToDelete.includes(n.id)));
             setEdges((eds) => eds.filter((e) => !nodeIdsToDelete.includes(e.source) && !nodeIdsToDelete.includes(e.target)));
           }
 
-          // Delete selected edges
           if (selectedEdges.length > 0) {
             const edgeIdsToDelete = selectedEdges.map((edge) => edge.id);
             setEdges((eds) => eds.filter((e) => !edgeIdsToDelete.includes(e.id)));
@@ -331,7 +351,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         }
       }
     },
-    [nodes, edges, setNodes, setEdges, readOnly],
+    [nodes, edges, setNodes, setEdges, readOnly, undo, redo, takeSnapshot, isInteractiveTarget],
   );
 
   // Add keyboard event listener
@@ -342,18 +362,21 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     };
   }, [handleKeyDown]);
 
-  // Delete node handler for trash button
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
       if (readOnly || nodeId === "start" || nodeId === "end") {
         return;
       }
-
+      takeSnapshot();
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
       setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
     },
-    [setNodes, setEdges, readOnly],
+    [setNodes, setEdges, readOnly, takeSnapshot],
   );
+
+  const onNodeDragStart = useCallback(() => {
+    takeSnapshot();
+  }, [takeSnapshot]);
 
   // Validate that exactly one trigger node exists
   const triggerNodeCount = useMemo(() => nodes.filter((n) => n.type === "trigger").length, [nodes]);
@@ -377,68 +400,63 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   );
 
   return (
-    <div className="w-full h-full min-h-[400px] dark:bg-background border-2 border-dashed border-primary/40 rounded-lg flex">
-      {/* Sidebar */}
-      {!readOnly && <AgentSidebar className="flex-shrink-0" />}
+    <UndoRedoProvider value={takeSnapshot}>
+      <div className="w-full h-full min-h-[400px] dark:bg-background border-2 border-dashed border-primary/40 rounded-lg flex">
+        {/* Sidebar */}
+        {!readOnly && <AgentSidebar className="flex-shrink-0" />}
 
-      {/* Main Editor */}
-      <div className="flex-1 relative" style={{ minHeight: 350 }} ref={reactFlowWrapper}>
-        <NodeDeleteProvider onDelete={handleDeleteNode}>
-          <ConnectionStateProvider connectionState={connectionState}>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={readOnly ? () => {} : onNodesChange}
-              onEdgesChange={readOnly ? () => {} : handleEdgesChange}
-              onConnect={readOnly ? () => {} : onConnect}
-              onReconnect={readOnly ? () => {} : onReconnect}
-              onConnectStart={readOnly ? () => {} : onConnectStart}
-              onConnectEnd={readOnly ? () => {} : onConnectEnd}
-              isValidConnection={readOnly ? () => false : isValidConnection}
-              nodeTypes={nodeTypes as NodeTypes}
-              edgeTypes={edgeTypes}
-              proOptions={{ hideAttribution: true }}
-              fitView
-              fitViewOptions={{
-                maxZoom: 1,
-              }}
-              colorMode={theme === "dark" ? "dark" : "light"}
-              minZoom={0.5}
-              maxZoom={1.5}
-              nodesDraggable={!readOnly}
-              nodesConnectable={!readOnly}
-              nodesFocusable={!readOnly}
-              edgesFocusable={!readOnly}
-              elementsSelectable={!readOnly}
-              defaultEdgeOptions={{
-                style: { strokeWidth: 2 },
-              }}
-              connectionLineStyle={{
-                strokeWidth: 2,
-                stroke: "hsl(var(--primary))",
-                strokeDasharray: "5,5",
-              }}
-              snapToGrid={true}
-              snapGrid={[10, 10]}
-              connectionRadius={20}
-            >
-              <MiniMap className="border border-foreground" />
-              <Controls />
-              <Background variant={BackgroundVariant.Dots} />
-            </ReactFlow>
-          </ConnectionStateProvider>
-        </NodeDeleteProvider>
-        {/* Trigger node validation banner */}
-        {!readOnly && (!hasTriggerNode || hasDuplicateTriggerNode) && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-yellow-500/15 border border-yellow-500/40 text-yellow-600 dark:text-yellow-400 text-xs font-medium shadow-sm backdrop-blur-sm">
-              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-              {hasDuplicateTriggerNode ? "Multiple Trigger nodes detected — only one is allowed." : "Add a Trigger node to define when this workflow runs."}
+        {/* Main Editor */}
+        <div className="flex-1 relative" style={{ minHeight: 350 }} ref={reactFlowWrapper}>
+          <NodeDeleteProvider onDelete={handleDeleteNode}>
+            <ConnectionStateProvider connectionState={connectionState}>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={readOnly ? () => {} : onNodesChange}
+                onEdgesChange={readOnly ? () => {} : handleEdgesChange}
+                onConnect={readOnly ? () => {} : onConnect}
+                onReconnect={readOnly ? () => {} : onReconnect}
+                onConnectStart={readOnly ? () => {} : onConnectStart}
+                onConnectEnd={readOnly ? () => {} : onConnectEnd}
+                onNodeDragStart={readOnly ? undefined : onNodeDragStart}
+                isValidConnection={readOnly ? () => false : isValidConnection}
+                nodeTypes={nodeTypes as NodeTypes}
+                edgeTypes={edgeTypes}
+                proOptions={{ hideAttribution: true }}
+                fitView
+                fitViewOptions={{ maxZoom: 1 }}
+                colorMode={theme === "dark" ? "dark" : "light"}
+                minZoom={0.5}
+                maxZoom={1.5}
+                nodesDraggable={!readOnly}
+                nodesConnectable={!readOnly}
+                nodesFocusable={!readOnly}
+                edgesFocusable={!readOnly}
+                elementsSelectable={!readOnly}
+                defaultEdgeOptions={{ style: { strokeWidth: 2 } }}
+                connectionLineStyle={{ strokeWidth: 2, stroke: "hsl(var(--primary))", strokeDasharray: "5,5" }}
+                snapToGrid={true}
+                snapGrid={[10, 10]}
+                connectionRadius={20}
+              >
+                <MiniMap className="border border-foreground" />
+                <Controls />
+                <Background variant={BackgroundVariant.Dots} />
+              </ReactFlow>
+            </ConnectionStateProvider>
+          </NodeDeleteProvider>
+          {/* Trigger node validation banner */}
+          {!readOnly && (!hasTriggerNode || hasDuplicateTriggerNode) && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-yellow-500/15 border border-yellow-500/40 text-yellow-600 dark:text-yellow-400 text-xs font-medium shadow-sm backdrop-blur-sm">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                {hasDuplicateTriggerNode ? "Multiple Trigger nodes detected — only one is allowed." : "Add a Trigger node to define when this workflow runs."}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </UndoRedoProvider>
   );
 };
 

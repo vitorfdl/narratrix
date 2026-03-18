@@ -5,6 +5,7 @@ import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeRegistry } from "./node-registry";
 import { getNodeConfig, getNodeId } from "./node-utils";
 import { ToolNodeData } from "./types";
@@ -30,6 +31,7 @@ interface CategoryGroup {
 export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd }) => {
   const { screenToFlowPosition, addNodes } = useReactFlow();
   const currentNodes = useNodes();
+  const takeSnapshot = useTakeSnapshot();
   const allCategories = useMemo(() => {
     const nodeOptions = NodeRegistry.getNodeOptions();
     const categories = new Set<string>();
@@ -108,12 +110,12 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
   // Handle node click to add to canvas
   const handleNodeClick = useCallback(
     (nodeType: string) => {
-      // Prevent adding a second singleton node (e.g. trigger)
       if (singletonNodeTypes.has(nodeType) && placedNodeTypes.has(nodeType)) {
         return;
       }
 
-      // Create node at center of viewport
+      takeSnapshot();
+
       const centerPosition = screenToFlowPosition({
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
@@ -135,7 +137,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
       addNodes([newNode]);
       onNodeAdd?.(nodeType);
     },
-    [screenToFlowPosition, addNodes, onNodeAdd, singletonNodeTypes, placedNodeTypes],
+    [screenToFlowPosition, addNodes, onNodeAdd, singletonNodeTypes, placedNodeTypes, takeSnapshot],
   );
 
   return (

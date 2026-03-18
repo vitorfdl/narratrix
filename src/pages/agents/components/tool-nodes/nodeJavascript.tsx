@@ -12,6 +12,7 @@ import { useConsoleStore } from "@/hooks/consoleStore";
 import { mapSourceHandleToReadableName } from "@/services/agent-workflow/handles";
 import { runJavascript } from "@/services/agent-workflow/javascript-runner";
 import { type NodeExecutionResult, type NodeExecutor, type WorkflowToolDefinition } from "@/services/agent-workflow/types";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import JsonSchemaCreator from "../json-schema/JsonSchemaCreator";
 import type { SchemaDefinition } from "../json-schema/types";
 import { NodeBase, type NodeInput, type NodeOutput } from "../tool-components/NodeBase";
@@ -591,14 +592,16 @@ export const JavascriptNode = memo(({ id, data, selected }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
   const config = (data.config || JAVASCRIPT_NODE_METADATA.defaultConfig) as JavascriptNodeConfig;
+  const takeSnapshot = useTakeSnapshot();
 
   const handleConfigSave = useCallback(
     (newConfig: JavascriptNodeConfig) => {
+      takeSnapshot();
       const dynamicOutputs = getOutputsForMode(newConfig.mode);
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig, dynamicOutputs } } : node)));
       setConfigDialogOpen(false);
     },
-    [id, setNodes],
+    [id, setNodes, takeSnapshot],
   );
 
   const handleConfigureCode = useCallback(() => {

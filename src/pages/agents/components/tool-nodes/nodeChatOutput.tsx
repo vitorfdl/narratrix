@@ -12,7 +12,7 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, _agent): Promise<NodeExecutionResult> => {
+const executeChatOutputNode: NodeExecutor = async (_node, inputs, context, agent): Promise<NodeExecutionResult> => {
   const response: string = typeof inputs.response === "string" ? inputs.response : "";
   const participantId = typeof inputs.characterId === "string" ? inputs.characterId : undefined;
 
@@ -35,6 +35,9 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, _age
       return { success: false, error: "No active chat/chapter to write output" };
     }
 
+    const triggerContext = context.nodeValues.get("workflow-trigger-context") as Record<string, unknown> | undefined;
+    const executionId = context.nodeValues.get("workflow-execution-id") as string | undefined;
+
     const position = await getNextMessagePosition(chatId, chapterId);
     await store.actions.addChatMessage({
       character_id: isUser ? null : participantId || null,
@@ -43,7 +46,13 @@ const executeChatOutputNode: NodeExecutor = async (_node, inputs, _context, _age
       position,
       disabled: false,
       tokens: null,
-      extra: {},
+      extra: {
+        script: "agent",
+        name: agent.name,
+        agentId: agent.id,
+        triggerContext,
+        executionId,
+      },
     });
 
     return { success: true, value: response };

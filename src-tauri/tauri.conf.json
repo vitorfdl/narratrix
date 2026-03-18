@@ -21,7 +21,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data:",
+      "csp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data:",
       "assetProtocol": {
         "enable": true,
         "scope": ["**"]
@@ -34,14 +34,22 @@
     },
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg2ODZDMjgyMTZCOTgwQ0EKUldUS2dMa1dnc0tHaG12UE1OM2NranNwci93RlpuYnMzaWNobUllelFkZGdoaGFUcXVGdTJiOWQK",
-      "endpoints": ["https://github.com/vitorfdl/narratrix/releases/latest/download/latest.json"]
+      "endpoints": [
+        "https://github.com/vitorfdl/narratrix/releases/latest/download/latest.json"
+      ]
     }
   },
   "bundle": {
     "active": true,
     "createUpdaterArtifacts": true,
     "targets": "all",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "resources": ["resources/**/*"],
     "linux": {
       "deb": {

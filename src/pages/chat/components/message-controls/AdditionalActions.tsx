@@ -13,6 +13,7 @@ export const MessageActions = ({
   isStreaming,
   isLastMessage,
   isDisabled,
+  isAgentMessage,
   onEdit,
   onRegenerateMessage,
   onDeleteMessage,
@@ -26,6 +27,7 @@ export const MessageActions = ({
   isStreaming: boolean;
   isLastMessage: boolean;
   isDisabled: boolean;
+  isAgentMessage?: boolean;
   onEdit: (id: string) => void;
   onRegenerateMessage: (id: string) => void;
   onDeleteMessage: (id: string) => void;
@@ -55,8 +57,8 @@ export const MessageActions = ({
       <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" onClick={() => onEdit(messageId)} title="Edit Message" disabled={isRegenerateDisabled}>
         <LuPencil className="w-4 h-4" />
       </Button>
-      {messageType === "character" && (
-        <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" onClick={handleRegenerate} title="Regenerate Message" disabled={isRegenerateDisabled || !isLastMessage}>
+      {(messageType === "character" || isAgentMessage) && isLastMessage && (
+        <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-accent" onClick={handleRegenerate} title="Regenerate Message" disabled={isRegenerateDisabled}>
           <LuRefreshCw className={cn("w-4 h-4", (isStreaming || isRegenerating) && "animate-spin")} />
         </Button>
       )}

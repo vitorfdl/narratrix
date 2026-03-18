@@ -66,6 +66,8 @@ const extraSchema = z.object({
   endPosition: z.number().int().optional(),
   agentId: z.string().optional(),
   promptConfig: promptConfigSchema.optional(),
+  triggerContext: z.record(z.string(), z.unknown()).optional(),
+  executionId: z.string().optional(),
 });
 
 /**

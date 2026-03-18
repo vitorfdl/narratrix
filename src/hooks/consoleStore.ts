@@ -16,7 +16,29 @@ export interface ConsoleRequest {
   fullResponse?: string;
 }
 
-export type ConsoleLogType = "tool-call" | "node-execution" | "js-console";
+export type ConsoleLogType = "agent-run" | "tool-call" | "node-execution" | "js-console";
+
+export interface ToolCallEntry {
+  id: string;
+  toolName: string;
+  input?: string;
+  output?: string;
+  error?: string;
+  durationMs?: number;
+  timestamp: number;
+}
+
+export interface NodeExecutionEntry {
+  id: string;
+  nodeId: string;
+  nodeType: string;
+  nodeLabel: string;
+  output?: string;
+  error?: string;
+  durationMs?: number;
+  timestamp: number;
+  toolCalls?: ToolCallEntry[];
+}
 
 export interface ConsoleLogEntry {
   id: string;
@@ -30,6 +52,8 @@ export interface ConsoleLogEntry {
   output?: string;
   error?: string;
   durationMs?: number;
+  toolCalls?: ToolCallEntry[];
+  nodeExecutions?: NodeExecutionEntry[];
 }
 
 /**
@@ -45,6 +69,10 @@ interface ConsoleState {
     getRequestById: (id: string) => ConsoleRequest | undefined;
     addLog: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => void;
     updateLog: (id: string, updates: Partial<ConsoleLogEntry>) => void;
+    addNodeExecutionToLog: (parentLogId: string, entry: NodeExecutionEntry) => void;
+    updateNodeExecutionInLog: (parentLogId: string, nodeExecId: string, updates: Partial<NodeExecutionEntry>) => void;
+    addToolCallToNodeExec: (parentLogId: string, nodeExecId: string, toolCall: ToolCallEntry) => void;
+    updateToolCallInNodeExec: (parentLogId: string, nodeExecId: string, toolCallId: string, updates: Partial<ToolCallEntry>) => void;
     clearLogs: () => void;
   };
 }
@@ -163,6 +191,68 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
     updateLog: (id, updates) =>
       set((state) => ({
         logs: state.logs.map((log) => (log.id === id ? { ...log, ...updates } : log)),
+      })),
+
+    addNodeExecutionToLog: (parentLogId, entry) =>
+      set((state) => ({
+        logs: state.logs.map((log) => {
+          if (log.id !== parentLogId) {
+            return log;
+          }
+          return { ...log, nodeExecutions: [...(log.nodeExecutions ?? []), entry] };
+        }),
+      })),
+
+    updateNodeExecutionInLog: (parentLogId, nodeExecId, updates) =>
+      set((state) => ({
+        logs: state.logs.map((log) => {
+          if (log.id !== parentLogId) {
+            return log;
+          }
+          return {
+            ...log,
+            nodeExecutions: (log.nodeExecutions ?? []).map((ne) => (ne.id === nodeExecId ? { ...ne, ...updates } : ne)),
+          };
+        }),
+      })),
+
+    addToolCallToNodeExec: (parentLogId, nodeExecId, toolCall) =>
+      set((state) => ({
+        logs: state.logs.map((log) => {
+          if (log.id !== parentLogId) {
+            return log;
+          }
+          return {
+            ...log,
+            nodeExecutions: (log.nodeExecutions ?? []).map((ne) => {
+              if (ne.id !== nodeExecId) {
+                return ne;
+              }
+              return { ...ne, toolCalls: [...(ne.toolCalls ?? []), toolCall] };
+            }),
+          };
+        }),
+      })),
+
+    updateToolCallInNodeExec: (parentLogId, nodeExecId, toolCallId, updates) =>
+      set((state) => ({
+        logs: state.logs.map((log) => {
+          if (log.id !== parentLogId) {
+            return log;
+          }
+          return {
+            ...log,
+            nodeExecutions: (log.nodeExecutions ?? []).map((ne) => {
+              if (ne.id !== nodeExecId) {
+                return ne;
+              }
+              return {
+                ...ne,
+                toolCalls: (ne.toolCalls ?? []).map((tc) => (tc.id === toolCallId ? { ...tc, ...updates } : tc)),
+              };
+            }),
+          };
+        }),
       })),
 
     clearLogs: () => set({ logs: [] }),

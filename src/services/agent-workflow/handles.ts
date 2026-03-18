@@ -8,6 +8,8 @@ export function mapHandleToInputName(handle: string): string {
     response: "response",
     "in-character": "characterId",
     "in-toolset": "toolset",
+    "in-choices": "choices",
+    "in-prompt": "prompt",
     // Trigger node outputs
     "out-participant": "participantId",
   };

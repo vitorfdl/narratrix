@@ -14,6 +14,7 @@ import { useChatStore } from "@/hooks/chatStore";
 import type { PromptConfig } from "@/schema/chat-message-schema";
 import type { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { getNextMessagePosition } from "@/services/chat-message-service";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, type NodeInput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -41,7 +42,7 @@ const DEFAULT_CONFIG: PromptInjectionNodeConfig = {
 
 // ─── Executor ──────────────────────────────────────────────────────────────────
 
-const executePromptInjectionNode: NodeExecutor = async (node, inputs, _context, agent): Promise<NodeExecutionResult> => {
+const executePromptInjectionNode: NodeExecutor = async (node, inputs, context, agent): Promise<NodeExecutionResult> => {
   const response: string = typeof inputs.response === "string" ? inputs.response : "";
 
   if (!response.trim()) {
@@ -58,6 +59,9 @@ const executePromptInjectionNode: NodeExecutor = async (node, inputs, _context, 
     if (!chatId || !chapterId) {
       return { success: false, error: "No active chat/chapter to write prompt injection" };
     }
+
+    const triggerContext = context.nodeValues.get("workflow-trigger-context") as Record<string, unknown> | undefined;
+    const executionId = context.nodeValues.get("workflow-execution-id") as string | undefined;
 
     const position = await getNextMessagePosition(chatId, chapterId);
     await store.actions.addChatMessage({
@@ -79,6 +83,8 @@ const executePromptInjectionNode: NodeExecutor = async (node, inputs, _context, 
           globalType: config.globalType || undefined,
           scopeToAgent: config.scopeToAgent,
         },
+        triggerContext,
+        executionId,
       },
     });
 
@@ -392,13 +398,15 @@ export const PromptInjectionNode = memo(({ id, data, selected }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const config = (data.config || DEFAULT_CONFIG) as PromptInjectionNodeConfig;
   const { setNodes } = useReactFlow();
+  const takeSnapshot = useTakeSnapshot();
 
   const handleConfigSave = useCallback(
     (newConfig: PromptInjectionNodeConfig) => {
+      takeSnapshot();
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
       setConfigDialogOpen(false);
     },
-    [id, setNodes],
+    [id, setNodes, takeSnapshot],
   );
 
   return (

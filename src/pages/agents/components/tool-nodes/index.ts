@@ -7,6 +7,7 @@ import "./nodeText";
 import "./nodeParticipantPicker";
 import "./nodePromptInjection";
 import "./nodeTrigger";
+import "./nodeUserChoice";
 
 // Re-export the NodeProps interface
 export type { NodeProps } from "./nodeTypes";

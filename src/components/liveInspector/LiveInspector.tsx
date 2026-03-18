@@ -1,14 +1,15 @@
 import { formatDistanceToNow } from "date-fns";
-import { Cpu, Terminal, Wrench } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { Bot, ChevronRight, Cpu, Terminal, Wrench } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { LuInbox, LuSearchX, LuTrash2 } from "react-icons/lu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { type ConsoleLogEntry, type ConsoleLogType, useConsoleStoreActions, useConsoleStoreLogs, useConsoleStoreRequests } from "@/hooks/consoleStore";
+import { type ConsoleLogEntry, type ConsoleLogType, type NodeExecutionEntry, type ToolCallEntry, useConsoleStoreActions, useConsoleStoreLogs, useConsoleStoreRequests } from "@/hooks/consoleStore";
 import { useModels } from "@/hooks/modelsStore";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
@@ -27,12 +28,155 @@ export const formatMarkdownValue = (value: string) => {
 export const markdownClass = cn("p-3 rounded text-xs font-mono w-auto max-w-[90vw]");
 
 const LOG_TYPE_CONFIG: Record<ConsoleLogType, { icon: React.ElementType; label: string; badgeClass: string }> = {
+  "agent-run": { icon: Bot, label: "Agent", badgeClass: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" },
   "tool-call": { icon: Wrench, label: "Tool", badgeClass: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   "node-execution": { icon: Cpu, label: "Node", badgeClass: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
   "js-console": { icon: Terminal, label: "Console", badgeClass: "bg-green-500/20 text-green-400 border-green-500/30" },
 };
 
-const LogDetailPane: React.FC<{ entry: ConsoleLogEntry }> = ({ entry }) => {
+const NODE_TYPE_ICONS: Record<string, React.ElementType> = {
+  trigger: Bot,
+  agent: Bot,
+  javascript: Terminal,
+  chatHistory: Cpu,
+  chatOutput: Cpu,
+  promptInjection: Cpu,
+};
+
+const ToolCallItem: React.FC<{ tc: ToolCallEntry }> = ({ tc }) => {
+  console.log("tc", tc);
+  return (
+    <Collapsible>
+      <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent transition-colors text-left group">
+        <ChevronRight className="h-3 w-3 flex-shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+        <Wrench className="h-3 w-3 flex-shrink-0 text-blue-400" />
+        <span className="text-xs font-medium truncate">{tc.toolName}</span>
+        <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+          {tc.durationMs !== undefined && <span className="text-xs text-muted-foreground font-mono">{tc.durationMs}ms</span>}
+          {tc.error && <span className="h-2 w-2 rounded-full bg-destructive flex-shrink-0" />}
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="pl-8 pr-3 pb-2 space-y-2">
+          {tc.error && <pre className="text-xs font-mono bg-destructive/10 text-destructive border border-destructive/20 rounded p-2 whitespace-pre-wrap break-words">{tc.error}</pre>}
+          {tc.input && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Input</p>
+              <pre className="text-xs font-mono bg-muted/50 border border-border rounded p-2 whitespace-pre-wrap break-words">{tc.input}</pre>
+            </div>
+          )}
+          {tc.output && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Output</p>
+              <pre className="text-xs font-mono bg-muted/50 border border-border rounded p-2 whitespace-pre-wrap break-words">{tc.output}</pre>
+            </div>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
+const NodeExecutionItem: React.FC<{ ne: NodeExecutionEntry }> = ({ ne }) => {
+  const NodeIcon = NODE_TYPE_ICONS[ne.nodeType] ?? Cpu;
+  const toolCount = ne.toolCalls?.length ?? 0;
+
+  return (
+    <Collapsible>
+      <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-2 hover:bg-accent transition-colors text-left group">
+        <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+        <NodeIcon className="h-3.5 w-3.5 flex-shrink-0 text-purple-400" />
+        <span className="text-sm font-medium truncate">{ne.nodeLabel}</span>
+        <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+          {toolCount > 0 && (
+            <Badge variant="outline" className="text-xs px-1.5 py-0 bg-blue-500/20 text-blue-400 border-blue-500/30">
+              {toolCount} tool{toolCount > 1 ? "s" : ""}
+            </Badge>
+          )}
+          {ne.durationMs !== undefined && <span className="text-xs text-muted-foreground font-mono">{ne.durationMs}ms</span>}
+          {ne.error && <span className="h-2 w-2 rounded-full bg-destructive flex-shrink-0" />}
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="pl-9 pr-3 pb-3 space-y-2">
+          {ne.error && <pre className="text-xs font-mono bg-destructive/10 text-destructive border border-destructive/20 rounded p-2 whitespace-pre-wrap break-words">{ne.error}</pre>}
+          {ne.output && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Output</p>
+              <pre className="text-xs font-mono bg-muted/50 border border-border rounded p-2 whitespace-pre-wrap break-words max-h-40 overflow-auto">{ne.output}</pre>
+            </div>
+          )}
+          {toolCount > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Tool Calls ({toolCount})</p>
+              <div className="border border-border rounded-md divide-y divide-border">
+                {ne.toolCalls!.map((tc) => (
+                  <ToolCallItem key={tc.id} tc={tc} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
+const AgentRunDetailPane: React.FC<{ entry: ConsoleLogEntry }> = ({ entry }) => {
+  const sortedNodes = useMemo(() => {
+    return [...(entry.nodeExecutions ?? [])].sort((a, b) => {
+      const aTrigger = a.nodeType === "trigger" ? 0 : 1;
+      const bTrigger = b.nodeType === "trigger" ? 0 : 1;
+      if (aTrigger !== bTrigger) {
+        return aTrigger - bTrigger;
+      }
+      return a.timestamp - b.timestamp;
+    });
+  }, [entry.nodeExecutions]);
+  const nodeCount = sortedNodes.length;
+
+  return (
+    <ScrollArea className="h-full custom-scrollbar">
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Agent</p>
+            <p className="text-sm font-semibold">{entry.title}</p>
+          </div>
+          {entry.durationMs !== undefined && (
+            <div className="text-right space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Duration</p>
+              <p className="text-sm font-mono">{entry.durationMs}ms</p>
+            </div>
+          )}
+        </div>
+
+        {entry.error && (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Error</p>
+            <pre className="text-xs font-mono bg-destructive/10 text-destructive border border-destructive/20 rounded p-3 whitespace-pre-wrap break-words">{entry.error}</pre>
+          </div>
+        )}
+
+        {nodeCount > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Cpu className="h-3.5 w-3.5 text-purple-400" />
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Node Executions ({nodeCount})</p>
+            </div>
+            <div className="border border-border rounded-md divide-y divide-border">
+              {sortedNodes.map((ne) => (
+                <NodeExecutionItem key={ne.id} ne={ne} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </ScrollArea>
+  );
+};
+
+const LegacyLogDetailPane: React.FC<{ entry: ConsoleLogEntry }> = ({ entry }) => {
   return (
     <ScrollArea className="h-full custom-scrollbar">
       <div className="p-4 space-y-4">
@@ -75,9 +219,30 @@ const LogDetailPane: React.FC<{ entry: ConsoleLogEntry }> = ({ entry }) => {
             <pre className="text-xs font-mono bg-muted/50 border border-border rounded p-3 whitespace-pre-wrap break-words">{entry.output}</pre>
           </div>
         )}
+
+        {entry.toolCalls && entry.toolCalls.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Wrench className="h-3.5 w-3.5 text-blue-400" />
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Tool Calls ({entry.toolCalls.length})</p>
+            </div>
+            <div className="border border-border rounded-md divide-y divide-border">
+              {entry.toolCalls.map((tc) => (
+                <ToolCallItem key={tc.id} tc={tc} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </ScrollArea>
   );
+};
+
+const LogDetailPane: React.FC<{ entry: ConsoleLogEntry }> = ({ entry }) => {
+  if (entry.type === "agent-run") {
+    return <AgentRunDetailPane entry={entry} />;
+  }
+  return <LegacyLogDetailPane entry={entry} />;
 };
 
 const LogsPanel: React.FC<{ maxHeight: string }> = ({ maxHeight }) => {
@@ -122,6 +287,7 @@ const LogsPanel: React.FC<{ maxHeight: string }> = ({ maxHeight }) => {
               {logs.map((log) => {
                 const typeConfig = LOG_TYPE_CONFIG[log.type];
                 const Icon = typeConfig.icon;
+                const nodeCount = log.nodeExecutions?.length ?? 0;
                 return (
                   <React.Fragment key={log.id}>
                     <Separator className="my-2" />
@@ -138,9 +304,11 @@ const LogsPanel: React.FC<{ maxHeight: string }> = ({ maxHeight }) => {
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           {log.durationMs !== undefined && <span className="text-xs text-muted-foreground font-mono">{log.durationMs}ms</span>}
-                          <Badge variant="outline" className={`text-xs px-1.5 py-0 ${typeConfig.badgeClass}`}>
-                            {typeConfig.label}
-                          </Badge>
+                          {nodeCount > 0 && (
+                            <Badge variant="outline" className="text-xs px-1.5 py-0 bg-purple-500/20 text-purple-400 border-purple-500/30">
+                              {nodeCount} node{nodeCount > 1 ? "s" : ""}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-1 min-w-0 overflow-hidden">

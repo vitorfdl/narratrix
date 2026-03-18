@@ -452,16 +452,16 @@ const WidgetExpressions = () => {
 
   // Fill entire available space - using flex-1 to ensure the component properly fills available space in any container
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" style={{ minHeight: "200px" }}>
-      <div className="flex-1 flex items-center justify-center bg-background/50 backdrop-blur-sm relative">
-        <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-full flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 flex items-center justify-center bg-background/50 backdrop-blur-sm relative">
+        <div className="w-full h-full flex items-center justify-center overflow-hidden">
           {activeCharacters && activeCharacters.length > 0 ? (
             <>
               {/* Single Character View */}
-              <div className="w-full h-full flex flex-col items-center justify-center">
+              <div className="w-full h-full flex flex-col items-center justify-center min-h-0">
                 {displayCharacter && (
-                  <div className={cn("w-full h-full relative")} style={{ minHeight: "200px", height: "100%" }}>
-                    <Avatar className="w-full h-full shadow-lg" style={{ aspectRatio: "1/1", minHeight: "100px" }}>
+                  <div className={cn("w-full h-full relative min-h-0")}>
+                    <Avatar className="w-full h-full shadow-lg" style={{ aspectRatio: "1/1" }}>
                       <AvatarImage
                         key={(expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id]) as string}
                         src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
@@ -487,7 +487,7 @@ const WidgetExpressions = () => {
       </div>
 
       {/* Controls - always visible compact toolbar */}
-      <div className="px-3  mt-2">
+      <div className="flex-shrink-0 px-3 mt-2 mb-1">
         <div className="mx-auto w-full">
           <div className="flex items-center justify-between rounded-md border bg-muted/40 px-2 py-1 shadow-sm">
             <div className="flex items-center gap-2">

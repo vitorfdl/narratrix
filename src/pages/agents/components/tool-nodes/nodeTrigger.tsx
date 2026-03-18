@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { AgentTriggerType, TriggerContext } from "@/schema/agent-schema";
 import type { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, type NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -31,37 +32,52 @@ const TRIGGER_TYPE_LABELS: Record<AgentTriggerType, string> = {
 };
 
 /**
- * Per-trigger output handles.
- *
- * All triggers expose `out-participant` whose value depends on trigger type:
- * - character/any triggers: the triggering character's participant ID
- * - user triggers: the user's persona character ID (may be empty if no persona set)
+ * Per-trigger output handles. Each entry uses descriptive labels so downstream
+ * nodes clearly understand what value flows through `out-participant`:
  * - manual / every_x_messages: the agent's own participant ID
+ * - user triggers: the user's persona character ID (may be empty if no persona set)
+ * - character triggers: the triggering character's participant ID
+ * - any-message triggers: whichever participant sent the message
  * - after_all_participants: no participant output (round is complete)
  *
- * Additionally all triggers expose `out-chat-id` for nodes that need the chat ID.
+ * The `id` fields ("out-participant", "out-chat-id") are stable and must not
+ * change — they are referenced by the executor and downstream node connections.
  */
-const PARTICIPANT_OUTPUT: NodeOutput[] = [
-  { id: "out-participant", label: "Participant ID", edgeType: "string" },
-  { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
-];
-
-const USER_OUTPUT: NodeOutput[] = [
-  { id: "out-participant", label: "Character ID", edgeType: "string" },
-  { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
-];
-
 const TRIGGER_OUTPUT_MAP: Record<AgentTriggerType, NodeOutput[]> = {
-  manual: PARTICIPANT_OUTPUT,
-  after_user_message: USER_OUTPUT,
-  before_user_message: USER_OUTPUT,
-  after_character_message: PARTICIPANT_OUTPUT,
-  before_character_message: PARTICIPANT_OUTPUT,
-  after_any_message: PARTICIPANT_OUTPUT,
-  before_any_message: PARTICIPANT_OUTPUT,
+  manual: [
+    { id: "out-participant", label: "Agent Participant ID", edgeType: "string" },
+    { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
+  ],
+  after_user_message: [
+    { id: "out-participant", label: "User Persona Character ID", edgeType: "string" },
+    { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
+  ],
+  before_user_message: [
+    { id: "out-participant", label: "User Persona Character ID", edgeType: "string" },
+    { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
+  ],
+  after_character_message: [
+    { id: "out-participant", label: "Character Participant ID", edgeType: "string" },
+    { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
+  ],
+  before_character_message: [
+    { id: "out-participant", label: "Character Participant ID", edgeType: "string" },
+    { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
+  ],
+  after_any_message: [
+    { id: "out-participant", label: "Triggering Participant ID", edgeType: "string" },
+    { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
+  ],
+  before_any_message: [
+    { id: "out-participant", label: "Triggering Participant ID", edgeType: "string" },
+    { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
+  ],
   // "After all participants" means the round is complete — no specific participant is relevant
   after_all_participants: [{ id: "out-chat-id", label: "Chat ID", edgeType: "string" }],
-  every_x_messages: PARTICIPANT_OUTPUT,
+  every_x_messages: [
+    { id: "out-participant", label: "Agent Participant ID", edgeType: "string" },
+    { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
+  ],
 };
 
 /**
@@ -124,7 +140,8 @@ interface TriggerTypeConfig {
 const TRIGGER_TYPE_CONFIG: Record<AgentTriggerType, TriggerTypeConfig> = {
   manual: {
     label: "Manual",
-    description: "Runs only when triggered from the participants panel, or when reached in participant order. Participant ID outputs the agent's own ID.",
+    description:
+      "Fires automatically when the agent's turn is reached in participant order during user message flow, or manually from the participants panel. Agent Participant ID outputs the agent's own ID.",
     timing: "manual",
   },
   after_user_message: {
@@ -170,10 +187,10 @@ const TRIGGER_TYPE_CONFIG: Record<AgentTriggerType, TriggerTypeConfig> = {
 };
 
 const TRIGGER_GROUPS: { label: string; items: AgentTriggerType[] }[] = [
+  { label: "Flow Control", items: ["manual", "after_all_participants", "every_x_messages"] },
   { label: "User Messages", items: ["after_user_message", "before_user_message"] },
   { label: "Character Messages", items: ["after_character_message", "before_character_message"] },
   { label: "Any Message", items: ["after_any_message", "before_any_message"] },
-  { label: "Flow Control", items: ["manual", "after_all_participants", "every_x_messages"] },
 ];
 
 const TIMING_STYLES: Record<TriggerTiming, { label: string; className: string }> = {
@@ -316,13 +333,15 @@ export const TriggerNode = memo(({ id, data, selected }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const config = (data.config || TRIGGER_NODE_METADATA.defaultConfig) as TriggerNodeConfig;
   const { setNodes, setEdges } = useReactFlow();
+  const takeSnapshot = useTakeSnapshot();
 
   const handleConfigSave = useCallback(
     (newConfig: TriggerNodeConfig) => {
+      takeSnapshot();
+
       const newOutputs = TRIGGER_OUTPUT_MAP[newConfig.triggerType] ?? [];
       const oldOutputs = TRIGGER_OUTPUT_MAP[config.triggerType] ?? [];
 
-      // Remove edges connected to handles that no longer exist
       const removedHandleIds = new Set(oldOutputs.filter((o) => !newOutputs.some((n) => n.id === o.id)).map((o) => o.id));
 
       if (removedHandleIds.size > 0) {
@@ -332,7 +351,7 @@ export const TriggerNode = memo(({ id, data, selected }: NodeProps) => {
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig, dynamicOutputs: newOutputs } } : node)));
       setConfigDialogOpen(false);
     },
-    [id, config.triggerType, setNodes, setEdges],
+    [id, config.triggerType, setNodes, setEdges, takeSnapshot],
   );
 
   const handleConfigure = useCallback(() => {
@@ -364,6 +383,6 @@ NodeRegistry.register({
   executor: executeTriggerNode,
   getDynamicOutputs: (config) => {
     const triggerConfig = config as TriggerNodeConfig;
-    return TRIGGER_OUTPUT_MAP[triggerConfig?.triggerType] ?? PARTICIPANT_OUTPUT;
+    return TRIGGER_OUTPUT_MAP[triggerConfig?.triggerType] ?? TRIGGER_OUTPUT_MAP.manual;
   },
 });

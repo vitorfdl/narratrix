@@ -1,9 +1,11 @@
 import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getBezierPath, useReactFlow } from "@xyflow/react";
 import { Minus } from "lucide-react";
 import React, { useCallback } from "react";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 
 export const DeletableEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style, selected, markerEnd }) => {
   const { setEdges } = useReactFlow();
+  const takeSnapshot = useTakeSnapshot();
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -16,9 +18,10 @@ export const DeletableEdge: React.FC<EdgeProps> = ({ id, sourceX, sourceY, targe
   const handleDelete = useCallback(
     (event: React.MouseEvent) => {
       event.stopPropagation();
+      takeSnapshot();
       setEdges((edges) => edges.filter((edge) => edge.id !== id));
     },
-    [id, setEdges],
+    [id, setEdges, takeSnapshot],
   );
 
   return (

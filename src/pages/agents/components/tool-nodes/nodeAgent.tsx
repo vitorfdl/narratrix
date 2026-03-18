@@ -10,6 +10,7 @@ import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { promptReplacementSuggestionList } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { estimateTokens } from "@/services/inference/formatter/apply-context-limit";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -335,16 +336,17 @@ AgentContent.displayName = "AgentContent";
 export const AgentNode = memo(({ data, selected, id }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
+  const takeSnapshot = useTakeSnapshot();
 
   const config = (data.config as AgentNodeConfig) || AGENT_NODE_METADATA.defaultConfig;
 
   const handleConfigSave = useCallback(
     (newConfig: AgentNodeConfig) => {
-      // Use React Flow's setNodes to properly update the node
+      takeSnapshot();
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
       setConfigDialogOpen(false);
     },
-    [id, setNodes],
+    [id, setNodes, takeSnapshot],
   );
 
   const handleConfigClick = useCallback(() => {

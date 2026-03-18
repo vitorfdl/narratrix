@@ -6,6 +6,32 @@ import type { NodeExecutionResult, WorkflowDeps, WorkflowExecutionContext } from
 
 const contexts = new Map<string, WorkflowExecutionContext>();
 
+const MAX_OUTPUT_LEN = 200;
+
+function formatNodeOutput(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (typeof value === "string") {
+    return value.slice(0, MAX_OUTPUT_LEN);
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return undefined;
+    }
+    const hasNames = value.every((v) => v && typeof v === "object" && "name" in v);
+    if (hasNames) {
+      return `[${value.map((v) => v.name).join(", ")}]`;
+    }
+    return `Array(${value.length})`;
+  }
+  try {
+    return JSON.stringify(value).slice(0, MAX_OUTPUT_LEN);
+  } catch {
+    return String(value).slice(0, MAX_OUTPUT_LEN);
+  }
+}
+
 function getTopologicalOrder(nodes: AgentNodeType[], edges: AgentEdgeType[]): string[] {
   const visited = new Set<string>();
   const visiting = new Set<string>();
@@ -44,8 +70,8 @@ async function executeNode(node: AgentNodeType, edges: AgentEdgeType[], context:
   }
 
   const res = await executor(node, baseInputs, context, agent, deps);
-  // Preserve multi-output behavior for javascript nodes by reflecting onto handle-scoped keys
-  if (node.type === "javascript" && res.success) {
+  // Preserve multi-output behavior for nodes with dynamic outputs by reflecting onto handle-scoped keys
+  if ((node.type === "javascript" || node.type === "userChoice") && res.success) {
     if (typeof res.value === "string") {
       // Execution mode returned text
       context.nodeValues.set(`${node.id}::out-string`, res.value);
@@ -72,13 +98,27 @@ export async function executeWorkflow(
   deps?: WorkflowDeps,
   onNodeExecuted?: (nodeId: string, result: NodeExecutionResult) => void,
 ): Promise<string | null> {
+  const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const context: WorkflowExecutionContext = {
     agentId: agent.id,
+    executionId,
     nodeValues: new Map(),
     executedNodes: new Set(),
     isRunning: true,
   };
+  context.nodeValues.set("workflow-execution-id", executionId);
   contexts.set(agent.id, context);
+
+  const agentRunLogId = `agentrun_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const agentRunStartTime = Date.now();
+  context.agentRunLogId = agentRunLogId;
+
+  deps?.onLog?.({
+    id: agentRunLogId,
+    type: "agent-run",
+    title: agent.name,
+    agentId: agent.id,
+  });
 
   try {
     // Normalize triggerContext: accept legacy string (backward compat) or typed TriggerContext
@@ -105,27 +145,39 @@ export async function executeWorkflow(
       }
       context.currentNodeId = nodeId;
       const nodeStartTime = Date.now();
-      const result = await executeNode(node, agent.edges, context, agent, deps!);
-      deps?.onLog?.({
-        type: "node-execution",
-        agentId: agent.id,
-        nodeId: nodeId,
+
+      const nodeExecId = `nodeexec_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      context.currentNodeExecId = nodeExecId;
+      deps?.onAddNodeExecution?.(agentRunLogId, {
+        id: nodeExecId,
+        nodeId,
+        nodeType: node.type,
         nodeLabel: node.label || node.type,
-        title: `Node: ${node.label || node.type}`,
-        output: result.success ? (typeof result.value === "string" ? result.value?.slice(0, 200) : JSON.stringify(result.value)?.slice(0, 200)) : undefined,
+        timestamp: Date.now(),
+      });
+
+      const result = await executeNode(node, agent.edges, context, agent, deps!);
+      context.currentNodeExecId = undefined;
+
+      deps?.onUpdateNodeExecution?.(agentRunLogId, nodeExecId, {
+        output: result.success ? formatNodeOutput(result.value) : undefined,
         error: result.error,
         durationMs: Date.now() - nodeStartTime,
       });
+
       if (onNodeExecuted) {
         onNodeExecuted(nodeId, result);
       }
       if (!result.success) {
+        deps?.onUpdateLog?.(agentRunLogId, { error: result.error, durationMs: Date.now() - agentRunStartTime });
         throw new Error(result.error || `Node ${nodeId} failed`);
       }
       if (result.value !== undefined) {
         context.nodeValues.set(nodeId, result.value);
       }
     }
+
+    deps?.onUpdateLog?.(agentRunLogId, { durationMs: Date.now() - agentRunStartTime });
 
     const outputs = agent.nodes.filter((n) => n.type === "chatOutput");
     if (outputs.length > 0) {

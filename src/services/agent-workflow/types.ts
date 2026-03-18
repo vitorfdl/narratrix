@@ -1,4 +1,4 @@
-import type { ConsoleLogEntry } from "@/hooks/consoleStore";
+import type { ConsoleLogEntry, NodeExecutionEntry } from "@/hooks/consoleStore";
 import type { AgentNodeType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import type { PromptFormatterConfig } from "../inference/formatter";
 
@@ -7,10 +7,13 @@ export type { TriggerContext };
 
 export interface WorkflowExecutionContext {
   agentId: string;
+  executionId: string;
   nodeValues: Map<string, any>;
   executedNodes: Set<string>;
   isRunning: boolean;
   currentNodeId?: string;
+  agentRunLogId?: string;
+  currentNodeExecId?: string;
 }
 
 export interface NodeExecutionResult {
@@ -48,7 +51,10 @@ export interface WorkflowDeps {
     stream?: boolean;
     toolset?: WorkflowToolDefinition[];
   }) => Promise<string | null>;
-  onLog?: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => void;
+  onLog?: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => string | undefined;
+  onUpdateLog?: (id: string, updates: Partial<ConsoleLogEntry>) => void;
+  onAddNodeExecution?: (agentRunLogId: string, entry: NodeExecutionEntry) => void;
+  onUpdateNodeExecution?: (agentRunLogId: string, nodeExecId: string, updates: Partial<NodeExecutionEntry>) => void;
 }
 
 export type NodeExecutor = (node: AgentNodeType, inputs: Record<string, any>, context: WorkflowExecutionContext, agent: AgentType, deps: WorkflowDeps) => Promise<NodeExecutionResult>;

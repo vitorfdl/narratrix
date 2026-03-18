@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { ConsoleLogEntry } from "@/hooks/consoleStore";
+import type { ConsoleLogEntry, NodeExecutionEntry } from "@/hooks/consoleStore";
 import { useConsoleStore } from "@/hooks/consoleStore";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { type ExecutableToolDefinition, useInference } from "@/hooks/useInference";
+import { useUserChoiceStore } from "@/hooks/userChoiceStore";
 import type { AgentType, TriggerContext } from "@/schema/agent-schema";
 import type { InferenceCancelledResponse, InferenceCompletedResponse } from "@/schema/inference-engine-schema";
 import { cancelWorkflow as cancelWf, executeWorkflow as executeWf, isWorkflowRunning as isWfRunning } from "@/services/agent-workflow/runner";
@@ -39,11 +40,16 @@ export function useAgentWorkflow() {
     executedNodes: [],
   });
   const pendingResolvers = useRef<Record<string, PendingResolver>>({});
+  const currentAgentRunLogIdRef = useRef<string | undefined>(undefined);
+  const currentNodeExecIdRef = useRef<string | undefined>(undefined);
   const { setAgentState, clearAgentState } = useAgentWorkflowStore();
 
   /**
    * Wraps a WorkflowToolDefinition's invoke function with console logging and
    * converts it to an ExecutableToolDefinition ready for the AI SDK.
+   *
+   * When both an agent-run log and a node execution are active, tool calls are
+   * nested inside the node execution entry. Otherwise falls back to standalone log entries.
    */
   const toExecutableTool = useCallback((tool: WorkflowToolDefinition): ExecutableToolDefinition => {
     return {
@@ -51,30 +57,49 @@ export function useAgentWorkflow() {
       description: tool.description,
       parameters: tool.inputSchema ?? { type: "object", properties: {} },
       execute: async (args: Record<string, any>): Promise<unknown> => {
-        const toolLogId = `tool_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const toolCallId = `tc_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const toolStartTime = Date.now();
+        const agentRunLogId = currentAgentRunLogIdRef.current;
+        const nodeExecId = currentNodeExecIdRef.current;
+        const { actions } = useConsoleStore.getState();
 
-        useConsoleStore.getState().actions.addLog({
-          id: toolLogId,
-          type: "tool-call",
-          title: `Tool: ${tool.name}`,
-          nodeLabel: tool.name,
-          input: JSON.stringify(args, null, 2),
-        });
+        if (agentRunLogId && nodeExecId) {
+          actions.addToolCallToNodeExec(agentRunLogId, nodeExecId, {
+            id: toolCallId,
+            toolName: tool.name,
+            input: JSON.stringify(args, null, 2),
+            timestamp: Date.now(),
+          });
+        } else {
+          actions.addLog({
+            id: toolCallId,
+            type: "tool-call",
+            title: `Tool: ${tool.name}`,
+            nodeLabel: tool.name,
+            input: JSON.stringify(args, null, 2),
+          });
+        }
 
         try {
           const result = await tool.invoke(args);
-          useConsoleStore.getState().actions.updateLog(toolLogId, {
+          const updates = {
             output: typeof result === "string" ? result : JSON.stringify(result),
             durationMs: Date.now() - toolStartTime,
-          });
+          };
+          if (agentRunLogId && nodeExecId) {
+            actions.updateToolCallInNodeExec(agentRunLogId, nodeExecId, toolCallId, updates);
+          } else {
+            actions.updateLog(toolCallId, updates);
+          }
           return result;
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          useConsoleStore.getState().actions.updateLog(toolLogId, {
-            error: message,
-            durationMs: Date.now() - toolStartTime,
-          });
+          const updates = { error: message, durationMs: Date.now() - toolStartTime };
+          if (agentRunLogId && nodeExecId) {
+            actions.updateToolCallInNodeExec(agentRunLogId, nodeExecId, toolCallId, updates);
+          } else {
+            actions.updateLog(toolCallId, updates);
+          }
           throw new Error(`Tool ${tool.name} execution failed: ${message}`);
         }
       },
@@ -133,8 +158,25 @@ export function useAgentWorkflow() {
       getChatById,
       getChatChapterById,
       getManifestById: (id: string) => modelManifests.find((m) => m.id === id) || null,
-      onLog: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => {
+      onLog: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }): string | undefined => {
         useConsoleStore.getState().actions.addLog(entry);
+        if (entry.type === "agent-run" && entry.id) {
+          currentAgentRunLogIdRef.current = entry.id;
+        }
+        return entry.id;
+      },
+      onUpdateLog: (id: string, updates: Partial<ConsoleLogEntry>) => {
+        useConsoleStore.getState().actions.updateLog(id, updates);
+      },
+      onAddNodeExecution: (agentRunLogId: string, entry: NodeExecutionEntry) => {
+        useConsoleStore.getState().actions.addNodeExecutionToLog(agentRunLogId, entry);
+        currentNodeExecIdRef.current = entry.id;
+      },
+      onUpdateNodeExecution: (agentRunLogId: string, nodeExecId: string, updates: Partial<NodeExecutionEntry>) => {
+        useConsoleStore.getState().actions.updateNodeExecutionInLog(agentRunLogId, nodeExecId, updates);
+        if (currentNodeExecIdRef.current === nodeExecId) {
+          currentNodeExecIdRef.current = undefined;
+        }
       },
       runInference: async (opts: {
         messages: import("@/schema/inference-engine-schema").InferenceMessage[];
@@ -209,6 +251,8 @@ export function useAgentWorkflow() {
         });
         throw error;
       } finally {
+        currentAgentRunLogIdRef.current = undefined;
+        currentNodeExecIdRef.current = undefined;
         // Ensure the store is cleaned up after a short delay so the UI can
         // display the final state before the card reverts to idle.
         setTimeout(() => clearAgentState(agent.id), 500);
@@ -226,6 +270,8 @@ export function useAgentWorkflow() {
   const cancelWorkflow = useCallback(
     (agentId: string) => {
       cancelWf(agentId);
+
+      useUserChoiceStore.getState().actions.cancelChoicesForAgent(agentId);
 
       // Resolve all pending inference resolvers as "cancelled" so waitForResponse
       // returns immediately, then send the backend cancellation signal.

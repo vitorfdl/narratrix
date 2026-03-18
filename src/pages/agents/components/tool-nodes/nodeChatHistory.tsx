@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { useChatStore } from "@/hooks/chatStore";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -239,14 +240,15 @@ export const ChatHistoryNode = memo(({ id, data, selected }: NodeProps) => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
   const config = (data.config || CHAT_HISTORY_NODE_METADATA.defaultConfig) as ChatHistoryNodeConfig;
+  const takeSnapshot = useTakeSnapshot();
 
   const handleConfigSave = useCallback(
     (newConfig: ChatHistoryNodeConfig) => {
-      // Use React Flow's setNodes to properly update the node
+      takeSnapshot();
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig } } : node)));
       setConfigDialogOpen(false);
     },
-    [id, setNodes],
+    [id, setNodes, takeSnapshot],
   );
 
   const handleConfigCancel = useCallback(() => {

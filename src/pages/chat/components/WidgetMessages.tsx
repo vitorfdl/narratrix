@@ -18,6 +18,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
+import type { TriggerContext } from "@/schema/agent-schema";
 import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import type { ChatMessage } from "@/services/chat-message-service";
 import { updateChatMessagesUsingFilter } from "@/services/chat-message-service";
@@ -25,6 +26,7 @@ import MessageItem from "./message-controls/MessageItem";
 import MidMessageLayerWrapper from "./message-controls/MidMessageLayerWrapper";
 import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
 import type { SummarySettings } from "./message-controls/SummaryDialog";
+import UserChoicePrompt from "./UserChoicePrompt";
 
 const MESSAGE_CONTAINER_STYLES = "relative flex flex-col h-full @container";
 const MESSAGE_GROUP_STYLES = "message-group relative group/message";
@@ -121,16 +123,55 @@ const WidgetMessages: React.FC = () => {
     [editedContent, onEditMessage],
   );
 
+  const onRegenerateAgentMessage = useCallback(
+    async (message: ChatMessage) => {
+      const agentId = message.extra?.agentId;
+      const triggerContext = message.extra?.triggerContext;
+      const executionId = message.extra?.executionId;
+
+      if (!agentId || !triggerContext) {
+        toast.error("Missing agent trigger data — cannot regenerate");
+        return;
+      }
+
+      const agent = agentList.find((a) => a.id === agentId);
+      if (!agent) {
+        toast.error("Agent no longer exists");
+        return;
+      }
+
+      if (executionId) {
+        const siblingsToDelete = messages.filter((m) => m.extra?.executionId === executionId);
+        for (const sibling of siblingsToDelete) {
+          await deleteChatMessage(sibling.id);
+        }
+      } else {
+        await deleteChatMessage(message.id);
+      }
+
+      await executeWorkflow(agent, triggerContext as unknown as TriggerContext);
+    },
+    [agentList, messages, deleteChatMessage, executeWorkflow],
+  );
+
   const onRegenerateMessage = useCallback(
     async (messageId: string, targetIndex?: number) => {
       try {
-        setStreamingMessageId(messageId);
-
         const message = messages.find((m) => m.id === messageId);
-        if (!message || message.type !== "character" || !message.character_id) {
-          setStreamingMessageId(null);
+        if (!message) {
           return;
         }
+
+        if (message.extra?.agentId && message.extra?.triggerContext) {
+          await onRegenerateAgentMessage(message);
+          return;
+        }
+
+        if (message.type !== "character" || !message.character_id) {
+          return;
+        }
+
+        setStreamingMessageId(messageId);
 
         const character = characters.find((c) => c.id === message.character_id);
         if (!character) {
@@ -179,7 +220,7 @@ const WidgetMessages: React.FC = () => {
         setStreamingMessageId(null);
       }
     },
-    [messages, characters, messageReasonings, inferenceService, currentChatId, currentChatParticipants, agentList, currentChatUserCharacterID, executeWorkflow],
+    [messages, characters, messageReasonings, inferenceService, currentChatId, currentChatParticipants, agentList, currentChatUserCharacterID, executeWorkflow, onRegenerateAgentMessage],
   );
 
   const handleSwipe = useCallback(
@@ -408,7 +449,8 @@ const WidgetMessages: React.FC = () => {
       <div ref={scrollContainerRef} className="messages-container flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full p-1" onScroll={handleScroll}>
         <div className="flex flex-col">
           {filteredMessages.map((message, index) => {
-            const isLastMessage = index === filteredMessages.length - 1 || message.type === "system";
+            const isAgentSystemMessage = message.type === "system" && !!message.extra?.agentId && !!message.extra?.triggerContext;
+            const isLastMessage = index === filteredMessages.length - 1 || (message.type === "system" && !isAgentSystemMessage);
             const isStreaming = streamingMessageId === message.id;
             const hasReasoningData = !!messageReasonings[message.id];
             const reasoningContent = messageReasonings[message.id] || "";
@@ -459,6 +501,7 @@ const WidgetMessages: React.FC = () => {
               </div>
             );
           })}
+          <UserChoicePrompt />
         </div>
       </div>
 
