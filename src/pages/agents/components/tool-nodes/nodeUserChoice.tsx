@@ -3,7 +3,6 @@ import { GripVertical, ListChecks, MessageSquareMore, Plus, Trash2, Type } from 
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
-import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,7 @@ import { useProfileStore } from "@/hooks/ProfileStore";
 import { type PendingChoiceOption, useUserChoiceStore } from "@/hooks/userChoiceStore";
 import type { NodeExecutionResult, NodeExecutor, WorkflowToolDefinition } from "@/services/agent-workflow/types";
 import { playBeepSound } from "@/services/inference/utils";
+import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, type NodeInput, type NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
