@@ -315,20 +315,14 @@ const UserChoiceConfigDialog: React.FC<UserChoiceConfigDialogProps> = ({ open, i
                     <div className="flex items-center gap-1 mb-1">
                       <Label className="text-xs font-medium">Tool Description</Label>
                       <HelpTooltip>
-                        This description is sent directly to the model. It tells the LLM what this tool does and when to call it — be specific so the agent knows when to invoke it and what to expect at runtime.
+                        This description is sent directly to the model. It tells the LLM what this tool does and when to call it — be specific so the agent knows when to invoke it and what to expect
+                        at runtime.
                       </HelpTooltip>
                     </div>
                     <Controller
                       name="toolDescription"
                       control={control}
-                      render={({ field }) => (
-                        <Textarea
-                          {...field}
-                          rows={3}
-                          placeholder="Present the user with a multiple-choice prompt and return their selection"
-                          className="text-xs resize-none"
-                        />
-                      )}
+                      render={({ field }) => <Textarea {...field} rows={3} placeholder="Present the user with a multiple-choice prompt and return their selection" className="text-xs resize-none" />}
                     />
                   </div>
                 </>

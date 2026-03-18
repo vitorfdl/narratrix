@@ -57,7 +57,9 @@ const ToolCallItem: React.FC<{ tc: ToolCallEntry }> = ({ tc }) => {
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="pl-8 pr-3 pb-2 space-y-2">
-          {tc.error && <pre className="text-xs font-mono bg-destructive/10 text-destructive border border-destructive/20 rounded p-2 whitespace-pre-wrap break-words max-h-60 overflow-auto">{tc.error}</pre>}
+          {tc.error && (
+            <pre className="text-xs font-mono bg-destructive/10 text-destructive border border-destructive/20 rounded p-2 whitespace-pre-wrap break-words max-h-60 overflow-auto">{tc.error}</pre>
+          )}
           {tc.input && (
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Input</p>
