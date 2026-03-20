@@ -45,7 +45,7 @@ const DelimiterHighlightingSchema = z.object({
 
 const AppearanceSettingsSchema = z.object({
   theme: z.enum(["light", "dark", "system"]).default("system"),
-  fontSize: z.number().min(12).max(24).nullable().default(null),
+  fontSize: z.coerce.number().min(12).max(24).nullable().default(null),
   fontFamily: z.string().default("Inter"),
   accentColor: z.string().default("#7C3AED"),
   delimiterHighlighting: DelimiterHighlightingSchema.default({

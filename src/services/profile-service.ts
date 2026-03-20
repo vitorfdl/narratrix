@@ -96,7 +96,12 @@ export async function getProfileById(id: string): Promise<ProfileResponse | null
 
 export async function updateProfile(id: string, updateData: Partial<Profile>): Promise<ProfileResponse> {
   const validId = uuidUtils.uuid().parse(id);
-  const update = updateProfileSchema.parse(updateData);
+
+  const providedKeys = new Set(Object.keys(updateData));
+  const parsed = updateProfileSchema.parse(updateData);
+
+  // Strip Zod-injected defaults: only keep fields the caller actually provided
+  const update = Object.fromEntries(Object.entries(parsed).filter(([key]) => providedKeys.has(key))) as Partial<Profile>;
 
   // First get the current profile to merge settings
   const currentProfile = await getProfileById(validId);
