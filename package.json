@@ -30,7 +30,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@google/genai": "^1.45.0",
+    "@google/genai": "^1.46.0",
     "@hookform/resolvers": "^5.2.2",
     "@lezer/highlight": "^1.2.3",
     "@openrouter/ai-sdk-provider": "2.2.3",
@@ -114,7 +114,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.7",
+    "@biomejs/biome": "^2.4.8",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tauri-apps/cli": "^2.10.1",
     "@types/hast": "^3.0.4",
