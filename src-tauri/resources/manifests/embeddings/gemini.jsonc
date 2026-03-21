@@ -1,0 +1,33 @@
+{
+  "$schema": "../../../../json_schema/model-schema.json",
+  "id": "gemini_embedding",
+  "name": "Google Gemini Embeddings",
+  "description": "Integration with Google Gemini embedding models",
+  "website": "https://ai.google.dev/",
+  "type": "embedding",
+  "inference_type": ["embedding"],
+  "engine": "google",
+  "fields": [
+    {
+      "key": "api_key",
+      "label": "API Key",
+      "placeholder": "Your Google AI API key",
+      "required": true,
+      "field_type": "secret",
+      "links": [
+        {
+          "label": "Get API Key",
+          "url": "https://aistudio.google.com/apikey"
+        }
+      ]
+    },
+    {
+      "key": "model",
+      "label": "Model",
+      "placeholder": "The Gemini embedding model to use",
+      "required": true,
+      "field_type": "string",
+      "hints": ["gemini-embedding-001", "text-embedding-004"]
+    }
+  ]
+}

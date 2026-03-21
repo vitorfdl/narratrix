@@ -1,0 +1,32 @@
+{
+  "$schema": "../../../../json_schema/model-schema.json",
+  "id": "openai_compatible_embedding",
+  "name": "OpenAI API Compatible Embeddings (Llamacpp, Koboldcpp, etc.)",
+  "description": "Integration with OpenAI compatible embedding API",
+  "type": "embedding",
+  "inference_type": ["embedding"],
+  "engine": "openai_compatible",
+  "fields": [
+    {
+      "key": "base_url",
+      "label": "Base URL",
+      "placeholder": "The base URL of the OpenAI compatible API",
+      "required": true,
+      "field_type": "url"
+    },
+    {
+      "key": "api_key",
+      "label": "API Key",
+      "placeholder": "Your API key (if applicable)",
+      "required": false,
+      "field_type": "secret"
+    },
+    {
+      "key": "model",
+      "label": "Model",
+      "placeholder": "The model to use (if applicable)",
+      "required": false,
+      "field_type": "string"
+    }
+  ]
+}

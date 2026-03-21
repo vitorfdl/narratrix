@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { LuBrain, LuFileSearch } from "react-icons/lu";
 import { toast } from "sonner";
 import * as z from "zod";
 import { encryptApiKey } from "@/commands/security";
@@ -9,17 +10,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useModelManifests, useModelManifestsActions, useModelManifestsLoading } from "@/hooks/manifestStore";
+import { useEmbeddingManifests, useEmbeddingManifestsActions, useEmbeddingManifestsLoading, useModelManifests, useModelManifestsActions, useModelManifestsLoading } from "@/hooks/manifestStore";
 import { useModelsActions } from "@/hooks/modelsStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInference } from "@/hooks/useInference";
 import { ModelSpecsSchema } from "@/schema/inference-engine-schema";
 import type { Manifest } from "@/schema/model-manifest-schema";
 import type { Model, ModelType } from "@/schema/models-schema";
+import { getEngineColor, getEngineIcon } from "@/utils/engine-icons";
 import { ModelInputFields } from "./ModelInputFields";
 
-const MODEL_TYPES: ModelType[] = ["llm"];
+const MODEL_TYPES: ModelType[] = ["llm", "embedding"];
+
+const MODEL_TYPE_OPTIONS = [
+  { value: "llm" as ModelType, label: "Language Model", icon: LuBrain },
+  { value: "embedding" as ModelType, label: "Embedding", icon: LuFileSearch },
+];
 
 export interface ModelFormRef {
   submit: () => Promise<void>;
@@ -38,8 +44,11 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
   const currentProfile = useCurrentProfile();
   const profileId = currentProfile!.id;
   const { fetchManifests } = useModelManifestsActions();
+  const { fetchManifests: fetchEmbeddingManifests } = useEmbeddingManifestsActions();
   const manifests = useModelManifests();
+  const embeddingManifests = useEmbeddingManifests();
   const isLoading = useModelManifestsLoading();
+  const isEmbeddingLoading = useEmbeddingManifestsLoading();
   const { createModel, updateModel } = useModelsActions();
   const [selectedType, setSelectedType] = useState<ModelType | null>(model?.type || "llm");
   const [selectedManifest, setSelectedManifest] = useState<Manifest | null>(null);
@@ -112,21 +121,23 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
 
   const testRequestStatus = testRequestId && requests[testRequestId] ? requests[testRequestId].status : null;
 
-  useEffect(() => {
-    fetchManifests();
-  }, [fetchManifests]);
+  const allManifests = useMemo(() => [...manifests, ...embeddingManifests], [manifests, embeddingManifests]);
+  const filteredManifests = selectedType ? allManifests.filter((manifest) => manifest.type === selectedType) : [];
 
   useEffect(() => {
-    if (manifests.length > 0 && model) {
-      const manifest = manifests.find((m) => m.id === model.manifest_id);
+    fetchManifests();
+    fetchEmbeddingManifests();
+  }, [fetchManifests, fetchEmbeddingManifests]);
+
+  useEffect(() => {
+    if (allManifests.length > 0 && model) {
+      const manifest = allManifests.find((m) => m.id === model.manifest_id);
       if (manifest) {
         setSelectedManifest(manifest);
         onManifestChange?.(manifest);
       }
     }
-  }, [manifests, model, onManifestChange]);
-
-  const filteredManifests = selectedType ? manifests.filter((manifest) => manifest.type === selectedType) : [];
+  }, [allManifests, model, onManifestChange]);
 
   useEffect(() => {
     if (!selectedManifest) {
@@ -285,7 +296,7 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
   };
 
   const handleManifestChange = (value: string) => {
-    const manifest = manifests.find((m) => m.id === value) || null;
+    const manifest = allManifests.find((m) => m.id === value) || null;
     setSelectedManifest(manifest);
     onManifestChange?.(manifest);
     if (manifest) {
@@ -420,7 +431,7 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
     submit: () => form.handleSubmit(onSubmit)(),
   }));
 
-  if (isLoading) {
+  if (isLoading || isEmbeddingLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -446,65 +457,73 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
           )}
         />
 
-        <div className="flex gap-4">
+        <FormField
+          control={form.control}
+          name="type"
+          render={() => (
+            <FormItem>
+              <FormLabel>Type</FormLabel>
+              <div className="flex gap-2">
+                {MODEL_TYPE_OPTIONS.map((opt) => {
+                  const isActive = selectedType === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={mode === "edit"}
+                      onClick={() => handleTypeChange(opt.value)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md border-2 text-sm font-medium transition-all ${
+                        isActive ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40 hover:bg-accent/50"
+                      } ${mode === "edit" ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                    >
+                      <opt.icon className="h-4 w-4" />
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {selectedType && (
           <FormField
             control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem className="flex-1 basis-1/3">
-                <FormLabel>Type</FormLabel>
-                <Select onValueChange={handleTypeChange} value={field.value as string} disabled={mode === "edit"}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select model type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {MODEL_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type.toUpperCase()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            name="manifest_id"
+            render={() => (
+              <FormItem>
+                <FormLabel>Integration</FormLabel>
+                {filteredManifests.length > 0 ? (
+                  <div className="grid grid-cols-5 gap-2">
+                    {filteredManifests.map((manifest) => {
+                      const isActive = selectedManifest?.id === manifest.id;
+                      const EngineIcon = getEngineIcon(manifest.engine);
+                      const engineColor = getEngineColor(manifest.engine);
+                      return (
+                        <button
+                          key={manifest.id}
+                          type="button"
+                          disabled={mode === "edit"}
+                          onClick={() => handleManifestChange(manifest.id)}
+                          className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 px-2 py-3 text-center transition-all ${
+                            isActive ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40 hover:bg-accent/30"
+                          } ${mode === "edit" ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                        >
+                          <EngineIcon className="h-5 w-5 shrink-0" style={engineColor ? { color: engineColor } : undefined} />
+                          <span className="text-xs font-medium leading-tight line-clamp-2">{manifest.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-2">No integrations available for this type.</p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
           />
-
-          {selectedType && (
-            <FormField
-              control={form.control}
-              name="manifest_id"
-              render={({ field }) => (
-                <FormItem className="flex-1 basis-2/3">
-                  <FormLabel>Integration</FormLabel>
-                  <Select onValueChange={handleManifestChange} value={field.value as string} disabled={mode === "edit"}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an integration" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {filteredManifests.length > 0 ? (
-                        filteredManifests.map((manifest) => (
-                          <SelectItem key={manifest.id} value={manifest.id}>
-                            {manifest.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="none" disabled>
-                          No integrations available for this type
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
+        )}
 
         {selectedManifest?.fields
           .filter((field) => field.field_type !== "hidden")
@@ -522,7 +541,7 @@ export const ModelForm = forwardRef<ModelFormRef, ModelFormProps>(({ onSuccess, 
         <Button
           type="button"
           variant={testResult?.state === "success" ? "default" : testResult?.state === "error" ? "destructive" : "outline"}
-          disabled={!selectedManifest || !selectedType}
+          disabled={!selectedManifest || !selectedType || selectedType === "embedding"}
           onClick={() => {
             if (testRequestStatus === "queued" || testRequestStatus === "streaming") {
               if (testRequestId) {

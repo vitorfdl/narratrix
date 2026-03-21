@@ -3,7 +3,7 @@ import { LuBrain, LuClock, LuCopy, LuCpu, LuServer, LuTrash2, LuZap } from "reac
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { useModelManifestsActions } from "@/hooks/manifestStore";
+import { useEmbeddingManifestsActions, useModelManifestsActions } from "@/hooks/manifestStore";
 import { useInferenceTemplate } from "@/hooks/templateStore";
 import type { Engine } from "@/schema/model-manifest-schema";
 import { getEngineColor, getEngineIcon } from "@/utils/engine-icons";
@@ -18,19 +18,19 @@ interface ModelCardProps {
 
 export function ModelCard({ model, onDelete, onDuplicate, onOpenSettings }: ModelCardProps) {
   const { getManifestById } = useModelManifestsActions();
+  const { getManifestById: getEmbeddingManifestById } = useEmbeddingManifestsActions();
   const [manifestName, setManifestName] = useState<string>("");
   const [manifestEngine, setManifestEngine] = useState<Engine | undefined>(undefined);
   const inferenceTemplate = useInferenceTemplate(model.inference_template_id || "");
 
-  // For demonstration purposes, you can replace these with actual model properties
   const isNew = model.created_at && Date.now() - new Date(model.created_at).getTime() < 15 * 60 * 60 * 1000; // 15 hours
-  const isPopular = false; // Replace with actual logic if you have popularity metrics
+  const isPopular = false;
 
   useEffect(() => {
-    // Fetch manifest information to display the manifest name
     const fetchManifestInfo = async () => {
       try {
-        const manifest = await getManifestById(model.manifest_id);
+        const lookup = model.type === "embedding" ? getEmbeddingManifestById : getManifestById;
+        const manifest = await lookup(model.manifest_id);
         if (manifest) {
           setManifestName(manifest.name);
           setManifestEngine(manifest.engine);
@@ -41,7 +41,7 @@ export function ModelCard({ model, onDelete, onDuplicate, onOpenSettings }: Mode
     };
 
     fetchManifestInfo();
-  }, [model.manifest_id, getManifestById]);
+  }, [model.manifest_id, model.type, getManifestById, getEmbeddingManifestById]);
 
   // Parse config to extract relevant display info
   const config = typeof model.config === "string" ? JSON.parse(model.config) : model.config;
@@ -70,12 +70,13 @@ export function ModelCard({ model, onDelete, onDuplicate, onOpenSettings }: Mode
   // Generate capabilities based on model type and inference template
   const getCapabilities = () => {
     const capabilities = [];
-    capabilities.push(model.type.toUpperCase());
 
-    if (inferenceTemplate) {
-      capabilities.push("Text Completion");
-    } else {
-      capabilities.push("Chat");
+    if (model.type !== "embedding") {
+      if (inferenceTemplate) {
+        capabilities.push("Text Completion");
+      } else {
+        capabilities.push("Chat");
+      }
     }
 
     return capabilities;
@@ -97,7 +98,9 @@ export function ModelCard({ model, onDelete, onDuplicate, onOpenSettings }: Mode
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-base line-clamp-1">{model.name}</h3>
-              <p className="text-xs text-muted-foreground">{manifestName || model.manifest_id}</p>
+              <p className="text-xs text-muted-foreground" title={manifestName || model.manifest_id}>
+                {(manifestName || model.manifest_id).length > 32 ? `${(manifestName || model.manifest_id).slice(0, 21)}...` : manifestName || model.manifest_id}
+              </p>
             </div>
           </div>
 

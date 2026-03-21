@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LuArrowDownAZ, LuBrain, LuDatabase, LuImage, LuMusic, LuPlus, LuRefreshCw, LuSearch, LuSettings2 } from "react-icons/lu";
+import { LuArrowDownAZ, LuBrain, LuDatabase, LuFileSearch, LuImage, LuMusic, LuPlus, LuRefreshCw, LuSearch, LuSettings2 } from "react-icons/lu";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useModelManifests, useModelManifestsActions } from "@/hooks/manifestStore";
+import { useEmbeddingManifests, useEmbeddingManifestsActions, useModelManifests, useModelManifestsActions } from "@/hooks/manifestStore";
 import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import type { NewModelParams } from "@/services/model-service";
@@ -44,7 +44,9 @@ export default function Models() {
   const currentProfile = useCurrentProfile();
   const { getModelsByProfileGroupedByType, deleteModel, createModel } = useModelsActions();
   const { fetchManifests } = useModelManifestsActions();
+  const { fetchManifests: fetchEmbeddingManifests } = useEmbeddingManifestsActions();
   const manifests = useModelManifests();
+  const embeddingManifests = useEmbeddingManifests();
   const [modelGroups, setModelGroups] = useState<ModelGroup[]>([]);
   const [allModels, setAllModels] = useState<Model[]>([]);
   const isLoading = useModelsLoading();
@@ -73,6 +75,7 @@ export default function Models() {
 
     // Fetch manifests as they might be needed for model details
     fetchManifests();
+    fetchEmbeddingManifests();
     loadModels();
   }, [currentProfile?.id]);
 
@@ -81,6 +84,7 @@ export default function Models() {
       llm: "Language Models",
       audio: "Audio Models",
       image: "Image Generation Models",
+      embedding: "Embedding Models",
       database: "Database Models",
     };
     return titles[type] || "Other Models";
@@ -91,6 +95,7 @@ export default function Models() {
       llm: <LuBrain className="h-4 w-4 text-primary" />,
       audio: <LuMusic className="h-4 w-4 text-primary" />,
       image: <LuImage className="h-4 w-4 text-primary" />,
+      embedding: <LuFileSearch className="h-4 w-4 text-primary" />,
       database: <LuDatabase className="h-4 w-4 text-primary" />,
     };
     return icons[type] || <LuBrain className="h-4 w-4" />;
@@ -120,8 +125,8 @@ export default function Models() {
         case "type":
           return direction * a.type.localeCompare(b.type);
         case "engine": {
-          const engineA = manifests.find((m) => m.id === a.manifest_id)?.engine ?? "";
-          const engineB = manifests.find((m) => m.id === b.manifest_id)?.engine ?? "";
+          const engineA = (manifests.find((m) => m.id === a.manifest_id) ?? embeddingManifests.find((m) => m.id === a.manifest_id))?.engine ?? "";
+          const engineB = (manifests.find((m) => m.id === b.manifest_id) ?? embeddingManifests.find((m) => m.id === b.manifest_id))?.engine ?? "";
           return direction * engineA.localeCompare(engineB);
         }
         case "created_at":
@@ -134,7 +139,7 @@ export default function Models() {
     });
 
     return sorted;
-  }, [allModels, search, settings.filter.type, settings.sort, manifests]);
+  }, [allModels, search, settings.filter.type, settings.sort, manifests, embeddingManifests]);
 
   // Group filtered models by type for display
   const filteredGroups = useMemo(() => {
@@ -154,6 +159,7 @@ export default function Models() {
       llm: [],
       audio: [],
       image: [],
+      embedding: [],
       database: [],
     };
 
@@ -357,6 +363,10 @@ export default function Models() {
               <TabsTrigger value="audio" className="gap-2">
                 {getModelTypeIcon("audio")} Audio
                 <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "audio")?.models.length || 0}</span>
+              </TabsTrigger>
+              <TabsTrigger value="embedding" className="gap-2">
+                {getModelTypeIcon("embedding")} Embedding
+                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "embedding")?.models.length || 0}</span>
               </TabsTrigger>
               <TabsTrigger value="database" className="gap-2">
                 {getModelTypeIcon("database")} Database

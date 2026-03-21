@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getAllManifests, getCharacterManifestById, getModelManifestById, ManifestContent, ManifestType } from "@/services/manifest-service";
+import { getAllManifests, getCharacterManifestById, getEmbeddingManifestById, getModelManifestById, ManifestContent, ManifestType } from "@/services/manifest-service";
 
 // Generic interface for manifest stores
 interface ManifestState<T extends ManifestType> {
@@ -58,9 +58,10 @@ function createManifestStore<T extends ManifestType>(type: T) {
         try {
           let fetchedManifest = null;
 
-          // Type-safe approach with conditional fetching
           if (type === "model") {
             fetchedManifest = (await getModelManifestById(id)) as ManifestContent<T> | null;
+          } else if (type === "embedding") {
+            fetchedManifest = (await getEmbeddingManifestById(id)) as ManifestContent<T> | null;
           } else {
             fetchedManifest = (await getCharacterManifestById(id)) as ManifestContent<T> | null;
           }
@@ -100,9 +101,13 @@ export const useManifestStore = createManifestStore("model");
 // Character manifest store
 export const useCharacterManifestStore = createManifestStore("character");
 
+// Embedding manifest store
+export const useEmbeddingManifestStore = createManifestStore("embedding");
+
 // Type definitions for each store for better type inference
 export type ModelManifestStore = ManifestState<"model">;
 export type CharacterManifestStore = ManifestState<"character">;
+export type EmbeddingManifestStore = ManifestState<"embedding">;
 
 // Convenience exports for model manifests
 export const useModelManifests = () => useManifestStore((state) => state.manifests);
@@ -117,3 +122,10 @@ export const useCharacterManifestById = (id: string) => useCharacterManifestStor
 export const useCharacterManifestsLoading = () => useCharacterManifestStore((state) => state.isLoading);
 export const useCharacterManifestsError = () => useCharacterManifestStore((state) => state.error);
 export const useCharacterManifestsActions = () => useCharacterManifestStore((state) => state.actions);
+
+// Convenience exports for embedding manifests
+export const useEmbeddingManifests = () => useEmbeddingManifestStore((state) => state.manifests);
+export const useEmbeddingManifestById = (id: string) => useEmbeddingManifestStore((state) => state.manifests.find((manifest) => manifest.id === id));
+export const useEmbeddingManifestsLoading = () => useEmbeddingManifestStore((state) => state.isLoading);
+export const useEmbeddingManifestsError = () => useEmbeddingManifestStore((state) => state.error);
+export const useEmbeddingManifestsActions = () => useEmbeddingManifestStore((state) => state.actions);
