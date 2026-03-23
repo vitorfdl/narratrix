@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { LuBrain, LuClock, LuCopy, LuCpu, LuServer, LuTrash2, LuZap } from "react-icons/lu";
-import { Badge } from "@/components/ui/badge";
+import { LuCopy, LuTrash2 } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { useEmbeddingManifestsActions, useModelManifestsActions } from "@/hooks/manifestStore";
 import { useInferenceTemplate } from "@/hooks/templateStore";
 import type { Engine } from "@/schema/model-manifest-schema";
 import { getEngineColor, getEngineIcon } from "@/utils/engine-icons";
-import { Model } from "../../../schema/models-schema";
+import type { Model } from "../../../schema/models-schema";
 
 interface ModelCardProps {
   model: Model;
@@ -22,9 +20,6 @@ export function ModelCard({ model, onDelete, onDuplicate, onOpenSettings }: Mode
   const [manifestName, setManifestName] = useState<string>("");
   const [manifestEngine, setManifestEngine] = useState<Engine | undefined>(undefined);
   const inferenceTemplate = useInferenceTemplate(model.inference_template_id || "");
-
-  const isNew = model.created_at && Date.now() - new Date(model.created_at).getTime() < 15 * 60 * 60 * 1000; // 15 hours
-  const isPopular = false;
 
   useEffect(() => {
     const fetchManifestInfo = async () => {
@@ -43,174 +38,74 @@ export function ModelCard({ model, onDelete, onDuplicate, onOpenSettings }: Mode
     fetchManifestInfo();
   }, [model.manifest_id, model.type, getManifestById, getEmbeddingManifestById]);
 
-  // Parse config to extract relevant display info
   const config = typeof model.config === "string" ? JSON.parse(model.config) : model.config;
-  let urlValue: string | undefined;
   let modelValue: string | undefined;
-  let fallbackValue: string | undefined;
 
   if (config) {
-    const configEntries = Object.entries(config);
-    for (const [key, value] of configEntries) {
+    for (const [key, value] of Object.entries(config)) {
       const lowerKey = key.toLowerCase();
       const isSensitive = lowerKey.includes("key") || lowerKey.includes("secret") || lowerKey.includes("token");
-
-      if (typeof value === "string" && !isSensitive) {
-        if (lowerKey.includes("url")) {
-          urlValue = value;
-        } else if (lowerKey.includes("model")) {
-          modelValue = value;
-        } else if (!fallbackValue) {
-          fallbackValue = value; // Store the first non-sensitive string as fallback
-        }
+      if (typeof value === "string" && !isSensitive && lowerKey.includes("model")) {
+        modelValue = value;
+        break;
       }
     }
   }
 
-  // Generate capabilities based on model type and inference template
-  const getCapabilities = () => {
-    const capabilities = [];
-
-    if (model.type !== "embedding") {
-      if (inferenceTemplate) {
-        capabilities.push("Text Completion");
-      } else {
-        capabilities.push("Chat");
-      }
-    }
-
-    return capabilities;
-  };
-
   const ModelIcon = getEngineIcon(manifestEngine);
   const engineColor = getEngineColor(manifestEngine);
 
+  const inferenceMode = inferenceTemplate ? "Text Completion" : model.type !== "embedding" ? "Chat" : null;
+
   return (
-    <Card
+    <div
       onClick={() => onOpenSettings(model)}
-      className="group relative overflow-hidden flex flex-col h-full bg-gradient-to-br from-background to-accent/10 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer"
+      className="group relative flex items-start gap-3 rounded-lg bg-card p-3.5 shadow-sm ring-1 ring-border/50 transition-all duration-200 hover:shadow-md hover:ring-border cursor-pointer"
     >
-      <CardHeader className="relative pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className={engineColor ? "p-2 rounded-lg" : "p-2 rounded-lg bg-primary/10 text-primary"} style={engineColor ? { backgroundColor: `${engineColor}20`, color: engineColor } : undefined}>
-              <ModelIcon className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-base line-clamp-1">{model.name}</h3>
-              <p className="text-xs text-muted-foreground" title={manifestName || model.manifest_id}>
-                {(manifestName || model.manifest_id).length > 32 ? `${(manifestName || model.manifest_id).slice(0, 21)}...` : manifestName || model.manifest_id}
-              </p>
-            </div>
-          </div>
+      <div
+        className="shrink-0 mt-0.5 rounded-md p-2"
+        style={engineColor ? { backgroundColor: `${engineColor}12`, color: engineColor } : { backgroundColor: "hsl(var(--primary) / 0.1)", color: "hsl(var(--primary))" }}
+      >
+        <ModelIcon className="h-5 w-5" />
+      </div>
 
-          <div className="flex items-center gap-2">
-            {/* Status badges */}
-            {isNew && (
-              <Badge variant="default" className="text-xxs flex items-center text-primary-foreground">
-                <LuZap className="h-3 w-3 mr-1" />
-                New
-              </Badge>
-            )}
-            {isPopular && (
-              <Badge variant="secondary" className="text-xxs flex items-center">
-                Popular
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="flex-1 space-y-3">
-        {/* Model configuration details */}
-        <div className="space-y-2">
-          {urlValue && (
-            <div className="flex items-center gap-2 text-xs">
-              <LuServer className="h-3 w-3 text-muted-foreground" />
-              <span className="font-mono text-muted-foreground truncate" title={urlValue}>
-                {urlValue}
-              </span>
-            </div>
-          )}
-          {modelValue && (
-            <div className="flex items-center gap-2 text-xs">
-              <LuBrain className="h-3 w-3 text-muted-foreground" />
-              <span className="font-mono text-muted-foreground truncate" title={modelValue}>
-                {modelValue}
-              </span>
-            </div>
-          )}
-          {!urlValue && !modelValue && fallbackValue && (
-            <div className="flex items-center gap-2 text-xs">
-              <LuCpu className="h-3 w-3 text-muted-foreground" />
-              <span className="font-mono text-muted-foreground truncate">{fallbackValue}</span>
-            </div>
-          )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold truncate">{model.name}</h3>
+          {inferenceMode && <span className="shrink-0 text-[10px] font-medium text-muted-foreground/70 bg-muted/60 rounded px-1.5 py-0.5">{inferenceMode}</span>}
         </div>
 
-        {/* Model stats */}
-        <div className="flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <LuZap className="h-3 w-3" />
-            <span>Max: {model.max_concurrency}</span>
-          </div>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <LuCpu className="h-3 w-3" />
-            <span>{model.type.toUpperCase()}</span>
-          </div>
-        </div>
+        <p className="text-xs text-muted-foreground mt-0.5">{manifestName || model.manifest_id}</p>
 
-        {/* Capabilities */}
-        <div className="flex flex-wrap gap-1">
-          {getCapabilities().map((capability, index) => (
-            <Badge key={index} variant="outline" className="text-xxs py-0.5 px-1.5">
-              {capability}
-            </Badge>
-          ))}
-          {inferenceTemplate && (
-            <Badge variant="secondary" className="text-xxs py-0.5 px-1.5 text-primary">
-              {inferenceTemplate.name}
-            </Badge>
-          )}
-        </div>
-      </CardContent>
+        {modelValue && <p className="text-xs text-muted-foreground/60 font-mono mt-1 truncate">{modelValue}</p>}
+      </div>
 
-      {/* Action buttons - shown on hover */}
-      <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="absolute right-1.5 top-1.5 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <Button
-          variant="secondary"
+          variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 text-muted-foreground hover:text-foreground"
           onClick={(e) => {
             e.stopPropagation();
             onDuplicate?.(model);
           }}
-          title="Duplicate Model"
+          title="Duplicate"
         >
           <LuCopy className="h-3.5 w-3.5" />
         </Button>
         <Button
-          variant="destructive"
+          variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive"
           onClick={(e) => {
             e.stopPropagation();
             onDelete?.(model);
           }}
-          title="Delete Model"
+          title="Delete"
         >
           <LuTrash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
-
-      <CardFooter className="p-3 pt-0 text-xs text-muted-foreground mt-auto">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-1">
-            <LuClock className="h-3 w-3" />
-            <span>Updated {new Date(model.updated_at).toLocaleDateString()}</span>
-          </div>
-        </div>
-      </CardFooter>
-    </Card>
+    </div>
   );
 }

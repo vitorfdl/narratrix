@@ -384,31 +384,27 @@ export default function Models() {
             <p className="text-muted-foreground">Loading models...</p>
           </div>
         ) : filteredAndSortedModels.length > 0 ? (
-          <div className="space-y-6 py-1">
-            {/* Grid View */}
-            <div className="p-4">
-              {filteredGroups.map((group) => (
-                <div key={group.type} className="space-y-3 mb-6">
-                  {settings.filter.type === "all" && (
-                    <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-                      {getModelTypeIcon(group.type)}
-                      {group.title}
-                      <span className="text-sm font-normal text-muted-foreground">({group.models.length})</span>
-                    </h2>
-                  )}
-                  <div
-                    className="grid gap-4"
-                    style={{
-                      gridTemplateColumns: `repeat(${settings.view.cardsPerRow}, minmax(0, 1fr))`,
-                    }}
-                  >
-                    {group.models.map((model) => (
-                      <ModelCard key={model.id} model={model} onDelete={handleDelete} onDuplicate={handleDuplicate} onOpenSettings={openEditDialog} />
-                    ))}
-                  </div>
+          <div className="p-4 space-y-5">
+            {filteredGroups.map((group) => (
+              <section key={group.type}>
+                {settings.filter.type === "all" && (
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                    {getModelTypeIcon(group.type)}
+                    {group.title}
+                  </h2>
+                )}
+                <div
+                  className="grid gap-2"
+                  style={{
+                    gridTemplateColumns: `repeat(${settings.view.cardsPerRow}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {group.models.map((model) => (
+                    <ModelCard key={model.id} model={model} onDelete={handleDelete} onDuplicate={handleDuplicate} onOpenSettings={openEditDialog} />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </section>
+            ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">

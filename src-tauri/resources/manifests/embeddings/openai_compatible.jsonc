@@ -1,7 +1,7 @@
 {
   "$schema": "../../../../json_schema/model-schema.json",
   "id": "openai_compatible_embedding",
-  "name": "OpenAI API Compatible Embeddings (Llamacpp, Koboldcpp, etc.)",
+  "name": "OpenAI API Compatible (Llamacpp, Koboldcpp...)",
   "description": "Integration with OpenAI compatible embedding API",
   "type": "embedding",
   "inference_type": ["embedding"],

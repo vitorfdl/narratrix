@@ -1,7 +1,7 @@
 {
   "$schema": "../../../../json_schema/model-schema.json",
   "id": "openai_compatible",
-  "name": "OpenAI API Compatible (Koboldcpp, Llamacpp, etc.)",
+  "name": "OpenAI API Compatible (Koboldcpp, Llamacpp...)",
   "description": "Integration with OpenAI compatible API",
   "type": "llm",
   "inference_type": ["chat", "completion"],
