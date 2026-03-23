@@ -3,7 +3,8 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import React, { useEffect, useMemo, useState } from "react";
 import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
-import { LuBookDown, LuBookOpen, LuBookUp, LuBot, LuFilter, LuGripVertical, LuPlus, LuSearch, LuTrash2, LuUser } from "react-icons/lu";
+import { LuBookDown, LuBookOpen, LuBookUp, LuBot, LuDatabase, LuFilter, LuGripVertical, LuPlus, LuSearch, LuTrash, LuTrash2, LuUser } from "react-icons/lu";
+import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useIsLoadingEntries, useLorebookStoreActions, useSelectedLorebookEntries } from "@/hooks/lorebookStore";
+import { useIndexingStatus, useIsIndexing, useIsLoadingEntries, useLorebookStoreActions, useSelectedLorebookEntries, useLorebooks } from "@/hooks/lorebookStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { cn } from "@/lib/utils";
 import { LorebookEntry } from "@/schema/lorebook-schema";
@@ -24,16 +25,16 @@ interface LorebookEntriesProps {
   compact?: boolean;
 }
 
-// New component for sortable table rows
 interface SortableEntryRowProps {
   entry: LorebookEntry;
   onToggleEnabled: (entry: LorebookEntry) => void;
   onEdit: (entry: LorebookEntry) => void;
   onDelete: (entry: LorebookEntry) => void;
   compact?: boolean;
+  ragEnabled?: boolean;
 }
 
-function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = false }: SortableEntryRowProps) {
+function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = false, ragEnabled = false }: SortableEntryRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id });
 
   const style: React.CSSProperties = {
@@ -97,21 +98,28 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
       <TableCell className="w-[4%] max-w-[50px] text-center">
         <div className={cn("inline-block h-2.5 w-2.5 rounded-full", entry.constant ? "bg-primary" : "bg-muted")} title={entry.constant ? "Constant" : "Not Constant"} />
       </TableCell>
-      <TableCell className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>
-        <div className="flex flex-wrap gap-1 justify-center">
-          {entry.keywords.slice(0, 2).map((keyword) => (
-            <Badge key={keyword} variant="outline" className={"truncate text-[0.55rem] py-0 px-1 m-0"}>
-              {keyword}
-            </Badge>
-          ))}
-          {entry.keywords.length > 2 && (
-            <Badge variant="outline" className={"text-[0.55rem] py-0 px-1 m-0"}>
-              +{entry.keywords.length - 2}
-            </Badge>
-          )}
-        </div>
-      </TableCell>
+      {!ragEnabled && (
+        <TableCell className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>
+          <div className="flex flex-wrap gap-1 justify-center">
+            {entry.keywords.slice(0, 2).map((keyword) => (
+              <Badge key={keyword} variant="outline" className={"truncate text-[0.55rem] py-0 px-1 m-0"}>
+                {keyword}
+              </Badge>
+            ))}
+            {entry.keywords.length > 2 && (
+              <Badge variant="outline" className={"text-[0.55rem] py-0 px-1 m-0"}>
+                +{entry.keywords.length - 2}
+              </Badge>
+            )}
+          </div>
+        </TableCell>
+      )}
       <TableCell className="w-[10%] text-xs text-center">{entry.priority}</TableCell>
+      {ragEnabled && (
+        <TableCell className="w-10 text-center">
+          <div className={cn("inline-block h-2.5 w-2.5 rounded-full", entry.vector_content != null ? "bg-green-500" : "bg-muted")} title={entry.vector_content != null ? "Indexed" : "Not indexed"} />
+        </TableCell>
+      )}
       <TableCell className="w-10">
         <Button
           variant="ghost"
@@ -134,7 +142,13 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
   const currentProfile = useCurrentProfile();
   const allEntries = useSelectedLorebookEntries();
   const isLoading = useIsLoadingEntries();
-  const { loadLorebookEntries, updateLorebookEntry, deleteLorebookEntry, selectLorebookEntry, selectLorebook } = useLorebookStoreActions();
+  const lorebooks = useLorebooks();
+  const indexingStatus = useIndexingStatus();
+  const isIndexing = useIsIndexing();
+  const { loadLorebookEntries, updateLorebookEntry, deleteLorebookEntry, selectLorebookEntry, selectLorebook, loadIndexingStatus, indexAllEntries, clearIndex } = useLorebookStoreActions();
+
+  const lorebook = lorebooks.find((lb) => lb.id === lorebookId);
+  const ragEnabled = lorebook?.rag_enabled ?? false;
 
   // UI state
   const [searchQuery, setSearchQuery] = useState("");
@@ -161,7 +175,34 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
       selectLorebook(lorebookId);
       loadLorebookEntries(currentProfile.id, lorebookId);
     }
-  }, [currentProfile, lorebookId, loadLorebookEntries]);
+  }, [currentProfile, lorebookId, loadLorebookEntries, selectLorebook]);
+
+  // Load indexing status when RAG is enabled
+  useEffect(() => {
+    if (ragEnabled && lorebookId) {
+      loadIndexingStatus(lorebookId);
+    }
+  }, [ragEnabled, lorebookId, loadIndexingStatus]);
+
+  const handleIndexAll = async () => {
+    try {
+      await indexAllEntries(lorebookId, (indexed, total) => {
+        toast.loading(`Indexing entries: ${indexed}/${total}`, { id: "indexing-progress" });
+      });
+      toast.success("All entries indexed successfully", { id: "indexing-progress" });
+    } catch (error) {
+      toast.error(`Indexing failed: ${error instanceof Error ? error.message : "Unknown error"}`, { id: "indexing-progress" });
+    }
+  };
+
+  const handleClearIndex = async () => {
+    try {
+      await clearIndex(lorebookId);
+      toast.success("Index cleared");
+    } catch (_error) {
+      toast.error("Failed to clear index");
+    }
+  };
 
   // Get all unique group keys
   const groupKeys = useMemo(() => {
@@ -318,6 +359,27 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         </div>
       )}
 
+      {ragEnabled && (
+        <div className="px-4 py-2 flex items-center justify-between gap-2 border-b bg-muted/30">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <LuDatabase className="w-4 h-4 text-primary" />
+            <span>
+              Indexing: <span className="font-medium text-foreground">{indexingStatus ? `${indexingStatus.indexed}/${indexingStatus.total} indexed` : "Loading..."}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleIndexAll} disabled={isIndexing}>
+              <LuDatabase size={14} className="mr-1" />
+              Index All
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleClearIndex} disabled={isIndexing}>
+              <LuTrash size={14} className="mr-1" />
+              Clear Index
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="p-4 flex items-center gap-3 border-b">
         <div className="relative flex-1">
           <LuSearch className="absolute left-2 top-1 h-4 w-4 text-muted-foreground" />
@@ -422,20 +484,21 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                         <span className="text-xs">Constant</span>
                       </Button>
                     </TableHead>
-                    <TableHead className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>Keywords</TableHead>
+                    {!ragEnabled && <TableHead className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>Keywords</TableHead>}
                     <TableHead className="w-[10%] text-center">
                       <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "text-xs h-8")} onClick={() => handleSort("priority")}>
                         Priority
                         {sortField === "priority" && (sortOrder === "asc" ? <FaSortAmountUp size={14} className="ml-1 inline" /> : <FaSortAmountDown size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
+                    {ragEnabled && <TableHead className="w-10 text-center text-xs">Indexed</TableHead>}
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
                   <TableBody>
                     {entries.map((entry) => (
-                      <SortableEntryRow key={entry.id} entry={entry} onToggleEnabled={handleToggleEnabled} onEdit={handleEditEntry} onDelete={setEntryToDelete} compact={compact} />
+                      <SortableEntryRow key={entry.id} entry={entry} onToggleEnabled={handleToggleEnabled} onEdit={handleEditEntry} onDelete={setEntryToDelete} compact={compact} ragEnabled={ragEnabled} />
                     ))}
                   </TableBody>
                 </SortableContext>

@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BookDown, BookUp, Bot, CheckCircleIcon, User } from "lucide-react";
+import { BookDown, BookUp, Bot, CheckCircleIcon, CircleDot, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StepButton } from "@/components/ui/step-button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLorebookStoreActions } from "@/hooks/lorebookStore";
+import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { basicPromptSuggestionList } from "@/schema/chat-message-schema";
 import { CreateLorebookEntryParams, createLorebookEntrySchema, LorebookEntry, UpdateLorebookEntryParams } from "@/schema/lorebook-schema";
@@ -50,7 +51,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, groupKeys }: LorebookEntryDialogProps) {
   const currentProfile = useCurrentProfile();
-  const { createLorebookEntry, updateLorebookEntry } = useLorebookStoreActions();
+  const { createLorebookEntry, updateLorebookEntry, indexEntry } = useLorebookStoreActions();
+  const lorebooks = useLorebooks();
+  const lorebook = lorebooks.find((lb) => lb.id === lorebookId);
+  const ragEnabled = lorebook?.rag_enabled && !!lorebook?.embedding_model_id;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!entry;
 
@@ -115,43 +119,53 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
 
     try {
       if (isEditing && entry) {
-        // Update existing entry
-        // No need to spread values, they match UpdateLorebookEntryParams structure
         const updateData: UpdateLorebookEntryParams = values;
         await updateLorebookEntry(entry.id, updateData);
+        if (ragEnabled) {
+          indexEntry(lorebookId, entry.id)
+            .then(() => { toast.success("Entry indexed successfully"); })
+            .catch((err: unknown) => { toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`); });
+        }
       } else {
-        // Create new entry
-        // Combine form values with required fields for creation
         const createData: CreateLorebookEntryParams = {
           ...values,
           lorebook_id: lorebookId,
-          vector_content: null, // Handle vector content separately if needed
-          extra: {}, // Add extra data if needed
+          vector_content: null,
+          extra: {},
         };
-        await createLorebookEntry(createData);
+        const newEntry = await createLorebookEntry(createData);
+        if (ragEnabled && newEntry) {
+          indexEntry(lorebookId, newEntry.id)
+            .then(() => { toast.success("Entry indexed successfully"); })
+            .catch((err: unknown) => { toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`); });
+        }
       }
 
-      // Close dialog (resetting happens in useEffect)
       onOpenChange(false);
     } catch (error) {
       console.error(`Failed to ${isEditing ? "update" : "create"} lorebook entry:`, error);
-      // Optionally show an error message to the user
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handle dialog close/reset
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
-    // Form reset is handled by the useEffect hook based on `open` state
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="large" className="overflow-hidden">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Entry" : "Create New Entry"}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {isEditing ? "Edit Entry" : "Create New Entry"}
+            {ragEnabled && isEditing && entry && (
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${entry.vector_content != null ? "bg-green-500/15 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                <CircleDot className="h-3 w-3" />
+                {entry.vector_content != null ? "Indexed" : "Not Indexed"}
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -171,8 +185,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
 
               <DialogBody>
                 <TabsContent value="basic" className="space-y-4">
-                  {/* Combine Title and Keywords in one row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={`grid gap-4 ${ragEnabled ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}>
                     <FormField
                       control={form.control}
                       name="comment"
@@ -191,24 +204,26 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="keywords"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center gap-1">
-                            <FormLabel>Keywords</FormLabel>
-                            <HelpTooltip>
-                              <p>Keywords that trigger this entry to be included. Press Enter or comma to add.</p>
-                            </HelpTooltip>
-                          </div>
-                          <FormControl>
-                            <CommandTagInput placeholder="Add keywords..." value={field.value || []} onChange={field.onChange} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {!ragEnabled && (
+                      <FormField
+                        control={form.control}
+                        name="keywords"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-1">
+                              <FormLabel>Keywords</FormLabel>
+                              <HelpTooltip>
+                                <p>Keywords that trigger this entry to be included. Press Enter or comma to add.</p>
+                              </HelpTooltip>
+                            </div>
+                            <FormControl>
+                              <CommandTagInput placeholder="Add keywords..." value={field.value || []} onChange={field.onChange} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
 
                   {/* Combine Insertion Type and Depth in one row */}
@@ -324,7 +339,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             <div className="flex items-center gap-1">
                               <FormLabel>Enabled</FormLabel>
                               <HelpTooltip>
-                                <p>When disabled, this entry will never be included in the context regardless of keyword matches.</p>
+                                <p>When disabled, this entry will never be included in the context regardless of {ragEnabled ? "similarity matches" : "keyword matches"}.</p>
                               </HelpTooltip>
                             </div>
                           </div>
@@ -344,7 +359,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             <div className="flex items-center gap-1">
                               <FormLabel>Constant</FormLabel>
                               <HelpTooltip>
-                                <p>If enabled, this entry is always included, ignoring keywords.</p>
+                                <p>If enabled, this entry is always included, ignoring {ragEnabled ? "similarity matching" : "keywords"}.</p>
                               </HelpTooltip>
                             </div>
                           </div>
@@ -358,7 +373,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                 </TabsContent>
 
                 <TabsContent value="advanced" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className={`grid grid-cols-1 gap-4 ${ragEnabled ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
                     <FormField
                       control={form.control}
                       name="group_key"
@@ -413,24 +428,26 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="trigger_chance"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center gap-1">
-                            <FormLabel>Trigger Chance (%)</FormLabel>
-                            <HelpTooltip>
-                              <p>The probability (1-100%) that this entry will be included if its keywords match.</p>
-                            </HelpTooltip>
-                          </div>
-                          <FormControl>
-                            <StepButton min={1} max={100} step={1} value={field.value ?? 100} onValueChange={(val) => field.onChange(Math.floor(val))} showSlider={true} ticks={11} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {!ragEnabled && (
+                      <FormField
+                        control={form.control}
+                        name="trigger_chance"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-1">
+                              <FormLabel>Trigger Chance (%)</FormLabel>
+                              <HelpTooltip>
+                                <p>The probability (1-100%) that this entry will be included if its keywords match.</p>
+                              </HelpTooltip>
+                            </div>
+                            <FormControl>
+                              <StepButton min={1} max={100} step={1} value={field.value ?? 100} onValueChange={(val) => field.onChange(Math.floor(val))} showSlider={true} ticks={11} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     <FormField
                       control={form.control}
@@ -452,47 +469,49 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <FormField
-                      control={form.control}
-                      name="case_sensitive"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-1">
-                              <FormLabel>Case Sensitive Keywords</FormLabel>
-                              <HelpTooltip>
-                                <p>If enabled, keyword matching will respect case sensitivity (e.g., "Apple" won't match "apple").</p>
-                              </HelpTooltip>
+                  {!ragEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      <FormField
+                        control={form.control}
+                        name="case_sensitive"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1">
+                                <FormLabel>Case Sensitive Keywords</FormLabel>
+                                <HelpTooltip>
+                                  <p>If enabled, keyword matching will respect case sensitivity (e.g., "Apple" won't match "apple").</p>
+                                </HelpTooltip>
+                              </div>
                             </div>
-                          </div>
-                          <FormControl>
-                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                            <FormControl>
+                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="match_partial_words"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-1">
-                              <FormLabel>Match Partial Words</FormLabel>
-                              <HelpTooltip>
-                                <p>If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word matches occur.</p>
-                              </HelpTooltip>
+                      <FormField
+                        control={form.control}
+                        name="match_partial_words"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1">
+                                <FormLabel>Match Partial Words</FormLabel>
+                                <HelpTooltip>
+                                  <p>If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word matches occur.</p>
+                                </HelpTooltip>
+                              </div>
                             </div>
-                          </div>
-                          <FormControl>
-                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                            <FormControl>
+                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                 </TabsContent>
               </DialogBody>
             </Tabs>

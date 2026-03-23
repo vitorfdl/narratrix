@@ -1,6 +1,6 @@
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, Download, Edit, Filter, Globe, HeartIcon, Plus, RefreshCw, ScrollText, Search, SortAsc, Trash2, Upload, User, View } from "lucide-react";
+import { ArrowLeft, BrainCircuit, Download, Edit, Filter, Globe, HeartIcon, Plus, RefreshCw, ScrollText, Search, SortAsc, Trash2, Upload, User, View } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
@@ -467,6 +467,12 @@ export default function LorebooksPage() {
                             <span className="truncate" title={lorebook.name}>
                               {lorebook.name}
                             </span>
+                            {lorebook.rag_enabled && (
+                              <Badge variant="outline" className="ml-1.5 px-1.5 py-0 h-5 text-[10px] font-normal gap-0.5 flex-shrink-0">
+                                <BrainCircuit className="h-3 w-3" />
+                                RAG
+                              </Badge>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>

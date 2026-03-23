@@ -1,0 +1,3 @@
+ALTER TABLE lorebooks ADD COLUMN rag_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE lorebooks ADD COLUMN embedding_model_id TEXT NULL REFERENCES models(id) ON DELETE SET NULL;
+ALTER TABLE lorebooks ADD COLUMN similarity_threshold REAL NOT NULL DEFAULT 0.7;
