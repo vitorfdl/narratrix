@@ -128,13 +128,13 @@ export const useLorebookStore = create<LorebookState>()(
           }
         },
         selectLorebook: (id) => {
-          // Reset entries and selection when a new lorebook is chosen
           set({
             selectedLorebookId: id,
             selectedEntryId: null,
             selectedLorebookEntries: [],
-            isLoadingEntries: !!id, // Start loading if an ID is provided
-            error: null, // Clear previous entry loading errors
+            isLoadingEntries: !!id,
+            error: null,
+            indexingStatus: null,
           });
           // Note: Loading entries is expected to be triggered manually after selection if needed
           // e.g., useEffect in the component observing selectedLorebookId

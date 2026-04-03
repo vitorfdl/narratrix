@@ -1,11 +1,14 @@
 import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import React, { useEffect, useMemo, useState } from "react";
+import { cosineSimilarity } from "ai";
+import { ChevronDown } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
-import { LuBookDown, LuBookOpen, LuBookUp, LuBot, LuDatabase, LuFilter, LuGripVertical, LuPlus, LuSearch, LuTrash, LuTrash2, LuUser } from "react-icons/lu";
+import { LuBookDown, LuBookOpen, LuBookUp, LuBot, LuDatabase, LuFilter, LuFlaskConical, LuGripVertical, LuPlus, LuSearch, LuTrash, LuTrash2, LuUser } from "react-icons/lu";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,10 +16,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useIndexingStatus, useIsIndexing, useIsLoadingEntries, useLorebookStoreActions, useSelectedLorebookEntries, useLorebooks } from "@/hooks/lorebookStore";
+import { Textarea } from "@/components/ui/textarea";
+import { useIndexingStatus, useIsIndexing, useIsLoadingEntries, useLorebookStoreActions, useLorebooks, useSelectedLorebookEntries } from "@/hooks/lorebookStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { cn } from "@/lib/utils";
-import { LorebookEntry } from "@/schema/lorebook-schema";
+import type { Lorebook, LorebookEntry } from "@/schema/lorebook-schema";
+import { embedText } from "@/services/embedding-service";
+import { parseStoredVector } from "@/services/lorebook-indexing-service";
 import { LorebookEntryDialog } from "./LorebookEntryDialog";
 
 interface LorebookEntriesProps {
@@ -138,6 +144,182 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
   );
 }
 
+interface RagTestResult {
+  entryId: string;
+  comment: string;
+  similarity: number;
+  content: string;
+  enabled: boolean;
+}
+
+const BELOW_THRESHOLD_PREVIEW = 3;
+
+function RagTestResults({ results, threshold }: { results: RagTestResult[]; threshold: number }) {
+  const [showAllBelow, setShowAllBelow] = useState(false);
+
+  const activated = useMemo(() => results.filter((r) => r.similarity >= threshold), [results, threshold]);
+  const belowThreshold = useMemo(() => results.filter((r) => r.similarity < threshold), [results, threshold]);
+  const visibleBelow = showAllBelow ? belowThreshold : belowThreshold.slice(0, BELOW_THRESHOLD_PREVIEW);
+  const hiddenBelowCount = belowThreshold.length - visibleBelow.length;
+
+  if (results.length === 0) {
+    return <p className="text-muted-foreground text-sm">No indexed entries found to compare against.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="text-sm font-medium">
+        Activated: <span className="text-green-500">{activated.length}</span>
+        <span className="text-muted-foreground"> / {results.length} indexed</span>
+      </div>
+
+      <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        {activated.map((r) => (
+          <div key={r.entryId} className="rounded-md border border-green-500/50 bg-green-500/10 p-3 text-sm">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
+                <span className="font-medium truncate">{r.comment || "Untitled"}</span>
+                {!r.enabled && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+                    disabled
+                  </Badge>
+                )}
+              </div>
+              <span className="text-xs font-mono tabular-nums shrink-0 text-green-500">{r.similarity.toFixed(4)}</span>
+            </div>
+            <p className="text-muted-foreground text-xs line-clamp-2 pl-4">{r.content}</p>
+          </div>
+        ))}
+
+        {activated.length > 0 && visibleBelow.length > 0 && (
+          <div className="flex items-center gap-2 py-2 px-1">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-muted-foreground text-[11px] shrink-0">below threshold ({threshold.toFixed(2)})</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+        )}
+
+        {visibleBelow.map((r) => (
+          <div key={r.entryId} className="rounded-md border border-border p-3 text-sm opacity-50">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-medium truncate">{r.comment || "Untitled"}</span>
+              </div>
+              <span className="text-xs font-mono tabular-nums shrink-0 text-muted-foreground">{r.similarity.toFixed(4)}</span>
+            </div>
+            <p className="text-muted-foreground text-xs line-clamp-1 truncate">{r.content}</p>
+          </div>
+        ))}
+
+        {hiddenBelowCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAllBelow(true)}
+            className="flex items-center justify-center gap-1 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+            Show {hiddenBelowCount} more
+          </button>
+        )}
+
+        {showAllBelow && belowThreshold.length > BELOW_THRESHOLD_PREVIEW && (
+          <button
+            type="button"
+            onClick={() => setShowAllBelow(false)}
+            className="flex items-center justify-center gap-1 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Show less
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RagTestDialog({ open, onOpenChange, lorebook, entries }: { open: boolean; onOpenChange: (open: boolean) => void; lorebook: Lorebook; entries: LorebookEntry[] }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<RagTestResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const handleSearch = useCallback(async () => {
+    if (!query.trim() || !lorebook.embedding_model_id) {
+      return;
+    }
+    setIsSearching(true);
+    setHasSearched(true);
+    try {
+      const { embedding: queryVector } = await embedText(lorebook.embedding_model_id, query.trim());
+      const scored: RagTestResult[] = [];
+      for (const entry of entries) {
+        const entryVector = parseStoredVector(entry.vector_content);
+        if (!entryVector) {
+          continue;
+        }
+        const similarity = cosineSimilarity(queryVector as number[], entryVector);
+        scored.push({ entryId: entry.id, comment: entry.comment, similarity, content: entry.content, enabled: entry.enabled });
+      }
+      scored.sort((a, b) => b.similarity - a.similarity);
+      setResults(scored);
+    } catch (err) {
+      toast.error(`Search failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [query, lorebook.embedding_model_id, entries]);
+
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setResults([]);
+      setHasSearched(false);
+    }
+  }, [open]);
+
+  const threshold = lorebook.similarity_threshold ?? 0.7;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="large">
+        <DialogHeader>
+          <DialogTitle>Test RAG Search</DialogTitle>
+        </DialogHeader>
+        <DialogBody className="space-y-4 py-4">
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Enter a query to test against indexed entries..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="min-h-[80px] flex-1"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  handleSearch();
+                }
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">
+              Threshold: <span className="font-medium text-foreground">{threshold.toFixed(2)}</span> · {entries.filter((e) => parseStoredVector(e.vector_content)).length} indexed entries
+            </span>
+            <Button size="sm" onClick={handleSearch} disabled={isSearching || !query.trim()}>
+              {isSearching ? "Searching..." : "Search"}
+            </Button>
+          </div>
+
+          {hasSearched && <RagTestResults results={results} threshold={threshold} />}
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function LorebookEntries({ lorebookId, compact = false }: LorebookEntriesProps) {
   const currentProfile = useCurrentProfile();
   const allEntries = useSelectedLorebookEntries();
@@ -159,6 +341,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
   const [entryToDelete, setEntryToDelete] = useState<LorebookEntry | null>(null);
   const [entryToEdit, setEntryToEdit] = useState<LorebookEntry | null>(null);
   const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
+  const [isRagTestOpen, setIsRagTestOpen] = useState(false);
   const [entries, setEntries] = useState<LorebookEntry[]>([]);
 
   // Sensors for dnd-kit
@@ -368,6 +551,10 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsRagTestOpen(true)} disabled={!lorebook?.embedding_model_id}>
+              <LuFlaskConical size={14} className="mr-1" />
+              Test Search
+            </Button>
             <Button variant="outline" size="sm" onClick={handleIndexAll} disabled={isIndexing}>
               <LuDatabase size={14} className="mr-1" />
               Index All
@@ -498,7 +685,15 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                 <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
                   <TableBody>
                     {entries.map((entry) => (
-                      <SortableEntryRow key={entry.id} entry={entry} onToggleEnabled={handleToggleEnabled} onEdit={handleEditEntry} onDelete={setEntryToDelete} compact={compact} ragEnabled={ragEnabled} />
+                      <SortableEntryRow
+                        key={entry.id}
+                        entry={entry}
+                        onToggleEnabled={handleToggleEnabled}
+                        onEdit={handleEditEntry}
+                        onDelete={setEntryToDelete}
+                        compact={compact}
+                        ragEnabled={ragEnabled}
+                      />
                     ))}
                   </TableBody>
                 </SortableContext>
@@ -530,6 +725,8 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
       </div>
 
       <LorebookEntryDialog open={isEntryDialogOpen} onOpenChange={setIsEntryDialogOpen} lorebookId={lorebookId} entry={entryToEdit} groupKeys={groupKeys} />
+
+      {lorebook && <RagTestDialog open={isRagTestOpen} onOpenChange={setIsRagTestOpen} lorebook={lorebook} entries={allEntries} />}
 
       {entryToDelete && currentProfile && (
         <DestructiveConfirmDialog

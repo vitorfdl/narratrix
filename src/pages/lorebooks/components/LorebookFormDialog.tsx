@@ -265,7 +265,11 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                     <div className="flex items-center gap-1">
                       <FormLabel>Max Depth</FormLabel>
                       <HelpTooltip>
-                        <p>{ragEnabled ? "How many recent chat messages are used to build the semantic search query." : "How many recent chat messages are scanned for keyword matches. Higher values check further back in the conversation history."}</p>
+                        <p>
+                          {ragEnabled
+                            ? "How many recent chat messages are used to build the semantic search query."
+                            : "How many recent chat messages are scanned for keyword matches. Higher values check further back in the conversation history."}
+                        </p>
                       </HelpTooltip>
                     </div>
                     <FormControl>
@@ -345,10 +349,10 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                           <p>Minimum cosine similarity score (0–1) for an entry to be considered a match. Higher values require closer semantic matches.</p>
                         </HelpTooltip>
                       </div>
-                      <span className="text-muted-foreground text-sm tabular-nums">{field.value.toFixed(2)}</span>
+                      <span className="text-muted-foreground text-sm tabular-nums">{(field.value ?? 0.7).toFixed(2)}</span>
                     </div>
                     <FormControl>
-                      <Slider value={[field.value]} onValueChange={([v]) => field.onChange(v)} min={0} max={1} step={0.05} disabled={!ragEnabled} className="mt-2" />
+                      <Slider value={[field.value ?? 0.7]} onValueChange={([v]) => field.onChange(v ?? 0.7)} min={0} max={1} step={0.05} disabled={!ragEnabled} className="mt-2" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

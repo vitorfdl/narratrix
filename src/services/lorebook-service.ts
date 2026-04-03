@@ -418,7 +418,7 @@ export interface IndexingStatus {
 
 export async function getIndexingStatus(lorebookId: string): Promise<IndexingStatus> {
   const validId = uuidUtils.uuid().parse(lorebookId);
-  const result = await selectDBQuery<any[]>("SELECT COUNT(*) as total, COUNT(vector_content) as indexed FROM lorebook_entries WHERE lorebook_id = $1 AND enabled = 1", [validId]);
+  const result = await selectDBQuery<any[]>("SELECT COUNT(*) as total, COUNT(vector_content) as indexed FROM lorebook_entries WHERE lorebook_id = $1", [validId]);
   return { total: result[0]?.total ?? 0, indexed: result[0]?.indexed ?? 0 };
 }
 
