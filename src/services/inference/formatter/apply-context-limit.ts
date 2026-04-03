@@ -1,5 +1,6 @@
 import { countTokens } from "@/commands/inference";
 import { ChatTemplate } from "@/schema/template-chat-schema";
+import { encode } from "gpt-tokenizer";
 import { FormattedPromptResult } from "../formatter";
 
 interface FormattedPromptCutResult extends FormattedPromptResult {
@@ -10,16 +11,8 @@ interface FormattedPromptCutResult extends FormattedPromptResult {
   };
 }
 
-/**
- * This formula is not accurate, but it's a good estimate.
- * Testing in multiple chats give me around 8% error margin.
- */
 export function estimateTokens(text: string, padding = 32): number {
-  const wordCount = text.split(/\s+/).filter((w) => w.length > 0).length;
-  const punctCount = (text.match(/[.,!?;:()[\]{}'"/\\<>@#$%^&*_\-+=|~`]/g) || []).length;
-  const accentedCount = (text.match(/[áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/g) || []).length;
-  const contractionCount = (text.match(/\b(d[oa]s?|n[oa]s?|pel[oa]s?|a[oa]s?)\b/gi) || []).length;
-  return Math.ceil(wordCount * 1.5 + punctCount * 0.3 + accentedCount * 0.1 + contractionCount * 0.2) + padding;
+  return encode(text).length + padding;
 }
 
 export const USE_TOKENIZER = true as const;
