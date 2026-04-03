@@ -1,3 +1,9 @@
+---
+description: 
+globs: src/page/agents/*.tsx
+alwaysApply: false
+---
+
 The biggest speed-up is giving node requests in the repo’s native shape, not just in product terms.
 
 For this codebase, the most useful information is:

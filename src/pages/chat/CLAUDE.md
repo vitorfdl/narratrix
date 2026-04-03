@@ -1,4 +1,9 @@
 ---
+description: 
+alwaysApply: false
+---
+
+---
 description: Guidance for Claude/claude.ai/code on working with the chat module (React, Zustand, react-grid-layout, inference services)
 alwaysApply: true
 ---
