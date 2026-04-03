@@ -71,7 +71,7 @@ async function executeNode(node: AgentNodeType, edges: AgentEdgeType[], context:
 
   const res = await executor(node, baseInputs, context, agent, deps);
   // Preserve multi-output behavior for nodes with dynamic outputs by reflecting onto handle-scoped keys
-  if ((node.type === "javascript" || node.type === "userChoice") && res.success) {
+  if ((node.type === "javascript" || node.type === "userChoice" || node.type === "searchLorebook" || node.type === "addLorebookEntry") && res.success) {
     if (typeof res.value === "string") {
       // Execution mode returned text
       context.nodeValues.set(`${node.id}::out-string`, res.value);

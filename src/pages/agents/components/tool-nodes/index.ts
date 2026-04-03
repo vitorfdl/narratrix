@@ -10,6 +10,9 @@ import "./nodeTrigger";
 import "./nodeUserChoice";
 import "./nodeDeleteMessage";
 import "./nodeDisableMessage";
+import "./nodeGetLorebook";
+import "./nodeSearchLorebook";
+import "./nodeAddLorebookEntry";
 
 // Re-export the NodeProps interface
 export type { NodeProps } from "./nodeTypes";
