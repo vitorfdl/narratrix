@@ -296,7 +296,7 @@ export function useInference(options: UseInferenceOptions = {}) {
   );
 
   const createEvent = useCallback(
-    (requestId: string): AIEvent => ({
+    (requestId: string, disableLogs?: boolean): AIEvent => ({
       requestId,
       sendStream: (payload) => handleStream(requestId, payload),
       sendThinkingStream: (text: string) => handleStream(requestId, { reasoning: text }),
@@ -308,8 +308,9 @@ export function useInference(options: UseInferenceOptions = {}) {
           runtime.abort = aborter;
         }
       },
+      reportResolvedParams: disableLogs ? undefined : (params) => consoleActions.updateRequestResolvedParams(requestId, params),
     }),
-    [handleCompletion, handleError, handleStream],
+    [consoleActions, handleCompletion, handleError, handleStream],
   );
 
   const enqueueRequest = useCallback(
@@ -381,7 +382,7 @@ export function useInference(options: UseInferenceOptions = {}) {
           return;
         }
 
-        const event = createEvent(requestId);
+        const event = createEvent(requestId, disableLogs);
 
         try {
           await callProviderConverseEndpoint(event, params);
