@@ -47,7 +47,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
         set({ isLoading: true, error: null });
         const newModel = await createModelAPI(modelData, isDuplicate);
 
-        await get().actions.fetchModels();
+        await get().actions.fetchModels({ profile_id: newModel.profile_id });
 
         return newModel;
       } catch (error) {
@@ -99,7 +99,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
         const updatedModel = await updateModelAPI(id, updateData);
 
         if (updatedModel) {
-          await get().actions.fetchModels();
+          await get().actions.fetchModels({ profile_id: updatedModel.profile_id });
         } else {
           set({ isLoading: false });
         }

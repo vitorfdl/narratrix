@@ -5,6 +5,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useInference } from "@/hooks/useInference";
 import { Character } from "@/schema/characters-schema";
 import { InferenceMessage, ModelSpecs } from "@/schema/inference-engine-schema";
+import { INFERENCE_TIMEOUT_MS } from "@/services/ai-providers/constants";
 import { listCharacters } from "./character-service";
 import { getChatChapterById } from "./chat-chapter-service";
 import { ChatMessage } from "./chat-message-service";
@@ -148,7 +149,7 @@ export function useBackgroundInference() {
                 // Attempt to cancel the request
                 cancelRequest(requestId).catch(console.error);
               }
-            }, 60000); // 1 minute timeout
+            }, INFERENCE_TIMEOUT_MS);
           })
           .catch(reject);
       });

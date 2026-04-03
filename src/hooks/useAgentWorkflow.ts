@@ -21,6 +21,7 @@ import { getModelById } from "@/services/model-service";
 import { getChatTemplateById } from "@/services/template-chat-service";
 import { getFormatTemplateById } from "@/services/template-format-service";
 import { getInferenceTemplateById } from "@/services/template-inference-service";
+import { INFERENCE_TIMEOUT_MS } from "@/services/ai-providers/constants";
 import { useAgentWorkflowStore } from "./agentWorkflowStore";
 import { useProfileStore } from "./ProfileStore";
 
@@ -142,7 +143,7 @@ export function useAgentWorkflow() {
           delete pendingResolvers.current[requestId];
           cancelRequest(requestId).catch(() => {});
           reject(new Error("Agent inference timed out"));
-        }, 60000);
+        }, INFERENCE_TIMEOUT_MS);
         pendingResolvers.current[requestId] = { resolve, reject, timeout };
       });
     },

@@ -1,13 +1,13 @@
-import type { EmbeddingModel } from "ai";
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import type { EmbeddingModel } from "ai";
 import { createOllama } from "ai-sdk-ollama";
 import { decryptApiKey } from "@/commands/security";
 import type { ModelSpecs } from "@/schema/inference-engine-schema";
 
-async function getEmbeddingModel(modelProvider: ModelSpecs): Promise<EmbeddingModel<string>> {
+async function getEmbeddingModel(modelProvider: ModelSpecs): Promise<EmbeddingModel> {
   const engineName = modelProvider.engine;
   const authParams = modelProvider.config;
   const modelName = authParams.model;
