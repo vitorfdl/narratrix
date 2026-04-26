@@ -25,7 +25,7 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
   const manifests = useModelManifests();
   const embeddingManifests = useEmbeddingManifests();
 
-  const [activeTab, setActiveTab] = useState<string>(mode === "add" ? "connection" : "inference");
+  const [activeTab, setActiveTab] = useState<string>("connection");
   const [maxConcurrency, setMaxConcurrency] = useState<number>(1);
   const [completionType, setCompletionType] = useState<"chat" | "text">("chat");
   const [inferenceTemplateID, setInferenceTemplateID] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
       const templateId = model.inference_template_id || null;
       setInferenceTemplateID(templateId);
       setCompletionType(templateId ? "text" : "chat");
-      setActiveTab("inference");
+      setActiveTab("connection");
     } else {
       setMaxConcurrency(1);
       setInferenceTemplateID(null);
