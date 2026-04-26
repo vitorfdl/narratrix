@@ -141,7 +141,7 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
         isEnabled ? "bg-muted/50 hover:bg-muted/80 border" : "bg-muted/30 text-muted-foreground",
       )}
     >
-      {inInferenceQueue && <BorderBeam colorFrom="hsl(var(--primary))" size={60} duration={1.5} />}
+      {inInferenceQueue && <BorderBeam colorFrom="var(--primary)" size={60} duration={1.5} />}
 
       <Avatar onClick={() => onEdit(participant.id)} className={cn("w-8 h-8 flex-shrink-0 rounded-sm cursor-pointer hover:scale-110 transition-all duration-200", !isEnabled && "opacity-50")}>
         {participant.avatar ? (
@@ -232,7 +232,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
           isRunning && "border-primary border-solid bg-primary/10",
         )}
       >
-        {isRunning && <BorderBeam colorFrom="hsl(var(--primary))" size={50} duration={1} />}
+        {isRunning && <BorderBeam colorFrom="var(--primary)" size={50} duration={1} />}
 
         {/* Bot icon — clickable to edit */}
         <BiSolidZap onClick={() => onEdit(participant.id)} className={cn("h-5 w-4 flex-shrink-0 cursor-pointer", isEnabled ? "text-primary" : "text-muted-foreground")} />

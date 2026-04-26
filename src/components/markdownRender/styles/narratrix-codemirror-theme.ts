@@ -17,10 +17,11 @@ const whiskey = "#d19a66";
 const violet = "#c678dd";
 const darkBackground = "#21252b";
 const highlightBackground = "#2c313a";
-const background = "hsl(var(--background))";
+const background = "var(--background)";
 const tooltipBackground = "#353a42";
 const selection = "#3E4451";
-const cursor = "hsl(var(--primary))";
+const cursor = "var(--primary)";
+const withAlpha = (color: string, alpha: number) => `color-mix(in oklab, ${color} ${alpha}%, transparent)`;
 
 /// The colors used in the theme, as CSS color strings.
 export const color = {
@@ -45,86 +46,91 @@ export const color = {
 export const narratrixTheme = EditorView.theme(
   {
     "&": {
-      color: "hsl(var(--foreground))",
-      backgroundColor: "hsl(var(--accent) / 0.8)",
+      width: "100%",
+      maxWidth: "100%",
+      color: "var(--foreground)",
+      backgroundColor: withAlpha("var(--accent)", 80),
       fontFamily: "var(--font-mono)",
-      borderBottom: "2px solid hsl(var(--border) / 0.5)",
+      borderBottom: `2px solid ${withAlpha("var(--border)", 50)}`,
       transition: "background-color 0.2s, border-color 0.2s",
     },
+    ".cm-scroller": {
+      width: "100%",
+    },
     "&.cm-focused": {
-      backgroundColor: "hsl(var(--background))",
-      borderBottom: "2px solid hsl(var(--primary))",
+      backgroundColor: "var(--background)",
+      borderBottom: "2px solid var(--primary)",
     },
     ".cm-content": {
-      caretColor: "hsl(var(--primary))",
+      caretColor: "var(--primary)",
     },
     ".cm-placeholder": {
-      color: "hsl(var(--muted-foreground) / 0.4)",
+      color: withAlpha("var(--muted-foreground)", 40),
       fontStyle: "italic",
       opacity: "1",
     },
-    ".cm-cursor, .cm-dropCursor": { borderLeftColor: "hsl(var(--primary))" },
+    ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--primary)" },
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
-      backgroundColor: "hsl(var(--primary) / 0.15)",
+      backgroundColor: withAlpha("var(--primary)", 15),
     },
 
-    ".cm-panels": { backgroundColor: "hsl(var(--card))", color: "hsl(var(--card-foreground))" },
-    ".cm-panels.cm-panels-top": { borderBottom: "2px solid hsl(var(--border))" },
-    ".cm-panels.cm-panels-bottom": { borderTop: "2px solid hsl(var(--border))" },
+    ".cm-panels": { backgroundColor: "var(--card)", color: "var(--card-foreground)" },
+    ".cm-panels.cm-panels-top": { borderBottom: "2px solid var(--border)" },
+    ".cm-panels.cm-panels-bottom": { borderTop: "2px solid var(--border)" },
 
     ".cm-searchMatch": {
-      backgroundColor: "hsl(var(--primary) / 0.35)",
-      outline: "1px solid hsl(var(--primary))",
+      backgroundColor: withAlpha("var(--primary)", 35),
+      outline: "1px solid var(--primary)",
     },
     ".cm-searchMatch.cm-searchMatch-selected": {
-      backgroundColor: "hsl(var(--primary) / 0.18)",
+      backgroundColor: withAlpha("var(--primary)", 18),
     },
 
     ".cm-activeLine": {
-      backgroundColor: "hsl(var(--transparent))",
+      backgroundColor: "transparent",
     },
     "&.cm-focused .cm-activeLine": {
-      backgroundColor: "hsl(var(--primary) / 0.01)",
+      backgroundColor: withAlpha("var(--primary)", 1),
     },
-    ".cm-selectionMatch": { backgroundColor: "hsl(var(--chart-4) / 0.10)" },
+    ".cm-selectionMatch": { backgroundColor: withAlpha("var(--chart-4)", 10) },
 
     "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
-      backgroundColor: "hsl(var(--muted) / 0.28)",
+      backgroundColor: withAlpha("var(--muted)", 28),
     },
 
     ".cm-gutters": {
-      backgroundColor: "hsl(var(--accent))",
-      color: "hsl(var(--primary) / 0.8)",
+      backgroundColor: "var(--accent)",
+      color: withAlpha("var(--primary)", 80),
       border: "none",
     },
 
     ".cm-activeLineGutter": {
-      backgroundColor: "hsl(var(--muted) / 0.5)",
+      backgroundColor: withAlpha("var(--muted)", 50),
     },
 
     ".cm-foldPlaceholder": {
       backgroundColor: "transparent",
       border: "none",
-      color: "hsl(var(--muted-foreground))",
+      color: "var(--muted-foreground)",
     },
 
     ".cm-tooltip": {
       border: "none",
-      backgroundColor: "hsl(var(--popover))",
-      color: "hsl(var(--popover-foreground))",
+      backgroundColor: "var(--popover)",
+      color: "var(--popover-foreground)",
     },
     ".cm-tooltip .cm-tooltip-arrow:before": {
       borderTopColor: "transparent",
       borderBottomColor: "transparent",
     },
     ".cm-tooltip .cm-tooltip-arrow:after": {
-      borderTopColor: "hsl(var(--popover))",
-      borderBottomColor: "hsl(var(--popover))",
+      borderTopColor: "var(--popover)",
+      borderBottomColor: "var(--popover)",
     },
     ".cm-tooltip-autocomplete": {
       "& > ul > li[aria-selected]": {
-        backgroundColor: "hsl(var(--muted) / 0.25)",
-        color: "hsl(var(--primary))",
+        backgroundColor: withAlpha("var(--muted)", 25),
+        color: "var(--primary)",
       },
     },
     ".cm-panel.cm-search": {
@@ -132,12 +138,12 @@ export const narratrixTheme = EditorView.theme(
       top: "1rem",
       right: "1rem",
       zIndex: "100",
-      background: "hsl(var(--card))",
+      background: "var(--card)",
       width: "320px",
       maxWidth: "40vw",
       borderRadius: "var(--radius)",
       boxShadow: "var(--shadow-md)",
-      border: "1px solid hsl(var(--border))",
+      border: "1px solid var(--border)",
       maxHeight: "50vh",
       overflowY: "auto",
       padding: "0.5rem",

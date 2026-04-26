@@ -294,7 +294,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
 
   const getHandleColor = (edgeType?: EdgeType) => {
     if (!edgeType) {
-      return "hsl(var(--primary))";
+      return "var(--primary)";
     }
     return EdgeRegistry.getColor(edgeType);
   };
@@ -411,7 +411,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
                   background: getHandleColor(input.edgeType),
                   width: "0.9rem",
                   height: "0.9rem",
-                  border: "2px solid hsl(var(--background))",
+                  border: "2px solid var(--background)",
                   left: "-1px",
                 },
                 input.edgeType,
@@ -436,7 +436,7 @@ export const NodeBase: React.FC<NodeBaseProps> = ({ nodeId, data, selected, chil
                   background: getHandleColor(output.edgeType),
                   width: "0.9rem",
                   height: "0.9rem",
-                  border: "2px solid hsl(var(--background))",
+                  border: "2px solid var(--background)",
                   right: "-1px",
                 },
                 output.edgeType,

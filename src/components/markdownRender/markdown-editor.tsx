@@ -219,7 +219,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
         }}
         height="100%"
         placeholder={placeholder}
-        className={cn("prose text-xs ring-1 ring-border rounded-md input-fields font-mono overflow-auto flex-1", className)}
+        className={cn("prose max-w-none w-full min-w-0 text-xs ring-1 ring-border rounded-md input-fields font-mono overflow-auto flex-1", className)}
         theme={narratrixCodeMirror}
         // style={{ minHeight, maxHeight, overflow: "auto" }}
       />

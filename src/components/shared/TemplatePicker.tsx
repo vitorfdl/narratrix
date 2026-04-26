@@ -2,6 +2,7 @@ import { basename, extname } from "@tauri-apps/api/path";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { ChevronsUpDown, CopyPlus, Edit, FileDown, FileUp, MoreHorizontal, Plus, Trash } from "lucide-react";
+import type { ReactElement } from "react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
@@ -51,7 +52,7 @@ export function TemplatePicker({
   compact = false,
   disabled = false,
   className,
-}: TemplatePickerProps): JSX.Element {
+}: TemplatePickerProps): ReactElement {
   const hasTemplates = templates.length > 0;
   const selectedTemplate = selectedTemplateId ? templates.find((t) => t.id === selectedTemplateId) : null;
 

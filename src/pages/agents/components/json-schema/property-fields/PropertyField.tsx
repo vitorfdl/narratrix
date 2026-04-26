@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { SCHEMA_TYPES } from "../constants";
 import type { PropertyFieldProps } from "../types";
 
-export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps): JSX.Element | null => {
+export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps): ReactElement | null => {
   if (config.condition && !config.condition(property)) {
     return null;
   }
@@ -20,7 +21,7 @@ export const PropertyField = ({ config, property, onUpdate }: PropertyFieldProps
     onUpdate(updates);
   };
 
-  const renderField = (): JSX.Element => {
+  const renderField = (): ReactElement => {
     switch (config.type) {
       case "text":
         return <Input id={`prop-${config.id}`} value={value} onChange={(e) => handleChange(e.target.value)} placeholder={config.placeholder} />;

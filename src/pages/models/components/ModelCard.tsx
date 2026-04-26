@@ -64,7 +64,7 @@ export function ModelCard({ model, onDelete, onDuplicate, onOpenSettings }: Mode
     >
       <div
         className="shrink-0 mt-0.5 rounded-md p-2"
-        style={engineColor ? { backgroundColor: `${engineColor}12`, color: engineColor } : { backgroundColor: "hsl(var(--primary) / 0.1)", color: "hsl(var(--primary))" }}
+        style={engineColor ? { backgroundColor: `${engineColor}12`, color: engineColor } : { backgroundColor: "color-mix(in oklab, var(--primary) 10%, transparent)", color: "var(--primary)" }}
       >
         <ModelIcon className="h-5 w-5" />
       </div>

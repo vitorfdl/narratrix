@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,7 +29,7 @@ export function EditNameDialog({
   placeholder,
   saveButtonText = "Save",
   cancelButtonText = "Cancel",
-}: EditNameDialogProps): JSX.Element {
+}: EditNameDialogProps): ReactElement {
   const [name, setName] = useState(initialName);
 
   useEffect(() => {
