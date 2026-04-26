@@ -5,7 +5,7 @@ import type { MarkdownEditorRef } from "@/components/markdownRender/markdown-edi
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { useAgents } from "@/hooks/agentStore";
-import { useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
+import { cancelAgentWorkflow, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
 import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
@@ -40,7 +40,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const agentList = useAgents();
 
   const { addChatMessage } = useChatActions();
-  const { executeWorkflow, cancelWorkflow } = useAgentWorkflow();
+  const { executeWorkflow } = useAgentWorkflow();
 
   // Get enabled participants for message generation
   const enabledParticipants = participants?.filter((p) => p.enabled) || [];
@@ -209,11 +209,11 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       rotationAbortRef.current = true;
       setIsOrchestrating(false);
 
-      // Cancel any agent workflows that are currently running
+      // Cancel agent workflows running in this chat only
       const agentStates = useAgentWorkflowStore.getState().states;
-      for (const [agentId, state] of Object.entries(agentStates)) {
-        if (state.isRunning) {
-          cancelWorkflow(agentId);
+      for (const [runKey, state] of Object.entries(agentStates)) {
+        if (state.isRunning && state.chatId === currentChatId) {
+          cancelAgentWorkflow(runKey);
         }
       }
 
@@ -230,7 +230,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       console.error("Error cancelling generation:", error);
       toast.error("Error cancelling generation");
     }
-  }, [inferenceService, currentChatId, cancelWorkflow]);
+  }, [inferenceService, currentChatId]);
 
   useEffect(() => {
     if (text.length > 0) {
@@ -340,7 +340,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           </Button>
         ) : (
           <Button variant="default" size="xs" onClick={() => handleSubmit(text)} title={`Send Message (${sendCommand || "Ctrl+Enter"})`} className="ml-auto" disabled={!text.trim()}>
-            <LuSend className="!w-3.5 !h-3.5 mr-1" />
+            <LuSend className="!w-3.5 !h-3.5" />
             Send
           </Button>
         )}

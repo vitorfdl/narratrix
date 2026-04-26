@@ -7,6 +7,7 @@ export type { TriggerContext };
 
 export interface WorkflowExecutionContext {
   agentId: string;
+  chatId?: string;
   executionId: string;
   nodeValues: Map<string, any>;
   executedNodes: Set<string>;

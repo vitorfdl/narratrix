@@ -2,8 +2,8 @@ import type { AgentType } from "@/schema/agent-schema";
 import { cancelWorkflow, executeWorkflow, isWorkflowRunning } from "@/services/agent-workflow/runner";
 import type { NodeExecutionResult, WorkflowExecutionContext } from "@/services/agent-workflow/types";
 
-// Backwards-compatible adapter over the new functional workflow engine
-// Kept to avoid refactors in existing imports.
+// Backwards-compatible adapter over the new functional workflow engine.
+// Legacy callers pass no chatId, so runKey defaults to "global::<agentId>".
 
 export type { NodeExecutionResult, WorkflowExecutionContext };
 
@@ -13,10 +13,10 @@ export const agentWorkflowService = {
   },
 
   cancelWorkflow(agentId: string) {
-    return cancelWorkflow(agentId);
+    return cancelWorkflow(`global::${agentId}`);
   },
 
   isWorkflowRunning(agentId: string): boolean {
-    return isWorkflowRunning(agentId);
+    return isWorkflowRunning(`global::${agentId}`);
   },
 };

@@ -7,7 +7,7 @@ export interface PendingChoiceOption {
 
 export interface PendingChoice {
   id: string;
-  agentId: string;
+  runKey: string;
   executionId: string;
   prompt: string;
   choices: PendingChoiceOption[];
@@ -19,7 +19,7 @@ interface UserChoiceState {
   actions: {
     addPendingChoice: (choice: PendingChoice) => void;
     resolveChoice: (id: string, value: string | null) => void;
-    cancelChoicesForAgent: (agentId: string) => void;
+    cancelChoicesForRun: (runKey: string) => void;
   };
 }
 
@@ -42,13 +42,13 @@ export const useUserChoiceStore = create<UserChoiceState>((set, get) => ({
       }));
     },
 
-    cancelChoicesForAgent: (agentId) => {
-      const toCancel = get().pendingChoices.filter((c) => c.agentId === agentId);
+    cancelChoicesForRun: (runKey) => {
+      const toCancel = get().pendingChoices.filter((c) => c.runKey === runKey);
       for (const choice of toCancel) {
         choice.resolve(null);
       }
       set((state) => ({
-        pendingChoices: state.pendingChoices.filter((c) => c.agentId !== agentId),
+        pendingChoices: state.pendingChoices.filter((c) => c.runKey !== runKey),
       }));
     },
   },

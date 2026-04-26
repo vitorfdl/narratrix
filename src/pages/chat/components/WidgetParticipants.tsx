@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { useAgents } from "@/hooks/agentStore";
-import { useAgentWorkflowStateById, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
+import { cancelAgentWorkflow, makeRunKey, useAgentWorkflowState, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatId, useCurrentChatParticipants, useCurrentChatSettings, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
@@ -198,18 +198,18 @@ const TRIGGER_LABEL: Record<AgentTriggerType, string> = {
 interface AgentParticipantCardProps {
   participant: Participant;
   agent: AgentType;
+  currentChatId: string | null;
   onToggle: (id: string) => void;
   onTrigger: (id: string) => void;
   onRemove: (id: string) => void;
   onEdit: (id: string) => void;
 }
 
-const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant, agent, onToggle, onTrigger, onRemove, onEdit }) => {
+const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant, agent, currentChatId, onToggle, onTrigger, onRemove, onEdit }) => {
   const isEnabled = participant.isEnabled ?? true;
-  // Read per-agent state from the global store so any component executing this agent's
-  // workflow (including WidgetGenerate's orchestrator) triggers the animation here.
-  // This component self-subscribes to the store, so no parent re-render is needed.
-  const workflowState = useAgentWorkflowStateById(agent.id);
+  // Subscribe to state scoped to this agent + chat so the card only reflects
+  // runs initiated from the currently open chat.
+  const workflowState = useAgentWorkflowState(agent.id, currentChatId);
   // Prefer trigger type from the Trigger node config; fall back to settings.run_on
   const triggerNodeConfig = agent.nodes?.find((n) => n.type === "trigger")?.config as { triggerType?: AgentTriggerType } | undefined;
   const triggerType: AgentTriggerType = triggerNodeConfig?.triggerType ?? agent.settings?.run_on?.type ?? "manual";
@@ -294,7 +294,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
   const inferenceService = useInferenceServiceFromContext();
-  const { executeWorkflow: executeAgentWorkflow, cancelWorkflow: cancelAgentWorkflow } = useAgentWorkflow();
+  const { executeWorkflow: executeAgentWorkflow } = useAgentWorkflow();
 
   const [streamingState, setStreamingState] = useState(() => inferenceService.getStreamingState(currentChatId));
 
@@ -425,9 +425,9 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
         }
 
         if (agent) {
-          // If already running, stop the agent instead of re-triggering it
-          if (useAgentWorkflowStore.getState().states[agent.id]?.isRunning) {
-            cancelAgentWorkflow(agent.id);
+          // If already running in this chat, stop the agent instead of re-triggering it
+          if (useAgentWorkflowStore.getState().states[makeRunKey(agent.id, currentChatId)]?.isRunning) {
+            cancelAgentWorkflow(makeRunKey(agent.id, currentChatId));
             return;
           }
           try {
@@ -451,15 +451,15 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
       }
     },
-    [characterList, agentList, participants, inferenceService, streamingState.characterId, currentChatId, currentChatUserCharacterID, executeAgentWorkflow, cancelAgentWorkflow],
+    [characterList, agentList, participants, inferenceService, streamingState.characterId, currentChatId, currentChatUserCharacterID, executeAgentWorkflow],
   );
 
   const isInQueue = (participantId: string): boolean => {
     const inCharacterQueue =
       (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") || (participantId === "user" && streamingState.messageId === "generate-input-area");
     const agent = agentList.find((a) => a.id === participantId);
-    // Use the per-agent store state so the indicator reflects ALL executors (orchestrator + manual)
-    const inAgentQueue = !!(agent && (useAgentWorkflowStore.getState().states[participantId]?.isRunning ?? false));
+    // Use the per-run-key store state so the indicator only reflects runs in this chat
+    const inAgentQueue = !!(agent && (useAgentWorkflowStore.getState().states[makeRunKey(participantId, currentChatId)]?.isRunning ?? false));
     return inCharacterQueue || inAgentQueue;
   };
 
@@ -518,6 +518,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
         <AgentParticipantCard
           participant={participant}
           agent={agent}
+          currentChatId={currentChatId}
           onToggle={handleToggleParticipant}
           onTrigger={handleTriggerMessage}
           onRemove={handleRemoveParticipant}

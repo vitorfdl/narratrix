@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { useCharacterStore } from "@/hooks/characterStore";
 import { useChatStore } from "@/hooks/chatStore";
 import { cn } from "@/lib/utils";
+import type { ChatMessage } from "@/schema/chat-message-schema";
+import type { ChatParticipant } from "@/schema/chat-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
+import { getChatMessagesByChatId } from "@/services/chat-message-service";
 import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
@@ -24,9 +27,7 @@ interface ParticipantPickerConfig {
 /**
  * Node Execution
  */
-function pickFromParticipants(mode: ParticipantPickerMode, agentId: string | undefined): string | null {
-  const store = useChatStore.getState();
-  const participants = store.selectedChat?.participants || [];
+function pickFromParticipants(mode: ParticipantPickerMode, agentId: string | undefined, participants: ChatParticipant[], messages: ChatMessage[]): string | null {
   const characters = useCharacterStore.getState().characters;
   const isCharacterId = (id: string) => characters.some((c) => c.id === id);
 
@@ -72,7 +73,6 @@ function pickFromParticipants(mode: ParticipantPickerMode, agentId: string | und
   }
 
   if (mode === "lastMessageCharacter") {
-    const messages = store.selectedChatMessages || [];
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
       if (m.type === "character" && m.character_id) {
@@ -89,11 +89,16 @@ function pickFromParticipants(mode: ParticipantPickerMode, agentId: string | und
   return null;
 }
 
-const executeParticipantPickerNode: NodeExecutor = async (node, _inputs, _ctx, agent): Promise<NodeExecutionResult> => {
+const executeParticipantPickerNode: NodeExecutor = async (node, _inputs, context, agent, deps): Promise<NodeExecutionResult> => {
   try {
     const cfg = (node.config as ParticipantPickerConfig) || {};
     const mode = (cfg.mode as ParticipantPickerMode) || "user";
-    const picked = pickFromParticipants(mode, agent?.id);
+    const selectedState = useChatStore.getState();
+    const targetChat = context.chatId ? await deps.getChatById(context.chatId) : null;
+    const participants = context.chatId ? (targetChat?.participants ?? []) : (selectedState.selectedChat?.participants ?? []);
+    const messages =
+      context.chatId && targetChat?.active_chapter_id ? await getChatMessagesByChatId(context.chatId, targetChat.active_chapter_id) : context.chatId ? [] : selectedState.selectedChatMessages || [];
+    const picked = pickFromParticipants(mode, agent?.id, participants, messages);
     if (!picked) {
       return { success: false, error: "No participant could be selected" };
     }
