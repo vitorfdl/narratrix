@@ -164,6 +164,9 @@ function LorebookContent({ selectedLorebookId, onLorebookSelect, profileId }: { 
         max_depth: 45,
         max_tokens: 1200,
         group_keys: [],
+        rag_enabled: false,
+        embedding_model_id: null,
+        similarity_threshold: 0.7,
         extra: {},
       });
       if (newLorebook) {

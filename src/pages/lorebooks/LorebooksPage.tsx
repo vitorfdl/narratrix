@@ -1,14 +1,15 @@
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, BrainCircuit, Download, Edit, Filter, Globe, HeartIcon, Plus, RefreshCw, ScrollText, Search, SortAsc, Trash2, Upload, User, View } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, BrainCircuit, Download, Edit, Globe, HeartIcon, Plus, RefreshCw, ScrollText, Search, Settings, Trash2, Upload, User, View, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsLoadingLorebooks, useLorebookStoreActions, useLorebooks, useSelectedLorebookId } from "@/hooks/lorebookStore";
@@ -28,6 +29,14 @@ const categoryIcons: Record<NonNullable<Lorebook["category"]>, React.ElementType
   world: Globe,
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  ruleset: "Ruleset",
+  character: "Character",
+  world: "World",
+};
+
+const formatCategoryLabel = (category: string): string => CATEGORY_LABELS[category] ?? category.charAt(0).toUpperCase() + category.slice(1);
+
 export default function LorebooksPage() {
   const currentProfile = useCurrentProfile();
   const lorebooks = useLorebooks();
@@ -44,6 +53,7 @@ export default function LorebooksPage() {
   const [lorebookToDelete, setLorebookToDelete] = useState<Lorebook | null>(null);
   const [settings, setSettings] = useLocalLorebookPageSettings();
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const tableSortField = settings.sort.field === "category" ? "category" : "name";
 
   // Load lorebooks when component mounts or profile changes
   useEffect(() => {
@@ -53,22 +63,6 @@ export default function LorebooksPage() {
       selectLorebook(null);
     }
   }, [currentProfile, loadLorebooks, selectLorebook]);
-
-  // Add effect to handle Escape key press
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && selectedLorebookId) {
-        handleGoBackToList();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    // Cleanup function to remove the event listener
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [selectedLorebookId]); // Re-run effect if selectedLorebookId changes
 
   // Get all unique categories
   const categories = Array.from(new Set(lorebooks.map((lb) => lb.category).filter(Boolean) as string[]));
@@ -99,7 +93,7 @@ export default function LorebooksPage() {
         let comparison = 0;
 
         // Primary sort field
-        const field = settings.sort.field;
+        const field = tableSortField;
         if (field === "name") {
           comparison = a.name.localeCompare(b.name);
         } else if (field === "category") {
@@ -124,7 +118,7 @@ export default function LorebooksPage() {
 
         return comparison;
       });
-  }, [lorebooks, searchQuery, selectedCategory, showFavoritesOnly, settings.sort]);
+  }, [lorebooks, searchQuery, selectedCategory, showFavoritesOnly, settings.sort.direction, tableSortField]);
 
   // Handle lorebook selection
   const handleSelectLorebook = (id: string) => {
@@ -143,11 +137,26 @@ export default function LorebooksPage() {
     }
   };
 
-  // Reset filters
   const resetFilters = () => {
-    setSearchQuery("");
     setSelectedCategory(null);
     setShowFavoritesOnly(false);
+  };
+
+  const handleColumnSort = (field: "name" | "category") => {
+    setSettings((prev) => ({
+      ...prev,
+      sort: {
+        field,
+        direction: prev.sort.field === field && prev.sort.direction === "asc" ? "desc" : "asc",
+      },
+    }));
+  };
+
+  const SortIndicator = ({ field }: { field: string }) => {
+    if (tableSortField !== field) {
+      return <ArrowUpDown className="ml-1 h-3 w-3 opacity-30 inline" />;
+    }
+    return settings.sort.direction === "asc" ? <ArrowUp className="ml-1 h-3 w-3 inline" /> : <ArrowDown className="ml-1 h-3 w-3 inline" />;
   };
 
   const handleRefresh = () => {
@@ -283,83 +292,6 @@ export default function LorebooksPage() {
                 </SelectContent>
               </Select>
 
-              {/* Sort */}
-              <Select
-                value={`${settings.sort.field}-${settings.sort.direction}`}
-                onValueChange={(value) => {
-                  const [field, direction] = value.split("-") as ["name" | "category" | "created_at" | "updated_at", "asc" | "desc"];
-                  setSettings((prev) => ({ ...prev, sort: { field, direction } }));
-                }}
-              >
-                <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="Sort Lorebooks">
-                  <SortAsc className="h-4 w-4" />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                  <SelectItem value="category-asc">Category (A-Z)</SelectItem>
-                  <SelectItem value="category-desc">Category (Z-A)</SelectItem>
-                  <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
-                  <SelectItem value="created_at-desc">Recently Created</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Filter */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className={`relative ${showFavoritesOnly || selectedCategory ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
-                    title="Filter Lorebooks"
-                  >
-                    <Filter className="h-4 w-4" />
-                    {(showFavoritesOnly || selectedCategory) && (
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-primary/80" />
-                      </span>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Filter Lorebooks</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-
-                  <div className="p-2">
-                    <label className="flex items-center space-x-2 mb-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={showFavoritesOnly}
-                        onChange={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                        className="rounded border-input text-primary focus:ring-primary focus:ring-offset-0 focus:ring-1"
-                      />
-                      <span>Favorites only</span>
-                    </label>
-
-                    <div className="mb-2">
-                      <p className="text-sm font-medium mb-1">Category</p>
-                      <select
-                        value={selectedCategory || ""}
-                        onChange={(e) => setSelectedCategory(e.target.value || null)}
-                        className="w-full rounded border border-input bg-background p-1.5 text-sm focus:ring-ring focus:ring-1 focus:outline-none"
-                      >
-                        <option value="">All Categories</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={resetFilters}>
-                      Reset Filters
-                    </Button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
               {/* Add Lorebook Button */}
               <Button
                 onClick={() => {
@@ -386,13 +318,53 @@ export default function LorebooksPage() {
               />
             </div>
 
+            {/* Filter and sort controls */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Checkbox id="filter-favorites" checked={showFavoritesOnly} onCheckedChange={(checked) => setShowFavoritesOnly(checked === true)} />
+                <Label htmlFor="filter-favorites" className="cursor-pointer text-xs font-normal flex items-center gap-1">
+                  <HeartIcon size={11} className={showFavoritesOnly ? "text-primary fill-primary" : "text-muted-foreground"} />
+                  Favorites only
+                </Label>
+              </div>
+
+              <Select value={selectedCategory ?? "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)}>
+                <SelectTrigger className="h-7 w-36 text-xs">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {formatCategoryLabel(category)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {(showFavoritesOnly || selectedCategory) && (
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={resetFilters}>
+                  <X className="h-3 w-3 mr-1" />
+                  Reset
+                </Button>
+              )}
+
+              <span className="ml-auto text-xs text-muted-foreground">{isLoading ? "" : `${filteredLorebooks.length} lorebook${filteredLorebooks.length !== 1 ? "s" : ""}`}</span>
+            </div>
+
             {isLoading ? (
               <div className="border rounded-md overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-accent/50 hover:bg-accent/50">
-                      <TableHead className="w-[35%]">Name</TableHead>
-                      <TableHead className="w-[15%]">Category</TableHead>
+                      <TableHead className="w-[35%] cursor-pointer select-none" onClick={() => handleColumnSort("name")}>
+                        Name
+                        <SortIndicator field="name" />
+                      </TableHead>
+                      <TableHead className="w-[15%] cursor-pointer select-none" onClick={() => handleColumnSort("category")}>
+                        Category
+                        <SortIndicator field="category" />
+                      </TableHead>
                       <TableHead className="w-[20%]">Tags</TableHead>
                       <TableHead className="w-[10%] text-center">Max Depth</TableHead>
                       <TableHead className="w-[10%] text-center">Max Tokens</TableHead>
@@ -434,8 +406,14 @@ export default function LorebooksPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-background/95 hover:bg-background/95">
-                      <TableHead className="w-[35%]">Name</TableHead>
-                      <TableHead className="w-[15%]">Category</TableHead>
+                      <TableHead className="w-[35%] cursor-pointer select-none hover:text-foreground" onClick={() => handleColumnSort("name")}>
+                        Name
+                        <SortIndicator field="name" />
+                      </TableHead>
+                      <TableHead className="w-[15%] cursor-pointer select-none hover:text-foreground" onClick={() => handleColumnSort("category")}>
+                        Category
+                        <SortIndicator field="category" />
+                      </TableHead>
                       <TableHead className="w-[20%]">Tags</TableHead>
                       <TableHead className="w-[10%] text-center">Max Depth</TableHead>
                       <TableHead className="w-[10%] text-center">Max Tokens</TableHead>
@@ -482,8 +460,8 @@ export default function LorebooksPage() {
                                 const Icon = categoryIcons[lorebook.category];
                                 return Icon ? <Icon size={12} className="text-muted-foreground flex-shrink-0" /> : null;
                               })()}
-                              <span className="truncate capitalize" title={lorebook.category}>
-                                {lorebook.category}
+                              <span className="truncate" title={formatCategoryLabel(lorebook.category)}>
+                                {formatCategoryLabel(lorebook.category)}
                               </span>
                             </div>
                           ) : (
@@ -580,9 +558,22 @@ export default function LorebooksPage() {
                 Lorebook: <span className="italic text-primary">{selectedLorebook?.name}</span>
               </h1>
               {selectedLorebook && (
-                <Button variant="outline" size="icon" onClick={() => handleExportLorebook(selectedLorebook)} title="Export Lorebook">
-                  <Download className="h-4 w-4" />
-                </Button>
+                <>
+                  <Button variant="outline" size="icon" onClick={() => handleExportLorebook(selectedLorebook)} title="Export Lorebook">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setLorebookToEdit(selectedLorebook);
+                      setIsFormDialogOpen(true);
+                    }}
+                    title="Lorebook Settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </>
               )}
             </div>
           </div>

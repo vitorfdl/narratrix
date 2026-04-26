@@ -123,8 +123,12 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
         await updateLorebookEntry(entry.id, updateData);
         if (ragEnabled) {
           indexEntry(lorebookId, entry.id)
-            .then(() => { toast.success("Entry indexed successfully"); })
-            .catch((err: unknown) => { toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`); });
+            .then(() => {
+              toast.success("Entry indexed successfully");
+            })
+            .catch((err: unknown) => {
+              toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+            });
         }
       } else {
         const createData: CreateLorebookEntryParams = {
@@ -136,8 +140,12 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
         const newEntry = await createLorebookEntry(createData);
         if (ragEnabled && newEntry) {
           indexEntry(lorebookId, newEntry.id)
-            .then(() => { toast.success("Entry indexed successfully"); })
-            .catch((err: unknown) => { toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`); });
+            .then(() => {
+              toast.success("Entry indexed successfully");
+            })
+            .catch((err: unknown) => {
+              toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+            });
         }
       }
 
@@ -160,7 +168,9 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
           <DialogTitle className="flex items-center gap-2">
             {isEditing ? "Edit Entry" : "Create New Entry"}
             {ragEnabled && isEditing && entry && (
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${entry.vector_content != null ? "bg-green-500/15 text-green-600" : "bg-muted text-muted-foreground"}`}>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${entry.vector_content != null ? "bg-green-500/15 text-green-600" : "bg-muted text-muted-foreground"}`}
+              >
                 <CircleDot className="h-3 w-3" />
                 {entry.vector_content != null ? "Indexed" : "Not Indexed"}
               </span>
