@@ -22,9 +22,8 @@
     "noFallthroughCasesInSwitch": true,
 
     /* Tailwind */
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
