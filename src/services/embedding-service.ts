@@ -1,5 +1,5 @@
+import type { Embedding, EmbedManyResult, EmbedResult } from "ai";
 import { cosineSimilarity, embed, embedMany } from "ai";
-import type { EmbedManyResult, EmbedResult, Embedding } from "ai";
 import type { ModelSpecs } from "@/schema/inference-engine-schema";
 import { getEmbeddingModel } from "./ai-providers/aisdk/embedding-provider-factory";
 import { getEmbeddingManifestById } from "./manifest-service";
@@ -59,5 +59,5 @@ async function embedTexts(modelId: string, texts: string[], options?: EmbedOptio
   });
 }
 
+export type { Embedding, EmbedManyResult, EmbedResult };
 export { cosineSimilarity, embedText, embedTexts };
-export type { EmbedManyResult, EmbedResult, Embedding };

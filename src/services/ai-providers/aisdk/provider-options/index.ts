@@ -1,8 +1,10 @@
 import type { Engine } from "@/schema/model-manifest-schema";
+import { getAnthropicProviderOptions } from "./anthropic";
 import { getAWSBedrockProviderOptions } from "./aws-bedrock";
 import { getGeminiProviderOptions } from "./gemini";
 import { getOpenAIProviderOptions } from "./openai";
 import { getOpenAICompatibleProviderOptions } from "./openai-compatible";
+import { getOpenRouterProviderOptions } from "./openrouter";
 
 function getProviderOptions(engine: Engine, parameters: Record<string, any>) {
   switch (engine) {
@@ -12,10 +14,10 @@ function getProviderOptions(engine: Engine, parameters: Record<string, any>) {
       return { bedrock: getAWSBedrockProviderOptions(parameters) };
     case "openai":
       return { openai: getOpenAIProviderOptions(parameters) };
-    // case "openrouter":
-    //   return { openrouter: getOpenRouterProviderOptions(parameters) };
-    // case "anthropic":
-    //   return { anthropic: getAnthropicProviderOptions(parameters) };
+    case "openrouter":
+      return { openrouter: getOpenRouterProviderOptions(parameters) };
+    case "anthropic":
+      return { anthropic: getAnthropicProviderOptions(parameters) };
     case "openai_compatible":
       return { openai: getOpenAICompatibleProviderOptions(parameters) };
     case "ollama":

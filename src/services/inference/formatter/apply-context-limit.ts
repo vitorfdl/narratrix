@@ -1,6 +1,6 @@
+import { encode } from "gpt-tokenizer";
 import { countTokens } from "@/commands/inference";
 import { ChatTemplate } from "@/schema/template-chat-schema";
-import { encode } from "gpt-tokenizer";
 import { FormattedPromptResult } from "../formatter";
 
 interface FormattedPromptCutResult extends FormattedPromptResult {
