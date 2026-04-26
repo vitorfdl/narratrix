@@ -108,6 +108,7 @@ const WidgetExpressions = () => {
   const [tempDisableLogs, setTempDisableLogs] = useState(false);
   const [tempAutoRunAfterComplete, setTempAutoRunAfterComplete] = useState(false);
   const [tempImageObjectFit, setTempImageObjectFit] = useState<ExpressionImageFit>("cover");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Use the hook for settings
   const [expressionSettings, setExpressionSettings] = useLocalExpressionGenerationSettings();
@@ -219,29 +220,25 @@ const WidgetExpressions = () => {
   // Manual expression generation function (now reads from refs AND selected text)
   const generateExpression = useCallback(
     async (userPickedText?: string) => {
-      // Determine the character ID: Use selected character if text is selected, otherwise use the last speaker
       const currentSpeakerId = userPickedText ? selectedMessageCharacterId : lastSpeakerIdRef.current;
-      const currentLastMessage = lastMessageRef.current; // Still needed for chapter ID
+      const currentLastMessage = lastMessageRef.current;
 
       if (!currentSpeakerId || !expressionSettings.chatTemplateId) {
-        if (selectedText) {
-          clearSelection(); // Clear selection if we skipped because of it
-        }
-        return;
-      }
-
-      // Use selected text if available, otherwise fallback to last message content
-      const messageContentToUse = userPickedText || currentLastMessage?.messages?.[0] || "";
-
-      if (!messageContentToUse) {
-        // If there's no selected text AND no last message content, we can't proceed
         if (selectedText) {
           clearSelection();
         }
         return;
       }
 
-      // Skip expression generation if message content is just "..." three dots
+      const messageContentToUse = userPickedText || currentLastMessage?.messages?.[0] || "";
+
+      if (!messageContentToUse) {
+        if (selectedText) {
+          clearSelection();
+        }
+        return;
+      }
+
       if (messageContentToUse.trim() === "...") {
         if (selectedText) {
           clearSelection();
@@ -258,22 +255,19 @@ const WidgetExpressions = () => {
         return;
       }
 
-      // setAnimateLastSpeaker(true);
-      // setTimeout(() => setAnimateLastSpeaker(false), 1000);
-
       const availableExpressions = targetCharacter.expressions?.length ? targetCharacter.expressions.filter((exp) => exp.image_path).map((exp) => exp.name) : EXPRESSION_LIST;
       const availableExpressionNames = targetCharacter.expressions?.length ? targetCharacter.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
 
+      setIsGenerating(true);
       try {
         const expressionResult = await generateQuietly({
           chatTemplateId: expressionSettings.chatTemplateId,
           context: {
             characterID: currentSpeakerId,
-            chapterID: currentLastMessage?.chapter_id, // Use chapter ID from last message context if available
+            chapterID: currentLastMessage?.chapter_id,
             extra: {
               "expression.list": availableExpressions.join(", "),
               "expression.last": characterExpressionsRef.current[currentSpeakerId] || "neutral",
-              // Use the determined message content (selected or last)
               "chat.message": messageContentToUse,
             },
           },
@@ -290,10 +284,6 @@ const WidgetExpressions = () => {
           [currentSpeakerId]: finalExpression,
         }));
         setConnectionError(null);
-        // Clear selection after successful generation
-        // if (selectedText) {
-        //   clearSelection();
-        // }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
         const formattedMessage = `Expression generation failed for ${targetCharacter.name}: ${errorMessage}`;
@@ -303,10 +293,11 @@ const WidgetExpressions = () => {
           ...prev,
           [currentSpeakerId]: "neutral",
         }));
-        // Clear selection on error
         if (selectedText) {
           clearSelection();
         }
+      } finally {
+        setIsGenerating(false);
       }
     },
     [
@@ -492,16 +483,16 @@ const WidgetExpressions = () => {
           <div className="flex items-center justify-between rounded-md border bg-muted/40 px-2 py-1 shadow-sm">
             <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
+                variant={isGenerating ? "default" : "ghost"}
                 size="xs"
                 className="px-1"
                 onClick={() => generateExpression()}
-                disabled={!expressionSettings.chatTemplateId || (!selectedText && !lastSpeakerId)}
+                disabled={isGenerating || !expressionSettings.chatTemplateId || (!selectedText && !lastSpeakerId)}
                 aria-label={selectedText ? "Generate expression from selection" : "Generate expression for current speaker"}
                 title={selectedText ? "Generate from selection" : "Generate for speaker"}
               >
-                <LuRefreshCw className="!h-3 !w-3" />
-                <span className="ml-0.2 hidden sm:inline text-xs">Generate</span>
+                <LuRefreshCw className={cn("!h-3 !w-3", isGenerating && "animate-spin")} />
+                <span className="ml-0.2 hidden sm:inline text-xs">{isGenerating ? "Generating..." : "Generate"}</span>
               </Button>
 
               <Button

@@ -36,7 +36,7 @@ export function HelpTooltip({
       <TooltipContent className={cn("max-w-80 select-none border py-2", tooltipContentClassName)} {...tooltipContentProps}>
         <div className="flex items-center gap-1">
           <LuBadgeHelp className="h-5 w-5 flex-shrink-0 mr-1 text-muted-foreground text-justify" />
-          <div className="text-foreground/80">{children}</div>
+          <div className="whitespace-pre-line text-foreground/80">{children}</div>
         </div>
       </TooltipContent>
     </Tooltip>

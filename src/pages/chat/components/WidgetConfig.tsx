@@ -1,5 +1,5 @@
 import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, XIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { TemplatePicker } from "@/components/shared/TemplatePicker";
@@ -39,11 +39,33 @@ import FormatTemplateModal from "./format-template/FormatTemplateModal";
 import { ImportOptions, ImportOptionsDialog } from "./ImportOptionsDialog";
 
 const bigScreenBreakpoints = "@[18rem]:flex";
+const SAVE_DEBOUNCE_MS = 100;
 
 interface ChatTemplateConfigProps {
   currentChatTemplateID?: string | null;
   onChatTemplateChange?: (chatTemplateID: string) => void;
 }
+
+type ChatTemplateUpdateData = Partial<Omit<ChatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>;
+
+interface PendingTemplateSave {
+  templateId: string;
+  updateData: ChatTemplateUpdateData;
+}
+
+const isTemplateUpdateUnchanged = (template: ChatTemplate | undefined, updateData: ChatTemplateUpdateData): boolean => {
+  if (!template) {
+    return false;
+  }
+
+  return (
+    (template.model_id ?? null) === (updateData.model_id ?? null) &&
+    (template.format_template_id ?? null) === (updateData.format_template_id ?? null) &&
+    JSON.stringify(template.lorebook_list ?? []) === JSON.stringify(updateData.lorebook_list ?? []) &&
+    JSON.stringify(template.config ?? {}) === JSON.stringify(updateData.config ?? {}) &&
+    JSON.stringify(template.custom_prompts ?? []) === JSON.stringify(updateData.custom_prompts ?? [])
+  );
+};
 
 /**
  * WidgetConfig component
@@ -100,57 +122,126 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   }
   const currentTemplate = useChatTemplate(currentChatTemplateID || "");
 
-  // Add debounce timer ref
   const saveTimeoutRef = useRef<number | null>(null);
+  const pendingSaveRef = useRef<PendingTemplateSave | null>(null);
+  const isSavingRef = useRef(false);
+  const hasQueuedSaveRef = useRef(false);
+  const updateChatTemplateRef = useRef(updateChatTemplate);
+  const skipNextAutosaveRef = useRef(false);
+  const hydratedTemplateIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    updateChatTemplateRef.current = updateChatTemplate;
+  }, [updateChatTemplate]);
+
+  const runPendingSave = useCallback(async () => {
+    if (isSavingRef.current) {
+      hasQueuedSaveRef.current = true;
+      return;
+    }
+
+    const pendingSave = pendingSaveRef.current;
+    if (!pendingSave) {
+      return;
+    }
+
+    pendingSaveRef.current = null;
+    isSavingRef.current = true;
+
+    try {
+      const updatedTemplate = await updateChatTemplateRef.current(pendingSave.templateId, pendingSave.updateData);
+      if (!updatedTemplate) {
+        toast.warning("Template save failed", {
+          description: "Your latest chat template changes could not be saved.",
+        });
+      }
+    } finally {
+      isSavingRef.current = false;
+
+      if (hasQueuedSaveRef.current || pendingSaveRef.current) {
+        hasQueuedSaveRef.current = false;
+        void runPendingSave();
+      }
+    }
+  }, []);
+
+  const clearSaveTimeout = useCallback(() => {
+    if (saveTimeoutRef.current !== null) {
+      window.clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleTemplateSave = useCallback(
+    (pendingSave: PendingTemplateSave) => {
+      pendingSaveRef.current = pendingSave;
+      clearSaveTimeout();
+
+      saveTimeoutRef.current = window.setTimeout(() => {
+        saveTimeoutRef.current = null;
+        void runPendingSave();
+      }, SAVE_DEBOUNCE_MS);
+    },
+    [clearSaveTimeout, runPendingSave],
+  );
+
+  const flushPendingSave = useCallback(() => {
+    clearSaveTimeout();
+    void runPendingSave();
+  }, [clearSaveTimeout, runPendingSave]);
+
+  useEffect(() => {
+    return () => {
+      flushPendingSave();
+    };
+  }, [flushPendingSave]);
 
   // Initialize state from current template
   useEffect(() => {
+    const templateId = currentTemplate?.id ?? null;
+
+    if (hydratedTemplateIdRef.current === templateId) {
+      return;
+    }
+
+    flushPendingSave();
+    hydratedTemplateIdRef.current = templateId;
+    skipNextAutosaveRef.current = true;
+
     if (currentTemplate) {
-      // Set model ID if available
-      if (currentTemplate.model_id) {
-        setSelectedModelId(currentTemplate.model_id);
-      }
+      setSelectedModelId(currentTemplate.model_id ?? null);
+      setSelectedFormatTemplateId(currentTemplate.format_template_id ?? null);
+      setSelectedLorebookList(currentTemplate.lorebook_list ?? []);
 
-      // Set inference template ID if available
-      if (currentTemplate.format_template_id) {
-        setSelectedFormatTemplateId(currentTemplate.format_template_id);
-      }
-
-      // Set lorebooks if available
-      if (currentTemplate.lorebook_list) {
-        setSelectedLorebookList(currentTemplate.lorebook_list);
-      }
-
-      // Set context size, response length, max depth, and lorebook budget from config
       if (currentTemplate.config) {
         setContextSize(currentTemplate.config.max_context || 4096);
         setResponseLength(currentTemplate.config.max_tokens || 1024);
         setMaxDepth(currentTemplate.config.max_depth || 100);
         setLorebookTokenBudget(currentTemplate.config.lorebook_token_budget ?? 2048);
+      } else {
+        setContextSize(4096);
+        setResponseLength(1024);
+        setMaxDepth(100);
+        setLorebookTokenBudget(2048);
       }
 
-      // Set custom prompts
       setCustomPrompts(currentTemplate.custom_prompts || []);
 
-      // Set other config values as active fields
       const templateConfig = currentTemplate.config || {};
       const configKeys = Object.keys(templateConfig).filter((key) => key !== "max_tokens" && key !== "max_context" && key !== "max_depth");
+      setActiveFields(configKeys);
 
-      if (configKeys.length > 0) {
-        setActiveFields(configKeys);
-
-        const configValues: Record<string, any> = {};
-        for (const key of configKeys) {
-          configValues[key] = templateConfig[key];
-        }
-        setValues(configValues);
+      const configValues: Record<string, any> = {};
+      for (const key of configKeys) {
+        configValues[key] = templateConfig[key];
       }
+      setValues(configValues);
     } else {
       // Reset to defaults if no template
       setActiveFields([]);
       setValues({});
-      setSelectedModelId("");
-      setSelectedFormatTemplateId("");
+      setSelectedModelId(null);
+      setSelectedFormatTemplateId(null);
       setContextSize(4096);
       setResponseLength(1024);
       setMaxDepth(100);
@@ -158,7 +249,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       setCustomPrompts([]);
       setSelectedLorebookList([]);
     }
-  }, [currentTemplate?.id]);
+  }, [currentTemplate, flushPendingSave]);
 
   // Get model manifest
   const manifestId = useMemo(() => {
@@ -213,6 +304,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     if (currentChatTemplateID === templateId) {
       return;
     }
+
+    flushPendingSave();
 
     if (onChatTemplateChange) {
       onChatTemplateChange(templateId);
@@ -397,61 +490,70 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     }));
   };
 
-  // Save changes to template with debounce
-  const debouncedSaveChanges = () => {
-    // Clear any existing timeout
-    if (saveTimeoutRef.current !== null) {
-      window.clearTimeout(saveTimeoutRef.current);
-    }
-
-    // Set a new timeout
-    saveTimeoutRef.current = window.setTimeout(() => {
-      if (!currentChatTemplateID || isDisabled) {
-        return;
-      }
-
-      // Compile all config values
-      const configValues: ChatTemplate["config"] = {
-        ...values,
-        max_tokens: responseLength,
-        max_context: contextSize,
-        max_depth: maxDepth,
-      };
-
-      // Only include lorebook budget if lorebooks are selected
-      if (selectedLorebookList.length > 0) {
-        configValues.lorebook_token_budget = lorebookTokenBudget;
-      } else {
-        // Optionally remove or nullify if no lorebooks are selected
-        delete configValues.lorebook_token_budget;
-      }
-
-      // Update template
-      updateChatTemplate(currentChatTemplateID, {
-        model_id: selectedModelId || null,
-        format_template_id: selectedFormatTemplateId || null,
-        lorebook_list: selectedLorebookList,
-        config: configValues,
-        custom_prompts: customPrompts,
-      });
-
-      saveTimeoutRef.current = null;
-    }, 100); // Keep debounce delay at 500ms for stability
-  };
-
   // Save changes when relevant state changes
   useEffect(() => {
-    if (currentChatTemplateID) {
-      debouncedSaveChanges();
+    if (!currentChatTemplateID || isDisabled) {
+      clearSaveTimeout();
+      pendingSaveRef.current = null;
+      return;
     }
 
-    // Cleanup timeout on unmount
-    return () => {
-      if (saveTimeoutRef.current !== null) {
-        window.clearTimeout(saveTimeoutRef.current);
-      }
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false;
+      return;
+    }
+
+    const configValues: ChatTemplate["config"] = {
+      ...values,
+      max_tokens: responseLength,
+      max_context: contextSize,
+      max_depth: maxDepth,
     };
-  }, [selectedModelId, selectedFormatTemplateId, selectedLorebookList, contextSize, responseLength, maxDepth, lorebookTokenBudget, values, customPrompts, currentChatTemplateID]);
+
+    if (selectedLorebookList.length > 0) {
+      configValues.lorebook_token_budget = lorebookTokenBudget;
+    } else {
+      delete configValues.lorebook_token_budget;
+    }
+
+    const updateData: ChatTemplateUpdateData = {
+      model_id: selectedModelId || null,
+      format_template_id: selectedFormatTemplateId && selectedFormatTemplateId !== "none" ? selectedFormatTemplateId : null,
+      lorebook_list: selectedLorebookList,
+      config: configValues,
+      custom_prompts: customPrompts,
+    };
+
+    if (isTemplateUpdateUnchanged(currentTemplate, updateData)) {
+      pendingSaveRef.current = null;
+      clearSaveTimeout();
+      return;
+    }
+
+    scheduleTemplateSave({
+      templateId: currentChatTemplateID,
+      updateData,
+    });
+
+    return () => {
+      clearSaveTimeout();
+    };
+  }, [
+    selectedModelId,
+    selectedFormatTemplateId,
+    selectedLorebookList,
+    contextSize,
+    responseLength,
+    maxDepth,
+    lorebookTokenBudget,
+    values,
+    customPrompts,
+    currentChatTemplateID,
+    currentTemplate,
+    isDisabled,
+    clearSaveTimeout,
+    scheduleTemplateSave,
+  ]);
 
   // Custom prompts handlers
   const handleAddCustomPrompt = () => {

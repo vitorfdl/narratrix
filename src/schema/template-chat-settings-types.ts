@@ -16,6 +16,7 @@ export interface NumericField extends BaseField {
   min: number;
   max?: number;
   step: number;
+  ticks?: number;
   default?: number;
 }
 

@@ -29,7 +29,25 @@ export const chatTemplateSchema = baseTemplateSchema.extend({
     })
     .passthrough()
     .default(() => ({ max_tokens: 8000, max_context: 4000, max_depth: 100 })),
-  custom_prompts: chatTemplateCustomPromptSchema.array().default([]),
+  custom_prompts: chatTemplateCustomPromptSchema
+    .array()
+    .superRefine((customPrompts, ctx) => {
+      const promptIds = new Set<string>();
+
+      for (const [index, customPrompt] of customPrompts.entries()) {
+        if (promptIds.has(customPrompt.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Custom prompt IDs must be unique.",
+            path: [index, "id"],
+          });
+          continue;
+        }
+
+        promptIds.add(customPrompt.id);
+      }
+    })
+    .default([]),
 });
 
 export type ChatTemplate = z.infer<typeof chatTemplateSchema>;

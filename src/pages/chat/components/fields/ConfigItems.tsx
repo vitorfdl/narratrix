@@ -24,7 +24,17 @@ export const ConfigItem = ({ field, value, onChange, onRemove, isNested = false,
       case "stepbutton_slider": {
         const numericField = field as NumericField;
         const numericValue = typeof value === "number" ? value : (numericField.default ?? 0);
-        return <StepButton value={numericValue} min={numericField.min} max={numericField.max} step={numericField.step} showSlider={field.type === "stepbutton_slider"} onValueChange={onChange} />;
+        return (
+          <StepButton
+            value={numericValue}
+            min={numericField.min}
+            max={numericField.max}
+            step={numericField.step}
+            ticks={numericField.ticks}
+            showSlider={field.type === "stepbutton_slider"}
+            onValueChange={onChange}
+          />
+        );
       }
       case "random_number": {
         const numericField = field as RandomNumberField;
