@@ -6,6 +6,7 @@ import { useAgents } from "@/hooks/agentStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import {
   useChatActions,
+  useChatStore,
   useCurrentChatActiveChapterID,
   useCurrentChatId,
   useCurrentChatMessages,
@@ -21,7 +22,7 @@ import { useImageUrl } from "@/hooks/useImageUrl";
 import type { TriggerContext } from "@/schema/agent-schema";
 import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import type { ChatMessage } from "@/services/chat-message-service";
-import { updateChatMessagesUsingFilter } from "@/services/chat-message-service";
+import { deleteChatMessage as apiDeleteChatMessage, getChatMessagesByChatId, updateChatMessagesUsingFilter } from "@/services/chat-message-service";
 import MessageItem from "./message-controls/MessageItem";
 import MidMessageLayerWrapper from "./message-controls/MidMessageLayerWrapper";
 import { NoMessagePlaceholder } from "./message-controls/NoMessagePlaceholder";
@@ -140,18 +141,26 @@ const WidgetMessages: React.FC = () => {
         return;
       }
 
+      const targetChatId = (triggerContext as Partial<TriggerContext>).chatId ?? message.chat_id;
       if (executionId) {
         const siblingsToDelete = messages.filter((m) => m.extra?.executionId === executionId);
         for (const sibling of siblingsToDelete) {
-          await deleteChatMessage(sibling.id);
+          await apiDeleteChatMessage(sibling.id);
         }
       } else {
-        await deleteChatMessage(message.id);
+        await apiDeleteChatMessage(message.id);
+      }
+
+      if (targetChatId === currentChatId && message.chapter_id) {
+        const updatedMessages = await getChatMessagesByChatId(targetChatId, message.chapter_id);
+        if (useChatStore.getState().selectedChat?.id === targetChatId) {
+          useChatStore.setState({ selectedChatMessages: updatedMessages });
+        }
       }
 
       await executeWorkflow(agent, triggerContext as unknown as TriggerContext);
     },
-    [agentList, messages, deleteChatMessage, executeWorkflow],
+    [agentList, messages, currentChatId, executeWorkflow],
   );
 
   const onRegenerateMessage = useCallback(

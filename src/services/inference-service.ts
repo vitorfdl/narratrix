@@ -178,7 +178,7 @@ export function useInferenceService() {
         let messageId: string;
 
         if (userMessage && !quietUserMessage) {
-          await messageManager.createUserMessage(userMessage);
+          await messageManager.createUserMessage(userMessage, chatId, chapterId);
           // Emit after_user_message so agents can react to the user's input
           if (emitChatEvents) {
             chatEventBus.emit({
@@ -201,7 +201,7 @@ export function useInferenceService() {
 
         if (existingMessageId) {
           messageId = existingMessageId;
-          await messageManager.setMessageLoading(messageId, messageIndex);
+          await messageManager.setMessageLoading(chatId, messageId, messageIndex);
 
           // Capture snapshot of existing message versions for safe background updates
           const existing = messageManager.getMessageById(messageId);
@@ -209,7 +209,7 @@ export function useInferenceService() {
             messageSnapshotsRef.current.set(localRequestId, [...existing.messages]);
           }
         } else if (!quietResponse) {
-          const newMessage = await messageManager.createCharacterMessage(characterId);
+          const newMessage = await messageManager.createCharacterMessage(characterId, chatId, chapterId);
           messageId = newMessage.id;
           messageSnapshotsRef.current.set(localRequestId, [...newMessage.messages]);
         } else {

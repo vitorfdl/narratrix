@@ -38,7 +38,7 @@ const executeAgentNode: NodeExecutor = async (node, inputs, ctx, _agent, deps): 
   // Toolset input reserved for future use
 
   // Hard fail when required dependencies are unavailable
-  if (!deps || !deps.runInference || !deps.formatPrompt || !deps.getModelById || !deps.getManifestById || !deps.removeNestedFields) {
+  if (!deps?.runInference || !deps.formatPrompt || !deps.getModelById || !deps.getManifestById || !deps.removeNestedFields) {
     return { success: false, error: "Agent node missing workflow dependencies" };
   }
 
@@ -115,6 +115,7 @@ const executeAgentNode: NodeExecutor = async (node, inputs, ctx, _agent, deps): 
       parameters: fixedParameters,
       stream: false,
       toolset,
+      runKey: ctx.runKey,
     });
     if (typeof result === "string" && result.length > 0) {
       return { success: true, value: result };

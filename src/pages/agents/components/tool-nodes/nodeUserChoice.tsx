@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { makeRunKey } from "@/hooks/agentWorkflowStore";
 import { useProfileStore } from "@/hooks/ProfileStore";
 import { type PendingChoiceOption, useUserChoiceStore } from "@/hooks/userChoiceStore";
 import type { NodeExecutionResult, NodeExecutor, WorkflowToolDefinition } from "@/services/agent-workflow/types";
@@ -145,7 +144,7 @@ const executeUserChoiceNode: NodeExecutor = async (node, inputs, context, agent)
           throw new Error("Workflow cancelled");
         }
 
-        const selected = await createPendingChoice(makeRunKey(context.agentId, context.chatId), context.executionId, prompt, choices, cfg.timeoutSeconds);
+        const selected = await createPendingChoice(context.runKey, context.executionId, prompt, choices, cfg.timeoutSeconds);
         if (selected === null) {
           throw new Error("Workflow cancelled");
         }
@@ -164,7 +163,7 @@ const executeUserChoiceNode: NodeExecutor = async (node, inputs, context, agent)
     return { success: false, error: "User choice node has no choices configured" };
   }
 
-  const selected = await createPendingChoice(makeRunKey(context.agentId, context.chatId), context.executionId, prompt, choices, cfg.timeoutSeconds);
+  const selected = await createPendingChoice(context.runKey, context.executionId, prompt, choices, cfg.timeoutSeconds);
 
   if (selected === null) {
     return { success: false, error: "User cancelled the choice" };

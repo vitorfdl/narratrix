@@ -32,6 +32,7 @@ export type { AgentWorkflowState } from "./agentWorkflowStore";
  * Hook for executing agent workflows with proper integration to inference service
  */
 interface PendingResolver {
+  runKey: string;
   resolve: (response: InferenceCompletedResponse | InferenceCancelledResponse) => void;
   reject: (error: Error) => void;
   timeout?: number;
@@ -138,14 +139,14 @@ export function useAgentWorkflow() {
   const modelManifests = useModelManifests();
 
   const waitForResponse = useCallback(
-    (requestId: string): Promise<InferenceCompletedResponse | InferenceCancelledResponse> => {
+    (requestId: string, runKey: string): Promise<InferenceCompletedResponse | InferenceCancelledResponse> => {
       return new Promise((resolve, reject) => {
         const timeout = window.setTimeout(() => {
           delete pendingResolvers.current[requestId];
           cancelRequest(requestId).catch(() => {});
           reject(new Error("Agent inference timed out"));
         }, INFERENCE_TIMEOUT_MS);
-        pendingResolvers.current[requestId] = { resolve, reject, timeout };
+        pendingResolvers.current[requestId] = { runKey, resolve, reject, timeout };
       });
     },
     [cancelRequest],
@@ -190,6 +191,7 @@ export function useAgentWorkflow() {
         parameters?: Record<string, any>;
         stream?: boolean;
         toolset?: WorkflowToolDefinition[];
+        runKey?: string;
       }): Promise<string | null> => {
         const executableTools: ExecutableToolDefinition[] = (opts.toolset ?? []).map(toExecutableTool);
 
@@ -206,7 +208,7 @@ export function useAgentWorkflow() {
           return null;
         }
 
-        const response = await waitForResponse(requestId);
+        const response = await waitForResponse(requestId, opts.runKey ?? "global");
         if (response.status === "cancelled") {
           return null;
         }
@@ -289,7 +291,9 @@ export function useAgentWorkflow() {
 
       // Resolve all pending inference resolvers as "cancelled" so waitForResponse
       // returns immediately, then send the backend cancellation signal.
-      const pendingIds = Object.keys(pendingResolvers.current);
+      const pendingIds = Object.entries(pendingResolvers.current)
+        .filter(([, resolver]) => resolver.runKey === runKey)
+        .map(([requestId]) => requestId);
       for (const requestId of pendingIds) {
         cancelRequest(requestId).catch(() => {});
         const resolver = pendingResolvers.current[requestId];

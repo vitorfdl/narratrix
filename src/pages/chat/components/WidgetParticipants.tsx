@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import type { AgentTriggerType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import { Character } from "@/schema/characters-schema";
+import { cancelChatGeneration, clearChatGenerationCancellation, isChatGenerationCancelled } from "@/services/chat-generation-cancellation";
 import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import AddParticipantPopover from "./AddParticipantPopover";
 
@@ -411,6 +412,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
       }
 
       if (streamingState.characterId === participantId) {
+        cancelChatGeneration(currentChatId);
         inferenceService.cancelGeneration(currentChatId);
         return;
       }
@@ -437,14 +439,20 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
             toast.error(`Agent ${agent.name} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
           }
         } else if (character) {
-          await generateCharacterWithAgents(participantId, () => inferenceService.generateMessage({ chatId: currentChatId, characterId: participantId, emitChatEvents: false }), {
-            chatId: currentChatId,
-            participants: participants ?? [],
-            agents: agentList,
-            userCharacterId: currentChatUserCharacterID ?? null,
-            executeWorkflow: executeAgentWorkflow,
-            isAborted: () => false,
-          });
+          const targetChatId = currentChatId;
+          clearChatGenerationCancellation(targetChatId);
+          try {
+            await generateCharacterWithAgents(participantId, () => inferenceService.generateMessage({ chatId: targetChatId, characterId: participantId, emitChatEvents: false }), {
+              chatId: targetChatId,
+              participants: participants ?? [],
+              agents: agentList,
+              userCharacterId: currentChatUserCharacterID ?? null,
+              executeWorkflow: executeAgentWorkflow,
+              isAborted: () => isChatGenerationCancelled(targetChatId),
+            });
+          } finally {
+            clearChatGenerationCancellation(targetChatId);
+          }
         }
       } catch (error) {
         console.error("Error triggering message:", error);

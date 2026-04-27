@@ -108,6 +108,7 @@ export async function executeWorkflow(
   const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const context: WorkflowExecutionContext = {
     agentId: agent.id,
+    runKey,
     chatId,
     executionId,
     nodeValues: new Map(),
