@@ -1,94 +1,133 @@
-/* Added full height for html, body, and root container */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@plugin "@tailwindcss/typography";
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar: var(--sidebar);
+  --color-content: var(--content);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-mono: "JetBrains Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --text-xxs: 0.625rem;
+}
+
 html,
 body,
 #root {
   height: 100%;
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-@plugin "@tailwindcss/typography";
-@layer base {
-  :root {
-    --background: 263 15% 93%; /* #EFEEF4 - soft lavender gray */
-    --foreground: 263 30% 15%; /* #2A2535 - deep purple-tinted black */
-    --sidebar: 263 20% 88%; /* #E4E1ED - muted lavender */
-    --card: 263 10% 96%; /* #F7F6F9 - off-white with purple tint */
-    --card-foreground: 263 25% 20%; /* #3B3547 - softer than pure black */
-    --popover: 263 15% 91%; /* #EAE8F0 - slightly darker than background */
-    --popover-foreground: 263 30% 15%; /* #2A2535 */
-    --primary: 265 60% 65%; /* #9F7AFA - slightly deeper purple */
-    --primary-foreground: 0 0% 98%; /* #FAFAFA */
-    --secondary: 263 12% 85%; /* #DAD7E0 - purple-tinted gray */
-    --secondary-foreground: 263 20% 25%; /* #473F54 */
-    --muted: 263 10% 88%; /* #E5E3E9 - soft muted purple */
-    --muted-foreground: 263 15% 45%; /* #6B6175 - purple gray */
-    --accent: 263 18% 90%; /* #E8E5EE - subtle purple accent */
-    --accent-foreground: 265 60% 60%; /* #8E66FA - matches primary family */
-    --destructive: 350 60% 50%; /* #CC3366 - softer red with purple undertone */
-    --destructive-foreground: 0 0% 98%; /* #FAFAFA */
-    --border: 263 15% 82%; /* #D2CED9 - subtle purple border */
-    --input: 263 12% 85%; /* #DAD7E0 - matches secondary */
-    --ring: 265 60% 65%; /* #9F7AFA - matches primary */
-    --chart-1: 265 60% 65%; /* #9F7AFA - primary purple */
-    --chart-2: 280 50% 55%; /* #9966CC - deeper purple */
-    --chart-3: 250 45% 60%; /* #8080D9 - blue-purple */
-    --chart-4: 320 55% 65%; /* #D97FA6 - pink-purple */
-    --chart-5: 340 50% 60%; /* #CC6699 - magenta-purple */
-    --chart-6: 220 50% 65%; /* #6699E6 - blue complement */
-    --chart-7: 180 40% 50%; /* #4D9999 - teal complement */
-    --chart-8: 30 65% 65%; /* #E6A366 - warm orange complement */
-    --radius: 0.4rem;
-    --font-sans: "Inter", sans-serif;
-    --font-serif: "Merriweather", serif;
-  }
-  .dark {
-    --background: 277 5% 11%; /* #282828 */
-    --foreground: 0 0% 85%; /* #D9D9D9 */
-    --content: 0 0% 21%; /* #353535 */
-    --sidebar: 0 0% 8%; /* #141415 */
-    --card: 0 0% 16%; /* #282828 */
-    --card-foreground: 0 0% 67%; /* #AAAAAA */
-    --popover: 223 9% 18%; /* #2B2D30 */
-    --popover-foreground: 223 9% 73%; /* #B4B8BF */
-    --primary: 265 60% 70%; /* #a78bfa - purple-400 */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF */
-    --secondary: 223 7% 24%; /* #393B40 */
-    --secondary-foreground: 223 2% 54%; /* #878B8D */
-    --muted: 0 0% 20%; /* #333333 */
-    --muted-foreground: 223 2% 54%; /* #878B8D */
-    --accent: 0 0% 15%; /* #252525 */
-    --accent-foreground: 293 59% 74%; /* #db9ee5 */
-    --destructive: 0 52% 55%; /* #C2362E */
-    --destructive-foreground: 0 0% 98%; /* #FAFAFA */
-    --border: 223 6% 27%; /* #43454A */
-    --input: 223 6% 27%; /* #43454A */
-    --ring: 293 59% 74%; /* #db9ee5 */
-    --chart-1: 293 59% 74%; /* #DB9EE5 */
-    --chart-2: 293 35% 45%; /* #9A53A3 - darker primary */
-    --chart-3: 260 40% 55%; /* #7B6EDB - complementary to primary */
-    --chart-4: 320 70% 60%; /* #E55A9B - analogous to primary */
-    --chart-5: 350 65% 55%; /* #DB5A69 - triadic with primary */
-    --chart-6: 230 60% 60%; /* #5A7EE5 - cool contrast */
-    --chart-7: 180 50% 45%; /* #39A3A3 - teal complement */
-    --chart-8: 30 80% 60%; /* #E5A33A - warm contrast */
-    --radius: 0.4rem;
+:root {
+  --background: hsl(263 15% 93%); /* #EFEEF4 - soft lavender gray */
+  --foreground: hsl(263 30% 15%); /* #2A2535 - deep purple-tinted black */
+  --content: hsl(263 10% 96%);
+  --sidebar: hsl(263 20% 88%); /* #E4E1ED - muted lavender */
+  --card: hsl(263 10% 96%); /* #F7F6F9 - off-white with purple tint */
+  --card-foreground: hsl(263 25% 20%); /* #3B3547 - softer than pure black */
+  --popover: hsl(263 15% 91%); /* #EAE8F0 - slightly darker than background */
+  --popover-foreground: hsl(263 30% 15%); /* #2A2535 */
+  --primary: hsl(265 60% 65%); /* #9F7AFA - slightly deeper purple */
+  --primary-foreground: hsl(0 0% 98%); /* #FAFAFA */
+  --secondary: hsl(263 12% 85%); /* #DAD7E0 - purple-tinted gray */
+  --secondary-foreground: hsl(263 20% 25%); /* #473F54 */
+  --muted: hsl(263 10% 88%); /* #E5E3E9 - soft muted purple */
+  --muted-foreground: hsl(263 15% 45%); /* #6B6175 - purple gray */
+  --accent: hsl(263 18% 90%); /* #E8E5EE - subtle purple accent */
+  --accent-foreground: hsl(265 60% 60%); /* #8E66FA - matches primary family */
+  --destructive: hsl(350 60% 50%); /* #CC3366 - softer red with purple undertone */
+  --destructive-foreground: hsl(0 0% 98%); /* #FAFAFA */
+  --border: hsl(263 15% 82%); /* #D2CED9 - subtle purple border */
+  --input: hsl(263 12% 85%); /* #DAD7E0 - matches secondary */
+  --ring: hsl(265 60% 65%); /* #9F7AFA - matches primary */
+  --chart-1: hsl(265 60% 65%); /* #9F7AFA - primary purple */
+  --chart-2: hsl(280 50% 55%); /* #9966CC - deeper purple */
+  --chart-3: hsl(250 45% 60%); /* #8080D9 - blue-purple */
+  --chart-4: hsl(320 55% 65%); /* #D97FA6 - pink-purple */
+  --chart-5: hsl(340 50% 60%); /* #CC6699 - magenta-purple */
+  --chart-6: hsl(220 50% 65%); /* #6699E6 - blue complement */
+  --chart-7: hsl(180 40% 50%); /* #4D9999 - teal complement */
+  --chart-8: hsl(30 65% 65%); /* #E6A366 - warm orange complement */
+  --radius: 0.4rem;
+  --font-serif: "Merriweather", serif;
+}
 
-    --accentBase: 223 9% 18%;
-    --baseBase: 223 9% 18%;
-    --baseBgSubtle: 223 9% 18%;
-    --baseBg: 223 9% 18%;
-    --baseBgHover: 223 9% 18%;
-    --baseBgActive: 223 9% 18%;
-    --baseLine: 223 9% 18%;
-    --baseBorder: 223 9% 18%;
-    --baseBorderHover: 223 9% 18%;
-    --baseSolid: 223 9% 18%;
-    --baseSolidHover: 223 9% 18%;
-    --baseText: 223 9% 18%;
-    --baseTextContrast: 223 9% 18%;
-  }
+.dark {
+  --background: hsl(277 5% 11%); /* #282828 */
+  --foreground: hsl(0 0% 85%); /* #D9D9D9 */
+  --content: hsl(0 0% 21%); /* #353535 */
+  --sidebar: hsl(0 0% 8%); /* #141415 */
+  --card: hsl(0 0% 16%); /* #282828 */
+  --card-foreground: hsl(0 0% 67%); /* #AAAAAA */
+  --popover: hsl(223 9% 18%); /* #2B2D30 */
+  --popover-foreground: hsl(223 9% 73%); /* #B4B8BF */
+  --primary: hsl(265 60% 70%); /* #a78bfa - purple-400 */
+  --primary-foreground: hsl(0 0% 100%); /* #FFFFFF */
+  --secondary: hsl(223 7% 24%); /* #393B40 */
+  --secondary-foreground: hsl(223 2% 54%); /* #878B8D */
+  --muted: hsl(0 0% 20%); /* #333333 */
+  --muted-foreground: hsl(223 2% 54%); /* #878B8D */
+  --accent: hsl(0 0% 15%); /* #252525 */
+  --accent-foreground: hsl(293 59% 74%); /* #db9ee5 */
+  --destructive: hsl(0 52% 55%); /* #C2362E */
+  --destructive-foreground: hsl(0 0% 98%); /* #FAFAFA */
+  --border: hsl(223 6% 27%); /* #43454A */
+  --input: hsl(223 6% 27%); /* #43454A */
+  --ring: hsl(293 59% 74%); /* #db9ee5 */
+  --chart-1: hsl(293 59% 74%); /* #DB9EE5 */
+  --chart-2: hsl(293 35% 45%); /* #9A53A3 - darker primary */
+  --chart-3: hsl(260 40% 55%); /* #7B6EDB - complementary to primary */
+  --chart-4: hsl(320 70% 60%); /* #E55A9B - analogous to primary */
+  --chart-5: hsl(350 65% 55%); /* #DB5A69 - triadic with primary */
+  --chart-6: hsl(230 60% 60%); /* #5A7EE5 - cool contrast */
+  --chart-7: hsl(180 50% 45%); /* #39A3A3 - teal complement */
+  --chart-8: hsl(30 80% 60%); /* #E5A33A - warm contrast */
+  --radius: 0.4rem;
+
+  --accentBase: hsl(223 9% 18%);
+  --baseBase: hsl(223 9% 18%);
+  --baseBgSubtle: hsl(223 9% 18%);
+  --baseBg: hsl(223 9% 18%);
+  --baseBgHover: hsl(223 9% 18%);
+  --baseBgActive: hsl(223 9% 18%);
+  --baseLine: hsl(223 9% 18%);
+  --baseBorder: hsl(223 9% 18%);
+  --baseBorderHover: hsl(223 9% 18%);
+  --baseSolid: hsl(223 9% 18%);
+  --baseSolidHover: hsl(223 9% 18%);
+  --baseText: hsl(223 9% 18%);
+  --baseTextContrast: hsl(223 9% 18%);
 }
 @layer base {
   * {
@@ -96,6 +135,26 @@ body,
   }
   body {
     @apply bg-background text-foreground overflow-hidden;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+    font-feature-settings: "liga", "dlig";
+  }
+  .font-ui {
+    font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  .sidebar-codex-atmosphere {
+    background-image:
+      radial-gradient(ellipse 180% 220px at 50% 0%, color-mix(in oklab, var(--primary) 7%, transparent), transparent 70%),
+      radial-gradient(ellipse 140% 200px at 50% 100%, color-mix(in oklab, var(--primary) 4%, transparent), transparent 65%);
   }
 }
 
@@ -151,10 +210,10 @@ body,
   @keyframes border-pulse {
     0%,
     100% {
-      border-color: hsl(var(--primary) / 70%);
+      border-color: color-mix(in oklab, var(--primary) 70%, transparent);
     } /* Start/End with primary/70 */
     50% {
-      border-color: hsl(var(--primary) / 100%);
+      border-color: var(--primary);
     } /* Pulse to full opacity primary */
   }
   .animate-border-pulse {
@@ -166,7 +225,7 @@ body,
   /* Custom scrollbar styling */
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary)) hsl(var(--accent));
+    scrollbar-color: var(--primary) var(--accent);
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -175,21 +234,21 @@ body,
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: hsl(var(--accent));
+    background: var(--accent);
     margin: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted-foreground) / 0.3);
+    background-color: color-mix(in oklab, var(--muted-foreground) 30%, transparent);
     border-radius: 9999px;
   }
 
   .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--primary) / 0.5);
+    background-color: color-mix(in oklab, var(--primary) 50%, transparent);
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--primary) / 0.8);
+    background-color: color-mix(in oklab, var(--primary) 80%, transparent);
   }
 
   .custom-scrollbar::-webkit-scrollbar-corner {
@@ -216,7 +275,7 @@ body,
 
 /* Custom tooltip from mdxeditor.css */
 .custom-tooltip {
-  @apply text-muted-foreground bg-background text-xs border-2 border-border rounded custom-scrollbar;
+  @apply text-muted-foreground bg-background text-xs border-2 border-border rounded;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
   position: absolute;
   max-height: 300px;
@@ -246,7 +305,7 @@ body,
 .custom-tooltip li .cm-completionDetail {
   @apply text-primary italic text-[0.5rem];
   right: 8px;
-  background-color: hsl(var(--muted) / 80%);
+  background-color: color-mix(in oklab, var(--muted) 80%, transparent);
   padding: 1px 4px;
   border-radius: 3px;
   margin-top: 1px;
@@ -255,10 +314,10 @@ body,
 /* Style for completion sections */
 .custom-tooltip completion-section {
   @apply text-accent-foreground font-medium text-xs;
-  background: linear-gradient(135deg, hsl(var(--muted) / 50%), hsl(var(--muted) / 30%));
+  background: linear-gradient(135deg, color-mix(in oklab, var(--muted) 50%, transparent), color-mix(in oklab, var(--muted) 30%, transparent));
   padding: 3px 8px;
   display: block;
-  border-left: 3px solid hsl(var(--primary));
+  border-left: 3px solid var(--primary);
   margin-top: 6px;
   margin-bottom: 2px;
   position: relative;

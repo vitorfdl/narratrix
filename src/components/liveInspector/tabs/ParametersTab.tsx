@@ -1,10 +1,11 @@
 import React from "react";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { ConsoleRequest } from "@/hooks/consoleStore";
 import { markdownClass } from "../LiveInspector";
 
 interface ParametersProps {
-  selectedRequest: any;
+  selectedRequest: ConsoleRequest;
 }
 
 export const formatJSONToMarkdown = (value: string) => {
@@ -21,8 +22,15 @@ export const Parameters: React.FC<ParametersProps> = ({ selectedRequest }) => {
             <MarkdownTextArea editable={false} className={markdownClass} initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.modelSpecs, null, 2))} />
           </div>
 
+          {selectedRequest.resolvedParameters && (
+            <div>
+              <div className="text-sm font-medium mb-1 text-foreground/80">Resolved Parameters (Sent to Provider)</div>
+              <MarkdownTextArea editable={false} className={markdownClass} initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.resolvedParameters, null, 2))} />
+            </div>
+          )}
+
           <div>
-            <div className="text-sm font-medium mb-1 text-foreground/80">Parameters</div>
+            <div className="text-sm font-medium mb-1 text-foreground/80">Input Parameters (Narratrix)</div>
             <MarkdownTextArea editable={false} className={markdownClass} initialValue={formatJSONToMarkdown(JSON.stringify(selectedRequest.parameters, null, 2))} />
           </div>
         </div>

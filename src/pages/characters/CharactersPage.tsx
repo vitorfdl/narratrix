@@ -1,13 +1,11 @@
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { Plus, RefreshCw, Search, Settings2, SortAsc, Upload } from "lucide-react";
+import { FileUp, Plus, RefreshCw, Search, SortAsc, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { useCharacterActions, useCharacterAvatars, useCharacters, useCharactersLoading } from "@/hooks/characterStore";
 import { useLorebookStoreActions } from "@/hooks/lorebookStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
@@ -34,6 +32,12 @@ export type CharacterPageSettings = {
     direction: "asc" | "desc";
   };
   selectedTags: string[];
+};
+
+const cardGridMinWidthBySize: Record<CharacterPageSettings["view"]["cardSize"], number> = {
+  small: 13,
+  medium: 17,
+  large: 21,
 };
 
 export default function Characters() {
@@ -228,6 +232,18 @@ export default function Characters() {
     }));
   };
 
+  const handleClearTags = () => {
+    setSettings((prev) => ({
+      ...prev,
+      selectedTags: [],
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setSearch("");
+    handleClearTags();
+  };
+
   const handleRefresh = () => {
     fetchCharacters(currentProfile!.id).finally(() => {
       reloadAvatars();
@@ -238,7 +254,7 @@ export default function Characters() {
     return characters
       .filter((char) => {
         const matchesSearch = search === "" || char.name.toLowerCase().includes(search.toLowerCase());
-        const matchesTags = settings.selectedTags.length === 0 || (char.tags && settings.selectedTags.every((tag) => char.tags?.includes(tag)));
+        const matchesTags = settings.selectedTags.length === 0 || settings.selectedTags.every((tag) => (char.tags ?? []).includes(tag));
         return matchesSearch && matchesTags;
       })
       .sort((a, b) => {
@@ -255,8 +271,27 @@ export default function Characters() {
       });
   }, [characters, search, settings.selectedTags, settings.sort]);
 
+  const hasActiveFilters = search.trim().length > 0 || settings.selectedTags.length > 0;
+  const gridTemplateColumns = useMemo(() => {
+    const minWidth = cardGridMinWidthBySize[settings.view.cardSize];
+    return `repeat(auto-fill, minmax(min(100%, ${minWidth}rem), 1fr))`;
+  }, [settings.view.cardSize]);
+  const loadingSkeletonKeys = useMemo(() => Array.from({ length: 8 }, (_, itemIndex) => `character-loading-${itemIndex}`), []);
+
   return (
-    <div className={`flex h-full overflow-y-auto ${isDraggingFile ? "ring-2 ring-primary ring-inset bg-primary/5" : ""}`}>
+    <div className={`relative flex h-full overflow-hidden bg-background ${isDraggingFile ? "ring-2 ring-primary ring-inset" : ""}`}>
+      {isDraggingFile && (
+        <div className="pointer-events-none absolute inset-3 z-50 flex items-center justify-center rounded-3xl border border-primary/50 bg-background/80 shadow-2xl shadow-primary/10 backdrop-blur-md">
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+              <FileUp className="h-8 w-8" />
+            </div>
+            <h2 className="text-xl font-semibold">Drop character files to import</h2>
+            <p className="mt-2 text-sm text-muted-foreground">JSON and PNG character cards are supported.</p>
+          </div>
+        </div>
+      )}
+
       {/* Hidden CharacterImport for drag-and-drop and imperative import */}
       <div className="hidden">
         <CharacterImport
@@ -271,154 +306,139 @@ export default function Characters() {
         />
       </div>
 
-      <CharacterSidebar characters={characters} selectedTags={settings.selectedTags} onTagSelect={handleTagSelect} />
-      <div className="flex flex-1 flex-col">
-        {/* Header with filters and controls */}
-        <div className="sticky top-0 z-10 bg-background border-b">
-          <div className="flex items-center gap-1 p-4">
-            <h1 className="font-bold mr-auto title">Characters</h1>
+      <CharacterSidebar characters={characters} selectedTags={settings.selectedTags} onTagSelect={handleTagSelect} onClearTags={handleClearTags} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
+          <div className="space-y-4 px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-1 rounded-full bg-primary" />
+                  <h1 className="title font-bold">Characters</h1>
+                </div>
+              </div>
 
-            {/* Search */}
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search characters..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+              <Button className="shrink-0" onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add Character
+              </Button>
             </div>
 
-            {/* Refresh */}
-            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoadingCharacters || isLoadingAvatars} title="Refresh Characters">
-              <RefreshCw className={`h-4 w-4 ${isLoadingCharacters || isLoadingAvatars ? "animate-spin" : ""}`} />
-            </Button>
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search characters..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 rounded-md border border-border/60 bg-muted/20 pl-9 font-sans text-sm"
+                />
+              </div>
 
-            {/* Import Button */}
-            <Button variant="outline" size="icon" onClick={handleImportClick} title="Import Character">
-              <Upload className="h-4 w-4" />
-            </Button>
-
-            {/* View Mode Toggle */}
-            {/* <div className="flex items-center gap-1 border rounded-md p-1">
-              <Button
-                variant={settings.view.mode === "grid" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setSettings((prev: CharacterPageSettings) => ({ ...prev, view: { ...prev.view, mode: "grid" } }))}
-                title="Grid View"
-              >
-                <Grid2X2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={settings.view.mode === "list" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setSettings((prev: CharacterPageSettings) => ({ ...prev, view: { ...prev.view, mode: "list" } }))}
-                title="List View"
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div> */}
-
-            {/* View Settings */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" title="Grid Settings">
-                  <Settings2 className="h-4 w-4" />
+              <div className="flex shrink-0 items-center gap-2">
+                <Button variant="outline" size="icon" className="bg-background" onClick={handleRefresh} disabled={isLoadingCharacters || isLoadingAvatars} title="Refresh Characters">
+                  <RefreshCw className={`h-4 w-4 ${isLoadingCharacters || isLoadingAvatars ? "animate-spin" : ""}`} />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-muted-foreground">Cards per row</label>
-                    <span className="text-xs text-muted-foreground">{settings.view.cardsPerRow}</span>
-                  </div>
-                  <Slider
-                    value={[settings.view.cardsPerRow]}
-                    min={1}
-                    max={6}
-                    step={1}
-                    onValueChange={([value]) =>
-                      setSettings((prev: CharacterPageSettings) => ({
-                        ...prev,
-                        view: {
-                          ...prev.view,
-                          cardsPerRow: value,
-                        },
-                      }))
-                    }
-                  />
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
 
-            {/* Sort */}
-            <Select
-              value={`${settings.sort.field}-${settings.sort.direction}`}
-              onValueChange={(value) => {
-                const [field, direction] = value.split("-") as [typeof settings.sort.field, typeof settings.sort.direction];
-                setSettings((prev: CharacterPageSettings) => ({ ...prev, sort: { field, direction } }));
-              }}
-            >
-              <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="Sort Characters">
-                <SortAsc className="h-4 w-4" />
-              </SelectTrigger>
-              <SelectContent align="end">
-                <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                <SelectItem value="type-asc">Type (A-Z)</SelectItem>
-                <SelectItem value="type-desc">Type (Z-A)</SelectItem>
-                <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
-                <SelectItem value="created_at-desc">Recently Created</SelectItem>
-              </SelectContent>
-            </Select>
+                <Button variant="outline" size="icon" className="bg-background" onClick={handleImportClick} title="Import Character">
+                  <Upload className="h-4 w-4" />
+                </Button>
 
-            {/* Add Character Button */}
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Character
-            </Button>
+                <Select
+                  value={`${settings.sort.field}-${settings.sort.direction}`}
+                  onValueChange={(value) => {
+                    const [field, direction] = value.split("-") as [typeof settings.sort.field, typeof settings.sort.direction];
+                    setSettings((prev: CharacterPageSettings) => ({ ...prev, sort: { field, direction } }));
+                  }}
+                >
+                  <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon", className: "bg-background" })} title="Sort Characters">
+                    <SortAsc className="h-4 w-4" />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                    <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                    <SelectItem value="type-asc">Type (A-Z)</SelectItem>
+                    <SelectItem value="type-desc">Type (Z-A)</SelectItem>
+                    <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
+                    <SelectItem value="created_at-desc">Recently Created</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {hasActiveFilters && (
+                  <Button variant="ghost" className="h-9 gap-2 text-muted-foreground" onClick={handleClearFilters}>
+                    <X className="h-4 w-4" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Main content area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-muted/10 to-background">
           {isLoadingCharacters ? (
-            <div className="flex justify-center items-center h-full">
-              <p className="text-muted-foreground">Loading characters...</p>
+            <div className="grid gap-3 p-5" style={{ gridTemplateColumns }}>
+              {loadingSkeletonKeys.map((skeletonKey) => (
+                <div key={skeletonKey} className="overflow-hidden rounded-2xl border border-border/60 bg-card/60 shadow-sm">
+                  <div className="aspect-[4/3] animate-pulse bg-muted/50" />
+                  <div className="space-y-3 p-4">
+                    <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+                    <div className="h-3 w-1/2 animate-pulse rounded bg-muted/70" />
+                    <div className="flex gap-2">
+                      <div className="h-5 w-16 animate-pulse rounded-full bg-muted/70" />
+                      <div className="h-5 w-20 animate-pulse rounded-full bg-muted/70" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredCharacters.length > 0 ? (
-            <div className="space-y-6 py-1">
-              <div className="p-4">
-                <div
-                  className="grid gap-2"
-                  style={{
-                    gridTemplateColumns: `repeat(${settings.view.cardsPerRow}, minmax(0, 1fr))`,
-                  }}
-                >
-                  {filteredCharacters.map((char) => (
-                    <CharacterCard
-                      key={char.id}
-                      model={char}
-                      cardSize={settings.view.cardSize}
-                      avatarUrl={avatarUrlMap[char.id]}
-                      isLoadingAvatar={isLoadingAvatars}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      onExport={handleExportCharacter}
-                    />
-                  ))}
-                </div>
+            <div className="p-5">
+              <div className="grid gap-3" style={{ gridTemplateColumns }}>
+                {filteredCharacters.map((char) => (
+                  <CharacterCard
+                    key={char.id}
+                    model={char}
+                    cardSize={settings.view.cardSize}
+                    avatarUrl={avatarUrlMap[char.id]}
+                    isLoadingAvatar={isLoadingAvatars}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onExport={handleExportCharacter}
+                  />
+                ))}
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <Search className="h-8 w-8 text-muted-foreground" />
+            <div className="flex h-full min-h-[420px] items-center justify-center p-8 text-center">
+              <div className="max-w-sm rounded-3xl border border-border/60 bg-card/70 p-8 shadow-xl shadow-black/5">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/60">
+                  <Search className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold">{hasActiveFilters ? "No characters match your filters" : "No characters yet"}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {hasActiveFilters ? "Try another search or clear the active tag filters." : "Create or import a character to start building this profile."}
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                  {hasActiveFilters ? (
+                    <Button variant="outline" onClick={handleClearFilters}>
+                      <X className="h-4 w-4" />
+                      Clear filters
+                    </Button>
+                  ) : (
+                    <>
+                      <Button onClick={() => setCreateDialogOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                        Create Character
+                      </Button>
+                      <Button variant="outline" onClick={handleImportClick}>
+                        <Upload className="h-4 w-4" />
+                        Import
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
-              <h3 className="text-xl font-semibold mb-1">{search || settings.selectedTags.length > 0 ? "No characters match your filters" : "No characters found"}</h3>
-              <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
-                {search || settings.selectedTags.length > 0 ? "Try adjusting your search or filter settings." : "Get started by creating your first character!"}
-              </p>
-              <Button variant="default" size="lg" onClick={() => setCreateDialogOpen(true)}>
-                <Plus size={20} className="mr-2" /> Create Character
-              </Button>
             </div>
           )}
         </div>

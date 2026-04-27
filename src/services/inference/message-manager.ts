@@ -1,7 +1,13 @@
 import { useCallback, useMemo } from "react";
-import { getCurrentChatId, useChatActions, useCurrentChatMessages } from "@/hooks/chatStore";
+import { getCurrentChatId, useChatActions, useChatStore, useCurrentChatMessages } from "@/hooks/chatStore";
 import type { ChatMessage, ChatMessageType } from "@/schema/chat-message-schema";
-import { updateChatMessage as apiUpdateChatMessage } from "@/services/chat-message-service";
+import {
+  createChatMessage as apiCreateChatMessage,
+  updateChatMessage as apiUpdateChatMessage,
+  getChatMessageById,
+  getChatMessagesByChatId,
+  getNextMessagePosition,
+} from "@/services/chat-message-service";
 
 /**
  * Hook for managing chat messages during inference.
@@ -12,7 +18,7 @@ import { updateChatMessage as apiUpdateChatMessage } from "@/services/chat-messa
  */
 export function useMessageManager() {
   const chatMessages = useCurrentChatMessages();
-  const { addChatMessage, updateChatMessage, fetchChatMessages } = useChatActions();
+  const { addChatMessage, updateChatMessage } = useChatActions();
 
   const messageMap = useMemo(() => {
     const map = new Map<string, ChatMessage>();
@@ -69,38 +75,41 @@ export function useMessageManager() {
    * @param messageIndex Which version/index to update.
    * @param existingMessages The current messages array snapshot (captured at generation start).
    */
-  const updateMessageDirect = useCallback(
-    async (chatId: string, messageId: string, messageText: string, messageIndex: number, existingMessages?: string[]): Promise<void> => {
-      try {
-        if (messageId === "generate-input-area" || !messageId) {
-          return;
-        }
-
-        const updatedMessages = existingMessages ? [...existingMessages] : [];
-
-        if (updatedMessages.length <= messageIndex) {
-          while (updatedMessages.length < messageIndex) {
-            updatedMessages.push("");
-          }
-          updatedMessages.push(messageText);
-        } else {
-          updatedMessages[messageIndex] = messageText;
-        }
-
-        await apiUpdateChatMessage(messageId, {
-          messages: updatedMessages,
-          message_index: messageIndex,
-        });
-
-        if (chatId === getCurrentChatId()) {
-          fetchChatMessages().catch(() => {});
-        }
-      } catch (err) {
-        console.error("Failed to update character message (direct):", err);
+  const updateMessageDirect = useCallback(async (chatId: string, messageId: string, messageText: string, messageIndex: number, existingMessages?: string[]): Promise<void> => {
+    try {
+      if (messageId === "generate-input-area" || !messageId) {
+        return;
       }
-    },
-    [fetchChatMessages],
-  );
+
+      const updatedMessages = existingMessages ? [...existingMessages] : [];
+
+      if (updatedMessages.length <= messageIndex) {
+        while (updatedMessages.length < messageIndex) {
+          updatedMessages.push("");
+        }
+        updatedMessages.push(messageText);
+      } else {
+        updatedMessages[messageIndex] = messageText;
+      }
+
+      await apiUpdateChatMessage(messageId, {
+        messages: updatedMessages,
+        message_index: messageIndex,
+      });
+
+      if (chatId === getCurrentChatId()) {
+        const message = await getChatMessageById(messageId);
+        if (message?.chapter_id) {
+          const messages = await getChatMessagesByChatId(chatId, message.chapter_id);
+          if (chatId === getCurrentChatId()) {
+            useChatStore.setState({ selectedChatMessages: messages });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update character message (direct):", err);
+    }
+  }, []);
 
   const batchUpdateMessages = useCallback(
     async (
@@ -120,8 +129,45 @@ export function useMessageManager() {
     [updateMessageById],
   );
 
+  const createMessageDirect = useCallback(
+    async (chatId: string, chapterId: string, message: { character_id: string | null; type: ChatMessageType; messages: string[]; extra: ChatMessage["extra"] }): Promise<ChatMessage> => {
+      const position = await getNextMessagePosition(chatId, chapterId);
+      const newMessage = await apiCreateChatMessage({
+        ...message,
+        chat_id: chatId,
+        chapter_id: chapterId,
+        message_index: 0,
+        position,
+        disabled: false,
+        tokens: null,
+      });
+
+      if (chatId === getCurrentChatId()) {
+        getChatMessagesByChatId(chatId, chapterId)
+          .then((messages) => {
+            if (chatId === getCurrentChatId()) {
+              useChatStore.setState({ selectedChatMessages: messages });
+            }
+          })
+          .catch(() => {});
+      }
+
+      return newMessage;
+    },
+    [],
+  );
+
   const createUserMessage = useCallback(
-    async (userMessage: string): Promise<ChatMessage> => {
+    async (userMessage: string, chatId?: string, chapterId?: string): Promise<ChatMessage> => {
+      if (chatId && chapterId) {
+        return createMessageDirect(chatId, chapterId, {
+          character_id: null,
+          type: "user" as ChatMessageType,
+          messages: [userMessage],
+          extra: {},
+        });
+      }
+
       return addChatMessage({
         character_id: null,
         type: "user" as ChatMessageType,
@@ -129,11 +175,20 @@ export function useMessageManager() {
         extra: {},
       });
     },
-    [addChatMessage],
+    [addChatMessage, createMessageDirect],
   );
 
   const createCharacterMessage = useCallback(
-    async (characterId: string): Promise<ChatMessage> => {
+    async (characterId: string, chatId?: string, chapterId?: string): Promise<ChatMessage> => {
+      if (chatId && chapterId) {
+        return createMessageDirect(chatId, chapterId, {
+          character_id: characterId,
+          type: "character" as ChatMessageType,
+          messages: ["..."],
+          extra: {},
+        });
+      }
+
       return addChatMessage({
         character_id: characterId,
         type: "character" as ChatMessageType,
@@ -141,23 +196,30 @@ export function useMessageManager() {
         extra: {},
       });
     },
-    [addChatMessage],
+    [addChatMessage, createMessageDirect],
   );
 
   const setMessageLoading = useCallback(
-    async (messageId: string, messageIndex = 0): Promise<void> => {
-      const existingMessage = messageMap.get(messageId);
+    async (chatId: string, messageId: string, messageIndex = 0): Promise<void> => {
+      const existingMessage = messageMap.get(messageId) ?? (await getChatMessageById(messageId));
       if (existingMessage) {
         const updatedMessages = [...existingMessage.messages];
         updatedMessages[messageIndex] = "...";
 
-        await updateChatMessage(messageId, {
+        await apiUpdateChatMessage(messageId, {
           messages: updatedMessages,
           message_index: messageIndex,
         });
+
+        if (chatId === getCurrentChatId() && existingMessage.chapter_id) {
+          const messages = await getChatMessagesByChatId(chatId, existingMessage.chapter_id);
+          if (chatId === getCurrentChatId()) {
+            useChatStore.setState({ selectedChatMessages: messages });
+          }
+        }
       }
     },
-    [messageMap, updateChatMessage],
+    [messageMap],
   );
 
   const messageExists = useCallback(

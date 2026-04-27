@@ -12,6 +12,10 @@ function getOllamaModelSettings(parameters: Record<string, any>): OllamaChatSett
     options.num_ctx = parameters.num_ctx;
   }
 
+  if ("min_p" in parameters && parameters.min_p != null) {
+    options.min_p = parameters.min_p;
+  }
+
   if (Object.keys(options).length > 0) {
     settings.options = options;
   }

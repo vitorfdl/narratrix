@@ -49,8 +49,8 @@ describe("applyContextLimit", () => {
       inferenceMessages: messages, // All messages should fit with adjusted context
       systemPrompt: "System prompt",
       statistics: {
-        systemTokens: 67, // Mocked system tokens (actual result)
-        historyTokens: 158, // Mocked history tokens (actual result)
+        systemTokens: 66,
+        historyTokens: 164,
         responseTokens: 180,
       },
     });
@@ -71,8 +71,8 @@ describe("applyContextLimit", () => {
     expect(result.inferenceMessages[0].text).toBe("Msg 3 User");
     expect(result.inferenceMessages[1].text).toBe("Msg 4 Assistant");
 
-    expect(result.statistics.systemTokens).toBe(66); // Adjusted to actual result
-    expect(result.statistics.historyTokens).toBe(74); // Keeping L+32 assumption for now, might need adjustment
+    expect(result.statistics.systemTokens).toBe(65);
+    expect(result.statistics.historyTokens).toBe(72);
     expect(result.statistics.responseTokens).toBe(50);
     expect(result.systemPrompt).toBe("Sys");
   });

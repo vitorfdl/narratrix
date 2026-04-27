@@ -1,0 +1,53 @@
+{
+  "$schema": "../../../../json_schema/model-schema.json",
+  "id": "aws_bedrock_embedding",
+  "name": "AWS Bedrock Embeddings",
+  "description": "Integration with AWS Bedrock embedding models (Titan, Cohere)",
+  "website": "https://aws.amazon.com/bedrock/",
+  "type": "embedding",
+  "inference_type": ["embedding"],
+  "engine": "aws_bedrock",
+  "fields": [
+    {
+      "key": "aws_access_key_id",
+      "label": "AWS Access Key ID",
+      "placeholder": "Your AWS Access Key ID",
+      "required": true,
+      "field_type": "string",
+      "links": [
+        {
+          "label": "Get AWS Access Key ID",
+          "url": "https://console.aws.amazon.com/iam/home?#/users"
+        }
+      ]
+    },
+    {
+      "key": "aws_secret_access_key",
+      "label": "AWS Secret Access Key",
+      "placeholder": "Your AWS Secret Access Key",
+      "required": true,
+      "field_type": "secret"
+    },
+    {
+      "key": "aws_region",
+      "label": "AWS Region",
+      "placeholder": "The AWS region to use",
+      "required": true,
+      "field_type": "string",
+      "hints": ["us-east-1", "us-east-2", "eu-west-1"]
+    },
+    {
+      "key": "model",
+      "label": "Bedrock Embedding Model",
+      "placeholder": "The Bedrock embedding model to use",
+      "required": true,
+      "field_type": "string",
+      "hints": [
+        "amazon.titan-embed-text-v1",
+        "amazon.titan-embed-text-v2:0",
+        "cohere.embed-english-v3",
+        "cohere.embed-multilingual-v3"
+      ]
+    }
+  ]
+}

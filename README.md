@@ -1,172 +1,129 @@
 # NarratrixAI
 
-[![Latest Stable](https://img.shields.io/github/v/release/vitorfdl/Narratrix?label=Latest%20Stable&link=https%3A%2F%2Fgithub.com%2Fvitorfdl%2FNarratrix%2Freleases%2Flatest)](https://github.com/vitorfdl/Narratrix/releases/latest)
+[![Latest Stable](https://img.shields.io/github/v/release/vitorfdl/narratrix?label=latest%20stable)](https://github.com/vitorfdl/narratrix/releases/latest)
 [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](https://narratrixai.com/#download)
-[![Discord](https://img.shields.io/discord/1340496503441199146?logo=discord&logoColor=white&label=Discord%20Server)](https://discord.gg/Q69R4aWCFR)
+[![Code Quality](https://github.com/vitorfdl/narratrix/actions/workflows/code-quality.yml/badge.svg)](https://github.com/vitorfdl/narratrix/actions/workflows/code-quality.yml)
+[![Discord](https://img.shields.io/discord/1340496503441199146?logo=discord&logoColor=white&label=Discord)](https://discord.gg/Q69R4aWCFR)
+
+NarratrixAI is a native AI storytelling workstation for custom tabletop roleplaying boards. It brings models, characters, agents, lorebooks, memory, prompts, and board widgets into one fast desktop app for campaigns that need more than a linear chat window.
+
+[Download NarratrixAI](https://narratrixai.com/#download) | [Documentation](https://github.com/vitorfdl/narratrix/wiki) | [Releases](https://github.com/vitorfdl/narratrix/releases) | [Discord](https://discord.gg/Q69R4aWCFR)
 
 <p align="center">
-  <img src="/public/full_logo.png" width="250px" alt="Narratrix"></img>
+  <img src="https://github.com/user-attachments/assets/d88144a3-a24b-4d58-82ae-d195af0c9854" alt="NarratrixAI story board interface" width="85%"/>
 </p>
 
-> 🎲 **The AI-Powered Tabletop Roleplaying Platform** 🎲\
-> Where your imagination meets artificial intelligence to create endless
-> adventures.
+## What NarratrixAI Does
 
-## ✨ Overview
+NarratrixAI helps you run AI-assisted roleplay with the structure of a real table: persistent characters, reusable lore, configurable models, branching chapters, visible automation, and a board layout you can adapt to your campaign. Use it for character chat, solo play, world simulation, or a full tabletop RPG session with custom rules and agents.
 
-Narratrix transforms how we experience tabletop roleplaying games by leveraging
-AI to create dynamic, responsive, and immersive storytelling experiences. You
-should be able to create your own stores, use it as Character chat or as full
-Tabletop RPG experience. Narratrix will empower you to create and share your
-experiences.
+The app is built with [Tauri](https://tauri.app/), [React](https://react.dev/), TypeScript, SQLite, and a manifest-driven inference layer. It runs locally as a desktop application while letting you connect the AI providers and models that fit your table.
+
+## Highlights
+
+- **Story board workspace**: organize chat, generation controls, participants, expressions, scripts, memories, chapters, and character sheets in a grid-based table.
+- **Model management**: configure cloud, local, and OpenAI-compatible providers through editable manifests and provider cards.
+- **Agent workflows**: build node-based automations that can route prompts, inspect context, call tools, run JavaScript, search lorebooks, and shape chat output.
+- **Character system**: manage character profiles, avatars, expression packs, impersonation, memories, and import/export workflows.
+- **Lorebooks and context**: keep reusable setting facts, rules, character knowledge, and campaign references close to the scenes that need them.
+- **Prompt and template tooling**: customize chat formats, inference templates, quick actions, censorship rules, placeholders, and prompt assembly.
+- **Profiles and privacy boundaries**: keep app data and API keys scoped per profile, with local storage and native encryption helpers.
+
+## Supported AI Providers
+
+NarratrixAI ships with model manifests for:
+
+- OpenAI
+- Anthropic
+- Google Gemini
+- OpenRouter
+- AWS Bedrock
+- Ollama
+- OpenAI-compatible APIs
+
+Embedding manifests are also available for OpenAI, Gemini, AWS Bedrock, Ollama, and OpenAI-compatible providers.
+
+## Screenshots
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/d88144a3-a24b-4d58-82ae-d195af0c9854" alt="Narratrix Interface" width="80%"/>
+  <img src="https://github.com/user-attachments/assets/5cb26b4d-6027-4671-9b0e-97ff5faef2f2" alt="NarratrixAI model management interface" width="85%"/>
 </p>
 
-> If you're new to NarratrixAI, follow our documentation at our [Github Wiki](https://github.com/vitorfdl/narratrix/wiki)
+## Platform Support
 
-## 🚀 Key Features
+NarratrixAI publishes desktop builds for:
 
-### 💬 Powerful Chat System
+- Windows
+- macOS on Apple Silicon and Intel
+- Linux
 
-- Organize all elements in your screen with a grid based layout
-- Use powerful actions to manipulate the story, create summary breakpoints and
-  more
-- Create chats with multiple characters at once, with a simple click
-- Chat with your characters in a beautiful and immersive chat interface
+Download the latest release from [narratrixai.com](https://narratrixai.com/#download) or the [GitHub releases page](https://github.com/vitorfdl/narratrix/releases).
 
-### 🤖 Flexible AI Integration
+## Development
 
-- Connect to multiple AI providers (OpenAI, Claude, local models) through an
-  intuitive manifest system
-- Customize model behavior without waiting for app updates
-- Optimize different models for different tasks (storytelling, character
-  portrayal, combat)
+### Prerequisites
 
-### 🎭 Rich Character Management
+- [Node.js](https://nodejs.org/) `>=24.15.0`
+- [pnpm](https://pnpm.io/)
+- [Rust](https://www.rust-lang.org/tools/install) stable
+- Tauri system dependencies for your operating system
 
-- Organize your characters with a beautiful character management screen
-- Detailed character sheets with AI-aware attributes (In-Development)
-- Expression packs for visual character reactions
-- Persistent character memory (short and long-term)
-
-### 📝 Powerful Storytelling Tools
-
-- Create branching narrative chapters
-- Dynamic scenario generation based on player choices
-- Achievement tracking for campaign progression
-- Dice rolling and RPG system rule integration (In-Development)
-
-### 🔧 Developer-Friendly
-
-- Create custom scripts to manipulate the story engine (In-Development)
-- Access local database tables for advanced customization (In-Development)
-- Design reusable templates for characters and scenarios
-- Share your creations with the community (In-Development)
-
-## 💻 Platform Support
-
-Narratrix is built with Tauri, providing native performance across platforms:
-
-- **Windows**: Windows 10 or newer
-- **macOS**: 10.15+ (Intel & Apple Silicon)
-- **Linux**: Ubuntu 20.04+, Fedora 35+, or other modern distributions
-
-## 📋 Development Status
-
-### ✅ Completed Features
-
-- [x] Profile Management
-- [x] Inference Queue
-- [x] Models Management
-- [x] Chat Management
-- [x] Characters Management
-- [x] Templates Management
-- [x] Chapter Creation
-- [x] Lorebooks
-- [x] Text Completion Support
-- [x] Import/Export (Chats, Templates, Characters, Lorebooks)
-
-### 🛠️ Features In Development
-
-- [ ] Agents Customization (Tool-calling, JSON Response, etc)
-- [ ] Database Management
-- [ ] Scripting System
-- [ ] Memory Management
-- [ ] Image Generation
-- [ ] Multiplayer Support
-- [ ] Embedding Model Support
-- [ ] Audio TTS Support
-- [ ] Mobile Support
-- [ ] Cloud Save/Sync
-- [ ] Documentation
-
-<p align="center">
-  <img src="path/to/narratrix-feature-demo.gif" alt="Feature Demo" width="80%"/>
-</p>
-
-## 🌐 AI Models Support
-
-Narratrix uses a flexible manifest system to support various AI providers:
-
-- **Cloud-based**: OpenAI GPT models, Anthropic Claude, Azure OpenAI, Google
-  Gemini, OpenRouter...
-- **Local**: LlamaCPP, KoboldCPP, Ollama, RunPod, Mistralrs
-- **OpenAI Compatible API**: Any OpenAI compatible provider
-- **Specialized**: ~~Image generation models, embedding models~~
-  (In-Development)
-
-Each model can be configured through JSON manifests that specify parameters,
-endpoints, and behaviors—no coding required!
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/5cb26b4d-6027-4671-9b0e-97ff5faef2f2" alt="Model Management" width="80%"/>
-</p>
-
-## 🤝 Contributing
-
-Contributions are welcome! Whether you're fixing bugs, adding features, or
-improving documentation, please feel free to make a pull request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/vitorfdl/Narratrix.git
-
-# Navigate to the project directory
-cd Narratrix
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm run tauri dev
+git clone https://github.com/vitorfdl/narratrix.git
+cd narratrix
+pnpm install
+pnpm tauri dev
 ```
 
-## 📄 License
+### Common Commands
 
-This repository maintains the latest source code release for Narratrix, and is
-licensed under the
-[GNU Affero General Public License](https://www.gnu.org/licenses/agpl-3.0.en.html).
-Binaries and executable releases are licensed under the
-[End User License Agreement](LICENSE_2).
+```bash
+pnpm dev          # Start the Vite frontend only
+pnpm tauri dev    # Start the full Tauri desktop app
+pnpm build        # Type-check and build the frontend
+pnpm test         # Run the Vitest suite
+pnpm lint         # Run Biome checks
+pnpm lint:fix     # Apply Biome formatting and safe fixes
+```
 
-## 🙏 Acknowledgments
+## Project Structure
 
-- Thanks to all contributors who have helped shape Narratrix
-- Inspired by classic tabletop RPGs and modern AI storytelling systems
-- Built with [Tauri](https://tauri.app/), and [React](https://react.dev/)
+```text
+src/
+  components/      Shared UI, layout, markdown, and inspector components
+  hooks/           App state stores and reusable React hooks
+  pages/           Main product areas: models, characters, agents, lorebooks, chat, settings
+  schema/          Zod schemas and typed validation contracts
+  services/        Inference, agents, imports, exports, persistence, and provider integrations
+  utils/           Cross-cutting helpers
 
----
+src-tauri/
+  resources/       Built-in model, embedding, character, and template manifests
+  src/             Tauri entrypoint, SQLite migrations, native utilities, and token counting
+```
 
-<p align="center">
-  <a href="https://narratrixai.com/#download">Download Latest Release</a> •
-  <!-- <a href="https://narratrix.ai/docs">Documentation</a> • -->
-  <a href="https://discord.gg/Q69R4aWCFR">Join Discord</a>
-</p>
+## Contributing
+
+Contributions are welcome. For a smooth review, keep changes focused, match the existing TypeScript and Tauri patterns, and include tests when touching shared behavior.
+
+Before opening a pull request, run:
+
+```bash
+pnpm lint:fix
+pnpm build
+pnpm test
+```
+
+Security note: never commit API keys, tokens, credentials, or local profile data. API keys should remain per-profile and inside the app's storage/encryption flow.
+
+## Community
+
+- [Join Discord](https://discord.gg/Q69R4aWCFR) to discuss campaigns, report issues, request nodes, and share setups.
+- [Support development on Patreon](https://www.patreon.com/NarratrixAI).
+- [Read the wiki](https://github.com/vitorfdl/narratrix/wiki) for setup and usage documentation.
+
+## License
+
+The source code in this repository is licensed under the [GNU Affero General Public License](https://www.gnu.org/licenses/agpl-3.0.en.html). Binaries and executable releases are licensed under the [NarratrixAI End User License Agreement](LICENSE_2).

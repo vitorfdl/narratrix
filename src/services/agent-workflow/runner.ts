@@ -6,6 +6,10 @@ import type { NodeExecutionResult, WorkflowDeps, WorkflowExecutionContext } from
 
 const contexts = new Map<string, WorkflowExecutionContext>();
 
+function makeRunKey(agentId: string, chatId?: string | null): string {
+  return `${chatId ?? "global"}::${agentId}`;
+}
+
 const MAX_OUTPUT_LEN = 200;
 
 function formatNodeOutput(value: unknown): string | undefined {
@@ -71,7 +75,7 @@ async function executeNode(node: AgentNodeType, edges: AgentEdgeType[], context:
 
   const res = await executor(node, baseInputs, context, agent, deps);
   // Preserve multi-output behavior for nodes with dynamic outputs by reflecting onto handle-scoped keys
-  if ((node.type === "javascript" || node.type === "userChoice") && res.success) {
+  if ((node.type === "javascript" || node.type === "userChoice" || node.type === "searchLorebook" || node.type === "addLorebookEntry") && res.success) {
     if (typeof res.value === "string") {
       // Execution mode returned text
       context.nodeValues.set(`${node.id}::out-string`, res.value);
@@ -98,16 +102,21 @@ export async function executeWorkflow(
   deps?: WorkflowDeps,
   onNodeExecuted?: (nodeId: string, result: NodeExecutionResult) => void,
 ): Promise<string | null> {
+  const chatId = typeof triggerContext === "object" && triggerContext !== null ? triggerContext.chatId : undefined;
+  const runKey = makeRunKey(agent.id, chatId);
+
   const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const context: WorkflowExecutionContext = {
     agentId: agent.id,
+    runKey,
+    chatId,
     executionId,
     nodeValues: new Map(),
     executedNodes: new Set(),
     isRunning: true,
   };
   context.nodeValues.set("workflow-execution-id", executionId);
-  contexts.set(agent.id, context);
+  contexts.set(runKey, context);
 
   const agentRunLogId = `agentrun_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const agentRunStartTime = Date.now();
@@ -188,18 +197,18 @@ export async function executeWorkflow(
     return null;
   } finally {
     context.isRunning = false;
-    contexts.delete(agent.id);
+    contexts.delete(runKey);
   }
 }
 
-export function cancelWorkflow(agentId: string): void {
-  const ctx = contexts.get(agentId);
+export function cancelWorkflow(runKey: string): void {
+  const ctx = contexts.get(runKey);
   if (ctx) {
     ctx.isRunning = false;
   }
 }
 
-export function isWorkflowRunning(agentId: string): boolean {
-  const ctx = contexts.get(agentId);
+export function isWorkflowRunning(runKey: string): boolean {
+  const ctx = contexts.get(runKey);
   return ctx ? ctx.isRunning : false;
 }

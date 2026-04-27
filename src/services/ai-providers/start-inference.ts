@@ -56,7 +56,17 @@ async function callProviderConverseEndpoint(event: AIEvent, params: InferencePar
     presencePenalty: parameters.presence_penalty,
   };
 
-  // console.log("finalParams", finalParams);
+  event.reportResolvedParams?.({
+    maxOutputTokens: finalParams.maxOutputTokens,
+    temperature: finalParams.temperature,
+    topP: finalParams.topP,
+    topK: finalParams.topK,
+    seed: finalParams.seed,
+    stopSequences: finalParams.stopSequences,
+    frequencyPenalty: finalParams.frequencyPenalty,
+    presencePenalty: finalParams.presencePenalty,
+    providerOptions: providerOptions as Record<string, unknown>,
+  });
 
   // 4. Execute
   if (params.stream) {

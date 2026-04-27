@@ -59,6 +59,7 @@ export type LorebookPageSettings = {
     direction: "asc" | "desc";
   };
   listWidth: "full" | "wide" | "medium" | "narrow";
+  selectedTags: string[];
 };
 
 const DEFAULT_LOREBOOK_PAGE_SETTINGS: LorebookPageSettings = {
@@ -67,6 +68,7 @@ const DEFAULT_LOREBOOK_PAGE_SETTINGS: LorebookPageSettings = {
     direction: "desc",
   },
   listWidth: "full",
+  selectedTags: [],
 };
 
 /**

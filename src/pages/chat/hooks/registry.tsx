@@ -123,7 +123,7 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
  * Helper function to render the proper widget.
  * This function now accepts the tabId so that dynamic props can be merged.
  */
-export function renderWidget(widgetId: WidgetId, tabId: string, extraProps?: Partial<any>): JSX.Element | null {
+export function renderWidget(widgetId: WidgetId, tabId: string, extraProps?: Partial<any>): React.ReactElement | null {
   const config = widgetConfigurations[widgetId];
   if (!config) {
     console.error(`No widget configuration found for widget id: ${widgetId}`);

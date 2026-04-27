@@ -79,6 +79,9 @@ export function validateAndTransformLorebookData(data: any, profileId: string, f
       max_depth: transformedData.max_depth,
       max_tokens: transformedData.max_tokens,
       group_keys: transformedData.group_keys,
+      rag_enabled: transformedData.rag_enabled,
+      embedding_model_id: transformedData.embedding_model_id,
+      similarity_threshold: transformedData.similarity_threshold,
       extra: transformedData.extra,
       entries: transformedData.entries,
     };
@@ -120,6 +123,9 @@ export async function importLorebook(validatedData: z.infer<typeof internalLoreb
     max_depth: validatedData.max_depth,
     max_tokens: validatedData.max_tokens,
     group_keys: validatedData.group_keys,
+    rag_enabled: validatedData.rag_enabled,
+    embedding_model_id: validatedData.embedding_model_id,
+    similarity_threshold: validatedData.similarity_threshold,
     extra: validatedData.extra,
   };
 

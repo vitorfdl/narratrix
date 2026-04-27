@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StepButton } from "@/components/ui/step-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useModelManifests } from "@/hooks/manifestStore";
+import { useEmbeddingManifests, useModelManifests } from "@/hooks/manifestStore";
 import { InstructTemplateSection } from "@/pages/models/components/InferenceTemplateSection";
 import type { Manifest } from "@/schema/model-manifest-schema";
 import type { Model } from "@/schema/models-schema";
@@ -23,15 +23,17 @@ interface ModelDialogProps {
 export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: ModelDialogProps) {
   const formRef = useRef<ModelFormRef>(null);
   const manifests = useModelManifests();
+  const embeddingManifests = useEmbeddingManifests();
 
-  const [activeTab, setActiveTab] = useState<string>(mode === "add" ? "connection" : "inference");
+  const [activeTab, setActiveTab] = useState<string>("connection");
   const [maxConcurrency, setMaxConcurrency] = useState<number>(1);
   const [completionType, setCompletionType] = useState<"chat" | "text">("chat");
   const [inferenceTemplateID, setInferenceTemplateID] = useState<string | null>(null);
   const [selectedManifest, setSelectedManifest] = useState<Manifest | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const modelManifest = model ? manifests.find((m) => m.id === model.manifest_id) : selectedManifest;
+  const allManifests = useMemo(() => [...manifests, ...embeddingManifests], [manifests, embeddingManifests]);
+  const modelManifest = model ? allManifests.find((m) => m.id === model.manifest_id) : selectedManifest;
   const supportsCompletion = modelManifest?.inference_type?.includes("completion") ?? false;
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function ModelDialog({ mode, model, open, onOpenChange, onSuccess }: Mode
       const templateId = model.inference_template_id || null;
       setInferenceTemplateID(templateId);
       setCompletionType(templateId ? "text" : "chat");
-      setActiveTab("inference");
+      setActiveTab("connection");
     } else {
       setMaxConcurrency(1);
       setInferenceTemplateID(null);

@@ -7,6 +7,8 @@ export type { TriggerContext };
 
 export interface WorkflowExecutionContext {
   agentId: string;
+  runKey: string;
+  chatId?: string;
   executionId: string;
   nodeValues: Map<string, any>;
   executedNodes: Set<string>;
@@ -50,6 +52,7 @@ export interface WorkflowDeps {
     parameters?: Record<string, any>;
     stream?: boolean;
     toolset?: WorkflowToolDefinition[];
+    runKey?: string;
   }) => Promise<string | null>;
   onLog?: (entry: Omit<ConsoleLogEntry, "id" | "timestamp"> & { id?: string }) => string | undefined;
   onUpdateLog?: (id: string, updates: Partial<ConsoleLogEntry>) => void;

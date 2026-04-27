@@ -38,7 +38,7 @@ type AddChatChapterParams = Omit<ChatChapter, "id" | "chat_id" | "created_at" | 
 type AddChatMemoryParams = Omit<CreateChatMemoryParams, "chat_id">;
 
 interface chatState {
-  chatList: Pick<Chat, "id" | "name">[];
+  chatList: Pick<Chat, "id" | "name" | "updated_at">[];
   selectedChat: Chat;
   selectedChatMessages: ChatMessage[];
   selectedChatChapters: ChatChapter[];
@@ -113,7 +113,7 @@ export const useChatStore = create<chatState>((set, get) => ({
         set({ isLoading: true, error: null });
         const chats = await listChats({ profile_id: profileId });
         set({
-          chatList: chats.map((chat) => ({ id: chat.id, name: chat.name })),
+          chatList: chats.map((chat) => ({ id: chat.id, name: chat.name, updated_at: chat.updated_at })),
           isLoading: false,
         });
         return chats;
@@ -176,7 +176,7 @@ export const useChatStore = create<chatState>((set, get) => ({
 
         set((state) => ({
           selectedChat: updatedChat,
-          chatList: state.chatList.map((chat) => (chat.id === updatedChat.id ? { id: updatedChat.id, name: updatedChat.name } : chat)),
+          chatList: state.chatList.map((chat) => (chat.id === updatedChat.id ? { id: updatedChat.id, name: updatedChat.name, updated_at: updatedChat.updated_at } : chat)),
           isLoading: false,
         }));
 
@@ -226,7 +226,7 @@ export const useChatStore = create<chatState>((set, get) => ({
         }
 
         set({
-          chatList: [...get().chatList, { id: updatedChat.id, name: updatedChat.name }],
+          chatList: [...get().chatList, { id: updatedChat.id, name: updatedChat.name, updated_at: updatedChat.updated_at }],
           isLoading: false,
         });
 

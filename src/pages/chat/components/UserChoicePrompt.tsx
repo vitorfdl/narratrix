@@ -9,8 +9,8 @@ const UserChoicePrompt: React.FC = memo(() => {
   const pendingChoices = usePendingChoices();
   const { resolveChoice } = useUserChoiceActions();
 
-  const handleCancel = useCallback((agentId: string) => {
-    cancelAgentWorkflow(agentId);
+  const handleCancel = useCallback((runKey: string) => {
+    cancelAgentWorkflow(runKey);
   }, []);
 
   if (pendingChoices.length === 0) {
@@ -31,7 +31,7 @@ const UserChoicePrompt: React.FC = memo(() => {
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive flex-shrink-0 -mt-0.5 -mr-1"
-              onClick={() => handleCancel(choice.agentId)}
+              onClick={() => handleCancel(choice.runKey)}
               title="Cancel"
             >
               <X className="h-3.5 w-3.5" />

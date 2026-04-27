@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { InferenceMessage, InferenceResponse, ModelSpecs } from "@/schema/inference-engine-schema";
 import { Engine } from "@/schema/model-manifest-schema";
+import type { ResolvedParameters } from "@/services/ai-providers/types/ai-event.type";
 
 /**
  * Represents a single inference request with all relevant data
@@ -12,6 +13,7 @@ export interface ConsoleRequest {
   messages: InferenceMessage[];
   modelSpecs: ModelSpecs;
   parameters: Record<string, any>;
+  resolvedParameters?: ResolvedParameters;
   engine: Engine;
   fullResponse?: string;
 }
@@ -64,6 +66,7 @@ interface ConsoleState {
   logs: ConsoleLogEntry[];
   actions: {
     addRequest: (request: Omit<ConsoleRequest, "timestamp">) => void;
+    updateRequestResolvedParams: (id: string, resolvedParameters: ResolvedParameters) => void;
     updateRequestResponse: (id: string, response: InferenceResponse) => void;
     clearHistory: () => void;
     getRequestById: (id: string) => ConsoleRequest | undefined;
@@ -136,9 +139,11 @@ export const useConsoleStore = create<ConsoleState>((set, get) => ({
         };
       }),
 
-    /**
-     * Update a request's response by ID
-     */
+    updateRequestResolvedParams: (id, resolvedParameters) =>
+      set((state) => ({
+        requests: state.requests.map((req) => (req.id === id ? { ...req, resolvedParameters } : req)),
+      })),
+
     updateRequestResponse: (id, inferenceResponse) =>
       set((state) => {
         const updatedRequests = state.requests.map((req) => {

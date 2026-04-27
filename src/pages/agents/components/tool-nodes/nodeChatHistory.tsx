@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { useChatStore } from "@/hooks/chatStore";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
+import { getChatMessagesByChatId } from "@/services/chat-message-service";
 import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
@@ -19,10 +20,15 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-const executeChatHistoryNode: NodeExecutor = async (node, inputs): Promise<NodeExecutionResult> => {
+const executeChatHistoryNode: NodeExecutor = async (node, inputs, context, _agent, deps): Promise<NodeExecutionResult> => {
   try {
-    const { selectedChatMessages } = useChatStore.getState();
-    let history = Array.isArray(selectedChatMessages) ? selectedChatMessages : [];
+    const chatId = context.chatId;
+    const targetChat = chatId ? await deps.getChatById(chatId) : null;
+    const selectedState = useChatStore.getState();
+    let history = Array.isArray(selectedState.selectedChatMessages) ? selectedState.selectedChatMessages : [];
+    if (chatId) {
+      history = targetChat?.active_chapter_id ? await getChatMessagesByChatId(chatId, targetChat.active_chapter_id) : [];
+    }
 
     const config: ChatHistoryNodeConfig = {
       name: "Chat History Node",

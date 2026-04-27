@@ -1,7 +1,8 @@
-import { LuBot, LuGitBranch, LuHeart, LuHeartOff, LuNetwork, LuTrash2 } from "react-icons/lu";
+import { Bot, CalendarClock, GitBranch, Heart, Network, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { AgentType } from "@/schema/agent-schema";
 
 interface AgentCardProps {
@@ -12,95 +13,121 @@ interface AgentCardProps {
   onToggleFavorite: (agent: AgentType) => void;
 }
 
-export function AgentCard({ agent, onEdit, onDelete, onToggleFavorite }: AgentCardProps) {
-  // Get tags with null check
+const cardSizeClasses: Record<AgentCardProps["cardSize"], { body: string; title: string; description: string; tagLimit: number }> = {
+  small: {
+    body: "p-4",
+    title: "text-sm",
+    description: "line-clamp-2",
+    tagLimit: 3,
+  },
+  medium: {
+    body: "p-5",
+    title: "text-base",
+    description: "line-clamp-2",
+    tagLimit: 4,
+  },
+  large: {
+    body: "p-6",
+    title: "text-lg",
+    description: "line-clamp-3",
+    tagLimit: 6,
+  },
+};
+
+export function AgentCard({ agent, cardSize, onEdit, onDelete, onToggleFavorite }: AgentCardProps) {
   const tags = agent.tags || [];
+  const sizeClass = cardSizeClasses[cardSize];
+  const visibleTags = tags.slice(0, sizeClass.tagLimit);
+  const hiddenTagsCount = Math.max(tags.length - visibleTags.length, 0);
+  const updatedDate = new Date(agent.updated_at).toLocaleDateString();
 
   return (
     <Card
-      className="group relative overflow-hidden flex flex-col h-full bg-gradient-to-br from-background to-accent/10 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer"
+      className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/75 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:shadow-xl hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
       onClick={() => onEdit(agent)}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) {
+          return;
+        }
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onEdit(agent);
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
-      <CardHeader className="relative pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <LuBot className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-base line-clamp-1">{agent.name}</h3>
-              {agent.version && <p className="text-xs text-muted-foreground">v{agent.version}</p>}
-            </div>
+      <CardContent className={cn("flex min-h-48 flex-1 flex-col gap-3", sizeClass.body)}>
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Bot className="h-5 w-5" />
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* Favorite button */}
+          <div className="min-w-0 flex-1">
+            <h3 className={cn("truncate font-semibold leading-tight text-foreground", sizeClass.title)} title={agent.name}>
+              {agent.name}
+            </h3>
+            {agent.version && <p className="mt-0.5 text-xs text-muted-foreground">v{agent.version}</p>}
+          </div>
+          <div className="flex shrink-0 gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-full text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 group-focus-within:opacity-100"
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleFavorite(agent);
+                onDelete(agent);
               }}
-              title={agent.favorite ? "Remove from favorites" : "Add to favorites"}
+              title="Delete Agent"
             >
-              {agent.favorite ? <LuHeart className="h-4 w-4 fill-primary text-primary" /> : <LuHeartOff className="h-4 w-4" />}
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="flex-1 space-y-3">
-        {/* Description */}
-        {agent.description && <p className="text-xs text-muted-foreground line-clamp-2">{agent.description}</p>}
+        {agent.description && <p className={cn("text-sm leading-relaxed text-muted-foreground", sizeClass.description)}>{agent.description}</p>}
 
-        {/* Node stats */}
-        <div className="flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <LuNetwork className="h-3 w-3" />
-            <span>{agent.nodes.length} nodes</span>
-          </div>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <LuGitBranch className="h-3 w-3" />
-            <span>{agent.edges.length} connections</span>
-          </div>
+        <div className="flex min-h-[1.5rem] flex-wrap gap-1 overflow-hidden">
+          {visibleTags.map((tag: string) => (
+            <Badge key={tag} variant="secondary" className="max-w-28 shrink-0 truncate rounded-full bg-muted/70 px-2 py-0.5 text-[0.625rem] font-medium text-muted-foreground">
+              {tag}
+            </Badge>
+          ))}
+          {hiddenTagsCount > 0 && (
+            <Badge variant="outline" className="shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] text-muted-foreground">
+              +{hiddenTagsCount}
+            </Badge>
+          )}
         </div>
 
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {tags.slice(0, 4).map((tag: string) => (
-              <Badge key={tag} variant="secondary" className="!text-xxs py-0.5 px-1">
-                {tag}
-              </Badge>
-            ))}
-            {tags.length > 4 && <span className="text-xs text-muted-foreground font-semibold px-1">+{tags.length - 4}</span>}
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+          <div className="flex min-w-0 items-center">
+            <CalendarClock className="mr-1.5 h-3.5 w-3.5" />
+            Updated {updatedDate}
           </div>
-        )}
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="flex items-center gap-1">
+              <Network className="h-3.5 w-3.5" />
+              {agent.nodes.length}
+            </span>
+            <span className="flex items-center gap-1">
+              <GitBranch className="h-3.5 w-3.5" />
+              {agent.edges.length}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(agent);
+            }}
+            title={agent.favorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart className={cn("h-4 w-4", agent.favorite ? "fill-primary text-primary" : "")} />
+          </Button>
+        </div>
       </CardContent>
-
-      {/* Action buttons - shown on hover */}
-      <div className="absolute right-2 bottom-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <Button
-          variant="destructive"
-          size="icon"
-          className="h-8 w-8"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(agent);
-          }}
-          title="Delete Agent"
-        >
-          <LuTrash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-
-      <CardFooter className="p-3 pt-0 text-xs text-muted-foreground mt-auto">
-        <div className="flex items-center justify-between w-full">
-          <span>Updated {new Date(agent.updated_at).toLocaleDateString()}</span>
-        </div>
-      </CardFooter>
     </Card>
   );
 }

@@ -141,7 +141,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
   );
 
   return (
-    <div className={cn("w-44 bg-background/95 border-r border-border flex flex-col", className)}>
+    <div className={cn("w-56 bg-background/95 border-r border-border flex flex-col", className)}>
       {/* Header */}
       <div className="p-2 border-b border-border flex flex-col gap-0.5">
         <div className="flex items-center gap-1">
@@ -152,17 +152,17 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
 
       {/* Node Categories */}
       <ScrollArea className="flex-1">
-        <div className="pr-1 space-y-1">
+        <div className="pr-3 space-y-1">
           {categorizedNodes.map(({ category, nodes }) => {
             const isExpanded = expandedCategories.has(category);
 
             return (
               <div key={category} className="space-y-1">
                 {/* Category Header */}
-                <Button variant="ghost" size="sm" className="w-full justify-start h-8 px-2 text-xs font-medium  hover:bg-accent/50" onClick={() => toggleCategory(category)}>
-                  {isExpanded ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                  {category}
-                  <span className="ml-auto text-muted-foreground">({nodes.length})</span>
+                <Button variant="ghost" size="sm" className="w-full justify-start h-8 px-2 text-xs font-medium hover:bg-accent/50 overflow-hidden gap-1.5" onClick={() => toggleCategory(category)}>
+                  {isExpanded ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
+                  <span className="min-w-0 truncate text-left">{category}</span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">({nodes.length})</span>
                 </Button>
 
                 {/* Category Nodes */}
@@ -177,7 +177,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
                           key={node.type}
                           onClick={() => !isDisabled && handleNodeClick(node.type)}
                           className={cn(
-                            "group flex items-center gap-2 px-1 py-0.5 rounded-md transition-colors border border-transparent",
+                            "group relative flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-md border border-transparent py-0.5 pl-1 pr-8 transition-colors",
                             isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-accent/70 hover:border-border/50",
                           )}
                           title={isDisabled ? "Only one Trigger node allowed per workflow" : node.description}
@@ -197,7 +197,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({ className, onNodeAdd
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 flex-shrink-0 transition-opacity"
+                              className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0 opacity-0 transition-opacity group-hover:opacity-100"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleNodeClick(node.type);

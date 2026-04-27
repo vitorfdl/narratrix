@@ -6,7 +6,7 @@ import { Manifest, ManifestSchema } from "@/schema/model-manifest-schema";
 /**
  * Manifest types supported by the service
  */
-export type ManifestType = "model" | "character";
+export type ManifestType = "model" | "character" | "embedding";
 
 /**
  * Path to the manifests directory relative to the resource directory
@@ -14,6 +14,7 @@ export type ManifestType = "model" | "character";
 const MANIFEST_PATHS: Record<ManifestType, string> = {
   model: "resources/manifests/models",
   character: "resources/manifests/characters",
+  embedding: "resources/manifests/embeddings",
 };
 
 /**
@@ -22,12 +23,13 @@ const MANIFEST_PATHS: Record<ManifestType, string> = {
 const MANIFEST_VALIDATORS = {
   model: ManifestSchema,
   character: characterManifestSchema,
+  embedding: ManifestSchema,
 };
 
 /**
  * Type definition for generic manifest content based on type
  */
-export type ManifestContent<T extends ManifestType> = T extends "model" ? Manifest : T extends "character" ? CharacterManifest : never;
+export type ManifestContent<T extends ManifestType> = T extends "model" ? Manifest : T extends "embedding" ? Manifest : T extends "character" ? CharacterManifest : never;
 
 /**
  * Retrieves a list of all available manifest files for a specific type
@@ -129,3 +131,9 @@ export const getCharacterManifestFiles = () => getManifestFiles("character");
 export const getCharacterManifest = (filename: string) => getManifest("character", filename);
 export const getAllCharacterManifests = () => getAllManifests("character");
 export const getCharacterManifestById = (id: string) => getManifestById("character", id);
+
+// Convenience functions for embedding manifests
+export const getEmbeddingManifestFiles = () => getManifestFiles("embedding");
+export const getEmbeddingManifest = (filename: string) => getManifest("embedding", filename);
+export const getAllEmbeddingManifests = () => getAllManifests("embedding");
+export const getEmbeddingManifestById = (id: string) => getManifestById("embedding", id);

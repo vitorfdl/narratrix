@@ -1,3 +1,5 @@
+@reference "../../../index.css";
+
 .react-grid-item.react-grid-placeholder {
   @apply bg-primary/25 border-dotted border-primary backdrop-blur-sm;
 }

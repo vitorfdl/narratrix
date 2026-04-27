@@ -1,12 +1,14 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useAgents } from "@/hooks/agentStore";
+import { makeRunKey } from "@/hooks/agentWorkflowStore";
 import { useChatStore } from "@/hooks/chatStore";
 import type { AgentTriggerType, TriggerContext } from "@/schema/agent-schema";
 import { isWorkflowRunning } from "@/services/agent-workflow/runner";
 import type { ChatEvent } from "@/services/chat-event-bus";
 import { chatEventBus } from "@/services/chat-event-bus";
 import { getAgentTriggerConfig } from "@/services/chat-generation-orchestrator";
+import { getChatById } from "@/services/chat-service";
 import { useAgentWorkflow } from "./useAgentWorkflow";
 
 /**
@@ -73,9 +75,11 @@ export function useAgentTriggerManager(chatId: string) {
         return;
       }
 
-      // Get current participants for this chat from the store (not reactive - we read on event)
       const chatState = useChatStore.getState();
-      const chat = chatState.selectedChat;
+      const chat = chatState.selectedChat?.id === chatId ? chatState.selectedChat : await getChatById(chatId);
+      if (!chat) {
+        return;
+      }
       const participants = chat?.participants ?? [];
       const userCharacterId = chat?.user_character_id ?? null;
 
@@ -109,8 +113,7 @@ export function useAgentTriggerManager(chatId: string) {
           continue;
         }
 
-        // Don't re-trigger an already-running agent
-        if (isWorkflowRunning(agent.id)) {
+        if (isWorkflowRunning(makeRunKey(agent.id, chatId))) {
           continue;
         }
 

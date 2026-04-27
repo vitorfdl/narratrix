@@ -1,19 +1,5 @@
-import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
-
-function parseReasoningEffort(reasoning?: number) {
-  switch (reasoning) {
-    case 0:
-      return "minimal";
-    case 1:
-      return "low";
-    case 2:
-      return "medium";
-    case 3:
-      return "high";
-    default:
-      return "minimal";
-  }
-}
+import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
+import { mapReasoningEffort } from "./shared";
 
 function getGeminiProviderOptions(parameters: Record<string, any>) {
   const providerOptions: GoogleGenerativeAIProviderOptions = {};
@@ -25,7 +11,7 @@ function getGeminiProviderOptions(parameters: Record<string, any>) {
   }
 
   if ("reasoning_temperature" in parameters && parameters.reasoning_temperature !== -1) {
-    thinkingConfig.thinkingLevel = parseReasoningEffort(parameters.reasoning_temperature);
+    thinkingConfig.thinkingLevel = mapReasoningEffort(parameters.reasoning_temperature, "minimal");
   }
 
   if (Object.keys(thinkingConfig).length > 0) {

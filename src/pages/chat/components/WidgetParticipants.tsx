@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { useAgents } from "@/hooks/agentStore";
-import { useAgentWorkflowStateById, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
+import { cancelAgentWorkflow, makeRunKey, useAgentWorkflowState, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
 import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatId, useCurrentChatParticipants, useCurrentChatSettings, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import type { AgentTriggerType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import { Character } from "@/schema/characters-schema";
+import { cancelChatGeneration, clearChatGenerationCancellation, isChatGenerationCancelled } from "@/services/chat-generation-cancellation";
 import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import AddParticipantPopover from "./AddParticipantPopover";
 
@@ -141,7 +142,7 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
         isEnabled ? "bg-muted/50 hover:bg-muted/80 border" : "bg-muted/30 text-muted-foreground",
       )}
     >
-      {inInferenceQueue && <BorderBeam colorFrom="hsl(var(--primary))" size={60} duration={1.5} />}
+      {inInferenceQueue && <BorderBeam colorFrom="var(--primary)" size={60} duration={1.5} />}
 
       <Avatar onClick={() => onEdit(participant.id)} className={cn("w-8 h-8 flex-shrink-0 rounded-sm cursor-pointer hover:scale-110 transition-all duration-200", !isEnabled && "opacity-50")}>
         {participant.avatar ? (
@@ -198,18 +199,18 @@ const TRIGGER_LABEL: Record<AgentTriggerType, string> = {
 interface AgentParticipantCardProps {
   participant: Participant;
   agent: AgentType;
+  currentChatId: string | null;
   onToggle: (id: string) => void;
   onTrigger: (id: string) => void;
   onRemove: (id: string) => void;
   onEdit: (id: string) => void;
 }
 
-const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant, agent, onToggle, onTrigger, onRemove, onEdit }) => {
+const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant, agent, currentChatId, onToggle, onTrigger, onRemove, onEdit }) => {
   const isEnabled = participant.isEnabled ?? true;
-  // Read per-agent state from the global store so any component executing this agent's
-  // workflow (including WidgetGenerate's orchestrator) triggers the animation here.
-  // This component self-subscribes to the store, so no parent re-render is needed.
-  const workflowState = useAgentWorkflowStateById(agent.id);
+  // Subscribe to state scoped to this agent + chat so the card only reflects
+  // runs initiated from the currently open chat.
+  const workflowState = useAgentWorkflowState(agent.id, currentChatId);
   // Prefer trigger type from the Trigger node config; fall back to settings.run_on
   const triggerNodeConfig = agent.nodes?.find((n) => n.type === "trigger")?.config as { triggerType?: AgentTriggerType } | undefined;
   const triggerType: AgentTriggerType = triggerNodeConfig?.triggerType ?? agent.settings?.run_on?.type ?? "manual";
@@ -232,7 +233,7 @@ const AgentParticipantCard: React.FC<AgentParticipantCardProps> = ({ participant
           isRunning && "border-primary border-solid bg-primary/10",
         )}
       >
-        {isRunning && <BorderBeam colorFrom="hsl(var(--primary))" size={50} duration={1} />}
+        {isRunning && <BorderBeam colorFrom="var(--primary)" size={50} duration={1} />}
 
         {/* Bot icon — clickable to edit */}
         <BiSolidZap onClick={() => onEdit(participant.id)} className={cn("h-5 w-4 flex-shrink-0 cursor-pointer", isEnabled ? "text-primary" : "text-muted-foreground")} />
@@ -294,7 +295,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
   const inferenceService = useInferenceServiceFromContext();
-  const { executeWorkflow: executeAgentWorkflow, cancelWorkflow: cancelAgentWorkflow } = useAgentWorkflow();
+  const { executeWorkflow: executeAgentWorkflow } = useAgentWorkflow();
 
   const [streamingState, setStreamingState] = useState(() => inferenceService.getStreamingState(currentChatId));
 
@@ -411,6 +412,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
       }
 
       if (streamingState.characterId === participantId) {
+        cancelChatGeneration(currentChatId);
         inferenceService.cancelGeneration(currentChatId);
         return;
       }
@@ -425,9 +427,9 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
         }
 
         if (agent) {
-          // If already running, stop the agent instead of re-triggering it
-          if (useAgentWorkflowStore.getState().states[agent.id]?.isRunning) {
-            cancelAgentWorkflow(agent.id);
+          // If already running in this chat, stop the agent instead of re-triggering it
+          if (useAgentWorkflowStore.getState().states[makeRunKey(agent.id, currentChatId)]?.isRunning) {
+            cancelAgentWorkflow(makeRunKey(agent.id, currentChatId));
             return;
           }
           try {
@@ -437,29 +439,35 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
             toast.error(`Agent ${agent.name} failed: ${error instanceof Error ? error.message : "Unknown error"}`);
           }
         } else if (character) {
-          await generateCharacterWithAgents(participantId, () => inferenceService.generateMessage({ chatId: currentChatId, characterId: participantId, emitChatEvents: false }), {
-            chatId: currentChatId,
-            participants: participants ?? [],
-            agents: agentList,
-            userCharacterId: currentChatUserCharacterID ?? null,
-            executeWorkflow: executeAgentWorkflow,
-            isAborted: () => false,
-          });
+          const targetChatId = currentChatId;
+          clearChatGenerationCancellation(targetChatId);
+          try {
+            await generateCharacterWithAgents(participantId, () => inferenceService.generateMessage({ chatId: targetChatId, characterId: participantId, emitChatEvents: false }), {
+              chatId: targetChatId,
+              participants: participants ?? [],
+              agents: agentList,
+              userCharacterId: currentChatUserCharacterID ?? null,
+              executeWorkflow: executeAgentWorkflow,
+              isAborted: () => isChatGenerationCancelled(targetChatId),
+            });
+          } finally {
+            clearChatGenerationCancellation(targetChatId);
+          }
         }
       } catch (error) {
         console.error("Error triggering message:", error);
         toast.error(error instanceof Error ? error.message : "An unknown error occurred");
       }
     },
-    [characterList, agentList, participants, inferenceService, streamingState.characterId, currentChatId, currentChatUserCharacterID, executeAgentWorkflow, cancelAgentWorkflow],
+    [characterList, agentList, participants, inferenceService, streamingState.characterId, currentChatId, currentChatUserCharacterID, executeAgentWorkflow],
   );
 
   const isInQueue = (participantId: string): boolean => {
     const inCharacterQueue =
       (streamingState.characterId === participantId && streamingState.messageId !== "generate-input-area") || (participantId === "user" && streamingState.messageId === "generate-input-area");
     const agent = agentList.find((a) => a.id === participantId);
-    // Use the per-agent store state so the indicator reflects ALL executors (orchestrator + manual)
-    const inAgentQueue = !!(agent && (useAgentWorkflowStore.getState().states[participantId]?.isRunning ?? false));
+    // Use the per-run-key store state so the indicator only reflects runs in this chat
+    const inAgentQueue = !!(agent && (useAgentWorkflowStore.getState().states[makeRunKey(participantId, currentChatId)]?.isRunning ?? false));
     return inCharacterQueue || inAgentQueue;
   };
 
@@ -518,6 +526,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
         <AgentParticipantCard
           participant={participant}
           agent={agent}
+          currentChatId={currentChatId}
           onToggle={handleToggleParticipant}
           onTrigger={handleTriggerMessage}
           onRemove={handleRemoveParticipant}

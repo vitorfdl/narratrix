@@ -1,3 +1,5 @@
+@reference "../../../index.css";
+
 .settings-section {
   @apply flex items-center w-full p-3 bg-background hover:bg-accent rounded-lg;
 }

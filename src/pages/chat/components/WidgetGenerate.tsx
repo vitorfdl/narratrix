@@ -5,15 +5,17 @@ import type { MarkdownEditorRef } from "@/components/markdownRender/markdown-edi
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
 import { useAgents } from "@/hooks/agentStore";
-import { useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
-import { useChatActions, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import { cancelAgentWorkflow, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
+import { getCurrentChatId, useChatStore, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import type { GenerationOptions, StreamingState } from "@/hooks/useChatInference";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { cn } from "@/lib/utils";
 import { QuickAction } from "@/schema/profiles-schema";
+import { cancelChatGeneration, clearChatGenerationCancellation, isChatGenerationCancelled } from "@/services/chat-generation-cancellation";
 import { orchestrateGeneration } from "@/services/chat-generation-orchestrator";
+import { createChatMessage, getChatMessagesByChatId, getNextMessagePosition } from "@/services/chat-message-service";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import QuickActions from "./utils-generate/QuickActions";
 
@@ -26,21 +28,47 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const [text, setText] = React.useState("");
   const [generationInputHistory, setGenerationInputHistory] = useLocalGenerationInputHistory();
   const [streamingCharacters, setStreamingCharacters] = useState<Record<string, boolean>>({});
-  const [isOrchestrating, setIsOrchestrating] = useState(false);
+  const [orchestratingChatIds, setOrchestratingChatIds] = useState<Set<string>>(() => new Set());
   const quietResponseRef = useRef<boolean>(false);
   const [inputStreamingText, setInputStreamingText] = useState<string>("");
-  const rotationAbortRef = useRef<boolean>(false);
+  const orchestrationAbortRef = useRef<Record<string, boolean>>({});
 
   const currentProfile = useCurrentProfile();
   const currentChatId = useCurrentChatId();
+  const currentChatActiveChapterId = useCurrentChatActiveChapterID();
   const sendCommand = currentProfile?.settings.chat.sendShortcut;
   const participants = useCurrentChatParticipants();
   const chatMessages = useCurrentChatMessages();
   const userCharacterId = useCurrentChatUserCharacterID() ?? null;
   const agentList = useAgents();
+  const isAnyAgentRunningInCurrentChat = useAgentWorkflowStore((state) => Object.values(state.states).some((agentState) => agentState.chatId === currentChatId && agentState.isRunning));
 
-  const { addChatMessage } = useChatActions();
-  const { executeWorkflow, cancelWorkflow } = useAgentWorkflow();
+  const { executeWorkflow } = useAgentWorkflow();
+
+  const addUserMessageToChat = useCallback(async (chatId: string, chapterId: string, message: string) => {
+    const position = await getNextMessagePosition(chatId, chapterId);
+    const newMessage = await createChatMessage({
+      chat_id: chatId,
+      chapter_id: chapterId,
+      character_id: null,
+      type: "user",
+      messages: [message],
+      message_index: 0,
+      position,
+      disabled: false,
+      tokens: null,
+      extra: {},
+    });
+
+    if (chatId === getCurrentChatId()) {
+      const updatedMessages = await getChatMessagesByChatId(chatId, chapterId);
+      if (chatId === getCurrentChatId()) {
+        useChatStore.setState({ selectedChatMessages: updatedMessages });
+      }
+    }
+
+    return newMessage;
+  }, []);
 
   // Get enabled participants for message generation
   const enabledParticipants = participants?.filter((p) => p.enabled) || [];
@@ -135,6 +163,11 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       }
 
       const targetChatId = currentChatId;
+      const targetChapterId = currentChatActiveChapterId;
+      if (!targetChapterId) {
+        toast.error("No active chapter found");
+        return;
+      }
 
       const waitForGenerationToFinish = (): Promise<void> => {
         return new Promise((resolve) => {
@@ -143,7 +176,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
             return;
           }
           const unsubscribe = inferenceService.subscribeToStateChanges((state) => {
-            if (rotationAbortRef.current) {
+            if (orchestrationAbortRef.current[targetChatId]) {
               unsubscribe();
               resolve();
               return;
@@ -156,8 +189,9 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         });
       };
 
-      rotationAbortRef.current = false;
-      setIsOrchestrating(true);
+      clearChatGenerationCancellation(targetChatId);
+      orchestrationAbortRef.current[targetChatId] = false;
+      setOrchestratingChatIds((prev) => new Set(prev).add(targetChatId));
 
       try {
         await orchestrateGeneration(submittedText.trim(), {
@@ -166,20 +200,15 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           agents: agentList,
           userCharacterId,
           addUserMessage: async (text) => {
-            await addChatMessage({
-              character_id: null,
-              type: "user",
-              messages: [text],
-              extra: {},
-            });
+            await addUserMessageToChat(targetChatId, targetChapterId, text);
           },
           executeWorkflow,
           generateMessage: (opts: GenerationOptions) => inferenceService.generateMessage(opts),
           waitForGenerationToFinish,
-          isAborted: () => rotationAbortRef.current,
+          isAborted: () => !!orchestrationAbortRef.current[targetChatId] || isChatGenerationCancelled(targetChatId),
         });
 
-        if (!rotationAbortRef.current) {
+        if (!orchestrationAbortRef.current[targetChatId]) {
           if (!generationInputHistory.length || generationInputHistory.at(-1) !== submittedText) {
             const newHistory = [...generationInputHistory, submittedText.trim()].slice(-25);
             setGenerationInputHistory(newHistory);
@@ -191,10 +220,28 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       } catch (error) {
         toast.error(`${error}`);
       } finally {
-        setIsOrchestrating(false);
+        setOrchestratingChatIds((prev) => {
+          const next = new Set(prev);
+          next.delete(targetChatId);
+          return next;
+        });
+        delete orchestrationAbortRef.current[targetChatId];
+        clearChatGenerationCancellation(targetChatId);
       }
     },
-    [enabledParticipants, participants, agentList, userCharacterId, inferenceService, addChatMessage, executeWorkflow, generationInputHistory, setGenerationInputHistory, currentChatId],
+    [
+      enabledParticipants,
+      participants,
+      agentList,
+      userCharacterId,
+      inferenceService,
+      executeWorkflow,
+      generationInputHistory,
+      setGenerationInputHistory,
+      currentChatId,
+      currentChatActiveChapterId,
+      addUserMessageToChat,
+    ],
   );
 
   // Returns true while the full generation loop is active (agent phases + inference streaming)
@@ -202,18 +249,23 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
     return Object.keys(streamingCharacters).length > 0;
   }, [streamingCharacters]);
 
-  const isGenerating = isOrchestrating || isAnyCharacterStreaming();
+  const isGenerating = orchestratingChatIds.has(currentChatId) || isAnyCharacterStreaming() || isAnyAgentRunningInCurrentChat;
 
   const handleCancel = useCallback(async () => {
     try {
-      rotationAbortRef.current = true;
-      setIsOrchestrating(false);
+      cancelChatGeneration(currentChatId);
+      orchestrationAbortRef.current[currentChatId] = true;
+      setOrchestratingChatIds((prev) => {
+        const next = new Set(prev);
+        next.delete(currentChatId);
+        return next;
+      });
 
-      // Cancel any agent workflows that are currently running
+      // Cancel agent workflows running in this chat only
       const agentStates = useAgentWorkflowStore.getState().states;
-      for (const [agentId, state] of Object.entries(agentStates)) {
-        if (state.isRunning) {
-          cancelWorkflow(agentId);
+      for (const [runKey, state] of Object.entries(agentStates)) {
+        if (state.isRunning && state.chatId === currentChatId) {
+          cancelAgentWorkflow(runKey);
         }
       }
 
@@ -224,13 +276,15 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         if (quietResponseRef.current) {
           quietResponseRef.current = false;
         }
+      } else if (!isAnyAgentRunningInCurrentChat) {
+        setStreamingCharacters({});
       }
       toast.success("Generation cancelled");
     } catch (error) {
       console.error("Error cancelling generation:", error);
       toast.error("Error cancelling generation");
     }
-  }, [inferenceService, currentChatId, cancelWorkflow]);
+  }, [inferenceService, currentChatId, isAnyAgentRunningInCurrentChat]);
 
   useEffect(() => {
     if (text.length > 0) {
@@ -284,12 +338,11 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
         generationConfig.existingMessageId = lastMessage.id;
         generationConfig.extraSuggestions!.last_message = lastMessage.messages[lastMessage.message_index];
       } else {
-        const { id: newChatID } = await addChatMessage({
-          character_id: null,
-          messages: ["..."],
-          type: "user",
-          extra: {},
-        });
+        if (!currentChatActiveChapterId) {
+          toast.error("No active chapter found");
+          return;
+        }
+        const { id: newChatID } = await addUserMessageToChat(currentChatId, currentChatActiveChapterId, "...");
         generationConfig.existingMessageId = newChatID;
       }
     }
@@ -340,7 +393,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           </Button>
         ) : (
           <Button variant="default" size="xs" onClick={() => handleSubmit(text)} title={`Send Message (${sendCommand || "Ctrl+Enter"})`} className="ml-auto" disabled={!text.trim()}>
-            <LuSend className="!w-3.5 !h-3.5 mr-1" />
+            <LuSend className="!w-3.5 !h-3.5" />
             Send
           </Button>
         )}
