@@ -51,7 +51,7 @@ function SortableTab({ tab, index, activeTab, onTabChange, onCloseTab, onRenameR
           <div
             className={cn(
               "group flex items-center px-2 py-1 rounded-t-lg transition-colors font-medium cursor-pointer select-none",
-              activeTab === tab.id ? "bg-content text-foreground" : "bg-background text-muted-foreground hover:text-foreground",
+              activeTab === tab.id ? "bg-content text-foreground" : "bg-transparent text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
               isSortableDragging && "cursor-grabbing",
             )}
             onClick={() => !isSortableDragging && onTabChange(tab.id)}
@@ -160,7 +160,7 @@ export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, on
   };
 
   return (
-    <div className="flex items-center border-b border-border bg-background/80 mt-1">
+    <div className="flex items-center border-b border-border/50 bg-sidebar pt-1">
       <ScrollArea className="flex-1">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex items-center gap-1 px-2">
@@ -200,7 +200,7 @@ export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, on
                 <div
                   className={cn(
                     "group flex items-center px-2 py-1 rounded-t-lg transition-colors font-medium cursor-grabbing select-none shadow-lg",
-                    activeTab === draggedTab.id ? "bg-content text-foreground" : "bg-background text-muted-foreground",
+                    activeTab === draggedTab.id ? "bg-content text-foreground" : "bg-sidebar text-muted-foreground",
                   )}
                 >
                   <span className="mr-2 max-h-6 text-sm overflow-hidden text-ellipsis whitespace-nowrap pointer-events-none">{draggedTab.name}</span>

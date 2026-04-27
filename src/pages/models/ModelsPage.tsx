@@ -389,7 +389,7 @@ export default function Models() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-[repeat(auto-fit,minmax(26rem,1fr))] gap-3">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(26rem,1fr))] gap-3">
                     {group.models.map((model) => (
                       <ModelCard key={model.id} model={model} onDelete={handleDelete} onDuplicate={handleDuplicate} onOpenSettings={openEditDialog} />
                     ))}

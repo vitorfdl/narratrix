@@ -19,7 +19,7 @@ import { LorebookFormDialog } from "./components/LorebookFormDialog";
 import { LorebookImport, LorebookImportHandle } from "./components/LorebookImport";
 import { LorebookSidebar } from "./components/LorebookSidebar";
 
-const lorebookGridTemplateColumns = "repeat(auto-fit, minmax(min(100%, 24rem), 1fr))";
+const lorebookGridTemplateColumns = "repeat(auto-fill, minmax(min(100%, 24rem), 1fr))";
 const lorebookLoadingSkeletonKeys = Array.from({ length: 8 }, (_, index) => `lorebook-loading-${index}`);
 export default function LorebooksPage() {
   const currentProfile = useCurrentProfile();

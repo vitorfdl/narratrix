@@ -16,7 +16,7 @@ For collection/library pages such as Models, Characters, and Agents, prefer the 
 
 ## Collection Layout
 
-- Prefer responsive auto-fit grids over manual "cards per row" controls.
+- Prefer responsive `auto-fill` grids over manual "cards per row" controls. Use `auto-fill` (not `auto-fit`) so cards stay near their min width when there are few items, instead of stretching to fill the row.
 - Keep page-specific card size settings only when they already exist and affect minimum card width.
 - Avoid showing low-value result text in headers unless it helps navigation; sidebars or tabs can carry counts.
 - Empty and loading states should be centered, compact, and visually quiet.

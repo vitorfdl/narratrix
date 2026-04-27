@@ -118,7 +118,7 @@ export default function AgentPage() {
   const hasActiveFilters = search.trim().length > 0 || settings.selectedTags.length > 0;
   const gridTemplateColumns = useMemo(() => {
     const minWidth = agentGridMinWidthBySize[settings.view.cardSize];
-    return `repeat(auto-fit, minmax(min(100%, ${minWidth}rem), 1fr))`;
+    return `repeat(auto-fill, minmax(min(100%, ${minWidth}rem), 1fr))`;
   }, [settings.view.cardSize]);
   const loadingSkeletonKeys = useMemo(() => Array.from({ length: 8 }, (_, itemIndex) => `agent-loading-${itemIndex}`), []);
 

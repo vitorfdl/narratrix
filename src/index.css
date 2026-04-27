@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -139,6 +140,21 @@ body,
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+    font-feature-settings: "liga", "dlig";
+  }
+  .font-ui {
+    font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  .sidebar-codex-atmosphere {
+    background-image:
+      radial-gradient(ellipse 180% 220px at 50% 0%, color-mix(in oklab, var(--primary) 7%, transparent), transparent 70%),
+      radial-gradient(ellipse 140% 200px at 50% 100%, color-mix(in oklab, var(--primary) 4%, transparent), transparent 65%);
   }
 }
 
