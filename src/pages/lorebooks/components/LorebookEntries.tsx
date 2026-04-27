@@ -5,7 +5,7 @@ import { cosineSimilarity } from "ai";
 import { ChevronDown } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
-import { LuBookDown, LuBookOpen, LuBookUp, LuBot, LuDatabase, LuFilter, LuFlaskConical, LuGripVertical, LuPlus, LuSearch, LuTrash, LuTrash2, LuUser } from "react-icons/lu";
+import { LuBookDown, LuBookUp, LuBot, LuDatabase, LuFilter, LuFlaskConical, LuGripVertical, LuPlus, LuSearch, LuTrash, LuTrash2, LuUser } from "react-icons/lu";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -61,9 +61,15 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
   const IconComponent = displayInfo.icon;
 
   return (
-    <TableRow ref={setNodeRef} style={style} className={cn("transition-colors cursor-pointer hover:bg-muted", isDragging && "bg-accent opacity-80")} {...attributes} onClick={() => onEdit(entry)}>
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={cn("cursor-pointer border-border/60 transition-colors hover:bg-muted/50", isDragging && "bg-accent opacity-80 shadow-lg")}
+      {...attributes}
+      onClick={() => onEdit(entry)}
+    >
       <TableCell className="p-0 pl-2 w-10">
-        <div {...listeners} className="cursor-grab py-2 px-1 inline-block">
+        <div {...listeners} className="inline-block cursor-grab rounded-md px-1 py-2 hover:bg-muted">
           <LuGripVertical size={16} className="text-muted-foreground" />
         </div>
       </TableCell>
@@ -131,7 +137,7 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
           variant="ghost"
           size="icon"
           type="button"
-          className="h-8 w-8 text-destructive"
+          className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
           onClick={(e) => {
             e.stopPropagation();
             onDelete(entry);
@@ -153,6 +159,7 @@ interface RagTestResult {
 }
 
 const BELOW_THRESHOLD_PREVIEW = 3;
+const entryLoadingSkeletonKeys = Array.from({ length: 5 }, (_, index) => `entry-loading-${index}`);
 
 function RagTestResults({ results, threshold }: { results: RagTestResult[]; threshold: number }) {
   const [showAllBelow, setShowAllBelow] = useState(false);
@@ -521,12 +528,17 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
   };
 
   return (
-    <div className="flex flex-col overflow-hidden bg-card/50 rounded-t-lg rounded-b-sm mt-4">
+    <div className="m-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/75 shadow-sm">
       {!compact && (
-        <div className="p-4 flex items-center justify-between gap-2 border-b">
-          <div className="flex items-center gap-2">
-            <LuBookOpen className="w-5 h-5 mr-2 text-primary" />
-            <h2 className="text-lg font-semibold">Entries</h2>
+        <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-background/60 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="h-5 w-1 rounded-full bg-primary" />
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold">Entries</h2>
+              <p className="text-xs text-muted-foreground">
+                {entries.length} {entries.length === 1 ? "entry" : "entries"}
+              </p>
+            </div>
           </div>
           <Button
             variant="default"
@@ -543,14 +555,14 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
       )}
 
       {ragEnabled && (
-        <div className="px-4 py-2 flex items-center justify-between gap-2 border-b bg-muted/30">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-4 py-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <LuDatabase className="w-4 h-4 text-primary" />
             <span>
               Indexing: <span className="font-medium text-foreground">{indexingStatus ? `${indexingStatus.indexed}/${indexingStatus.total} indexed` : "Loading..."}</span>
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setIsRagTestOpen(true)} disabled={!lorebook?.embedding_model_id}>
               <LuFlaskConical size={14} className="mr-1" />
               Test Search
@@ -567,10 +579,15 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         </div>
       )}
 
-      <div className="p-4 flex items-center gap-3 border-b">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border/60 px-4 py-3">
         <div className="relative flex-1">
-          <LuSearch className="absolute left-2 top-1 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search entries..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
+          <LuSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search entries..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-9 rounded-md border border-border/60 bg-muted/20 pl-9 font-sans text-sm"
+          />
         </div>
 
         {compact && (
@@ -589,7 +606,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="bg-background">
               <LuFilter size={16} className="mr-1" /> Filter
             </Button>
           </DropdownMenuTrigger>
@@ -625,23 +642,21 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         </DropdownMenu>
       </div>
 
-      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)] p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {isLoading ? (
           <div className="space-y-2">
-            {Array(5)
-              .fill(0)
-              .map((_, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ))}
+            {entryLoadingSkeletonKeys.map((skeletonKey) => (
+              <div key={skeletonKey} className="flex items-center gap-2">
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
           </div>
         ) : entries.length > 0 ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <div className="border rounded-md">
+            <div className="overflow-hidden rounded-xl border border-border/60 bg-background/70 shadow-sm">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-background/95 hover:bg-background/95">
+                  <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
                     <TableHead className="w-10" />
                     <TableHead className="w-10">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleSort("enabled")}>
@@ -701,8 +716,8 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
             </div>
           </DndContext>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <div className="rounded-full bg-muted p-3 mb-3">
+          <div className="flex h-full min-h-[320px] flex-col items-center justify-center p-8 text-center">
+            <div className="mb-3 rounded-2xl bg-muted/60 p-4">
               <LuSearch className="h-6 w-6 text-muted-foreground" />
             </div>
             <h3 className={cn("text-lg font-medium", compact && "text-xs")}>No entries found</h3>

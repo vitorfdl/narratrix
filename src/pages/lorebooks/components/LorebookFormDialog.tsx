@@ -250,7 +250,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                       </HelpTooltip>
                     </div>
                     <FormControl>
-                      <Input type="number" min={1} max={10000} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 1000)} value={field.value} />
+                      <Input type="number" min={1} max={10000} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 1000)} value={field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -273,7 +273,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                       </HelpTooltip>
                     </div>
                     <FormControl>
-                      <Input type="number" min={1} max={100} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 25)} value={field.value} />
+                      <Input type="number" min={1} max={100} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 25)} value={field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
