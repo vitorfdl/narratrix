@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { LuPlus, LuSearch, LuTrash2 } from "react-icons/lu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Command, CommandGroup, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -181,11 +180,7 @@ export function ChatMenuDropdown({ allChats, openChatIds, onSelectChat, onCreate
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="px-2">
-          {children}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="p-0 w-[340px]" align="start">
         <Command className="rounded-lg border shadow-lg bg-accent">
           {/* Search + sort row */}

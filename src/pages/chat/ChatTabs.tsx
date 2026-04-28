@@ -3,6 +3,7 @@ import { arrayMove, horizontalListSortingStrategy, SortableContext, useSortable 
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useState } from "react";
 import { LuPlus, LuX } from "react-icons/lu";
+import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -190,7 +191,9 @@ export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, on
               onDuplicateRequest={onDuplicateRequest}
               onDeleteRequest={onDeleteRequest}
             >
-              <LuPlus className="h-4 w-4 text-foreground" />
+              <Button variant="ghost" size="sm" className="px-2">
+                <LuPlus className="h-4 w-4 text-foreground" />
+              </Button>
             </ChatMenuDropdown>
           </div>
 
