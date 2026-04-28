@@ -1,11 +1,10 @@
 import { autocompletion, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
-// import { createHistoryCompletionSource, historyExtension } from "./codemirror-history";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { Prec } from "@codemirror/state";
+import { Compartment, Extension, Prec } from "@codemirror/state";
 import { EditorView, keymap, tooltips } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useLocalGenerationInputHistory } from "@/utils/local-storage";
 import { highlightBracketsExtension } from "./extensions/codemirror-highlight-brackets";
@@ -32,135 +31,153 @@ export interface MarkdownEditorRef {
   focus: () => void;
 }
 
-/**
- * Creates a CodeMirror keymap extension for handling send shortcuts
- * This integrates directly with CodeMirror's event system for reliable keyboard handling
- */
-const createSendShortcutKeymap = (sendShortcut: string | undefined, onSubmit: ((text: string) => void) | undefined, editorRef: React.MutableRefObject<EditorView | null>) => {
+const EMPTY_SUGGESTIONS: SuggestionItem[] = [];
+
+// Truly static extensions — built once at module load, shared across every editor instance.
+const STATIC_EXTENSIONS: Extension[] = [
+  markdownFormatKeymap,
+  tooltips({ parent: document.body }),
+  markdown({ base: markdownLanguage, codeLanguages: languages, addKeymap: true }),
+  highlightBracketsExtension(),
+  EditorView.lineWrapping,
+];
+
+function buildSendShortcutKeymap(sendShortcut: string | undefined, onSubmit: ((text: string) => void) | undefined): Extension {
   if (!sendShortcut || !onSubmit) {
     return [];
   }
 
-  const keyBindings: { key: string; run: () => boolean }[] = [];
+  const run = (view: EditorView) => {
+    onSubmit(view.state.doc.toString());
+    return true;
+  };
 
   switch (sendShortcut) {
-    case "Enter": {
-      keyBindings.push({
-        key: "Enter",
-        run: () => {
-          const currentContent = editorRef.current?.state.doc.toString() || "";
-          onSubmit(currentContent);
-          return true; // Prevent default behavior
-        },
-      });
-      break;
-    }
-    case "Ctrl+Enter": {
-      keyBindings.push({
-        key: "Ctrl-Enter",
-        run: () => {
-          const currentContent = editorRef.current?.state.doc.toString() || "";
-          onSubmit(currentContent);
-          return true;
-        },
-      });
-      break;
-    }
-    case "CMD+Enter": {
-      keyBindings.push({
-        key: "Cmd-Enter",
-        run: () => {
-          const currentContent = editorRef.current?.state.doc.toString() || "";
-          onSubmit(currentContent);
-          return true;
-        },
-      });
-      // Also add Ctrl-Enter for cross-platform compatibility
-      keyBindings.push({
-        key: "Ctrl-Enter",
-        run: () => {
-          const currentContent = editorRef.current?.state.doc.toString() || "";
-          onSubmit(currentContent);
-          return true;
-        },
-      });
-      break;
-    }
-    case "Shift+Enter": {
-      keyBindings.push({
-        key: "Shift-Enter",
-        run: () => {
-          const currentContent = editorRef.current?.state.doc.toString() || "";
-          onSubmit(currentContent);
-          return true;
-        },
-      });
-      break;
-    }
+    case "Enter":
+      return Prec.highest(keymap.of([{ key: "Enter", run }]));
+    case "Ctrl+Enter":
+      return Prec.highest(keymap.of([{ key: "Ctrl-Enter", run }]));
+    case "CMD+Enter":
+      return Prec.highest(
+        keymap.of([
+          { key: "Cmd-Enter", run },
+          { key: "Ctrl-Enter", run },
+        ]),
+      );
+    case "Shift+Enter":
+      return Prec.highest(keymap.of([{ key: "Shift-Enter", run }]));
+    default:
+      return [];
   }
+}
 
-  // Use highest precedence to ensure our shortcuts take priority over default keymaps
-  return Prec.highest(keymap.of(keyBindings));
-};
+function buildCompletionSource(suggestions: SuggestionItem[]) {
+  return (context: CompletionContext): CompletionResult | null => {
+    const curlyBraceMatch = context.matchBefore(/\{\{\s*(\w*)$/);
+    if (!curlyBraceMatch) {
+      return null;
+    }
+
+    const currentWord = curlyBraceMatch.text.match(/\{\{\s*(\w*)$/)?.[1] || "";
+    const wordStartPos = curlyBraceMatch.from + curlyBraceMatch.text.length - currentWord.length;
+
+    const options = suggestions.map((item) => ({
+      label: item.title,
+      section: item.section,
+      detail: item.description,
+      type: item.type || "variable",
+    }));
+
+    return {
+      from: wordStartPos,
+      options,
+      validFor: /^[\w.]*(?!\}\})$/,
+    };
+  };
+}
+
+function buildAutocompletionExtension(suggestions: SuggestionItem[], enableHistory: boolean, history: string[]): Extension {
+  const completionSource = buildCompletionSource(suggestions);
+  return autocompletion({
+    override: enableHistory ? [completionSource, createHistoryCompletionSource(history)] : [completionSource],
+    defaultKeymap: true,
+    aboveCursor: true,
+    maxRenderedOptions: 10,
+    tooltipClass: () => "custom-tooltip",
+  });
+}
 
 /**
  * I probably should have integrated CodeMirror directly.
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
-  ({ initialValue = "", enableHistory = false, onChange, className, placeholder, sendShortcut, onSubmit, suggestions = [], editable = true, autofocus = false }, ref) => {
+  ({ initialValue = "", enableHistory = false, onChange, className, placeholder, sendShortcut, onSubmit, suggestions = EMPTY_SUGGESTIONS, editable = true, autofocus = false }, ref) => {
     const editorRef = useRef<EditorView | null>(null);
     const isInitialMount = useRef(true);
     const isUserEditing = useRef(false);
     const [generationInputHistory] = useLocalGenerationInputHistory();
 
-    // Create the send shortcut keymap extension
-    const sendShortcutKeymap = useMemo(() => createSendShortcutKeymap(sendShortcut, onSubmit, editorRef), [sendShortcut, onSubmit]);
+    // Compartments isolate dynamic slices so reconfiguring one (e.g. shortcut change)
+    // doesn't tear down the whole editor — view plugins, gutters, scroll state are preserved.
+    const keymapCompartment = useRef(new Compartment()).current;
+    const autocompleteCompartment = useRef(new Compartment()).current;
+    const historyCompartment = useRef(new Compartment()).current;
 
-    // Create the custom completion source function using provided suggestions
-    const createCompletionSource = useCallback((suggestions: SuggestionItem[]) => {
-      return (context: CompletionContext): CompletionResult | null => {
-        // Look for content within "{{ ... }}" pattern
-        const curlyBraceMatch = context.matchBefore(/\{\{\s*(\w*)$/);
+    // Built once per editor instance. Compartments below carry the dynamic slices,
+    // so a stale array reference here is intentional — reconfigures go through dispatch.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: compartments handle dynamic updates
+    const extensions = useMemo<Extension[]>(
+      () => [
+        ...STATIC_EXTENSIONS,
+        keymapCompartment.of(buildSendShortcutKeymap(sendShortcut, onSubmit)),
+        autocompleteCompartment.of(buildAutocompletionExtension(suggestions, enableHistory, generationInputHistory)),
+        historyCompartment.of(enableHistory ? historyExtension(generationInputHistory) : []),
+      ],
+      [],
+    );
 
-        // Only trigger completions if we're inside a {{ ... }} expression
-        if (!curlyBraceMatch) {
-          return null;
-        }
+    useEffect(() => {
+      const view = editorRef.current;
+      if (!view) {
+        return;
+      }
+      view.dispatch({
+        effects: keymapCompartment.reconfigure(buildSendShortcutKeymap(sendShortcut, onSubmit)),
+      });
+    }, [sendShortcut, onSubmit, keymapCompartment]);
 
-        // Get the current word being typed inside the braces
-        const currentWord = curlyBraceMatch.text.match(/\{\{\s*(\w*)$/)?.[1] || "";
+    useEffect(() => {
+      const view = editorRef.current;
+      if (!view) {
+        return;
+      }
+      view.dispatch({
+        effects: autocompleteCompartment.reconfigure(buildAutocompletionExtension(suggestions, enableHistory, generationInputHistory)),
+      });
+    }, [suggestions, enableHistory, generationInputHistory, autocompleteCompartment]);
 
-        // Get position where the word starts (after {{ and any whitespace)
-        const wordStartPos = curlyBraceMatch.from + curlyBraceMatch.text.length - currentWord.length;
+    useEffect(() => {
+      const view = editorRef.current;
+      if (!view) {
+        return;
+      }
+      view.dispatch({
+        effects: historyCompartment.reconfigure(enableHistory ? historyExtension(generationInputHistory) : []),
+      });
+    }, [enableHistory, generationInputHistory, historyCompartment]);
 
-        // Transform SuggestionItems to CodeMirror completion format
-        const options = suggestions.map((item) => ({
-          label: item.title,
-          section: item.section,
-          detail: item.description,
-          type: item.type || "variable",
-        }));
-
-        return {
-          from: wordStartPos,
-          options,
-          // Valid as long as we're still within a {{ ... }} expression and haven't closed it
-          validFor: /^[\w.]*(?!\}\})$/,
-        };
-      };
-    }, []);
-
-    // Only sync from props on mount or when initialValue changes and user is not actively editing
+    // Sync external value changes when the user is not actively editing.
     useEffect(() => {
       if (isInitialMount.current) {
         isInitialMount.current = false;
         return;
       }
 
-      // Only update if the user is NOT editing
-      // Ensure editorRef.current is an EditorView instance before calling dispatch
-      if (!isUserEditing.current && initialValue !== editorRef.current?.state?.doc.toString() && editorRef.current && typeof (editorRef.current as any).dispatch === "function") {
-        const view = editorRef.current;
+      const view = editorRef.current;
+      if (!view || isUserEditing.current) {
+        return;
+      }
+      if (initialValue !== view.state.doc.toString()) {
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: initialValue },
         });
@@ -170,22 +187,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
     const handleChange = (value: string) => {
       isUserEditing.current = true;
       onChange?.(value);
-      // setShowPlaceholder(!value.trim());
-      // debouncedOnChange(value);
-
-      // Reset the editing flag after a short delay
       setTimeout(() => {
         isUserEditing.current = false;
       }, 50);
     };
 
-    const completionSource = createCompletionSource(suggestions);
-
     useImperativeHandle(ref, () => ({
       focus: () => {
-        if (editorRef.current) {
-          editorRef.current.focus();
-        }
+        editorRef.current?.focus();
       },
     }));
 
@@ -194,25 +203,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
         autoFocus={autofocus}
         value={initialValue}
         editable={editable}
-        extensions={[
-          markdownFormatKeymap,
-          tooltips({ parent: document.body }),
-          markdown({ base: markdownLanguage, codeLanguages: languages, addKeymap: true }),
-          highlightBracketsExtension(),
-          EditorView.lineWrapping,
-          autocompletion({
-            override: enableHistory ? [completionSource, createHistoryCompletionSource(generationInputHistory)] : [completionSource],
-            defaultKeymap: true,
-            aboveCursor: true,
-            maxRenderedOptions: 10,
-            tooltipClass: () => {
-              return "custom-tooltip";
-            },
-          }),
-          ...(enableHistory ? [historyExtension(generationInputHistory)] : []),
-          // Add the send shortcut keymap extension
-          sendShortcutKeymap,
-        ]}
+        extensions={extensions}
         onChange={handleChange}
         onCreateEditor={(editor) => {
           editorRef.current = editor;
@@ -221,7 +212,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MDXEditorProps>(
         placeholder={placeholder}
         className={cn("prose max-w-none w-full min-w-0 text-xs ring-1 ring-border rounded-md input-fields font-mono overflow-auto flex-1", className)}
         theme={narratrixCodeMirror}
-        // style={{ minHeight, maxHeight, overflow: "auto" }}
       />
     );
   },

@@ -11,7 +11,7 @@ import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
 import { useLocalChatTabs } from "@/utils/local-storage";
 
-const RECENT_LIMIT = 15;
+const RECENT_LIMIT = 12;
 
 interface NavItem {
   id: string;
