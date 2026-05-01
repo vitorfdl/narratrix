@@ -352,9 +352,9 @@ const RecentSessions: React.FC<RecentSessionsProps> = ({ recent, activeSection, 
         className="group w-full px-5 pt-4 pb-1.5 flex items-center gap-2.5 animate-in fade-in slide-in-from-left-1 fill-mode-both"
         style={{ animationDelay: `${startDelay}ms`, animationDuration: "500ms" }}
         aria-expanded={isExpanded}
-        aria-label={isExpanded ? "Collapse recent threads" : "Expand recent threads"}
+        aria-label={isExpanded ? "Collapse recent worlds" : "Expand recent worlds"}
       >
-        <span className="font-display italic text-[12px] leading-none text-muted-foreground/65 group-hover:text-foreground tracking-wide lowercase transition-colors">recent threads</span>
+        <span className="font-display italic text-[12px] leading-none text-muted-foreground/65 group-hover:text-foreground tracking-wide lowercase transition-colors">recent worlds</span>
         <div className="h-px flex-1 bg-border/30" />
         <ChevronDown size={11} strokeWidth={1.75} className={cn("text-muted-foreground/40 group-hover:text-muted-foreground/80 transition-all duration-300", !isExpanded && "-rotate-90")} />
       </button>
@@ -420,7 +420,12 @@ const Sidebar: React.FC = () => {
   const externalLinks: NavItem[] = [
     { id: "patreon", label: "Patreon", icon: <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />, href: "https://www.patreon.com/NarratrixAI" },
     { id: "discord", label: "Discord", icon: <MessageCircle className="w-3.5 h-3.5" strokeWidth={1.5} />, href: "https://discord.gg/Q69R4aWCFR" },
-    { id: "documentation", label: "Documentation", icon: <HelpCircle className="w-3.5 h-3.5" strokeWidth={1.5} />, href: "https://github.com/vitorfdl/narratrix/wiki" },
+    {
+      id: "documentation",
+      label: "Documentation",
+      icon: <HelpCircle className="w-3.5 h-3.5" strokeWidth={1.5} />,
+      href: "https://github.com/vitorfdl/narratrix/wiki",
+    },
   ];
 
   const handleRecentOpen = async (chatId: string) => {
