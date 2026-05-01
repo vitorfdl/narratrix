@@ -1,16 +1,43 @@
 import { BedrockProviderOptions } from "@ai-sdk/amazon-bedrock";
 
-function getAWSBedrockProviderOptions(parameters: Record<string, any>) {
+type AdaptiveEffort = NonNullable<NonNullable<BedrockProviderOptions["reasoningConfig"]>["maxReasoningEffort"]>;
+
+// Claude Opus 4.7+ on Bedrock rejects thinking.type "enabled" and requires "adaptive".
+// Confirmed for Opus 4.7; assumed for any 4.7+ or 5+ across Opus/Sonnet/Haiku.
+// Older models (including Opus 4.6 and Sonnet 4.6) still use "enabled" with budgetTokens.
+const ADAPTIVE_MODEL_PATTERN = /claude-(?:opus|sonnet|haiku)-(?:(?:[5-9]|\d{2})-\d{1,2}|4-(?:[7-9]|\d{2}))(?!\d)/;
+
+function usesAdaptiveReasoning(modelName: string | undefined): boolean {
+  return modelName ? ADAPTIVE_MODEL_PATTERN.test(modelName) : false;
+}
+
+function mapAdaptiveEffort(value: number | undefined): AdaptiveEffort | undefined {
+  switch (value) {
+    case 0:
+    case 1:
+      return "low";
+    case 2:
+      return "medium";
+    case 3:
+      return "high";
+    default:
+      return undefined;
+  }
+}
+
+function getAWSBedrockProviderOptions(parameters: Record<string, any>, modelName?: string) {
   const providerOptions: BedrockProviderOptions = {};
 
-  const reasoningConfig: BedrockProviderOptions["reasoningConfig"] = {};
+  const hasBudget = "reasoning_budget" in parameters && parameters.reasoning_budget > 0;
+  const hasEffort = "reasoning_temperature" in parameters && parameters.reasoning_temperature !== -1;
 
-  if ("reasoning_budget" in parameters && parameters.reasoning_budget !== 0) {
-    reasoningConfig.budgetTokens = parameters.reasoning_budget;
-  }
-
-  if (Object.keys(reasoningConfig).length > 0) {
-    providerOptions.reasoningConfig = { ...reasoningConfig, type: "enabled" };
+  if (usesAdaptiveReasoning(modelName)) {
+    if (hasEffort || hasBudget) {
+      const effort = mapAdaptiveEffort(parameters.reasoning_temperature) ?? "high";
+      providerOptions.reasoningConfig = { type: "adaptive", maxReasoningEffort: effort };
+    }
+  } else if (hasBudget) {
+    providerOptions.reasoningConfig = { type: "enabled", budgetTokens: parameters.reasoning_budget };
   }
 
   return providerOptions;
