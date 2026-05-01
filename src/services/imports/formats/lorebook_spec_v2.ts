@@ -159,14 +159,17 @@ export function transformLorebookSpecV2(data: LorebookSpecV2, fileName: string):
 
   return {
     name: lorebookName,
-    category: "world" as const, // Default category for V2 imports
-    description: `Imported from ${fileName}`, // Optional: Add a default description
-    tags: [], // No direct mapping for tags in V2 spec
+    category: "world" as const,
+    description: `Imported from ${fileName}`,
+    tags: [],
     allow_recursion: false,
     max_recursion_depth: 25,
     max_depth: 25,
     max_tokens: 1000,
     group_keys: [],
+    rag_enabled: false,
+    embedding_model_id: null,
+    similarity_threshold: 0.7,
     extra: {},
     entries: transformedEntries,
   };

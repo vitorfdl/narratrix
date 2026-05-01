@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useChatStore } from "@/hooks/chatStore";
+import type { TriggerContext } from "@/schema/agent-schema";
 import type { PromptConfig } from "@/schema/chat-message-schema";
 import type { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { getNextMessagePosition } from "@/services/chat-message-service";
+import { createChatMessage, getChatMessagesByChatId, getNextMessagePosition } from "@/services/chat-message-service";
 import { useTakeSnapshot } from "../../hooks/useUndoRedo";
 import { NodeBase, type NodeInput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
@@ -42,7 +43,7 @@ const DEFAULT_CONFIG: PromptInjectionNodeConfig = {
 
 // ─── Executor ──────────────────────────────────────────────────────────────────
 
-const executePromptInjectionNode: NodeExecutor = async (node, inputs, context, agent): Promise<NodeExecutionResult> => {
+const executePromptInjectionNode: NodeExecutor = async (node, inputs, context, agent, deps): Promise<NodeExecutionResult> => {
   const response: string = typeof inputs.response === "string" ? inputs.response : "";
 
   if (!response.trim()) {
@@ -52,23 +53,33 @@ const executePromptInjectionNode: NodeExecutor = async (node, inputs, context, a
   const config = (node.config || DEFAULT_CONFIG) as PromptInjectionNodeConfig;
 
   try {
+    const triggerContext = context.nodeValues.get("workflow-trigger-context") as TriggerContext | undefined;
+    const executionId = context.nodeValues.get("workflow-execution-id") as string | undefined;
     const store = useChatStore.getState();
-    const chatId = store.selectedChat?.id;
-    const chapterId = store.selectedChat?.active_chapter_id;
+    let chatId: string | undefined = triggerContext?.chatId ?? context.chatId;
+    let chapterId: string | undefined;
+
+    if (chatId) {
+      const targetChat = await deps.getChatById(chatId);
+      chapterId = targetChat?.active_chapter_id ?? undefined;
+    } else {
+      chatId = store.selectedChat?.id;
+      chapterId = store.selectedChat?.active_chapter_id ?? undefined;
+    }
 
     if (!chatId || !chapterId) {
       return { success: false, error: "No active chat/chapter to write prompt injection" };
     }
 
-    const triggerContext = context.nodeValues.get("workflow-trigger-context") as Record<string, unknown> | undefined;
-    const executionId = context.nodeValues.get("workflow-execution-id") as string | undefined;
-
     const position = await getNextMessagePosition(chatId, chapterId);
-    await store.actions.addChatMessage({
+    await createChatMessage({
       character_id: null,
       type: "system",
       messages: [response],
+      message_index: 0,
       position,
+      chat_id: chatId,
+      chapter_id: chapterId,
       disabled: false,
       tokens: null,
       extra: {
@@ -83,10 +94,15 @@ const executePromptInjectionNode: NodeExecutor = async (node, inputs, context, a
           globalType: config.globalType || undefined,
           scopeToAgent: config.scopeToAgent,
         },
-        triggerContext,
+        triggerContext: triggerContext as Record<string, unknown> | undefined,
         executionId,
       },
     });
+
+    if (useChatStore.getState().selectedChat?.id === chatId) {
+      const updatedMessages = await getChatMessagesByChatId(chatId, chapterId);
+      useChatStore.setState({ selectedChatMessages: updatedMessages });
+    }
 
     return { success: true, value: response };
   } catch (e: unknown) {

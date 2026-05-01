@@ -1,21 +1,30 @@
 import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import React, { useEffect, useMemo, useState } from "react";
+import { cosineSimilarity } from "ai";
+import { ChevronDown, Loader2 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
-import { LuBookDown, LuBookOpen, LuBookUp, LuBot, LuFilter, LuGripVertical, LuPlus, LuSearch, LuTrash2, LuUser } from "react-icons/lu";
+import { LuBookDown, LuBookUp, LuBot, LuDatabase, LuFilter, LuFlaskConical, LuGripVertical, LuHistory, LuKey, LuPlus, LuSearch, LuSend, LuTrash, LuTrash2, LuUser } from "react-icons/lu";
+import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useIsLoadingEntries, useLorebookStoreActions, useSelectedLorebookEntries } from "@/hooks/lorebookStore";
+import { Textarea } from "@/components/ui/textarea";
+import { useIndexingStatus, useIsIndexing, useIsLoadingEntries, useLorebookStoreActions, useLorebooks, useSelectedLorebookEntries } from "@/hooks/lorebookStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { cn } from "@/lib/utils";
-import { LorebookEntry } from "@/schema/lorebook-schema";
+import type { Lorebook, LorebookEntry } from "@/schema/lorebook-schema";
+import { embedText } from "@/services/embedding-service";
+import { KEYWORD_MATCH_BOOST, matchKeywords } from "@/services/inference/formatter/apply-lorebook";
+import { parseStoredVector } from "@/services/lorebook-indexing-service";
 import { LorebookEntryDialog } from "./LorebookEntryDialog";
 
 interface LorebookEntriesProps {
@@ -24,16 +33,16 @@ interface LorebookEntriesProps {
   compact?: boolean;
 }
 
-// New component for sortable table rows
 interface SortableEntryRowProps {
   entry: LorebookEntry;
   onToggleEnabled: (entry: LorebookEntry) => void;
   onEdit: (entry: LorebookEntry) => void;
   onDelete: (entry: LorebookEntry) => void;
   compact?: boolean;
+  ragEnabled?: boolean;
 }
 
-function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = false }: SortableEntryRowProps) {
+function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = false, ragEnabled = false }: SortableEntryRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id });
 
   const style: React.CSSProperties = {
@@ -54,9 +63,15 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
   const IconComponent = displayInfo.icon;
 
   return (
-    <TableRow ref={setNodeRef} style={style} className={cn("transition-colors cursor-pointer hover:bg-muted", isDragging && "bg-accent opacity-80")} {...attributes} onClick={() => onEdit(entry)}>
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={cn("cursor-pointer border-border/60 transition-colors hover:bg-muted/50", isDragging && "bg-accent opacity-80 shadow-lg")}
+      {...attributes}
+      onClick={() => onEdit(entry)}
+    >
       <TableCell className="p-0 pl-2 w-10">
-        <div {...listeners} className="cursor-grab py-2 px-1 inline-block">
+        <div {...listeners} className="inline-block cursor-grab rounded-md px-1 py-2 hover:bg-muted">
           <LuGripVertical size={16} className="text-muted-foreground" />
         </div>
       </TableCell>
@@ -109,15 +124,21 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
               +{entry.keywords.length - 2}
             </Badge>
           )}
+          {entry.keywords.length === 0 && <span className="text-muted-foreground/60 text-[10px] italic">none</span>}
         </div>
       </TableCell>
       <TableCell className="w-[10%] text-xs text-center">{entry.priority}</TableCell>
+      {ragEnabled && (
+        <TableCell className="w-10 text-center">
+          <div className={cn("inline-block h-2.5 w-2.5 rounded-full", entry.vector_content != null ? "bg-green-500" : "bg-muted")} title={entry.vector_content != null ? "Indexed" : "Not indexed"} />
+        </TableCell>
+      )}
       <TableCell className="w-10">
         <Button
           variant="ghost"
           size="icon"
           type="button"
-          className="h-8 w-8 text-destructive"
+          className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
           onClick={(e) => {
             e.stopPropagation();
             onDelete(entry);
@@ -130,11 +151,356 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
   );
 }
 
+interface RagTestResult {
+  entryId: string;
+  comment: string;
+  similarity: number;
+  effectiveScore: number;
+  keywordMatched: boolean;
+  content: string;
+  enabled: boolean;
+}
+
+interface SearchTiming {
+  embed: number;
+  match: number;
+}
+
+const BELOW_THRESHOLD_PREVIEW = 3;
+const MAX_RECENT_QUERIES = 5;
+const entryLoadingSkeletonKeys = Array.from({ length: 5 }, (_, index) => `entry-loading-${index}`);
+
+function ScoreBar({ score, threshold }: { score: number; threshold: number }) {
+  const passed = score >= threshold;
+  const widthPct = Math.max(0, Math.min(1, score)) * 100;
+  const thresholdPct = Math.max(0, Math.min(1, threshold)) * 100;
+  return (
+    <div className="relative h-1.5 w-full rounded-full bg-muted">
+      <div className={cn("absolute left-0 top-0 h-full rounded-full transition-all", passed ? "bg-green-500" : "bg-muted-foreground/40")} style={{ width: `${widthPct}%` }} />
+      <div className="absolute -top-1 h-3.5 w-0.5 rounded-sm bg-amber-400 shadow-sm" style={{ left: `calc(${thresholdPct}% - 1px)` }} title={`Threshold ${threshold.toFixed(2)}`} />
+    </div>
+  );
+}
+
+function Stat({ label, value, accent, hint }: { label: string; value: string; accent?: "green"; hint?: string }) {
+  return (
+    <div className="flex flex-1 items-center justify-between gap-2 px-3 py-1.5" title={hint}>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={cn("font-mono tabular-nums text-xs font-semibold", accent === "green" && "text-green-500")}>{value}</span>
+    </div>
+  );
+}
+
+function RagTestResultRow({ result, threshold }: { result: RagTestResult; threshold: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const passed = result.effectiveScore >= threshold;
+  const boosted = result.keywordMatched && result.effectiveScore !== result.similarity;
+  const scoreTitle = boosted ? `Similarity ${result.similarity.toFixed(4)} + keyword boost = ${result.effectiveScore.toFixed(4)}` : `Similarity ${result.similarity.toFixed(4)}`;
+  return (
+    <button
+      type="button"
+      onClick={() => setExpanded((v) => !v)}
+      className={cn(
+        "block w-full text-left rounded-md border px-3 py-2 text-sm transition-colors",
+        passed ? "border-green-500/40 bg-green-500/5 hover:bg-green-500/10" : "border-border/60 hover:bg-muted/30 opacity-80",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0 shrink-0 max-w-[40%]">
+          <div className={cn("h-2 w-2 rounded-full shrink-0", passed ? "bg-green-500" : "bg-muted-foreground/40")} />
+          <span className="font-medium truncate">{result.comment || "Untitled"}</span>
+          {result.keywordMatched && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0 border-amber-500/50 text-amber-500" title="Keyword matched — boosted score">
+              <LuKey className="h-2.5 w-2.5 mr-0.5" />K
+            </Badge>
+          )}
+          {!result.enabled && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+              disabled
+            </Badge>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <ScoreBar score={result.effectiveScore} threshold={threshold} />
+        </div>
+        <span className={cn("text-xs font-mono tabular-nums shrink-0 w-14 text-right", passed ? "text-green-500" : "text-muted-foreground")} title={scoreTitle}>
+          {result.effectiveScore.toFixed(4)}
+        </span>
+      </div>
+      {result.content ? (
+        <p className={cn("text-muted-foreground text-xs mt-1.5", expanded ? "whitespace-pre-wrap break-words" : "line-clamp-1")}>{result.content}</p>
+      ) : (
+        <p className="text-muted-foreground/60 text-xs italic mt-1.5">No content</p>
+      )}
+    </button>
+  );
+}
+
+function RagTestResults({ results, threshold }: { results: RagTestResult[]; threshold: number }) {
+  const [showAllBelow, setShowAllBelow] = useState(false);
+
+  const activated = useMemo(() => results.filter((r) => r.effectiveScore >= threshold), [results, threshold]);
+  const belowThreshold = useMemo(() => results.filter((r) => r.effectiveScore < threshold), [results, threshold]);
+  const visibleBelow = showAllBelow ? belowThreshold : belowThreshold.slice(0, BELOW_THRESHOLD_PREVIEW);
+  const hiddenBelowCount = belowThreshold.length - visibleBelow.length;
+
+  if (results.length === 0) {
+    return <p className="text-muted-foreground text-sm">No indexed entries found to compare against.</p>;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {activated.map((r) => (
+        <RagTestResultRow key={r.entryId} result={r} threshold={threshold} />
+      ))}
+
+      {activated.length > 0 && visibleBelow.length > 0 && (
+        <div className="flex items-center gap-2 py-2 px-1">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-muted-foreground text-[11px] shrink-0">below threshold ({threshold.toFixed(2)})</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+      )}
+
+      {visibleBelow.map((r) => (
+        <RagTestResultRow key={r.entryId} result={r} threshold={threshold} />
+      ))}
+
+      {hiddenBelowCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAllBelow(true)}
+          className="flex items-center justify-center gap-1 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronDown className="h-3.5 w-3.5" />
+          Show {hiddenBelowCount} more
+        </button>
+      )}
+
+      {showAllBelow && belowThreshold.length > BELOW_THRESHOLD_PREVIEW && (
+        <button
+          type="button"
+          onClick={() => setShowAllBelow(false)}
+          className="flex items-center justify-center gap-1 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Show less
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RagTestDialog({ open, onOpenChange, lorebook, entries }: { open: boolean; onOpenChange: (open: boolean) => void; lorebook: Lorebook; entries: LorebookEntry[] }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<RagTestResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [recentQueries, setRecentQueries] = useState<string[]>([]);
+  const [thresholdOverride, setThresholdOverride] = useState<number | null>(null);
+  const [timing, setTiming] = useState<SearchTiming | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const baseThreshold = lorebook.similarity_threshold ?? 0.7;
+  const threshold = thresholdOverride ?? baseThreshold;
+  const indexedCount = useMemo(() => entries.filter((e) => parseStoredVector(e.vector_content)).length, [entries]);
+
+  const runSearch = useCallback(
+    async (rawQuery: string) => {
+      const q = rawQuery.trim();
+      if (!q || !lorebook.embedding_model_id) {
+        return;
+      }
+      setIsSearching(true);
+      setHasSearched(true);
+      try {
+        const embedStart = performance.now();
+        const { embedding: queryVector } = await embedText(lorebook.embedding_model_id, q);
+        const embedMs = performance.now() - embedStart;
+
+        const matchStart = performance.now();
+        const scored: RagTestResult[] = [];
+        let dimensionMismatchCount = 0;
+        for (const entry of entries) {
+          const entryVector = parseStoredVector(entry.vector_content);
+          if (!entryVector) {
+            continue;
+          }
+          if (entryVector.length !== queryVector.length) {
+            dimensionMismatchCount++;
+            continue;
+          }
+          const similarity = cosineSimilarity(queryVector, entryVector);
+          const keywordMatched = matchKeywords(q, entry.keywords, entry.case_sensitive, entry.match_partial_words);
+          const effectiveScore = keywordMatched ? Math.min(1, similarity + KEYWORD_MATCH_BOOST) : similarity;
+          scored.push({ entryId: entry.id, comment: entry.comment, similarity, effectiveScore, keywordMatched, content: entry.content, enabled: entry.enabled });
+        }
+        scored.sort((a, b) => b.effectiveScore - a.effectiveScore);
+        const matchMs = performance.now() - matchStart;
+
+        setResults(scored);
+        setTiming({ embed: embedMs, match: matchMs });
+        setRecentQueries((prev) => [q, ...prev.filter((p) => p !== q)].slice(0, MAX_RECENT_QUERIES));
+
+        if (dimensionMismatchCount > 0) {
+          toast.warning(`Skipped ${dimensionMismatchCount} entr${dimensionMismatchCount === 1 ? "y" : "ies"} indexed under a different embedding model. Re-index this lorebook.`);
+        }
+      } catch (err) {
+        toast.error(`Search failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [lorebook.embedding_model_id, entries],
+  );
+
+  const handleSearch = useCallback(() => runSearch(query), [runSearch, query]);
+
+  const handleRunRecent = useCallback(
+    (recent: string) => {
+      setQuery(recent);
+      runSearch(recent);
+    },
+    [runSearch],
+  );
+
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setResults([]);
+      setHasSearched(false);
+      setRecentQueries([]);
+      setThresholdOverride(null);
+      setTiming(null);
+      return;
+    }
+    const handle = window.setTimeout(() => textareaRef.current?.focus(), 50);
+    return () => window.clearTimeout(handle);
+  }, [open]);
+
+  const stats = useMemo(() => {
+    if (results.length === 0) {
+      return null;
+    }
+    const activated = results.filter((r) => r.effectiveScore >= threshold).length;
+    const keywordHits = results.filter((r) => r.keywordMatched).length;
+    const top = results[0]?.effectiveScore ?? 0;
+    const avg = results.reduce((sum, r) => sum + r.effectiveScore, 0) / results.length;
+    return { activated, keywordHits, top, avg };
+  }, [results, threshold]);
+
+  const totalMs = timing ? timing.embed + timing.match : 0;
+  const canSubmit = !isSearching && query.trim().length > 0 && !!lorebook.embedding_model_id;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="large">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2">
+              <LuFlaskConical className="h-4 w-4 text-primary" />
+              Test RAG Search
+            </span>
+            <Badge variant="outline" className="font-mono text-[10px] font-normal">
+              {indexedCount} indexed
+            </Badge>
+          </DialogTitle>
+        </DialogHeader>
+        <DialogBody className="space-y-4 py-4">
+          <div className="space-y-2">
+            <div className="relative">
+              <Textarea
+                ref={textareaRef}
+                placeholder="Type a query, then press Enter to search (Shift+Enter for newline)…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="min-h-[88px] resize-none pr-32"
+                disabled={isSearching}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+              />
+              <Button size="sm" className="absolute bottom-2 right-2" onClick={handleSearch} disabled={!canSubmit}>
+                {isSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LuSend className="h-3.5 w-3.5" />}
+                <span className="ml-1.5">{isSearching ? "Searching" : "Search"}</span>
+              </Button>
+            </div>
+            {recentQueries.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <LuHistory className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">Recent</span>
+                {recentQueries.map((rq) => (
+                  <button
+                    key={rq}
+                    type="button"
+                    onClick={() => handleRunRecent(rq)}
+                    disabled={isSearching}
+                    title={rq}
+                    className="max-w-[220px] truncate rounded-full border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {rq}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div
+            className="flex items-center gap-3 rounded-md border border-border/60 bg-muted/20 px-3 py-2"
+            title={`Tune locally to preview which entries activate. Saved threshold is ${baseThreshold.toFixed(2)}.`}
+          >
+            <span className="text-xs font-medium shrink-0">Threshold</span>
+            <Slider min={0} max={1} step={0.01} value={[threshold]} onValueChange={(v) => setThresholdOverride(v[0] ?? baseThreshold)} className="flex-1" />
+            <span className="font-mono tabular-nums text-xs text-foreground shrink-0 w-9 text-right">{threshold.toFixed(2)}</span>
+            {thresholdOverride !== null ? (
+              <button
+                type="button"
+                onClick={() => setThresholdOverride(null)}
+                className="text-[10px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 shrink-0"
+                title={`Reset to saved threshold (${baseThreshold.toFixed(2)})`}
+              >
+                reset
+              </button>
+            ) : (
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">saved</span>
+            )}
+          </div>
+
+          {hasSearched && results.length > 0 && stats && (
+            <div className="flex items-stretch divide-x divide-border/60 overflow-hidden rounded-md border border-border/60 bg-muted/20">
+              <Stat label="Activated" value={`${stats.activated} / ${results.length}`} accent="green" />
+              <Stat label="Keyword hits" value={`${stats.keywordHits}`} hint={`Entries whose keywords matched the query (boost +${KEYWORD_MATCH_BOOST.toFixed(2)})`} />
+              <Stat label="Top" value={stats.top.toFixed(3)} />
+              <Stat label="Avg" value={stats.avg.toFixed(3)} />
+              <Stat label="Time" value={`${totalMs.toFixed(0)}ms`} hint={timing ? `embed ${timing.embed.toFixed(0)}ms · match ${timing.match.toFixed(0)}ms` : undefined} />
+            </div>
+          )}
+
+          {hasSearched && <RagTestResults results={results} threshold={threshold} />}
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function LorebookEntries({ lorebookId, compact = false }: LorebookEntriesProps) {
   const currentProfile = useCurrentProfile();
   const allEntries = useSelectedLorebookEntries();
   const isLoading = useIsLoadingEntries();
-  const { loadLorebookEntries, updateLorebookEntry, deleteLorebookEntry, selectLorebookEntry, selectLorebook } = useLorebookStoreActions();
+  const lorebooks = useLorebooks();
+  const indexingStatus = useIndexingStatus();
+  const isIndexing = useIsIndexing();
+  const { loadLorebookEntries, updateLorebookEntry, deleteLorebookEntry, selectLorebookEntry, selectLorebook, loadIndexingStatus, indexAllEntries, clearIndex } = useLorebookStoreActions();
+
+  const lorebook = lorebooks.find((lb) => lb.id === lorebookId);
+  const ragEnabled = lorebook?.rag_enabled ?? false;
 
   // UI state
   const [searchQuery, setSearchQuery] = useState("");
@@ -145,6 +511,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
   const [entryToDelete, setEntryToDelete] = useState<LorebookEntry | null>(null);
   const [entryToEdit, setEntryToEdit] = useState<LorebookEntry | null>(null);
   const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
+  const [isRagTestOpen, setIsRagTestOpen] = useState(false);
   const [entries, setEntries] = useState<LorebookEntry[]>([]);
 
   // Sensors for dnd-kit
@@ -161,7 +528,33 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
       selectLorebook(lorebookId);
       loadLorebookEntries(currentProfile.id, lorebookId);
     }
-  }, [currentProfile, lorebookId, loadLorebookEntries]);
+  }, [currentProfile, lorebookId, loadLorebookEntries, selectLorebook]);
+
+  // Load indexing status when RAG is enabled
+  useEffect(() => {
+    if (ragEnabled && lorebookId) {
+      loadIndexingStatus(lorebookId);
+    }
+  }, [ragEnabled, lorebookId, loadIndexingStatus]);
+
+  const handleIndexAll = async () => {
+    try {
+      await indexAllEntries(lorebookId, (indexed, total) => {
+        toast.loading(`Indexing entries: ${indexed}/${total}`, { id: "indexing-progress" });
+      });
+      toast.dismiss("indexing-progress");
+    } catch (error) {
+      toast.error(`Indexing failed: ${error instanceof Error ? error.message : "Unknown error"}`, { id: "indexing-progress" });
+    }
+  };
+
+  const handleClearIndex = async () => {
+    try {
+      await clearIndex(lorebookId);
+    } catch (error) {
+      toast.error(`Failed to clear index: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  };
 
   // Get all unique group keys
   const groupKeys = useMemo(() => {
@@ -251,6 +644,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         } catch (error) {
           console.error("Failed to update entry priorities after drag:", error);
           setEntries(entries);
+          toast.error(`Failed to reorder entries: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
       }
     }
@@ -262,6 +656,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
       await updateLorebookEntry(entry.id, { enabled: !entry.enabled });
     } catch (error) {
       console.error("Failed to toggle entry enabled state:", error);
+      toast.error(`Failed to toggle entry: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
@@ -297,12 +692,17 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
   };
 
   return (
-    <div className="flex flex-col overflow-hidden bg-card/50 rounded-t-lg rounded-b-sm mt-4">
+    <div className="m-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/75 shadow-sm">
       {!compact && (
-        <div className="p-4 flex items-center justify-between gap-2 border-b">
-          <div className="flex items-center gap-2">
-            <LuBookOpen className="w-5 h-5 mr-2 text-primary" />
-            <h2 className="text-lg font-semibold">Entries</h2>
+        <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-background/60 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="h-5 w-1 rounded-full bg-primary" />
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold">Entries</h2>
+              <p className="text-xs text-muted-foreground">
+                {entries.length} {entries.length === 1 ? "entry" : "entries"}
+              </p>
+            </div>
           </div>
           <Button
             variant="default"
@@ -318,10 +718,40 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         </div>
       )}
 
-      <div className="p-4 flex items-center gap-3 border-b">
+      {ragEnabled && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <LuDatabase className="w-4 h-4 text-primary" />
+            <span>
+              Indexing: <span className="font-medium text-foreground">{indexingStatus ? `${indexingStatus.indexed}/${indexingStatus.total} indexed` : "Loading..."}</span>
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsRagTestOpen(true)} disabled={!lorebook?.embedding_model_id}>
+              <LuFlaskConical size={14} className="mr-1" />
+              Test Search
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleIndexAll} disabled={isIndexing || !lorebook?.embedding_model_id}>
+              <LuDatabase size={14} className="mr-1" />
+              Index All
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleClearIndex} disabled={isIndexing}>
+              <LuTrash size={14} className="mr-1" />
+              Clear Index
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3 border-b border-border/60 px-4 py-3">
         <div className="relative flex-1">
-          <LuSearch className="absolute left-2 top-1 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search entries..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
+          <LuSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search entries..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-9 rounded-md border border-border/60 bg-muted/20 pl-9 font-sans text-sm"
+          />
         </div>
 
         {compact && (
@@ -340,7 +770,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="bg-background">
               <LuFilter size={16} className="mr-1" /> Filter
             </Button>
           </DropdownMenuTrigger>
@@ -376,23 +806,21 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         </DropdownMenu>
       </div>
 
-      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)] p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {isLoading ? (
           <div className="space-y-2">
-            {Array(5)
-              .fill(0)
-              .map((_, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ))}
+            {entryLoadingSkeletonKeys.map((skeletonKey) => (
+              <div key={skeletonKey} className="flex items-center gap-2">
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
           </div>
         ) : entries.length > 0 ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <div className="border rounded-md">
+            <div className="overflow-hidden rounded-xl border border-border/60 bg-background/70 shadow-sm">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-background/95 hover:bg-background/95">
+                  <TableRow className="border-border/60 bg-muted/40 hover:bg-muted/40">
                     <TableHead className="w-10" />
                     <TableHead className="w-10">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleSort("enabled")}>
@@ -429,13 +857,22 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                         {sortField === "priority" && (sortOrder === "asc" ? <FaSortAmountUp size={14} className="ml-1 inline" /> : <FaSortAmountDown size={14} className="ml-1 inline" />)}
                       </Button>
                     </TableHead>
+                    {ragEnabled && <TableHead className="w-10 text-center text-xs">Indexed</TableHead>}
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
                   <TableBody>
                     {entries.map((entry) => (
-                      <SortableEntryRow key={entry.id} entry={entry} onToggleEnabled={handleToggleEnabled} onEdit={handleEditEntry} onDelete={setEntryToDelete} compact={compact} />
+                      <SortableEntryRow
+                        key={entry.id}
+                        entry={entry}
+                        onToggleEnabled={handleToggleEnabled}
+                        onEdit={handleEditEntry}
+                        onDelete={setEntryToDelete}
+                        compact={compact}
+                        ragEnabled={ragEnabled}
+                      />
                     ))}
                   </TableBody>
                 </SortableContext>
@@ -443,8 +880,8 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
             </div>
           </DndContext>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <div className="rounded-full bg-muted p-3 mb-3">
+          <div className="flex h-full min-h-[320px] flex-col items-center justify-center p-8 text-center">
+            <div className="mb-3 rounded-2xl bg-muted/60 p-4">
               <LuSearch className="h-6 w-6 text-muted-foreground" />
             </div>
             <h3 className={cn("text-lg font-medium", compact && "text-xs")}>No entries found</h3>
@@ -468,6 +905,8 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
 
       <LorebookEntryDialog open={isEntryDialogOpen} onOpenChange={setIsEntryDialogOpen} lorebookId={lorebookId} entry={entryToEdit} groupKeys={groupKeys} />
 
+      {lorebook && <RagTestDialog open={isRagTestOpen} onOpenChange={setIsRagTestOpen} lorebook={lorebook} entries={allEntries} />}
+
       {entryToDelete && currentProfile && (
         <DestructiveConfirmDialog
           title="Delete Entry"
@@ -480,6 +919,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
               setEntryToDelete(null);
             } catch (error) {
               console.error("Failed to delete entry:", error);
+              toast.error(`Failed to delete entry: ${error instanceof Error ? error.message : "Unknown error"}`);
               setEntryToDelete(null);
             }
           }}

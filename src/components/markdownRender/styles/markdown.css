@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@reference "../../../index.css";
 
 /* Light theme variables */
 :root {
@@ -35,18 +33,18 @@
   --color-prettylights-syntax-brackethighlighter-angle: #57606a;
   --color-prettylights-syntax-sublimelinter-gutter-mark: #8c959f;
   --color-prettylights-syntax-constant-other-reference-link: #0a3069;
-  --color-fg-default: hsl(var(--foreground));
-  --color-fg-muted: hsl(var(--muted-foreground));
-  --color-fg-subtle: hsl(var(--muted-foreground)); /* Mapping subtle to muted */
-  --color-canvas-default: hsl(var(--background));
-  --color-canvas-subtle: hsl(var(--secondary)); /* Mapping subtle canvas to secondary */
-  --color-border-default: hsl(var(--border));
-  --color-border-muted: hsl(var(--border)); /* Mapping muted border to border */
-  --color-neutral-muted: hsla(var(--muted) / 0.4); /* Mapping neutral muted bg */
-  --color-accent-fg: hsl(var(--primary)); /* Mapping accent to primary */
-  --color-accent-emphasis: hsl(var(--ring)); /* Mapping emphasis to ring color */
-  --color-attention-subtle: hsl(var(--secondary)); /* Approx mapping for attention */
-  --color-danger-fg: hsl(var(--destructive));
+  --color-fg-default: var(--foreground);
+  --color-fg-muted: var(--muted-foreground);
+  --color-fg-subtle: var(--muted-foreground); /* Mapping subtle to muted */
+  --color-canvas-default: var(--background);
+  --color-canvas-subtle: var(--secondary); /* Mapping subtle canvas to secondary */
+  --color-border-default: var(--border);
+  --color-border-muted: var(--border); /* Mapping muted border to border */
+  --color-neutral-muted: color-mix(in oklab, var(--muted) 40%, transparent); /* Mapping neutral muted bg */
+  --color-accent-fg: var(--primary); /* Mapping accent to primary */
+  --color-accent-emphasis: var(--ring); /* Mapping emphasis to ring color */
+  --color-attention-subtle: var(--secondary); /* Approx mapping for attention */
+  --color-danger-fg: var(--destructive);
 }
 
 /* Dark theme variables */
@@ -125,18 +123,18 @@
   --color-prettylights-syntax-brackethighlighter-angle: #57606a;
   --color-prettylights-syntax-sublimelinter-gutter-mark: #8c959f;
   --color-prettylights-syntax-constant-other-reference-link: #0a3069;
-  --color-fg-default: hsl(var(--foreground));
-  --color-fg-muted: hsl(var(--muted-foreground));
-  --color-fg-subtle: hsl(var(--muted-foreground));
-  --color-canvas-default: hsl(var(--background));
-  --color-canvas-subtle: hsl(var(--secondary));
-  --color-border-default: hsl(var(--border));
-  --color-border-muted: hsl(var(--border));
-  --color-neutral-muted: hsla(var(--muted) / 0.4);
-  --color-accent-fg: hsl(var(--primary));
-  --color-accent-emphasis: hsl(var(--ring));
-  --color-attention-subtle: hsl(var(--secondary));
-  --color-danger-fg: hsl(var(--destructive));
+  --color-fg-default: var(--foreground);
+  --color-fg-muted: var(--muted-foreground);
+  --color-fg-subtle: var(--muted-foreground);
+  --color-canvas-default: var(--background);
+  --color-canvas-subtle: var(--secondary);
+  --color-border-default: var(--border);
+  --color-border-muted: var(--border);
+  --color-neutral-muted: color-mix(in oklab, var(--muted) 40%, transparent);
+  --color-accent-fg: var(--primary);
+  --color-accent-emphasis: var(--ring);
+  --color-attention-subtle: var(--secondary);
+  --color-danger-fg: var(--destructive);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -174,18 +172,18 @@
     --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
     --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
     --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
-    --color-fg-default: hsl(var(--foreground));
-    --color-fg-muted: hsl(var(--muted-foreground));
-    --color-fg-subtle: hsl(var(--muted-foreground));
-    --color-canvas-default: hsl(var(--background));
-    --color-canvas-subtle: hsl(var(--secondary));
-    --color-border-default: hsl(var(--border));
-    --color-border-muted: hsl(var(--border));
-    --color-neutral-muted: hsla(var(--muted) / 0.4);
-    --color-accent-fg: hsl(var(--primary));
-    --color-accent-emphasis: hsl(var(--ring));
-    --color-attention-subtle: hsl(var(--secondary));
-    --color-danger-fg: hsl(var(--destructive));
+    --color-fg-default: var(--foreground);
+    --color-fg-muted: var(--muted-foreground);
+    --color-fg-subtle: var(--muted-foreground);
+    --color-canvas-default: var(--background);
+    --color-canvas-subtle: var(--secondary);
+    --color-border-default: var(--border);
+    --color-border-muted: var(--border);
+    --color-neutral-muted: color-mix(in oklab, var(--muted) 40%, transparent);
+    --color-accent-fg: var(--primary);
+    --color-accent-emphasis: var(--ring);
+    --color-attention-subtle: var(--secondary);
+    --color-danger-fg: var(--destructive);
   }
 }
 
@@ -503,11 +501,11 @@ pre:focus-within .copy-code-button {
 }
 
 .markdown-body > *:first-child {
-  @apply mt-0 !important;
+  @apply !mt-0;
 }
 
 .markdown-body > *:last-child {
-  @apply mb-0 !important;
+  @apply !mb-0;
 }
 
 .markdown-body a:not([href]) {
@@ -919,7 +917,7 @@ pre:focus-within .copy-code-button {
   left: -24px;
   pointer-events: none;
   content: "";
-  border: 2px solid hsl(var(--ring)); /* Use ring color */
+  border: 2px solid var(--ring); /* Use ring color */
   border-radius: 6px;
 }
 
@@ -927,7 +925,7 @@ pre:focus-within .copy-code-button {
   @apply text-foreground;
 }
 
-.markdown-body .footnotes .data-footnote-backref g-emoji {
+.markdown-body .footnotes .data-footnote-backref {
   font-family: monospace;
 }
 

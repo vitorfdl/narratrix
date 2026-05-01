@@ -1,0 +1,56 @@
+{
+  "$schema": "../../../../json_schema/model-schema.json",
+  "id": "openai_embedding",
+  "name": "OpenAI Embeddings",
+  "description": "Integration with OpenAI embedding models",
+  "website": "https://openai.com/",
+  "type": "embedding",
+  "inference_type": ["embedding"],
+  "engine": "openai",
+  "fields": [
+    {
+      "key": "api_key",
+      "label": "API Key",
+      "placeholder": "Your OpenAI API key",
+      "required": true,
+      "field_type": "secret"
+    },
+    {
+      "key": "model",
+      "label": "Model",
+      "placeholder": "The embedding model to use",
+      "required": true,
+      "field_type": "string",
+      "hints": ["text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002"],
+      "request": {
+        "label": "Get Models",
+        "method": "GET",
+        "url": "https://api.openai.com/v1/models",
+        "headers": {
+          "Authorization": "Bearer {api_key}"
+        },
+        "response": {
+          "label": "id",
+          "value": "id",
+          "parse": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "id": "id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "base_url",
+      "label": "Base URL",
+      "placeholder": "The base URL of the OpenAI API",
+      "required": true,
+      "default": "https://api.openai.com/v1",
+      "field_type": "url"
+    }
+  ]
+}

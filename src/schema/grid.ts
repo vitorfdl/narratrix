@@ -59,7 +59,7 @@ export const defaultPositions: GridPosition[] = [
     lg: { x: 8, y: 15, w: 4, h: 10 },
   },
   { id: "scripts", hidden: true, decorated: true },
-  { id: "character_sheet", hidden: true, decorated: true },
+  // { id: "character_sheet", hidden: true, decorated: true },
   // { id: "memory", hidden: true, decorated: true },
   { id: "database", hidden: true, decorated: true },
   { id: "chapters", hidden: true, decorated: true },

@@ -13,6 +13,9 @@ interface ThemeState {
   originalFontSize: number | null;
   avatarBorderRadius: number;
 
+  // Derived
+  resolvedTheme: () => Exclude<Theme, "system">;
+
   // Actions
   setTheme: (theme: Theme) => void;
   setFontSize: (fontSize: number) => void;
@@ -31,6 +34,14 @@ export const useThemeStore = create<ThemeState>()(
       fontSize: 16,
       originalFontSize: null,
       avatarBorderRadius: 50,
+
+      resolvedTheme: () => {
+        const t = get().theme;
+        if (t === "system") {
+          return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        return t;
+      },
 
       // Actions
       setTheme: (theme) => {

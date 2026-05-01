@@ -126,6 +126,10 @@ export function CustomPromptsList({ prompts, onEdit, onDelete, onReorder, onTogg
         const oldIndex = currentItems.findIndex((item) => item.id === active.id);
         const newIndex = currentItems.findIndex((item) => item.id === over.id);
 
+        if (oldIndex === -1 || newIndex === -1) {
+          return currentItems;
+        }
+
         const newItems = arrayMove(currentItems, oldIndex, newIndex);
 
         // Call onReorder if provided

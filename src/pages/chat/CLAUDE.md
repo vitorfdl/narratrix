@@ -1,67 +1,29 @@
----
-description: Guidance for Claude/claude.ai/code on working with the chat module (React, Zustand, react-grid-layout, inference services)
-alwaysApply: true
----
+# Chat Feature
 
-# CLAUDE.md - Chat Module Architecture
+Grid workspace where widgets share one chat. Layout in `GridLayout.tsx`, tabs in `ChatTabs.tsx`, entry `ChatPage.tsx` → `ChatBox.tsx`.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with the chat module in this repository.
+## Shared State
 
-## Core Architecture
+- `@/hooks/chatStore` — current chat, messages, participants, chapters, settings. Widgets read via `useCurrentChat*` selectors and mutate via `useChatActions`. No prop-drilling between widgets.
+- `@/hooks/chatTemplateStore` — format/inference templates.
 
-### Grid-Based Widget System
+## Inference
 
-The chat interface uses a responsive drag-and-drop grid layout powered by `react-grid-layout`:
+The chat tree is wrapped by `InferenceServiceProvider` (`src/providers/inferenceChatProvider.tsx`). Widgets pull the service with `useInferenceServiceFromContext` (`@/hooks/useChatInference`). The service is backed by `@/services/inference-service` and exposes, keyed by `chatId`:
 
-- **GridLayout.tsx**: Core grid engine with responsive breakpoints (`lg: 12, md: 10, sm: 6, xs: 6, xxs: 2` columns)
-- **hooks/registry.tsx**: Widget registration system - add new widgets here
-- **GridSidebar.tsx**: Widget palette for toggling widgets on/off
+`generateMessage`, `regenerateMessage`, `cancelGeneration`, `getStreamingState`, `subscribeToStateChanges`, `isStreaming`.
 
-### Key Components
+A single `streamingManager` per chat is the synchronization point — every widget subscribes to it, so a Stop in one widget cancels the same `requestId` that another widget is rendering tokens from.
 
-- **ChatPage.tsx**: Main orchestrator handling tab management and chat lifecycle
-- **WidgetMessages.tsx**: Message display with NextChat-style pagination and streaming
-- **WidgetGenerate.tsx**: Message input interface
+### Who calls what
 
-### Inference Service Integration
+- **WidgetGenerate** — user input box. On submit hands off to `orchestrateGeneration` (`@/services/chat-generation-orchestrator`), which loops `generateMessage` across enabled participants for one turn and waits between calls via `subscribeToStateChanges`. Owns Stop (`cancelGeneration`) and a "quiet response" mode that streams tokens back into the input field instead of the chat.
+- **WidgetMessages** — renders the live stream; per-message Regenerate calls `regenerateMessage`; also dispatches `generateMessage` for system summaries (existing message id).
+- **WidgetParticipants** — single-character generation via `generateCharacterWithAgents` (wraps `generateMessage`); has its own Stop.
+- **NoMessagePlaceholder** — kicks off the first message of an empty chat.
+- **WidgetExpressions** — read-only; uses `useChatInferenceState` + `services/background-inference-service` to swap sprites mid-stream without blocking the foreground.
 
-The chat system is heavily dependent on the inference service for AI interactions:
+## Conventions
 
-- **Streaming State**: Many widgets (Messages, Generate) subscribe to `inferenceService.subscribeToStateChanges()`
-- **Message Generation**: WidgetGenerate triggers `inferenceService.generateMessage()`
-- **Regeneration**: WidgetMessages handles `inferenceService.regenerateMessage()` with version control
-- **Real-time Updates**: Streaming responses update UI immediately via state subscriptions
-- **Provider Abstraction**: Supports OpenAI, Claude, Ollama, etc. through unified interface
-- **Context Building**: Service formats message history for different AI providers
-- **Queue Management**: Handles request queuing and cancellation across widgets
-
-### Important Patterns
-
-#### Message Streaming
-- Auto-scroll respects user interaction during streaming
-- `streamingMessageId` state prevents concurrent operations
-- Reasoning data streamed separately for AI transparency
-
-#### Grid System
-- Widget positions persisted per profile in localStorage
-- `sanitizeWidgetPositions()` prevents out-of-bounds placement
-- Dynamic row calculation based on container height
-
-#### State Management
-- ChatStore (Zustand) for global chat state
-- Local component state for UI interactions
-- Streaming state managed by inference service
-
-### Development Guidelines
-
-#### Adding Widgets
-1. Create component in `components/`
-2. Register in `hooks/registry.tsx` with unique ID
-3. Handle inference service integration if needed
-4. Test drag/resize behavior across breakpoints
-
-#### Working with Inference
-- Subscribe to streaming state for real-time updates
-- Handle `streamingMessageId` to prevent concurrent operations  
-- Use `onStreamingStateChange` callbacks for custom behavior
-- Implement proper cleanup in useEffect returns
+- Prompt assembly lives in `services/inference/formatter/` — never inline in widgets. Token estimates: `estimateTokens` from `formatter/apply-context-limit`.
+- New widgets register in `hooks/registry.tsx`; config fields in `manifests/configFields.ts`.

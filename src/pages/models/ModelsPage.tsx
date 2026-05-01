@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { LuArrowDownAZ, LuBrain, LuDatabase, LuImage, LuMusic, LuPlus, LuRefreshCw, LuSearch, LuSettings2 } from "react-icons/lu";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import type { IconType } from "react-icons";
+import { LuArrowDownAZ, LuBrain, LuDatabase, LuFileSearch, LuImage, LuMusic, LuPlus, LuRefreshCw, LuSearch } from "react-icons/lu";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useModelManifests, useModelManifestsActions } from "@/hooks/manifestStore";
+import { useEmbeddingManifests, useEmbeddingManifestsActions, useModelManifests, useModelManifestsActions } from "@/hooks/manifestStore";
 import { useModelsActions, useModelsLoading } from "@/hooks/modelsStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import type { NewModelParams } from "@/services/model-service";
@@ -35,6 +34,43 @@ interface ModelGroup {
   models: Model[];
 }
 
+const MODEL_TYPE_ORDER: ModelType[] = ["llm", "image", "audio", "embedding", "database"];
+
+const MODEL_TYPE_DETAILS: Record<ModelType, { title: string; label: string; icon: IconType }> = {
+  llm: {
+    title: "Language Models",
+    label: "Language",
+    icon: LuBrain,
+  },
+  image: {
+    title: "Image Generation Models",
+    label: "Image",
+    icon: LuImage,
+  },
+  audio: {
+    title: "Audio Models",
+    label: "Audio",
+    icon: LuMusic,
+  },
+  embedding: {
+    title: "Embedding Models",
+    label: "Embedding",
+    icon: LuFileSearch,
+  },
+  database: {
+    title: "Database Models",
+    label: "Database",
+    icon: LuDatabase,
+  },
+};
+
+const getModelTypeTitle = (type: ModelType): string => MODEL_TYPE_DETAILS[type]?.title ?? "Other Models";
+
+const getModelTypeIcon = (type: ModelType, className = "h-4 w-4 text-primary"): ReactNode => {
+  const Icon = MODEL_TYPE_DETAILS[type]?.icon ?? LuBrain;
+  return <Icon className={className} />;
+};
+
 export default function Models() {
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const [modelDialogMode, setModelDialogMode] = useState<"add" | "edit">("add");
@@ -44,7 +80,9 @@ export default function Models() {
   const currentProfile = useCurrentProfile();
   const { getModelsByProfileGroupedByType, deleteModel, createModel } = useModelsActions();
   const { fetchManifests } = useModelManifestsActions();
+  const { fetchManifests: fetchEmbeddingManifests } = useEmbeddingManifestsActions();
   const manifests = useModelManifests();
+  const embeddingManifests = useEmbeddingManifests();
   const [modelGroups, setModelGroups] = useState<ModelGroup[]>([]);
   const [allModels, setAllModels] = useState<Model[]>([]);
   const isLoading = useModelsLoading();
@@ -56,7 +94,6 @@ export default function Models() {
       if (currentProfile?.id) {
         const groupedModels = await getModelsByProfileGroupedByType(currentProfile.id);
 
-        // Transform the record into an array of groups for rendering
         const groups: ModelGroup[] = Object.entries(groupedModels).map(([type, models]) => ({
           type: type as ModelType,
           title: getModelTypeTitle(type as ModelType),
@@ -65,52 +102,27 @@ export default function Models() {
 
         setModelGroups(groups);
 
-        // Flatten all models for filtering
         const flattened = groups.flatMap((group) => group.models);
         setAllModels(flattened);
       }
     };
 
-    // Fetch manifests as they might be needed for model details
     fetchManifests();
+    fetchEmbeddingManifests();
     loadModels();
-  }, [currentProfile?.id]);
+  }, [currentProfile?.id, fetchEmbeddingManifests, fetchManifests, getModelsByProfileGroupedByType]);
 
-  const getModelTypeTitle = (type: ModelType): string => {
-    const titles: Record<ModelType, string> = {
-      llm: "Language Models",
-      audio: "Audio Models",
-      image: "Image Generation Models",
-      database: "Database Models",
-    };
-    return titles[type] || "Other Models";
-  };
-
-  const getModelTypeIcon = (type: ModelType): React.ReactNode => {
-    const icons: Record<ModelType, React.ReactNode> = {
-      llm: <LuBrain className="h-4 w-4 text-primary" />,
-      audio: <LuMusic className="h-4 w-4 text-primary" />,
-      image: <LuImage className="h-4 w-4 text-primary" />,
-      database: <LuDatabase className="h-4 w-4 text-primary" />,
-    };
-    return icons[type] || <LuBrain className="h-4 w-4" />;
-  };
-
-  // Filter and sort models
   const filteredAndSortedModels = useMemo(() => {
     let filtered = allModels;
 
-    // Apply search filter
     if (search) {
       filtered = filtered.filter((model) => model.name.toLowerCase().includes(search.toLowerCase()) || model.manifest_id.toLowerCase().includes(search.toLowerCase()));
     }
 
-    // Apply type filter
     if (settings.filter.type !== "all") {
       filtered = filtered.filter((model) => model.type === settings.filter.type);
     }
 
-    // Apply sorting
     const sorted = [...filtered].sort((a, b) => {
       const direction = settings.sort.direction === "asc" ? 1 : -1;
 
@@ -120,26 +132,24 @@ export default function Models() {
         case "type":
           return direction * a.type.localeCompare(b.type);
         case "engine": {
-          const engineA = manifests.find((m) => m.id === a.manifest_id)?.engine ?? "";
-          const engineB = manifests.find((m) => m.id === b.manifest_id)?.engine ?? "";
+          const engineA = (manifests.find((m) => m.id === a.manifest_id) ?? embeddingManifests.find((m) => m.id === a.manifest_id))?.engine ?? "";
+          const engineB = (manifests.find((m) => m.id === b.manifest_id) ?? embeddingManifests.find((m) => m.id === b.manifest_id))?.engine ?? "";
           return direction * engineA.localeCompare(engineB);
         }
         case "created_at":
-          return direction * (new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          return direction * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         case "updated_at":
-          return direction * (new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          return direction * (new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
         default:
           return 0;
       }
     });
 
     return sorted;
-  }, [allModels, search, settings.filter.type, settings.sort, manifests]);
+  }, [allModels, search, settings.filter.type, settings.sort, manifests, embeddingManifests]);
 
-  // Group filtered models by type for display
   const filteredGroups = useMemo(() => {
     if (settings.filter.type !== "all") {
-      // Single type view
       return [
         {
           type: settings.filter.type,
@@ -149,28 +159,44 @@ export default function Models() {
       ];
     }
 
-    // Group by type
     const grouped: Record<ModelType, Model[]> = {
       llm: [],
       audio: [],
       image: [],
+      embedding: [],
       database: [],
     };
 
-    filteredAndSortedModels.forEach((model) => {
+    for (const model of filteredAndSortedModels) {
       if (grouped[model.type]) {
         grouped[model.type].push(model);
       }
-    });
+    }
 
-    return Object.entries(grouped)
-      .filter(([_, models]) => models.length > 0)
-      .map(([type, models]) => ({
-        type: type as ModelType,
-        title: getModelTypeTitle(type as ModelType),
-        models,
-      }));
+    return MODEL_TYPE_ORDER.filter((type) => grouped[type].length > 0).map((type) => ({
+      type,
+      title: getModelTypeTitle(type),
+      models: grouped[type],
+    }));
   }, [filteredAndSortedModels, settings.filter.type]);
+
+  const modelCounts = useMemo(() => {
+    const counts: Record<ModelType, number> = {
+      llm: 0,
+      image: 0,
+      audio: 0,
+      embedding: 0,
+      database: 0,
+    };
+
+    for (const group of modelGroups) {
+      counts[group.type] = group.models.length;
+    }
+
+    return counts;
+  }, [modelGroups]);
+
+  const hasActiveFilters = search.length > 0 || settings.filter.type !== "all";
 
   const openAddDialog = () => {
     setSelectedModel(null);
@@ -208,7 +234,6 @@ export default function Models() {
 
   const refreshModels = async () => {
     if (currentProfile?.id) {
-      // Refresh the models list
       const groupedModels = await getModelsByProfileGroupedByType(currentProfile.id);
       const groups: ModelGroup[] = Object.entries(groupedModels).map(([type, models]) => ({
         type: type as ModelType,
@@ -220,9 +245,7 @@ export default function Models() {
       const flattened = groups.flatMap((group) => group.models);
       setAllModels(flattened);
 
-      // Update selectedModel if it exists
       if (selectedModel) {
-        // Find the updated version of the selected model
         const updatedModel = flattened.find((m) => m.id === selectedModel.id);
         if (updatedModel) {
           setSelectedModel(updatedModel);
@@ -259,164 +282,136 @@ export default function Models() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header with filters and controls */}
-      <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="flex items-center gap-1 p-4">
-          <h1 className=" font-bold mr-auto title">Models</h1>
+    <div className="flex h-full flex-col bg-background">
+      <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
+        <div className="space-y-4 px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="h-6 w-1 rounded-full bg-primary" />
+                <h1 className="title font-bold">Models</h1>
+              </div>
+            </div>
 
-          {/* Search */}
-          <div className="relative w-full max-w-sm">
-            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search models..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+            <Button onClick={openAddDialog} className="shrink-0">
+              <LuPlus className="h-4 w-4" />
+              Add Model
+            </Button>
           </div>
 
-          {/* Refresh */}
-          <Button variant="outline" size="icon" onClick={refreshModels} disabled={isLoading} title="Refresh Models">
-            <LuRefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="relative min-w-0 flex-1">
+              <LuSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or manifest..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="h-9 rounded-md border border-border/60 bg-muted/20 pl-9 font-sans text-sm"
+              />
+            </div>
 
-          {/* View Settings */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" title="Grid Settings">
-                <LuSettings2 className="h-4 w-4" />
+            <div className="flex shrink-0 items-center gap-2">
+              <Button variant="outline" size="icon" onClick={refreshModels} disabled={isLoading} title="Refresh Models" className="bg-background">
+                <LuRefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <div className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-muted-foreground">Cards per row</label>
-                  <span className="text-xs text-muted-foreground">{settings.view.cardsPerRow}</span>
-                </div>
-                <Slider
-                  value={[settings.view.cardsPerRow]}
-                  min={2}
-                  max={6}
-                  step={1}
-                  onValueChange={([value]) =>
-                    setSettings((prev: ModelsPageSettings) => ({
-                      ...prev,
-                      view: {
-                        ...prev.view,
-                        cardsPerRow: value,
-                      },
-                    }))
-                  }
-                />
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
 
-          {/* Sort */}
-          <Select
-            value={`${settings.sort.field}-${settings.sort.direction}`}
-            onValueChange={(value) => {
-              const [field, direction] = value.split("-") as [typeof settings.sort.field, typeof settings.sort.direction];
-              setSettings((prev: ModelsPageSettings) => ({ ...prev, sort: { field, direction } }));
-            }}
-          >
-            <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon" })} title="Sort Models">
-              <LuArrowDownAZ className="h-4 w-4" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-              <SelectItem value="type-asc">Type (A-Z)</SelectItem>
-              <SelectItem value="type-desc">Type (Z-A)</SelectItem>
-              <SelectItem value="engine-asc">Engine (A-Z)</SelectItem>
-              <SelectItem value="engine-desc">Engine (Z-A)</SelectItem>
-              <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
-              <SelectItem value="created_at-desc">Recently Created</SelectItem>
-            </SelectContent>
-          </Select>
+              <Select
+                value={`${settings.sort.field}-${settings.sort.direction}`}
+                onValueChange={(value) => {
+                  const [field, direction] = value.split("-") as [typeof settings.sort.field, typeof settings.sort.direction];
+                  setSettings((prev: ModelsPageSettings) => ({ ...prev, sort: { field, direction } }));
+                }}
+              >
+                <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon", className: "bg-background" })} title="Sort Models">
+                  <LuArrowDownAZ className="h-4 w-4" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="type-asc">Type (A-Z)</SelectItem>
+                  <SelectItem value="type-desc">Type (Z-A)</SelectItem>
+                  <SelectItem value="engine-asc">Engine (A-Z)</SelectItem>
+                  <SelectItem value="engine-desc">Engine (Z-A)</SelectItem>
+                  <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
+                  <SelectItem value="created_at-desc">Recently Created</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-          {/* Add Model Button */}
-          <Button onClick={openAddDialog}>
-            <LuPlus className="h-4 w-4 mr-2" />
-            Add Model
-          </Button>
-        </div>
-
-        {/* Type Filter Tabs */}
-        <div className="px-4 pb-3">
           <Tabs value={settings.filter.type} onValueChange={(value) => setSettings((prev: ModelsPageSettings) => ({ ...prev, filter: { type: value as ModelType | "all" } }))}>
-            <TabsList className="w-full justify-start h-auto p-1 bg-muted/50">
-              <TabsTrigger value="all" className="gap-2">
-                All Models
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{allModels.length}</span>
+            <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0">
+              <TabsTrigger
+                value="all"
+                className="h-8 gap-2 rounded-full border border-transparent px-3 text-xs data-[state=active]:border-border data-[state=active]:bg-muted data-[state=active]:shadow-none"
+              >
+                All
+                <span className="rounded-full bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground">{allModels.length}</span>
               </TabsTrigger>
-              <TabsTrigger value="llm" className="gap-2">
-                {getModelTypeIcon("llm")} Language
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "llm")?.models.length || 0}</span>
-              </TabsTrigger>
-              <TabsTrigger value="image" className="gap-2">
-                {getModelTypeIcon("image")} Image
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "image")?.models.length || 0}</span>
-              </TabsTrigger>
-              <TabsTrigger value="audio" className="gap-2">
-                {getModelTypeIcon("audio")} Audio
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "audio")?.models.length || 0}</span>
-              </TabsTrigger>
-              <TabsTrigger value="database" className="gap-2">
-                {getModelTypeIcon("database")} Database
-                <span className="text-xs bg-background px-1.5 py-0.5 rounded-full">{modelGroups.find((g) => g.type === "database")?.models.length || 0}</span>
-              </TabsTrigger>
+              {MODEL_TYPE_ORDER.map((type) => (
+                <TabsTrigger
+                  key={type}
+                  value={type}
+                  className="h-8 gap-2 rounded-full border border-transparent px-3 text-xs data-[state=active]:border-border data-[state=active]:bg-muted data-[state=active]:shadow-none"
+                >
+                  {getModelTypeIcon(type, "h-3.5 w-3.5 text-primary")}
+                  {MODEL_TYPE_DETAILS[type].label}
+                  <span className="rounded-full bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground">{modelCounts[type]}</span>
+                </TabsTrigger>
+              ))}
             </TabsList>
           </Tabs>
         </div>
       </div>
 
-      {/* Main content area */}
-      <div className="flex-1 overflow-y-auto page-container">
+      <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex justify-center items-center h-full">
-            <p className="text-muted-foreground">Loading models...</p>
+          <div className="flex h-full min-h-[420px] items-center justify-center">
+            <p className="text-sm text-muted-foreground">Loading models...</p>
           </div>
         ) : filteredAndSortedModels.length > 0 ? (
-          <div className="space-y-6 py-1">
-            {/* Grid View */}
-            <div className="p-4">
+          <div className="w-full px-5 py-5">
+            <div className="space-y-8">
               {filteredGroups.map((group) => (
-                <div key={group.type} className="space-y-3 mb-6">
-                  {settings.filter.type === "all" && (
-                    <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-                      {getModelTypeIcon(group.type)}
+                <section key={group.type} className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-2">
+                    <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {getModelTypeIcon(group.type, "h-3.5 w-3.5 text-primary")}
                       {group.title}
-                      <span className="text-sm font-normal text-muted-foreground">({group.models.length})</span>
                     </h2>
-                  )}
-                  <div
-                    className="grid gap-4"
-                    style={{
-                      gridTemplateColumns: `repeat(${settings.view.cardsPerRow}, minmax(0, 1fr))`,
-                    }}
-                  >
+                    <span className="text-xs text-muted-foreground">
+                      {group.models.length} {group.models.length === 1 ? "model" : "models"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(26rem,1fr))] gap-3">
                     {group.models.map((model) => (
                       <ModelCard key={model.id} model={model} onDelete={handleDelete} onDuplicate={handleDuplicate} onOpenSettings={openEditDialog} />
                     ))}
                   </div>
-                </div>
+                </section>
               ))}
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-8 text-center h-[calc(100vh-250px)]">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <LuSearch className="h-8 w-8 text-muted-foreground" />
+          <div className="flex h-full min-h-[420px] items-center justify-center px-6 text-center">
+            <div className="max-w-sm">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border bg-muted/30">
+                <LuSearch className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <h3 className="text-base font-semibold">{hasActiveFilters ? "No models match your filters" : "No models yet"}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{hasActiveFilters ? "Try another search or model type." : "Add a model to make it available in this profile."}</p>
+              {!hasActiveFilters && (
+                <Button className="mt-5" onClick={openAddDialog}>
+                  <LuPlus className="h-4 w-4" />
+                  Add Model
+                </Button>
+              )}
             </div>
-            <h3 className="text-xl font-semibold mb-1">{search || settings.filter.type !== "all" ? "No models match your filters" : "No models found"}</h3>
-            <p className="text-base text-muted-foreground mt-1 mb-6 max-w-md">
-              {search || settings.filter.type !== "all" ? "Try adjusting your search or filter settings." : "Get started by adding your first model to this profile."}
-            </p>
-            <Button variant="default" size="lg" onClick={openAddDialog}>
-              <LuPlus size={20} className="mr-2" /> Create Model
-            </Button>
           </div>
         )}
       </div>
 
-      {/* Unified Model Dialog (Add / Edit) */}
       <ModelDialog
         mode={modelDialogMode}
         model={modelDialogMode === "edit" ? (selectedModel ?? undefined) : undefined}
@@ -425,7 +420,6 @@ export default function Models() {
         onSuccess={refreshModels}
       />
 
-      {/* Delete Confirmation Dialog */}
       <DestructiveConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

@@ -303,7 +303,7 @@ export const JavascriptEditor = forwardRef<JavascriptEditorRef, JavascriptEditor
           editorRef.current = editor;
         }}
         placeholder={placeholder}
-        className={cn("text-xs ring-1 ring-border rounded-sm font-mono", className)}
+        className={cn("w-full min-w-0 text-xs ring-1 ring-border rounded-sm font-mono", className)}
         theme={narratrixCodeMirror}
         minHeight={minHeight}
         maxHeight={maxHeight}

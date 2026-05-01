@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { CreateLorebookEntryParams, CreateLorebookParams, Lorebook, LorebookEntry, UpdateLorebookEntryParams, UpdateLorebookParams } from "@/schema/lorebook-schema";
+import type { IndexingStatus } from "@/services/lorebook-indexing-service";
+import * as indexingService from "@/services/lorebook-indexing-service";
 import * as lorebookService from "@/services/lorebook-service";
 
 /**
@@ -8,13 +10,14 @@ import * as lorebookService from "@/services/lorebook-service";
  */
 interface LorebookState {
   lorebooks: Lorebook[];
-  // Stores only the entries for the currently selected lorebook
   selectedLorebookEntries: LorebookEntry[];
   selectedLorebookId: string | null;
   selectedEntryId: string | null;
   isLoadingLorebooks: boolean;
-  isLoadingEntries: boolean; // Loading state specifically for selected entries
+  isLoadingEntries: boolean;
   error: string | null;
+  indexingStatus: IndexingStatus | null;
+  isIndexing: boolean;
   actions: LorebookActions;
 }
 
@@ -36,6 +39,12 @@ interface LorebookActions {
   deleteLorebookEntry: (profileId: string, id: string, lorebookId: string) => Promise<boolean>;
   selectLorebookEntry: (id: string | null) => void;
 
+  // RAG Indexing actions
+  loadIndexingStatus: (lorebookId: string) => Promise<void>;
+  indexEntry: (lorebookId: string, entryId: string) => Promise<void>;
+  indexAllEntries: (lorebookId: string, onProgress?: (indexed: number, total: number) => void) => Promise<void>;
+  clearIndex: (lorebookId: string) => Promise<void>;
+
   clearError: () => void;
 }
 
@@ -46,12 +55,14 @@ export const useLorebookStore = create<LorebookState>()(
   devtools(
     (set, get) => ({
       lorebooks: [],
-      selectedLorebookEntries: [], // Initialize with an empty array
+      selectedLorebookEntries: [],
       selectedLorebookId: null,
       selectedEntryId: null,
       isLoadingLorebooks: false,
       isLoadingEntries: false,
       error: null,
+      indexingStatus: null,
+      isIndexing: false,
       actions: {
         // --- Lorebook Actions ---
         loadLorebooks: async (profileId) => {
@@ -117,13 +128,13 @@ export const useLorebookStore = create<LorebookState>()(
           }
         },
         selectLorebook: (id) => {
-          // Reset entries and selection when a new lorebook is chosen
           set({
             selectedLorebookId: id,
             selectedEntryId: null,
             selectedLorebookEntries: [],
-            isLoadingEntries: !!id, // Start loading if an ID is provided
-            error: null, // Clear previous entry loading errors
+            isLoadingEntries: !!id,
+            error: null,
+            indexingStatus: null,
           });
           // Note: Loading entries is expected to be triggered manually after selection if needed
           // e.g., useEffect in the component observing selectedLorebookId
@@ -229,6 +240,75 @@ export const useLorebookStore = create<LorebookState>()(
           set({ selectedEntryId: id });
         },
 
+        // --- RAG Indexing Actions ---
+        loadIndexingStatus: async (lorebookId) => {
+          try {
+            const status = await indexingService.getIndexingStatus(lorebookId);
+            if (get().selectedLorebookId === lorebookId) {
+              set({ indexingStatus: status });
+            }
+          } catch (err: any) {
+            console.error("Failed to load indexing status:", err);
+            if (get().selectedLorebookId === lorebookId) {
+              set({ error: `Failed to load indexing status: ${err.message}` });
+            }
+          }
+        },
+        indexEntry: async (lorebookId, entryId) => {
+          try {
+            await indexingService.indexLorebookEntry(lorebookId, entryId);
+            const updatedEntry = await lorebookService.getLorebookEntryById(entryId);
+            if (updatedEntry && get().selectedLorebookId === lorebookId) {
+              set((state) => ({
+                selectedLorebookEntries: state.selectedLorebookEntries.map((e) => (e.id === entryId ? updatedEntry : e)),
+              }));
+              const status = await indexingService.getIndexingStatus(lorebookId);
+              set({ indexingStatus: status });
+            }
+          } catch (err: any) {
+            set({ error: `Failed to index entry: ${err.message}` });
+            throw err;
+          }
+        },
+        indexAllEntries: async (lorebookId, onProgress) => {
+          set({ isIndexing: true, error: null });
+          try {
+            await indexingService.indexAllLorebookEntries(lorebookId, onProgress);
+            if (get().selectedLorebookId === lorebookId) {
+              const lorebook = get().lorebooks.find((lb) => lb.id === lorebookId);
+              if (lorebook) {
+                const entries = await lorebookService.listLorebookEntries(lorebook.profile_id, { lorebook_id: lorebookId });
+                set({ selectedLorebookEntries: entries });
+              }
+              const status = await indexingService.getIndexingStatus(lorebookId);
+              set({ indexingStatus: status, isIndexing: false });
+            } else {
+              set({ isIndexing: false });
+            }
+          } catch (err: any) {
+            set({ error: `Failed to index entries: ${err.message}`, isIndexing: false });
+            throw err;
+          }
+        },
+        clearIndex: async (lorebookId) => {
+          set({ isIndexing: true, error: null });
+          try {
+            await indexingService.clearLorebookIndex(lorebookId);
+            if (get().selectedLorebookId === lorebookId) {
+              set((state) => ({
+                selectedLorebookEntries: state.selectedLorebookEntries.map((e) => ({ ...e, vector_content: null })),
+                indexingStatus: state.indexingStatus ? { ...state.indexingStatus, indexed: 0 } : null,
+                isIndexing: false,
+              }));
+            } else {
+              set({ isIndexing: false });
+            }
+          } catch (err: any) {
+            set({ error: `Failed to clear index: ${err.message}`, isIndexing: false });
+            throw err;
+          }
+        },
+
         clearError: () => set({ error: null }),
       },
     }),
@@ -249,3 +329,5 @@ export const useSelectedEntryId = () => useLorebookStore((state) => state.select
 export const useIsLoadingLorebooks = () => useLorebookStore((state) => state.isLoadingLorebooks);
 export const useIsLoadingEntries = () => useLorebookStore((state) => state.isLoadingEntries);
 export const useLorebookError = () => useLorebookStore((state) => state.error);
+export const useIndexingStatus = () => useLorebookStore((state) => state.indexingStatus);
+export const useIsIndexing = () => useLorebookStore((state) => state.isIndexing);

@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useLorebookStoreActions } from "@/hooks/lorebookStore";
+import { useModels } from "@/hooks/modelsStore";
 import { CreateLorebookParams, Lorebook, UpdateLorebookParams } from "@/schema/lorebook-schema";
 
 interface LorebookFormDialogProps {
@@ -28,12 +32,18 @@ const formSchema = z.object({
   tags: z.array(z.string()).default([]),
   max_tokens: z.number().int().min(1).max(10000).default(1000),
   max_depth: z.number().int().min(1).max(100).default(25),
+  rag_enabled: z.boolean().default(false),
+  embedding_model_id: z.string().nullable().default(null),
+  similarity_threshold: z.number().min(0).max(1).default(0.7),
 });
 
 export function LorebookFormDialog({ open, onOpenChange, profileId, initialLorebook }: LorebookFormDialogProps) {
   const { createLorebook, updateLorebook } = useLorebookStoreActions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!initialLorebook;
+  const allModels = useModels();
+
+  const embeddingModels = useMemo(() => allModels.filter((m) => m.type === "embedding"), [allModels]);
 
   const form = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,8 +54,15 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
       tags: [],
       max_tokens: 1000,
       max_depth: 25,
+      rag_enabled: false,
+      embedding_model_id: null,
+      similarity_threshold: 0.7,
     },
   });
+
+  const ragEnabled = form.watch("rag_enabled");
+  const currentEmbeddingModelId = form.watch("embedding_model_id");
+  const showModelChangeWarning = isEditing && !!initialLorebook?.embedding_model_id && currentEmbeddingModelId !== initialLorebook.embedding_model_id;
 
   useEffect(() => {
     if (open) {
@@ -57,6 +74,9 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
           tags: initialLorebook.tags || [],
           max_tokens: initialLorebook.max_tokens || 1000,
           max_depth: initialLorebook.max_depth || 25,
+          rag_enabled: initialLorebook.rag_enabled ?? false,
+          embedding_model_id: initialLorebook.embedding_model_id ?? null,
+          similarity_threshold: initialLorebook.similarity_threshold ?? 0.7,
         });
       } else {
         form.reset({
@@ -66,6 +86,9 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
           tags: [],
           max_tokens: 1000,
           max_depth: 25,
+          rag_enabled: false,
+          embedding_model_id: null,
+          similarity_threshold: 0.7,
         });
       }
     }
@@ -91,6 +114,9 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
           max_recursion_depth: initialLorebook.max_recursion_depth,
           group_keys: initialLorebook.group_keys,
           extra: initialLorebook.extra,
+          rag_enabled: values.rag_enabled,
+          embedding_model_id: values.embedding_model_id,
+          similarity_threshold: values.similarity_threshold,
         };
         await updateLorebook(initialLorebook.id, updateData);
       } else {
@@ -106,6 +132,9 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
           max_recursion_depth: 25,
           group_keys: [],
           extra: {},
+          rag_enabled: values.rag_enabled,
+          embedding_model_id: values.embedding_model_id,
+          similarity_threshold: values.similarity_threshold,
         };
         await createLorebook(lorebookData);
       }
@@ -113,6 +142,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
       onOpenChange(false);
     } catch (error) {
       console.error(`Failed to ${isEditing ? "update" : "create"} lorebook:`, error);
+      toast.error(`Failed to ${isEditing ? "update" : "create"} lorebook: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -222,7 +252,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                       </HelpTooltip>
                     </div>
                     <FormControl>
-                      <Input type="number" min={1} max={10000} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 1000)} value={field.value} />
+                      <Input type="number" min={1} max={10000} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 1000)} value={field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -237,11 +267,94 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
                     <div className="flex items-center gap-1">
                       <FormLabel>Max Depth</FormLabel>
                       <HelpTooltip>
-                        <p>How many recent chat messages are scanned for keyword matches. Higher values check further back in the conversation history.</p>
+                        <p>
+                          {ragEnabled
+                            ? "How many recent chat messages are used to build the semantic search query."
+                            : "How many recent chat messages are scanned for keyword matches. Higher values check further back in the conversation history."}
+                        </p>
                       </HelpTooltip>
                     </div>
                     <FormControl>
-                      <Input type="number" min={1} max={100} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 25)} value={field.value} />
+                      <Input type="number" min={1} max={100} {...field} onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 25)} value={field.value} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="space-y-4 rounded-md border p-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">RAG / Semantic Search</span>
+                <HelpTooltip>
+                  <p>Enable Retrieval-Augmented Generation to use semantic similarity search instead of (or in addition to) keyword matching when activating lorebook entries.</p>
+                </HelpTooltip>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="rag_enabled"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-3">
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                      <FormLabel className="cursor-pointer">Enable RAG</FormLabel>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="embedding_model_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-1">
+                      <FormLabel>Embedding Model</FormLabel>
+                      <HelpTooltip>
+                        <p>The embedding model used to vectorize lorebook entries for semantic search. Changing this will require re-indexing all entries.</p>
+                      </HelpTooltip>
+                    </div>
+                    <Select onValueChange={(val) => field.onChange(val === "none" ? null : val)} value={field.value ?? "none"} disabled={!ragEnabled}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an embedding model" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {embeddingModels.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {showModelChangeWarning && <p className="text-xs text-amber-500">Changing the embedding model will clear existing vectors. All entries will need to be re-indexed.</p>}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="similarity_threshold"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <FormLabel>Similarity Threshold</FormLabel>
+                        <HelpTooltip>
+                          <p>Minimum cosine similarity score (0–1) for an entry to be considered a match. Higher values require closer semantic matches.</p>
+                        </HelpTooltip>
+                      </div>
+                      <span className="text-muted-foreground text-sm tabular-nums">{(field.value ?? 0.7).toFixed(2)}</span>
+                    </div>
+                    <FormControl>
+                      <Slider value={[field.value ?? 0.7]} onValueChange={([v]) => field.onChange(v ?? 0.7)} min={0} max={1} step={0.05} disabled={!ragEnabled} className="mt-2" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

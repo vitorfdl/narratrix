@@ -71,7 +71,7 @@ function parseChoices(raw: unknown, fallback: string[]): PendingChoiceOption[] {
   return fallback.map((s) => ({ label: s, value: s }));
 }
 
-function createPendingChoice(agentId: string, executionId: string, prompt: string, choices: PendingChoiceOption[], timeoutSeconds: number): Promise<string | null> {
+function createPendingChoice(runKey: string, executionId: string, prompt: string, choices: PendingChoiceOption[], timeoutSeconds: number): Promise<string | null> {
   return new Promise((resolve) => {
     const choiceId = `choice_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -86,7 +86,7 @@ function createPendingChoice(agentId: string, executionId: string, prompt: strin
 
     useUserChoiceStore.getState().actions.addPendingChoice({
       id: choiceId,
-      agentId,
+      runKey,
       executionId,
       prompt,
       choices,
@@ -144,7 +144,7 @@ const executeUserChoiceNode: NodeExecutor = async (node, inputs, context, agent)
           throw new Error("Workflow cancelled");
         }
 
-        const selected = await createPendingChoice(context.agentId, context.executionId, prompt, choices, cfg.timeoutSeconds);
+        const selected = await createPendingChoice(context.runKey, context.executionId, prompt, choices, cfg.timeoutSeconds);
         if (selected === null) {
           throw new Error("Workflow cancelled");
         }
@@ -163,7 +163,7 @@ const executeUserChoiceNode: NodeExecutor = async (node, inputs, context, agent)
     return { success: false, error: "User choice node has no choices configured" };
   }
 
-  const selected = await createPendingChoice(context.agentId, context.executionId, prompt, choices, cfg.timeoutSeconds);
+  const selected = await createPendingChoice(context.runKey, context.executionId, prompt, choices, cfg.timeoutSeconds);
 
   if (selected === null) {
     return { success: false, error: "User cancelled the choice" };

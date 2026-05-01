@@ -1,7 +1,7 @@
-import { BookOpen, Contact, Database, FileTextIcon, HelpCircle, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
+import { BookOpen, Database, FileTextIcon, HelpCircle, MessageSquare, Settings, Smile, Sparkles, Users } from "lucide-react";
 import React from "react";
 import WidgetChapters from "@/pages/chat/components/WidgetChapters";
-import WidgetCharacterSheet from "@/pages/chat/components/WidgetCharacterSheet";
+// import WidgetCharacterSheet from "@/pages/chat/components/WidgetCharacterSheet";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import WidgetDatabase from "@/pages/chat/components/WidgetDatabase";
 import WidgetGenerate from "@/pages/chat/components/WidgetGenerate";
@@ -14,7 +14,7 @@ import { WidgetHelp } from "../components/WidgetHelp";
 
 // Import types for props if available
 
-export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "character_sheet" | "database" | "chapters" | "expressions" | "help";
+export type WidgetId = "messages" | "config" | "generate" | "participants" | "scripts" | "database" | "chapters" | "expressions" | "help";
 
 export const widgetTitles: Record<WidgetId, string> = {
   messages: "Messages",
@@ -22,7 +22,7 @@ export const widgetTitles: Record<WidgetId, string> = {
   generate: "Generate",
   participants: "Participants",
   scripts: "Scripts",
-  character_sheet: "Character Sheet",
+  // character_sheet: "Character Sheet",
   // memory: "Short-Term Memory",
   database: "Database",
   chapters: "Chapters",
@@ -75,13 +75,13 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
     defaultProps: {},
     icon: <FileTextIcon className="w-4 h-4" />,
   },
-  character_sheet: {
-    id: "character_sheet",
-    title: widgetTitles.character_sheet,
-    component: WidgetCharacterSheet,
-    defaultProps: {},
-    icon: <Contact className="w-4 h-4" />,
-  },
+  // character_sheet: {
+  //   id: "character_sheet",
+  //   title: widgetTitles.character_sheet,
+  //   component: WidgetCharacterSheet,
+  //   defaultProps: {},
+  //   icon: <Contact className="w-4 h-4" />,
+  // },
   // memory: {
   //   id: "memory",
   //   title: widgetTitles.memory,
@@ -123,7 +123,7 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
  * Helper function to render the proper widget.
  * This function now accepts the tabId so that dynamic props can be merged.
  */
-export function renderWidget(widgetId: WidgetId, tabId: string, extraProps?: Partial<any>): JSX.Element | null {
+export function renderWidget(widgetId: WidgetId, tabId: string, extraProps?: Partial<any>): React.ReactElement | null {
   const config = widgetConfigurations[widgetId];
   if (!config) {
     console.error(`No widget configuration found for widget id: ${widgetId}`);

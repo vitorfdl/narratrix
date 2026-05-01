@@ -1,37 +1,63 @@
-AGENTS guide for Narratrix (React + Tauri)
+# Narratrix
 
-## Code style (Biome + TS)
-- Formatting: spaces, lineWidth 200 (biome.json). Run lint:fix before commits.
-- Imports: std/react, third-party, then internal "@/"; keep side-effects isolated; prefer type-only imports when useful.
-- Types: strict TS; avoid any; non-null (!) sparingly; validate external input with zod in src/schema.
-- Naming: camelCase vars/functions; PascalCase components/types; UPPER_SNAKE_CASE constants; files kebab-case.
-- React: functional components; hooks at top level; respect exhaustive-deps; heavy logic in services/hooks; immutable updates via Immer when needed.
-- Errors: never swallow; try/catch async; bubble typed results from services; user-facing via toasts; add error boundaries where appropriate.
-- Async/effects: await properly; cancel/cleanup in useEffect; debounce/throttle via utils; avoid fire-and-forget.
-- Structure: UI in components/pages; business logic in services; helpers in lib/utils.ts and utils/; schemas in src/schema; state in hooks/ (Zustand/Jotai).
-- Security: keep API keys per profile; follow Tauri FS/security constraints; avoid leaking secrets in logs.
+React + Tauri desktop app. Package manager: pnpm. Linter/formatter: Biome (see `biome.json`).
 
-## Core Application Structure
+IMPORTANT: Run `pnpm biome check --fix` before committing. Do not skip this.
 
-Package Manager: PNPM
+IMPORTANT: Never log, print, or embed API keys, tokens, or secrets. Tauri FS/security constraints apply — respect scoped permissions.
 
-### Frontend Architecture (`src/`)
+# Code Style
 
-- **Main Entry**: `App.tsx` handles profile authentication and theme
-  initialization
-- **Layout**: `components/layout/` contains `Sidebar.tsx` and `Content.tsx`
-- **Pages**: Feature-specific pages in `pages/` (agents, characters, chat,
-  models, etc.)
-- **State Management**: Global stores in `hooks/` using Zustand pattern
-- **Services**: Business logic in `services/` for API calls and data processing
-- **Schemas**: Zod schemas in `schema/` for type validation
+- Strict TypeScript. No `any`. Use `!` (non-null assertion) only when you can prove the value exists.
+- Validate all external input (API responses, file reads, user input) with Zod schemas in `src/schema/`.
+- Naming: `camelCase` variables/functions, `PascalCase` components/types, `UPPER_SNAKE_CASE` constants, `kebab-case` files.
+- Imports order: std/react → third-party → internal `@/`. Prefer `import type` where possible.
+- Line width 200 (configured in `biome.json`). Spaces, not tabs.
 
-### Backend Architecture (`src-tauri/`)
+# React Patterns
 
-- **Database**: SQLite with migrations in `database/migrations/`
-- **Inference**: LLM integration in `inference/` supporting multiple providers
-- **Filesystem**: File operations in `filesystem/`
-- **Security**: Encryption utilities in `utils/`
+- Functional components only. Hooks at the top level — never inside conditions or loops.
+- Respect `exhaustive-deps`. If a dependency feels wrong, restructure the effect — don't suppress the warning.
+- Heavy logic belongs in `services/` or custom hooks in `hooks/`, not in component bodies.
+- Immutable state updates. Use Immer when the update shape is complex.
+- State management: Zustand/Jotai stores in `hooks/`. No prop-drilling past two levels.
+- Clean up effects: cancel pending requests, clear timers, unsubscribe listeners in `useEffect` cleanup.
+- Debounce/throttle via `utils/`. No fire-and-forget promises — always `await` or handle the rejection.
 
-## Notes
-- Also follow: defensive programming (validation, null safety, resource cleanup), single-responsibility, reusable components, hook/service abstraction, and DI-friendly code. Keep PRs small; run pnpm and biome lint/tests before pushing.
+# Error Handling
+
+- Never swallow errors. Every `catch` must log, surface to the user (error toasts), or re-throw.
+- Toasts are for errors and warnings only. Do not add success toasts — if the UI accepted the action (form closed, item appeared in list, etc.), that is sufficient feedback. If you find existing success toasts, remove them.
+- Async services return typed results — bubble errors up, don't handle them silently at the service layer.
+- Add React error boundaries around independently-failing UI regions.
+
+# Architecture Decisions
+
+- UI: `components/` and `pages/`. Business logic: `services/`. Helpers: `lib/utils.ts` and `utils/`. Schemas: `src/schema/`.
+- Backend (Tauri): SQLite with migrations in `src-tauri/database/migrations/`. Inference engine in `src-tauri/inference/` supports multiple LLM providers.
+- API keys are stored per profile. Never share keys across profiles.
+
+# Domain Knowledge
+
+Before working on a feature area you're unfamiliar with, check for relevant skill. These contain domain-specific context about app subsystems, conventions, and known gotchas that aren't obvious from the code alone. Read the matching skill before making changes.
+
+# When Making Changes
+
+- Read the relevant code before proposing changes. Don't guess at existing patterns.
+- Match the style of surrounding code. If unsure, check a similar file first.
+- Don't add abstractions, utilities, or refactors beyond what was asked. Three similar lines beat a premature abstraction.
+- Keep changes small and focused. One concern per commit.
+- If something looks wrong in the existing code, mention it — but fix only what was requested unless asked.
+
+# Profile Restrictions
+- Whenever you have to access database, ensure to always filter with current Profile ID.
+- Double-check that you're not exposing data from other profiles.
+
+# UI Components
+- Use HelpTooltips for help/descriptional text to save space, each information in the UI counts.
+- For Modals, utilize the pattern from "@/components/shared/Dialog" to maintain consistency across the app.
+- Utilize "@/components/shared/DestructiveConfirmDialog" for confirmation on destructive operations.
+
+IMPORTANT: Run `pnpm biome check --fix` before committing. Verify the build passes.
+
+IMPORTANT: Never log or expose secrets. API keys stay per-profile and never leave the encryption layer.

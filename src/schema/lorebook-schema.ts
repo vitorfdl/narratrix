@@ -17,6 +17,9 @@ export const lorebookSchema = z.object({
   max_depth: z.number().int().default(25),
   max_tokens: z.number().int().default(1000),
   group_keys: z.array(z.string()).default([]),
+  rag_enabled: z.boolean().default(false),
+  embedding_model_id: z.string().nullable().default(null),
+  similarity_threshold: z.number().min(0).max(1).default(0.7),
   extra: z.record(z.string(), z.any()).default({}),
   created_at: z.date(),
   updated_at: z.date(),
@@ -68,6 +71,9 @@ export const updateLorebookSchema = lorebookSchema.partial().pick({
   max_depth: true,
   max_tokens: true,
   group_keys: true,
+  rag_enabled: true,
+  embedding_model_id: true,
+  similarity_threshold: true,
   extra: true,
 });
 

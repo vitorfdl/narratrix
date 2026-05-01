@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@reference "../../../index.css";
 
 .markdown-body {
   /* Remove redundant padding reset for pre */

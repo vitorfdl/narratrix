@@ -35,7 +35,7 @@ import { ToolEditorProps, ToolNodeData } from "./tool-components/types";
 import "./tool-nodes";
 
 const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, readOnly = false }) => {
-  const { theme } = useThemeStore();
+  const resolvedTheme = useThemeStore((s) => s.resolvedTheme);
 
   // Get node types from registry
   const nodeTypes = NodeRegistry.getNodeTypes();
@@ -425,7 +425,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
                 proOptions={{ hideAttribution: true }}
                 fitView
                 fitViewOptions={{ maxZoom: 1 }}
-                colorMode={theme === "dark" ? "dark" : "light"}
+                colorMode={resolvedTheme()}
                 minZoom={0.5}
                 maxZoom={1.5}
                 nodesDraggable={!readOnly}
@@ -434,7 +434,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
                 edgesFocusable={!readOnly}
                 elementsSelectable={!readOnly}
                 defaultEdgeOptions={{ style: { strokeWidth: 2 } }}
-                connectionLineStyle={{ strokeWidth: 2, stroke: "hsl(var(--primary))", strokeDasharray: "5,5" }}
+                connectionLineStyle={{ strokeWidth: 2, stroke: "var(--primary)", strokeDasharray: "5,5" }}
                 snapToGrid={true}
                 snapGrid={[10, 10]}
                 connectionRadius={20}

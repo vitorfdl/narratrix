@@ -1,0 +1,116 @@
+{
+  "formatter": {
+    "language_server": {
+      "name": "biome"
+    }
+  },
+  "format_on_save": "on",
+  "code_actions_on_format": {
+    "source.fixAll.biome": true,
+    "source.organizeImports.biome": true
+  },
+  "tab_size": 2,
+  "hard_tabs": false,
+  "preferred_line_length": 200,
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["biome", "vtsls", "!typescript-language-server"],
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      }
+    },
+    "TSX": {
+      "language_servers": ["biome", "vtsls", "!typescript-language-server"],
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      }
+    },
+    "JavaScript": {
+      "language_servers": ["biome", "vtsls", "!typescript-language-server"],
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      }
+    },
+    "JSX": {
+      "language_servers": ["biome", "vtsls", "!typescript-language-server"],
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      }
+    },
+    "JSON": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      }
+    },
+    "JSONC": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      }
+    },
+    "CSS": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      }
+    },
+    "Rust": {
+      "tab_size": 4,
+      "format_on_save": "on"
+    }
+  },
+  "lsp": {
+    "biome": {
+      "settings": {
+        "require_config_file": true
+      }
+    },
+    "rust-analyzer": {
+      "initialization_options": {
+        "cargo": {
+          "features": "all"
+        },
+        "check": {
+          "command": "clippy"
+        }
+      }
+    },
+    "tailwindcss-language-server": {
+      "settings": {
+        "classAttributes": ["class", "className", "ngClass", "cva", "cn"]
+      }
+    }
+  },
+  "file_types": {
+    "Tailwind CSS": ["css"]
+  },
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/node_modules",
+    "**/dist",
+    "**/build",
+    "**/target",
+    "**/src-tauri/target",
+    "**/.svelte-kit",
+    "**/.next",
+    "**/.turbo",
+    "**/pnpm-lock.yaml"
+  ],
+  "terminal": {
+    "shell": {
+      "program": "bash"
+    }
+  }
+}

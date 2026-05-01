@@ -46,7 +46,7 @@ export const ManifestSchema = z.object({
   name: z.string(),
   description: z.string(),
   website: z.string().optional(),
-  type: z.literal("llm"),
+  type: z.enum(["llm", "embedding"]),
   inference_type: z.array(z.string()),
   inference_fields: z.array(z.string()).optional(),
   engine: engineSchema,

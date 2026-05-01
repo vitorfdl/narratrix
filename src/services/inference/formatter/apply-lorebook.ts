@@ -1,5 +1,8 @@
+import { cosineSimilarity } from "ai";
 import { InferenceMessage } from "@/schema/inference-engine-schema";
-import { Lorebook, LorebookEntry } from "@/schema/lorebook-schema";
+import type { Lorebook, LorebookEntry } from "@/schema/lorebook-schema";
+import { embedText } from "../../embedding-service";
+import { parseStoredVector } from "../../lorebook-indexing-service";
 import { getLorebookById } from "../../lorebook-service";
 import { estimateTokens } from "./apply-context-limit";
 
@@ -17,10 +20,15 @@ export interface LorebookContentResponse {
   }[];
 }
 
+// Additive boost applied to RAG similarity when one of the entry's keywords matches the recent
+// chat window. Sized so a typical match (boost + low-to-moderate similarity) crosses the default
+// thresholds (0.35–0.7) without making keyword presence an unconditional trigger at very high thresholds.
+export const KEYWORD_MATCH_BOOST = 0.5;
+
 /**
  * Matches keywords in a given text based on entry settings.
  */
-function matchKeywords(text: string, keywords: string[], caseSensitive: boolean, matchPartialWords: boolean): boolean {
+export function matchKeywords(text: string, keywords: string[], caseSensitive: boolean, matchPartialWords: boolean): boolean {
   if (keywords.length === 0) {
     return false; // No keywords to match
   }
@@ -36,6 +44,22 @@ function matchKeywords(text: string, keywords: string[], caseSensitive: boolean,
     }
   }
   return false; // No keywords matched
+}
+
+function entryKeywordMatches(entry: LorebookEntry, reversedMessages: { text: string }[]): boolean {
+  if (entry.keywords.length === 0) {
+    return false;
+  }
+  const scanDepth = entry.depth > 0 ? Math.min(entry.depth, reversedMessages.length) : reversedMessages.length;
+  if (scanDepth === 0) {
+    return false;
+  }
+  for (const message of reversedMessages.slice(0, scanDepth)) {
+    if (matchKeywords(message.text, entry.keywords, entry.case_sensitive, entry.match_partial_words)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export async function getLorebookContent(orderedLorebookIds: string[], budget: number, Messages: InferenceMessage[], lorebookSeparator = "\n---\n"): Promise<LorebookContentResponse> {
@@ -75,93 +99,101 @@ export async function getLorebookContent(orderedLorebookIds: string[], budget: n
 
   for (const lorebook of lorebooks) {
     if (currentBudget <= 0) {
-      break; // Stop processing lorebooks if global budget is depleted
+      break;
     }
 
     const candidateEntries: LorebookEntry[] = [];
     let lorebookBudgetConsumed = 0;
     const lorebookMaxTokens = lorebook.max_tokens > 0 ? lorebook.max_tokens : Number.POSITIVE_INFINITY;
 
-    // Filter enabled entries
     const enabledEntries = lorebook.entries.filter((entry) => entry.enabled);
 
-    for (const entry of enabledEntries) {
-      let triggered = false;
-
-      if (entry.constant) {
-        triggered = true;
-      } else {
-        // Check non-constant triggers
-        if (messagesLength < entry.min_chat_messages) {
-          continue; // Not enough messages yet
+    // RAG uses lorebook.max_depth as the scan window for the query (per-entry depth is irrelevant when matching by similarity).
+    let queryEmbedding: number[] | null = null;
+    if (lorebook.rag_enabled && lorebook.embedding_model_id) {
+      const ragScanDepth = lorebook.max_depth > 0 ? Math.min(lorebook.max_depth, reversedMessages.length) : reversedMessages.length;
+      const ragMessages = reversedMessages.slice(0, ragScanDepth);
+      const queryText = ragMessages.map((m) => m.text).join("\n");
+      if (queryText.trim()) {
+        try {
+          const embedResult = await embedText(lorebook.embedding_model_id, queryText);
+          queryEmbedding = embedResult.embedding;
+        } catch (error) {
+          console.error(`Failed to embed query for lorebook "${lorebook.name}" (${lorebook.id}). Falling back to keyword matching for entries with keywords:`, error);
         }
-
-        const scanDepth = entry.depth > 0 ? Math.min(entry.depth, reversedMessages.length) : reversedMessages.length;
-        if (scanDepth === 0) {
-          continue; // No messages to scan based on depth
-        }
-
-        const messagesToScan = reversedMessages.slice(0, scanDepth);
-
-        for (const message of messagesToScan) {
-          if (matchKeywords(message.text, entry.keywords, entry.case_sensitive, entry.match_partial_words)) {
-            triggered = true;
-            break; // Entry triggered, no need to check more messages for this entry
-          }
-        }
-      }
-
-      if (triggered) {
-        candidateEntries.push(entry);
       }
     }
 
-    // Sort triggered candidates by priority (descending)
+    for (const entry of enabledEntries) {
+      let triggered = false;
+      if (entry.constant) {
+        triggered = true;
+      } else {
+        if (messagesLength < entry.min_chat_messages) {
+          continue;
+        }
+
+        const keywordMatched = entryKeywordMatches(entry, reversedMessages);
+
+        if (queryEmbedding) {
+          // Combined RAG + keyword scoring. Keywords act as an additive boost on top of cosine similarity
+          // so users can author specific triggers that coexist with semantic matching.
+          const entryVector = parseStoredVector(entry.vector_content);
+          const similarity = entryVector && entryVector.length === queryEmbedding.length ? cosineSimilarity(queryEmbedding, entryVector) : 0;
+          const effectiveScore = keywordMatched ? Math.min(1, similarity + KEYWORD_MATCH_BOOST) : similarity;
+          triggered = effectiveScore >= lorebook.similarity_threshold;
+        } else {
+          // Keyword-only path: RAG disabled or embedding failed.
+          triggered = keywordMatched;
+        }
+      }
+
+      if (!triggered) {
+        continue;
+      }
+
+      // Per-entry probability gate. Default is 100 (always include).
+      if (entry.trigger_chance < 100 && Math.random() * 100 >= entry.trigger_chance) {
+        continue;
+      }
+
+      candidateEntries.push(entry);
+    }
+
     candidateEntries.sort((a, b) => b.priority - a.priority);
 
-    // Apply entries within budget
     for (const entry of candidateEntries) {
       if (currentBudget <= 0) {
-        break; // Stop applying entries if global budget depleted mid-lorebook
+        break;
       }
       if (lorebookBudgetConsumed >= lorebookMaxTokens) {
-        break; // Stop applying entries if lorebook budget depleted
+        break;
       }
 
       const entryTokens = estimateTokens(entry.content);
 
       if (currentBudget >= entryTokens && lorebookBudgetConsumed + entryTokens <= lorebookMaxTokens) {
-        // Apply the entry
         currentBudget -= entryTokens;
         lorebookBudgetConsumed += entryTokens;
 
         switch (entry.insertion_type) {
           case "lorebook_top":
-            response.replacers.lorebook_top = response.replacers.lorebook_top
-              ? `${entry.content}${lorebookSeparator}${response.replacers.lorebook_top}` // Prepend with newline
-              : entry.content;
+            response.replacers.lorebook_top = response.replacers.lorebook_top ? `${entry.content}${lorebookSeparator}${response.replacers.lorebook_top}` : entry.content;
             break;
           case "lorebook_bottom":
-            response.replacers.lorebook_bottom = response.replacers.lorebook_bottom
-              ? `${response.replacers.lorebook_bottom}${lorebookSeparator}${entry.content}` // Append with newline
-              : entry.content;
+            response.replacers.lorebook_bottom = response.replacers.lorebook_bottom ? `${response.replacers.lorebook_bottom}${lorebookSeparator}${entry.content}` : entry.content;
             break;
           case "user":
           case "assistant":
             response.messages.push({
               role: entry.insertion_type,
               text: entry.content,
-              depth: entry.depth, // Including depth as per schema
+              depth: entry.depth,
             });
             break;
           default:
             console.warn(`Unknown insertion type: ${entry.insertion_type}`);
         }
-      } else {
-        // Not enough budget (either global or lorebook-specific) for this entry
-        // Since entries are sorted by priority, we can potentially stop processing
-        // lower-priority entries for this lorebook if needed, but the outer budget checks
-        // already handle the main termination conditions.
       }
     }
   }

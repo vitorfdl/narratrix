@@ -11,6 +11,7 @@ import type { NodeExecutionResult, WorkflowToolDefinition } from "@/services/age
 
 export type { TriggerContext };
 
+import { INFERENCE_TIMEOUT_MS } from "@/services/ai-providers/constants";
 import { getCharacterById } from "@/services/character-service";
 import { getChatChapterById } from "@/services/chat-chapter-service";
 import { getChatById } from "@/services/chat-service";
@@ -21,7 +22,7 @@ import { getModelById } from "@/services/model-service";
 import { getChatTemplateById } from "@/services/template-chat-service";
 import { getFormatTemplateById } from "@/services/template-format-service";
 import { getInferenceTemplateById } from "@/services/template-inference-service";
-import { useAgentWorkflowStore } from "./agentWorkflowStore";
+import { makeRunKey, useAgentWorkflowStore } from "./agentWorkflowStore";
 import { useProfileStore } from "./ProfileStore";
 
 // Re-export from the store so consumers can import from one place
@@ -31,6 +32,7 @@ export type { AgentWorkflowState } from "./agentWorkflowStore";
  * Hook for executing agent workflows with proper integration to inference service
  */
 interface PendingResolver {
+  runKey: string;
   resolve: (response: InferenceCompletedResponse | InferenceCancelledResponse) => void;
   reject: (error: Error) => void;
   timeout?: number;
@@ -38,13 +40,14 @@ interface PendingResolver {
 
 export function useAgentWorkflow() {
   const [workflowState, setWorkflowState] = useState<import("./agentWorkflowStore").AgentWorkflowState>({
+    agentId: "",
     isRunning: false,
     executedNodes: [],
   });
   const pendingResolvers = useRef<Record<string, PendingResolver>>({});
   const currentAgentRunLogIdRef = useRef<string | undefined>(undefined);
   const currentNodeExecIdRef = useRef<string | undefined>(undefined);
-  const cancelWorkflowRef = useRef<(agentId: string) => void>(() => {});
+  const cancelWorkflowRef = useRef<(runKey: string) => void>(() => {});
   const { setAgentState, clearAgentState, registerCancelFn, unregisterCancelFn } = useAgentWorkflowStore();
 
   /**
@@ -136,14 +139,14 @@ export function useAgentWorkflow() {
   const modelManifests = useModelManifests();
 
   const waitForResponse = useCallback(
-    (requestId: string): Promise<InferenceCompletedResponse | InferenceCancelledResponse> => {
+    (requestId: string, runKey: string): Promise<InferenceCompletedResponse | InferenceCancelledResponse> => {
       return new Promise((resolve, reject) => {
         const timeout = window.setTimeout(() => {
           delete pendingResolvers.current[requestId];
           cancelRequest(requestId).catch(() => {});
           reject(new Error("Agent inference timed out"));
-        }, 60000);
-        pendingResolvers.current[requestId] = { resolve, reject, timeout };
+        }, INFERENCE_TIMEOUT_MS);
+        pendingResolvers.current[requestId] = { runKey, resolve, reject, timeout };
       });
     },
     [cancelRequest],
@@ -188,6 +191,7 @@ export function useAgentWorkflow() {
         parameters?: Record<string, any>;
         stream?: boolean;
         toolset?: WorkflowToolDefinition[];
+        runKey?: string;
       }): Promise<string | null> => {
         const executableTools: ExecutableToolDefinition[] = (opts.toolset ?? []).map(toExecutableTool);
 
@@ -204,7 +208,7 @@ export function useAgentWorkflow() {
           return null;
         }
 
-        const response = await waitForResponse(requestId);
+        const response = await waitForResponse(requestId, opts.runKey ?? "global");
         if (response.status === "cancelled") {
           return null;
         }
@@ -218,22 +222,24 @@ export function useAgentWorkflow() {
 
   /**
    * Execute an agent workflow.
-   * State changes are written to both the local hook state (backward compat) and
-   * the global agentWorkflowStore so other components (e.g. WidgetParticipants)
-   * can subscribe to the same execution, regardless of which component initiated it.
+   * State is scoped to a runKey = "${chatId ?? "global"}::${agentId}" so the same
+   * agent running in different chats gets independent state entries in the store.
    */
   const executeWorkflow = useCallback(
     async (agent: AgentType, triggerContext?: TriggerContext | string, onProgress?: (nodeId: string, result: NodeExecutionResult) => void): Promise<string | null> => {
-      const startState = { isRunning: true, executedNodes: [] as string[], currentNodeId: undefined, error: undefined };
+      const chatId = typeof triggerContext === "object" && triggerContext !== null ? triggerContext.chatId : undefined;
+      const runKey = makeRunKey(agent.id, chatId);
+
+      const startState = { agentId: agent.id, chatId, isRunning: true, executedNodes: [] as string[], currentNodeId: undefined, error: undefined };
       setWorkflowState(startState);
-      setAgentState(agent.id, startState);
-      registerCancelFn(agent.id, () => cancelWorkflowRef.current(agent.id));
+      setAgentState(runKey, startState);
+      registerCancelFn(runKey, () => cancelWorkflowRef.current(runKey));
 
       try {
         const result = await executeWf(agent, triggerContext, deps, (nodeId: string, nodeResult: NodeExecutionResult) => {
           setWorkflowState((prev) => {
             const next = { ...prev, currentNodeId: nodeId, executedNodes: [...prev.executedNodes, nodeId] };
-            setAgentState(agent.id, next);
+            setAgentState(runKey, next);
             return next;
           });
           onProgress?.(nodeId, nodeResult);
@@ -241,7 +247,7 @@ export function useAgentWorkflow() {
 
         setWorkflowState((prev) => {
           const next = { ...prev, isRunning: false, currentNodeId: undefined };
-          setAgentState(agent.id, next);
+          setAgentState(runKey, next);
           return next;
         });
 
@@ -255,37 +261,39 @@ export function useAgentWorkflow() {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         setWorkflowState((prev) => {
           const next = { ...prev, isRunning: false, currentNodeId: undefined, error: errorMessage };
-          setAgentState(agent.id, next);
+          setAgentState(runKey, next);
           return next;
         });
         throw error;
       } finally {
         currentAgentRunLogIdRef.current = undefined;
         currentNodeExecIdRef.current = undefined;
-        unregisterCancelFn(agent.id);
+        unregisterCancelFn(runKey);
         // Ensure the store is cleaned up after a short delay so the UI can
         // display the final state before the card reverts to idle.
-        setTimeout(() => clearAgentState(agent.id), 500);
+        setTimeout(() => clearAgentState(runKey), 500);
       }
     },
     [deps, setAgentState, clearAgentState, registerCancelFn, unregisterCancelFn],
   );
 
   /**
-   * Cancel workflow execution.
+   * Cancel workflow execution identified by runKey.
    * Sets the runner flag to prevent future nodes from executing, and immediately
    * cancels any in-flight inference request so the backend stops generating and
    * waitForResponse returns right away instead of waiting for LLM completion.
    */
   const cancelWorkflow = useCallback(
-    (agentId: string) => {
-      cancelWf(agentId);
+    (runKey: string) => {
+      cancelWf(runKey);
 
-      useUserChoiceStore.getState().actions.cancelChoicesForAgent(agentId);
+      useUserChoiceStore.getState().actions.cancelChoicesForRun(runKey);
 
       // Resolve all pending inference resolvers as "cancelled" so waitForResponse
       // returns immediately, then send the backend cancellation signal.
-      const pendingIds = Object.keys(pendingResolvers.current);
+      const pendingIds = Object.entries(pendingResolvers.current)
+        .filter(([, resolver]) => resolver.runKey === runKey)
+        .map(([requestId]) => requestId);
       for (const requestId of pendingIds) {
         cancelRequest(requestId).catch(() => {});
         const resolver = pendingResolvers.current[requestId];
@@ -300,7 +308,7 @@ export function useAgentWorkflow() {
 
       setWorkflowState((prev) => {
         const next = { ...prev, isRunning: false, currentNodeId: undefined };
-        setAgentState(agentId, next);
+        setAgentState(runKey, next);
         return next;
       });
     },
@@ -309,11 +317,8 @@ export function useAgentWorkflow() {
 
   cancelWorkflowRef.current = cancelWorkflow;
 
-  /**
-   * Check if a specific workflow is running
-   */
-  const isWorkflowRunning = useCallback((agentId: string) => {
-    return isWfRunning(agentId);
+  const isWorkflowRunning = useCallback((runKey: string) => {
+    return isWfRunning(runKey);
   }, []);
 
   return {

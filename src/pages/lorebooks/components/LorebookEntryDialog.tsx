@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BookDown, BookUp, Bot, CheckCircleIcon, User } from "lucide-react";
+import { BookDown, BookUp, Bot, CheckCircleIcon, CircleDot, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StepButton } from "@/components/ui/step-button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLorebookStoreActions } from "@/hooks/lorebookStore";
+import { useLorebookStoreActions, useLorebooks } from "@/hooks/lorebookStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { basicPromptSuggestionList } from "@/schema/chat-message-schema";
 import { CreateLorebookEntryParams, createLorebookEntrySchema, LorebookEntry, UpdateLorebookEntryParams } from "@/schema/lorebook-schema";
@@ -50,7 +51,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, groupKeys }: LorebookEntryDialogProps) {
   const currentProfile = useCurrentProfile();
-  const { createLorebookEntry, updateLorebookEntry } = useLorebookStoreActions();
+  const { createLorebookEntry, updateLorebookEntry, indexEntry } = useLorebookStoreActions();
+  const lorebooks = useLorebooks();
+  const lorebook = lorebooks.find((lb) => lb.id === lorebookId);
+  const ragEnabled = lorebook?.rag_enabled && !!lorebook?.embedding_model_id;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!entry;
 
@@ -115,43 +119,60 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
 
     try {
       if (isEditing && entry) {
-        // Update existing entry
-        // No need to spread values, they match UpdateLorebookEntryParams structure
         const updateData: UpdateLorebookEntryParams = values;
         await updateLorebookEntry(entry.id, updateData);
+        if (ragEnabled) {
+          try {
+            await indexEntry(lorebookId, entry.id);
+          } catch (err) {
+            toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+          }
+        }
       } else {
-        // Create new entry
-        // Combine form values with required fields for creation
         const createData: CreateLorebookEntryParams = {
           ...values,
           lorebook_id: lorebookId,
-          vector_content: null, // Handle vector content separately if needed
-          extra: {}, // Add extra data if needed
+          vector_content: null,
+          extra: {},
         };
-        await createLorebookEntry(createData);
+        const newEntry = await createLorebookEntry(createData);
+        if (ragEnabled && newEntry) {
+          try {
+            await indexEntry(lorebookId, newEntry.id);
+          } catch (err) {
+            toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+          }
+        }
       }
 
-      // Close dialog (resetting happens in useEffect)
       onOpenChange(false);
     } catch (error) {
       console.error(`Failed to ${isEditing ? "update" : "create"} lorebook entry:`, error);
-      // Optionally show an error message to the user
+      toast.error(`Failed to ${isEditing ? "update" : "create"} entry: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handle dialog close/reset
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
-    // Form reset is handled by the useEffect hook based on `open` state
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="large" className="overflow-hidden">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Entry" : "Create New Entry"}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {isEditing ? "Edit Entry" : "Create New Entry"}
+            {ragEnabled && isEditing && entry && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${entry.vector_content != null ? "bg-green-500/15 text-green-600" : "bg-muted text-muted-foreground"}`}
+              >
+                <CircleDot className="h-3 w-3" />
+                {entry.vector_content != null ? "Indexed" : "Not Indexed"}
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -171,8 +192,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
 
               <DialogBody>
                 <TabsContent value="basic" className="space-y-4">
-                  {/* Combine Title and Keywords in one row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="comment"
@@ -197,13 +217,19 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                       render={({ field }) => (
                         <FormItem>
                           <div className="flex items-center gap-1">
-                            <FormLabel>Keywords</FormLabel>
+                            <FormLabel>Keywords{ragEnabled && <span className="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>}</FormLabel>
                             <HelpTooltip>
-                              <p>Keywords that trigger this entry to be included. Press Enter or comma to add.</p>
+                              <p>Keywords that trigger this entry. Press Enter or comma to add.</p>
+                              {ragEnabled && (
+                                <p className="mt-1">
+                                  RAG is enabled: a keyword match boosts the entry's similarity score so it can activate even when semantic similarity alone is below the threshold. Leave empty to rely
+                                  only on similarity.
+                                </p>
+                              )}
                             </HelpTooltip>
                           </div>
                           <FormControl>
-                            <CommandTagInput placeholder="Add keywords..." value={field.value || []} onChange={field.onChange} />
+                            <CommandTagInput placeholder={ragEnabled ? "Optional — add keywords to boost matches…" : "Add keywords..."} value={field.value || []} onChange={field.onChange} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -324,7 +350,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             <div className="flex items-center gap-1">
                               <FormLabel>Enabled</FormLabel>
                               <HelpTooltip>
-                                <p>When disabled, this entry will never be included in the context regardless of keyword matches.</p>
+                                <p>When disabled, this entry will never be included in the context regardless of similarity or keyword matches.</p>
                               </HelpTooltip>
                             </div>
                           </div>
@@ -344,7 +370,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             <div className="flex items-center gap-1">
                               <FormLabel>Constant</FormLabel>
                               <HelpTooltip>
-                                <p>If enabled, this entry is always included, ignoring keywords.</p>
+                                <p>If enabled, this entry is always included, bypassing both similarity and keyword matching.</p>
                               </HelpTooltip>
                             </div>
                           </div>
@@ -358,7 +384,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                 </TabsContent>
 
                 <TabsContent value="advanced" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <FormField
                       control={form.control}
                       name="group_key"
@@ -421,7 +447,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                           <div className="flex items-center gap-1">
                             <FormLabel>Trigger Chance (%)</FormLabel>
                             <HelpTooltip>
-                              <p>The probability (1-100%) that this entry will be included if its keywords match.</p>
+                              <p>The probability (1-100%) that this entry will be included once it matches.</p>
                             </HelpTooltip>
                           </div>
                           <FormControl>

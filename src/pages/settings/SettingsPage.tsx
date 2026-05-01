@@ -16,7 +16,7 @@ import "./styles/settings.css";
 
 export default function Settings() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const { setTheme, setFontSize, setAvatarBorderRadius } = useThemeStore();
+  const { setFontSize, setAvatarBorderRadius } = useThemeStore();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
 
   const currentProfile = useCurrentProfile();
@@ -55,7 +55,6 @@ export default function Settings() {
   useEffect(() => {
     if (currentProfile?.settings) {
       setSettings(currentProfile.settings);
-      setTheme(currentProfile.settings.appearance.theme);
       if (currentProfile.settings.appearance.fontSize != null) {
         setFontSize(currentProfile.settings.appearance.fontSize);
       }
@@ -63,7 +62,7 @@ export default function Settings() {
     } else {
       setSettings(defaultSettings);
     }
-  }, [currentProfile, setTheme, setFontSize, setAvatarBorderRadius]);
+  }, [currentProfile, setFontSize, setAvatarBorderRadius]);
 
   // Get app version on component mount
   useEffect(() => {
@@ -101,10 +100,6 @@ export default function Settings() {
 
       setSettings(updatedSettings);
 
-      // Sync theme changes with ThemeStore immediately for preview
-      if (section === "appearance" && key === "theme") {
-        setTheme(value);
-      }
       // Sync fontSize changes with ThemeStore immediately for preview
       if (section === "appearance" && key === "fontSize") {
         setFontSize(value);
@@ -124,7 +119,7 @@ export default function Settings() {
         debouncedSave(updatedSettings);
       }, 800) as unknown as number;
     },
-    [settings, setTheme, setFontSize, setAvatarBorderRadius, debouncedSave],
+    [settings, setFontSize, setAvatarBorderRadius, debouncedSave],
   );
 
   // const selectDirectory = useCallback(async () => {

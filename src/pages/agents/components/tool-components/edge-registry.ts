@@ -25,9 +25,9 @@ export namespace EdgeRegistry {
       color: "#3b82f6", // blue-500
       strokeWidth: 2,
       getStyle: (selected) => ({
-        stroke: selected ? "hsl(var(--primary))" : "#3b82f6",
+        stroke: selected ? "var(--primary)" : "#3b82f6",
         strokeWidth: selected ? 4 : 2,
-        filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))" : undefined,
+        filter: selected ? "drop-shadow(0 0 8px color-mix(in oklab, var(--primary) 80%, transparent))" : undefined,
         zIndex: selected ? 1000 : 1,
       }),
     });
@@ -39,9 +39,9 @@ export namespace EdgeRegistry {
       color: "#eab308", // yellow-500
       strokeWidth: 2,
       getStyle: (selected) => ({
-        stroke: selected ? "hsl(var(--primary))" : "#eab308",
+        stroke: selected ? "var(--primary)" : "#eab308",
         strokeWidth: selected ? 4 : 2,
-        filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))" : undefined,
+        filter: selected ? "drop-shadow(0 0 8px color-mix(in oklab, var(--primary) 80%, transparent))" : undefined,
         zIndex: selected ? 1000 : 1,
       }),
     });
@@ -53,9 +53,9 @@ export namespace EdgeRegistry {
       color: "#8b5cf6", // violet-500
       strokeWidth: 2,
       getStyle: (selected) => ({
-        stroke: selected ? "hsl(var(--primary))" : "#6b7280",
+        stroke: selected ? "var(--primary)" : "#6b7280",
         strokeWidth: selected ? 4 : 2,
-        filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))" : undefined,
+        filter: selected ? "drop-shadow(0 0 8px color-mix(in oklab, var(--primary) 80%, transparent))" : undefined,
         zIndex: selected ? 1000 : 1,
       }),
     });
@@ -67,9 +67,9 @@ export namespace EdgeRegistry {
       color: "#05dcd1", // indigo-500
       strokeWidth: 2,
       getStyle: (selected) => ({
-        stroke: selected ? "hsl(var(--primary))" : "#05dcd1",
+        stroke: selected ? "var(--primary)" : "#05dcd1",
         strokeWidth: selected ? 4 : 2,
-        filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))" : undefined,
+        filter: selected ? "drop-shadow(0 0 8px color-mix(in oklab, var(--primary) 80%, transparent))" : undefined,
         zIndex: selected ? 1000 : 1,
       }),
     });
@@ -96,9 +96,9 @@ export namespace EdgeRegistry {
     if (!definition) {
       // Default style for unknown edge types
       return {
-        stroke: selected ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
+        stroke: selected ? "var(--primary)" : "var(--muted-foreground)",
         strokeWidth: selected ? 4 : 2,
-        filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))" : undefined,
+        filter: selected ? "drop-shadow(0 0 8px color-mix(in oklab, var(--primary) 80%, transparent))" : undefined,
         zIndex: selected ? 1000 : 1,
       };
     }
@@ -106,7 +106,7 @@ export namespace EdgeRegistry {
   }
 
   export function getColor(type: string): string {
-    return registry.get(type)?.color || "hsl(var(--muted-foreground))";
+    return registry.get(type)?.color || "var(--muted-foreground)";
   }
 
   export function isValidType(type: string): boolean {

@@ -36,7 +36,7 @@ async function callProviderConverseEndpoint(event: AIEvent, params: InferencePar
 
   // 3. Prepare Options
   // Extract provider specific options from params.parameters
-  const providerOptions = getProviderOptions(params.modelSpecs.engine as Engine, params.parameters || {});
+  const providerOptions = getProviderOptions(params.modelSpecs.engine as Engine, params.parameters || {}, params.modelSpecs.config?.model);
 
   const parameters = params.parameters as Record<string, any>;
   // Ensure defaults
@@ -56,7 +56,17 @@ async function callProviderConverseEndpoint(event: AIEvent, params: InferencePar
     presencePenalty: parameters.presence_penalty,
   };
 
-  // console.log("finalParams", finalParams);
+  event.reportResolvedParams?.({
+    maxOutputTokens: finalParams.maxOutputTokens,
+    temperature: finalParams.temperature,
+    topP: finalParams.topP,
+    topK: finalParams.topK,
+    seed: finalParams.seed,
+    stopSequences: finalParams.stopSequences,
+    frequencyPenalty: finalParams.frequencyPenalty,
+    presencePenalty: finalParams.presencePenalty,
+    providerOptions: providerOptions as Record<string, unknown>,
+  });
 
   // 4. Execute
   if (params.stream) {

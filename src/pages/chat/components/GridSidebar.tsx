@@ -40,7 +40,7 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
       <div className="left-0 top-0 h-full justify-center flex flex-col items-start mt-1 gap-2">
         <Separator orientation="horizontal" className="w-full my-0" />
         {hiddenWidgets
-          .filter((widget) => widget.id !== "memory")
+          .filter((widget) => widget.id in widgetConfigurations)
           .map((widget) => (
             <Fragment key={widget.id}>
               <Popover>

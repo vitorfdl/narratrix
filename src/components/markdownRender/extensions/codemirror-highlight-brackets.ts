@@ -14,14 +14,13 @@ const highlightQuoteMark = Decoration.mark({
 // Theme to style the decorations, referencing theme variables
 const highlightTheme = EditorView.baseTheme({
   ".cm-highlightedBracket": {
-    // backgroundColor: "hsla(var(--primary) / 0.4)", // Adjusted opacity slightly
-    backgroundColor: "hsla(var(--primary) / 0.15)",
+    backgroundColor: "color-mix(in oklab, var(--primary) 15%, transparent)",
     borderRadius: "3px",
-    color: "hsl(var(--primary))", // Use HSL format for consistency
+    color: "var(--primary)",
   },
   ".cm-highlightedQuote": {
     borderRadius: "3px",
-    color: "hsl(var(--primary))",
+    color: "var(--primary)",
     fontWeight: "bold",
   },
 });

@@ -1,0 +1,58 @@
+{
+  "$schema": "../../../../json_schema/model-schema.json",
+  "id": "ollama_embedding",
+  "name": "Ollama Embeddings",
+  "description": "Integration with locally-hosted Ollama embedding models",
+  "website": "https://ollama.com/",
+  "type": "embedding",
+  "inference_type": ["embedding"],
+  "engine": "ollama",
+  "fields": [
+    {
+      "key": "base_url",
+      "label": "Base URL",
+      "placeholder": "Ollama server address",
+      "required": true,
+      "default": "http://127.0.0.1:11434",
+      "field_type": "url"
+    },
+    {
+      "key": "api_key",
+      "label": "API Key",
+      "placeholder": "API key (optional, for remote instances)",
+      "required": false,
+      "field_type": "secret"
+    },
+    {
+      "key": "model",
+      "label": "Model",
+      "placeholder": "The Ollama embedding model to use",
+      "required": true,
+      "field_type": "string",
+      "hints": [
+        "nomic-embed-text",
+        "mxbai-embed-large",
+        "all-minilm",
+        "snowflake-arctic-embed"
+      ],
+      "request": {
+        "label": "Get Models",
+        "method": "GET",
+        "url": "http://127.0.0.1:11434/api/tags",
+        "response": {
+          "label": "name",
+          "value": "name",
+          "parse": {
+            "models": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "name": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

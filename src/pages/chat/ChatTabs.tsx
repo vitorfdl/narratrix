@@ -3,6 +3,7 @@ import { arrayMove, horizontalListSortingStrategy, SortableContext, useSortable 
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useState } from "react";
 import { LuPlus, LuX } from "react-icons/lu";
+import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -51,7 +52,7 @@ function SortableTab({ tab, index, activeTab, onTabChange, onCloseTab, onRenameR
           <div
             className={cn(
               "group flex items-center px-2 py-1 rounded-t-lg transition-colors font-medium cursor-pointer select-none",
-              activeTab === tab.id ? "bg-content text-foreground" : "bg-background text-muted-foreground hover:text-foreground",
+              activeTab === tab.id ? "bg-content text-foreground" : "bg-transparent text-muted-foreground hover:bg-foreground/4 hover:text-foreground",
               isSortableDragging && "cursor-grabbing",
             )}
             onClick={() => !isSortableDragging && onTabChange(tab.id)}
@@ -73,7 +74,7 @@ function SortableTab({ tab, index, activeTab, onTabChange, onCloseTab, onRenameR
                 e.stopPropagation();
                 onCloseTab(tab.id);
               }}
-              className="opacity-30 group-hover:opacity-100 hover:text-destructive transition-opacity ml-auto flex-shrink-0 pointer-events-auto"
+              className="opacity-30 group-hover:opacity-100 hover:text-destructive transition-opacity ml-auto shrink-0 pointer-events-auto"
             >
               <LuX className="h-4 w-4" />
             </button>
@@ -160,7 +161,7 @@ export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, on
   };
 
   return (
-    <div className="flex items-center border-b border-border bg-background/80 mt-1">
+    <div className="flex items-center bg-sidebar pt-1">
       <ScrollArea className="flex-1">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex items-center gap-1 px-2">
@@ -190,7 +191,9 @@ export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, on
               onDuplicateRequest={onDuplicateRequest}
               onDeleteRequest={onDeleteRequest}
             >
-              <LuPlus className="h-4 w-4 text-foreground" />
+              <Button variant="ghost" size="sm" className="px-2">
+                <LuPlus className="h-4 w-4 text-foreground" />
+              </Button>
             </ChatMenuDropdown>
           </div>
 
@@ -200,7 +203,7 @@ export function ChatTabs({ tabs, allChats, profileId, activeTab, onTabChange, on
                 <div
                   className={cn(
                     "group flex items-center px-2 py-1 rounded-t-lg transition-colors font-medium cursor-grabbing select-none shadow-lg",
-                    activeTab === draggedTab.id ? "bg-content text-foreground" : "bg-background text-muted-foreground",
+                    activeTab === draggedTab.id ? "bg-content text-foreground" : "bg-sidebar text-muted-foreground",
                   )}
                 >
                   <span className="mr-2 max-h-6 text-sm overflow-hidden text-ellipsis whitespace-nowrap pointer-events-none">{draggedTab.name}</span>

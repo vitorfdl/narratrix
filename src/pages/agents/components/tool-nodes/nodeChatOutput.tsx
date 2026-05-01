@@ -1,9 +1,10 @@
 import { MessageCircle, User } from "lucide-react";
 import { memo } from "react";
 import { useChatStore } from "@/hooks/chatStore";
+import type { TriggerContext } from "@/schema/agent-schema";
 import { ChatMessageType } from "@/schema/chat-message-schema";
 import { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
-import { getNextMessagePosition } from "@/services/chat-message-service";
+import { createChatMessage, getChatMessagesByChatId, getNextMessagePosition } from "@/services/chat-message-service";
 import { NodeBase, NodeInput, NodeOutput } from "../tool-components/NodeBase";
 import { NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -12,7 +13,7 @@ import { NodeProps } from "./nodeTypes";
 /**
  * Node Execution
  */
-const executeChatOutputNode: NodeExecutor = async (node, inputs, context, agent): Promise<NodeExecutionResult> => {
+const executeChatOutputNode: NodeExecutor = async (node, inputs, context, agent, deps): Promise<NodeExecutionResult> => {
   const response: string = typeof inputs.response === "string" ? inputs.response : "";
   const participantId = typeof inputs.characterId === "string" ? inputs.characterId : undefined;
 
@@ -27,33 +28,51 @@ const executeChatOutputNode: NodeExecutor = async (node, inputs, context, agent)
   const isUser = participantId === "user";
 
   try {
+    const triggerCtx = context.nodeValues.get("workflow-trigger-context") as TriggerContext | undefined;
+    const executionId = context.nodeValues.get("workflow-execution-id") as string | undefined;
+
+    // Prefer the chat that triggered the workflow; fall back to the currently selected chat
+    // only when no chatId is available (e.g. legacy string-based trigger contexts).
     const store = useChatStore.getState();
-    const chatId = store.selectedChat?.id;
-    const chapterId = store.selectedChat?.active_chapter_id;
+    let chatId: string | undefined = triggerCtx?.chatId ?? context.chatId;
+    let chapterId: string | undefined;
+
+    if (chatId) {
+      const targetChat = await deps.getChatById(chatId);
+      chapterId = targetChat?.active_chapter_id ?? undefined;
+    } else {
+      chatId = store.selectedChat?.id;
+      chapterId = store.selectedChat?.active_chapter_id ?? undefined;
+    }
 
     if (!chatId || !chapterId) {
       return { success: false, error: "No active chat/chapter to write output" };
     }
 
-    const triggerContext = context.nodeValues.get("workflow-trigger-context") as Record<string, unknown> | undefined;
-    const executionId = context.nodeValues.get("workflow-execution-id") as string | undefined;
-
     const position = await getNextMessagePosition(chatId, chapterId);
-    const newMessage = await store.actions.addChatMessage({
+    const newMessage = await createChatMessage({
       character_id: isUser ? null : participantId || null,
       type: (isUser ? "user" : "character") as ChatMessageType,
       messages: [response],
+      message_index: 0,
       position,
+      chat_id: chatId,
+      chapter_id: chapterId,
       disabled: false,
       tokens: null,
       extra: {
         script: "agent",
         name: agent.name,
         agentId: agent.id,
-        triggerContext,
+        triggerContext: triggerCtx as Record<string, unknown> | undefined,
         executionId,
       },
     });
+
+    if (useChatStore.getState().selectedChat?.id === chatId) {
+      const updatedMessages = await getChatMessagesByChatId(chatId, chapterId);
+      useChatStore.setState({ selectedChatMessages: updatedMessages });
+    }
 
     context.nodeValues.set(`${node.id}::out-message-id`, newMessage.id);
 
