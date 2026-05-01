@@ -122,13 +122,11 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
         const updateData: UpdateLorebookEntryParams = values;
         await updateLorebookEntry(entry.id, updateData);
         if (ragEnabled) {
-          indexEntry(lorebookId, entry.id)
-            .then(() => {
-              toast.success("Entry indexed successfully");
-            })
-            .catch((err: unknown) => {
-              toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-            });
+          try {
+            await indexEntry(lorebookId, entry.id);
+          } catch (err) {
+            toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+          }
         }
       } else {
         const createData: CreateLorebookEntryParams = {
@@ -139,19 +137,18 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
         };
         const newEntry = await createLorebookEntry(createData);
         if (ragEnabled && newEntry) {
-          indexEntry(lorebookId, newEntry.id)
-            .then(() => {
-              toast.success("Entry indexed successfully");
-            })
-            .catch((err: unknown) => {
-              toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-            });
+          try {
+            await indexEntry(lorebookId, newEntry.id);
+          } catch (err) {
+            toast.error(`Indexing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+          }
         }
       }
 
       onOpenChange(false);
     } catch (error) {
       console.error(`Failed to ${isEditing ? "update" : "create"} lorebook entry:`, error);
+      toast.error(`Failed to ${isEditing ? "update" : "create"} entry: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }

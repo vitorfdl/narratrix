@@ -259,16 +259,24 @@ function RagTestDialog({ open, onOpenChange, lorebook, entries }: { open: boolea
     try {
       const { embedding: queryVector } = await embedText(lorebook.embedding_model_id, query.trim());
       const scored: RagTestResult[] = [];
+      let dimensionMismatchCount = 0;
       for (const entry of entries) {
         const entryVector = parseStoredVector(entry.vector_content);
         if (!entryVector) {
           continue;
         }
-        const similarity = cosineSimilarity(queryVector as number[], entryVector);
+        if (entryVector.length !== queryVector.length) {
+          dimensionMismatchCount++;
+          continue;
+        }
+        const similarity = cosineSimilarity(queryVector, entryVector);
         scored.push({ entryId: entry.id, comment: entry.comment, similarity, content: entry.content, enabled: entry.enabled });
       }
       scored.sort((a, b) => b.similarity - a.similarity);
       setResults(scored);
+      if (dimensionMismatchCount > 0) {
+        toast.warning(`Skipped ${dimensionMismatchCount} entr${dimensionMismatchCount === 1 ? "y" : "ies"} indexed under a different embedding model. Re-index this lorebook.`);
+      }
     } catch (err) {
       toast.error(`Search failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
@@ -379,7 +387,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
       await indexAllEntries(lorebookId, (indexed, total) => {
         toast.loading(`Indexing entries: ${indexed}/${total}`, { id: "indexing-progress" });
       });
-      toast.success("All entries indexed successfully", { id: "indexing-progress" });
+      toast.dismiss("indexing-progress");
     } catch (error) {
       toast.error(`Indexing failed: ${error instanceof Error ? error.message : "Unknown error"}`, { id: "indexing-progress" });
     }
@@ -388,9 +396,8 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
   const handleClearIndex = async () => {
     try {
       await clearIndex(lorebookId);
-      toast.success("Index cleared");
-    } catch (_error) {
-      toast.error("Failed to clear index");
+    } catch (error) {
+      toast.error(`Failed to clear index: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
@@ -482,6 +489,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
         } catch (error) {
           console.error("Failed to update entry priorities after drag:", error);
           setEntries(entries);
+          toast.error(`Failed to reorder entries: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
       }
     }
@@ -493,6 +501,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
       await updateLorebookEntry(entry.id, { enabled: !entry.enabled });
     } catch (error) {
       console.error("Failed to toggle entry enabled state:", error);
+      toast.error(`Failed to toggle entry: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
@@ -567,7 +576,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
               <LuFlaskConical size={14} className="mr-1" />
               Test Search
             </Button>
-            <Button variant="outline" size="sm" onClick={handleIndexAll} disabled={isIndexing}>
+            <Button variant="outline" size="sm" onClick={handleIndexAll} disabled={isIndexing || !lorebook?.embedding_model_id}>
               <LuDatabase size={14} className="mr-1" />
               Index All
             </Button>
@@ -755,6 +764,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
               setEntryToDelete(null);
             } catch (error) {
               console.error("Failed to delete entry:", error);
+              toast.error(`Failed to delete entry: ${error instanceof Error ? error.message : "Unknown error"}`);
               setEntryToDelete(null);
             }
           }}

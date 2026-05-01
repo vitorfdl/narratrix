@@ -248,7 +248,10 @@ export const useLorebookStore = create<LorebookState>()(
               set({ indexingStatus: status });
             }
           } catch (err: any) {
-            console.warn("Failed to load indexing status:", err);
+            console.error("Failed to load indexing status:", err);
+            if (get().selectedLorebookId === lorebookId) {
+              set({ error: `Failed to load indexing status: ${err.message}` });
+            }
           }
         },
         indexEntry: async (lorebookId, entryId) => {
@@ -302,6 +305,7 @@ export const useLorebookStore = create<LorebookState>()(
             }
           } catch (err: any) {
             set({ error: `Failed to clear index: ${err.message}`, isIndexing: false });
+            throw err;
           }
         },
 

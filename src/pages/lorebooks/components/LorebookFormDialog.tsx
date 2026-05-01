@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
@@ -141,6 +142,7 @@ export function LorebookFormDialog({ open, onOpenChange, profileId, initialLoreb
       onOpenChange(false);
     } catch (error) {
       console.error(`Failed to ${isEditing ? "update" : "create"} lorebook:`, error);
+      toast.error(`Failed to ${isEditing ? "update" : "create"} lorebook: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -87,7 +87,7 @@ export async function getLorebookContent(orderedLorebookIds: string[], budget: n
 
     const enabledEntries = lorebook.entries.filter((entry) => entry.enabled);
 
-    // Compute query embedding once per RAG-enabled lorebook
+    // RAG uses lorebook.max_depth as the scan window for the query (per-entry depth is irrelevant when matching by similarity).
     let queryEmbedding: number[] | null = null;
     if (lorebook.rag_enabled && lorebook.embedding_model_id) {
       const ragScanDepth = lorebook.max_depth > 0 ? Math.min(lorebook.max_depth, reversedMessages.length) : reversedMessages.length;
@@ -96,9 +96,9 @@ export async function getLorebookContent(orderedLorebookIds: string[], budget: n
       if (queryText.trim()) {
         try {
           const embedResult = await embedText(lorebook.embedding_model_id, queryText);
-          queryEmbedding = embedResult.embedding as number[];
+          queryEmbedding = embedResult.embedding;
         } catch (error) {
-          console.warn(`Failed to embed query for lorebook ${lorebook.id}, falling back to keyword-only:`, error);
+          console.error(`Failed to embed query for lorebook "${lorebook.name}" (${lorebook.id}). Falling back to keyword matching for entries with keywords:`, error);
         }
       }
     }
@@ -114,9 +114,9 @@ export async function getLorebookContent(orderedLorebookIds: string[], budget: n
         }
 
         if (queryEmbedding) {
-          // RAG-only: semantic similarity is the sole trigger
           const entryVector = parseStoredVector(entry.vector_content);
-          if (entryVector) {
+          // Skip entries whose vector dimension doesn't match the current query — happens after switching embedding models without re-indexing.
+          if (entryVector && entryVector.length === queryEmbedding.length) {
             const similarity = cosineSimilarity(queryEmbedding, entryVector);
             if (similarity >= lorebook.similarity_threshold) {
               triggered = true;

@@ -16,6 +16,10 @@ export async function indexLorebookEntry(lorebookId: string, entryId: string): P
 
   const textToEmbed = entry.content;
   if (!textToEmbed.trim()) {
+    // Clear any stale vector so an entry whose content was emptied stops triggering on old semantics.
+    if (entry.vector_content) {
+      await updateLorebookEntry(entryId, { vector_content: null });
+    }
     return;
   }
 
@@ -79,8 +83,10 @@ export function parseStoredVector(vectorContent: string | null | undefined): num
     if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "number") {
       return parsed;
     }
+    console.warn("parseStoredVector: vector_content is not a non-empty number array; treating as unindexed");
     return null;
-  } catch {
+  } catch (error) {
+    console.error("parseStoredVector: failed to JSON.parse vector_content; treating as unindexed:", error);
     return null;
   }
 }
