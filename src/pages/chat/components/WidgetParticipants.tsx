@@ -572,14 +572,20 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
               <LuSettings className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-64 p-0">
-            <div className="px-3 py-2 border-b border-border/40">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Display</p>
+          <PopoverContent side="top" align="start" sideOffset={4} className="w-72 p-0 overflow-hidden bg-accent border shadow-lg">
+            <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2.5">
+              <LuSettings className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Display Settings</p>
             </div>
-            <div className="p-2 space-y-0.5">
-              <label className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer">
-                <LuEyeOff className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="text-xs flex-1">Hide excluded messages</span>
+            <div className="p-1.5">
+              <label className="group/setting flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-muted/50">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/40 transition-colors group-hover/setting:bg-muted/70">
+                  <LuEyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-xs font-medium leading-tight">Hide disabled messages</span>
+                  <span className="text-[10.5px] leading-tight text-muted-foreground/70">Skip messages from off participants</span>
+                </div>
                 <Switch
                   size="sm"
                   checked={chatSettings?.hideDisabledMessages ?? false}
@@ -590,9 +596,14 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
                   }
                 />
               </label>
-              <label className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer">
-                <LuMessageSquareOff className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="text-xs flex-1">Hide injection messages</span>
+              <label className="group/setting flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-muted/50">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/40 transition-colors group-hover/setting:bg-muted/70">
+                  <LuMessageSquareOff className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-xs font-medium leading-tight">Hide injected messages</span>
+                  <span className="text-[10.5px] leading-tight text-muted-foreground/70">Skip messages added by chat scripts</span>
+                </div>
                 <Switch
                   size="sm"
                   checked={chatSettings?.hideScriptMessages ?? false}
