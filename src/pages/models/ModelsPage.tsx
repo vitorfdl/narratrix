@@ -116,9 +116,7 @@ export default function Models() {
     let filtered = allModels;
 
     if (search) {
-      filtered = filtered.filter(
-        (model) => model.name.toLowerCase().includes(search.toLowerCase()) || model.manifest_id.toLowerCase().includes(search.toLowerCase()),
-      );
+      filtered = filtered.filter((model) => model.name.toLowerCase().includes(search.toLowerCase()) || model.manifest_id.toLowerCase().includes(search.toLowerCase()));
     }
 
     if (settings.filter.type !== "all") {
@@ -341,10 +339,7 @@ export default function Models() {
             </div>
           </div>
 
-          <Tabs
-            value={settings.filter.type}
-            onValueChange={(value) => setSettings((prev: ModelsPageSettings) => ({ ...prev, filter: { type: value as ModelType | "all" } }))}
-          >
+          <Tabs value={settings.filter.type} onValueChange={(value) => setSettings((prev: ModelsPageSettings) => ({ ...prev, filter: { type: value as ModelType | "all" } }))}>
             <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0">
               <TabsTrigger
                 value="all"
@@ -405,9 +400,7 @@ export default function Models() {
                 <LuSearch className="h-5 w-5 text-muted-foreground" />
               </div>
               <h3 className="text-base font-semibold">{hasActiveFilters ? "No models match your filters" : "No models yet"}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {hasActiveFilters ? "Try another search or model type." : "Add a model to make it available in this profile."}
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">{hasActiveFilters ? "Try another search or model type." : "Add a model to make it available in this profile."}</p>
               {!hasActiveFilters && (
                 <Button className="mt-5" onClick={openAddDialog}>
                   <LuPlus className="h-4 w-4" />

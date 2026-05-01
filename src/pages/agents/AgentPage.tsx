@@ -97,8 +97,7 @@ export default function AgentPage() {
   const filteredAgents = useMemo(() => {
     return agents
       .filter((agent) => {
-        const matchesSearch =
-          search === "" || agent.name.toLowerCase().includes(search.toLowerCase()) || agent.description?.toLowerCase().includes(search.toLowerCase());
+        const matchesSearch = search === "" || agent.name.toLowerCase().includes(search.toLowerCase()) || agent.description?.toLowerCase().includes(search.toLowerCase());
         const matchesTags = settings.selectedTags.length === 0 || settings.selectedTags.every((tag) => (agent.tags ?? []).includes(tag));
         return matchesSearch && matchesTags;
       })
@@ -294,14 +293,7 @@ export default function AgentPage() {
             <div className="p-5">
               <div className="grid gap-3" style={{ gridTemplateColumns }}>
                 {filteredAgents.map((agent) => (
-                  <AgentCard
-                    key={agent.id}
-                    agent={agent}
-                    cardSize={settings.view.cardSize}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onToggleFavorite={handleToggleFavorite}
-                  />
+                  <AgentCard key={agent.id} agent={agent} cardSize={settings.view.cardSize} onEdit={handleEdit} onDelete={handleDelete} onToggleFavorite={handleToggleFavorite} />
                 ))}
               </div>
             </div>
