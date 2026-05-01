@@ -51,7 +51,12 @@ Before working on a feature area you're unfamiliar with, check for relevant skil
 
 # Profile Restrictions
 - Whenever you have to access database, ensure to always filter with current Profile ID.
-- Double-check that you're not exposing data from other profiles
+- Double-check that you're not exposing data from other profiles.
+
+# UI Components
+- Use HelpTooltips for help/descriptional text to save space, each information in the UI counts.
+- For Modals, utilize the pattern from "@/components/shared/Dialog" to maintain consistency across the app.
+- Utilize "@/components/shared/DestructiveConfirmDialog" for confirmation on destructive operations.
 
 IMPORTANT: Run `pnpm biome check --fix` before committing. Verify the build passes.
 
