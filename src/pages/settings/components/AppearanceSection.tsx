@@ -1,7 +1,5 @@
 import React from "react";
-import { LuALargeSmall, LuPalette } from "react-icons/lu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { LuALargeSmall } from "react-icons/lu";
 import { StepButton } from "@/components/ui/step-button";
 import { useThemeStore } from "@/hooks/ThemeContext";
 import type { AppSettings } from "@/schema/profiles-schema";
@@ -27,21 +25,6 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({ settings, 
 
   return (
     <SettingSection title="Appearance">
-      <SettingItem icon={<LuPalette className="w-4 h-4" />} label="Theme">
-        <Select value={settings.appearance.theme} onValueChange={(value) => onSettingChange("appearance", "theme", value)}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Select theme" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="dark">Dark</SelectItem>
-            <SelectItem value="light">Light</SelectItem>
-            <SelectItem value="system">System</SelectItem>
-          </SelectContent>
-        </Select>
-      </SettingItem>
-
-      <Separator />
-
       <SettingItem icon={<LuALargeSmall className="w-4 h-4" />} label="Font Size">
         <div className="flex items-center gap-3">
           <span

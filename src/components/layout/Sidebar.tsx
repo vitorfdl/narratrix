@@ -1,5 +1,6 @@
 import { Book, Bot, BoxIcon, ChevronDown, ChevronsLeft, ChevronsRight, Heart, HelpCircle, LogOut, MessageCircle, MessageSquare, Monitor, Moon, Settings, Sun, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import { type Theme, useThemeStore } from "@/hooks/ThemeContext";
 import { useUIStore } from "@/hooks/UIStore";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
+import { updateProfileSettings } from "@/services/profile-service";
 import { useLocalChatTabs } from "@/utils/local-storage";
 
 const RECENT_LIMIT = 12;
@@ -63,6 +65,26 @@ const THEME_OPTIONS: Array<{ id: Theme; icon: React.ReactNode; label: string }> 
 const ProfileMenuContent: React.FC<ProfileMenuProps> = ({ onSettings, onLogout }) => {
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
+  const currentProfile = useCurrentProfile();
+  const { setCurrentProfile } = useProfileActions();
+
+  const handleThemeChange = async (next: Theme) => {
+    setTheme(next);
+    if (!currentProfile?.settings || currentProfile.settings.appearance.theme === next) {
+      return;
+    }
+    const nextSettings = {
+      ...currentProfile.settings,
+      appearance: { ...currentProfile.settings.appearance, theme: next },
+    };
+    try {
+      const updated = await updateProfileSettings(currentProfile.id, nextSettings);
+      setCurrentProfile(updated);
+    } catch (error) {
+      console.error("Failed to persist theme to profile:", error);
+      toast.error("Failed to save theme preference");
+    }
+  };
 
   return (
     <DropdownMenuContent align="start" sideOffset={8} className="w-64 font-ui p-1 bg-accent border shadow-lg rounded-lg">
@@ -74,7 +96,7 @@ const ProfileMenuContent: React.FC<ProfileMenuProps> = ({ onSettings, onLogout }
             return (
               <button
                 key={opt.id}
-                onClick={() => setTheme(opt.id)}
+                onClick={() => handleThemeChange(opt.id)}
                 aria-pressed={isSelected}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 h-6 rounded text-[11px] font-medium transition-colors",
