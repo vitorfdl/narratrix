@@ -2,10 +2,10 @@ import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor,
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cosineSimilarity } from "ai";
-import { ChevronDown } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, Loader2 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
-import { LuBookDown, LuBookUp, LuBot, LuDatabase, LuFilter, LuFlaskConical, LuGripVertical, LuPlus, LuSearch, LuTrash, LuTrash2, LuUser } from "react-icons/lu";
+import { LuBookDown, LuBookUp, LuBot, LuDatabase, LuFilter, LuFlaskConical, LuGripVertical, LuHistory, LuKey, LuPlus, LuSearch, LuSend, LuTrash, LuTrash2, LuUser } from "react-icons/lu";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/DestructiveConfirmDialog";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useIndexingStatus, useIsIndexing, useIsLoadingEntries, useLorebookStoreActions, useLorebooks, useSelectedLorebookEntries } from "@/hooks/lorebookStore";
@@ -22,6 +23,7 @@ import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { cn } from "@/lib/utils";
 import type { Lorebook, LorebookEntry } from "@/schema/lorebook-schema";
 import { embedText } from "@/services/embedding-service";
+import { KEYWORD_MATCH_BOOST, matchKeywords } from "@/services/inference/formatter/apply-lorebook";
 import { parseStoredVector } from "@/services/lorebook-indexing-service";
 import { LorebookEntryDialog } from "./LorebookEntryDialog";
 
@@ -110,22 +112,21 @@ function SortableEntryRow({ entry, onToggleEnabled, onEdit, onDelete, compact = 
       <TableCell className="w-[4%] max-w-[50px] text-center">
         <div className={cn("inline-block h-2.5 w-2.5 rounded-full", entry.constant ? "bg-primary" : "bg-muted")} title={entry.constant ? "Constant" : "Not Constant"} />
       </TableCell>
-      {!ragEnabled && (
-        <TableCell className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>
-          <div className="flex flex-wrap gap-1 justify-center">
-            {entry.keywords.slice(0, 2).map((keyword) => (
-              <Badge key={keyword} variant="outline" className={"truncate text-[0.55rem] py-0 px-1 m-0"}>
-                {keyword}
-              </Badge>
-            ))}
-            {entry.keywords.length > 2 && (
-              <Badge variant="outline" className={"text-[0.55rem] py-0 px-1 m-0"}>
-                +{entry.keywords.length - 2}
-              </Badge>
-            )}
-          </div>
-        </TableCell>
-      )}
+      <TableCell className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>
+        <div className="flex flex-wrap gap-1 justify-center">
+          {entry.keywords.slice(0, 2).map((keyword) => (
+            <Badge key={keyword} variant="outline" className={"truncate text-[0.55rem] py-0 px-1 m-0"}>
+              {keyword}
+            </Badge>
+          ))}
+          {entry.keywords.length > 2 && (
+            <Badge variant="outline" className={"text-[0.55rem] py-0 px-1 m-0"}>
+              +{entry.keywords.length - 2}
+            </Badge>
+          )}
+          {entry.keywords.length === 0 && <span className="text-muted-foreground/60 text-[10px] italic">none</span>}
+        </div>
+      </TableCell>
       <TableCell className="w-[10%] text-xs text-center">{entry.priority}</TableCell>
       {ragEnabled && (
         <TableCell className="w-10 text-center">
@@ -154,18 +155,92 @@ interface RagTestResult {
   entryId: string;
   comment: string;
   similarity: number;
+  effectiveScore: number;
+  keywordMatched: boolean;
   content: string;
   enabled: boolean;
 }
 
+interface SearchTiming {
+  embed: number;
+  match: number;
+}
+
 const BELOW_THRESHOLD_PREVIEW = 3;
+const MAX_RECENT_QUERIES = 5;
 const entryLoadingSkeletonKeys = Array.from({ length: 5 }, (_, index) => `entry-loading-${index}`);
+
+function ScoreBar({ score, threshold }: { score: number; threshold: number }) {
+  const passed = score >= threshold;
+  const widthPct = Math.max(0, Math.min(1, score)) * 100;
+  const thresholdPct = Math.max(0, Math.min(1, threshold)) * 100;
+  return (
+    <div className="relative h-1.5 w-full rounded-full bg-muted">
+      <div className={cn("absolute left-0 top-0 h-full rounded-full transition-all", passed ? "bg-green-500" : "bg-muted-foreground/40")} style={{ width: `${widthPct}%` }} />
+      <div className="absolute -top-1 h-3.5 w-0.5 rounded-sm bg-amber-400 shadow-sm" style={{ left: `calc(${thresholdPct}% - 1px)` }} title={`Threshold ${threshold.toFixed(2)}`} />
+    </div>
+  );
+}
+
+function Stat({ label, value, accent, hint }: { label: string; value: string; accent?: "green"; hint?: string }) {
+  return (
+    <div className="flex flex-1 items-center justify-between gap-2 px-3 py-1.5" title={hint}>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={cn("font-mono tabular-nums text-xs font-semibold", accent === "green" && "text-green-500")}>{value}</span>
+    </div>
+  );
+}
+
+function RagTestResultRow({ result, threshold }: { result: RagTestResult; threshold: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const passed = result.effectiveScore >= threshold;
+  const boosted = result.keywordMatched && result.effectiveScore !== result.similarity;
+  const scoreTitle = boosted ? `Similarity ${result.similarity.toFixed(4)} + keyword boost = ${result.effectiveScore.toFixed(4)}` : `Similarity ${result.similarity.toFixed(4)}`;
+  return (
+    <button
+      type="button"
+      onClick={() => setExpanded((v) => !v)}
+      className={cn(
+        "block w-full text-left rounded-md border px-3 py-2 text-sm transition-colors",
+        passed ? "border-green-500/40 bg-green-500/5 hover:bg-green-500/10" : "border-border/60 hover:bg-muted/30 opacity-80",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0 shrink-0 max-w-[40%]">
+          <div className={cn("h-2 w-2 rounded-full shrink-0", passed ? "bg-green-500" : "bg-muted-foreground/40")} />
+          <span className="font-medium truncate">{result.comment || "Untitled"}</span>
+          {result.keywordMatched && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0 border-amber-500/50 text-amber-500" title="Keyword matched — boosted score">
+              <LuKey className="h-2.5 w-2.5 mr-0.5" />K
+            </Badge>
+          )}
+          {!result.enabled && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+              disabled
+            </Badge>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <ScoreBar score={result.effectiveScore} threshold={threshold} />
+        </div>
+        <span className={cn("text-xs font-mono tabular-nums shrink-0 w-14 text-right", passed ? "text-green-500" : "text-muted-foreground")} title={scoreTitle}>
+          {result.effectiveScore.toFixed(4)}
+        </span>
+      </div>
+      {result.content ? (
+        <p className={cn("text-muted-foreground text-xs mt-1.5", expanded ? "whitespace-pre-wrap break-words" : "line-clamp-1")}>{result.content}</p>
+      ) : (
+        <p className="text-muted-foreground/60 text-xs italic mt-1.5">No content</p>
+      )}
+    </button>
+  );
+}
 
 function RagTestResults({ results, threshold }: { results: RagTestResult[]; threshold: number }) {
   const [showAllBelow, setShowAllBelow] = useState(false);
 
-  const activated = useMemo(() => results.filter((r) => r.similarity >= threshold), [results, threshold]);
-  const belowThreshold = useMemo(() => results.filter((r) => r.similarity < threshold), [results, threshold]);
+  const activated = useMemo(() => results.filter((r) => r.effectiveScore >= threshold), [results, threshold]);
+  const belowThreshold = useMemo(() => results.filter((r) => r.effectiveScore < threshold), [results, threshold]);
   const visibleBelow = showAllBelow ? belowThreshold : belowThreshold.slice(0, BELOW_THRESHOLD_PREVIEW);
   const hiddenBelowCount = belowThreshold.length - visibleBelow.length;
 
@@ -174,72 +249,43 @@ function RagTestResults({ results, threshold }: { results: RagTestResult[]; thre
   }
 
   return (
-    <div className="space-y-3">
-      <div className="text-sm font-medium">
-        Activated: <span className="text-green-500">{activated.length}</span>
-        <span className="text-muted-foreground"> / {results.length} indexed</span>
-      </div>
+    <div className="space-y-1.5">
+      {activated.map((r) => (
+        <RagTestResultRow key={r.entryId} result={r} threshold={threshold} />
+      ))}
 
-      <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-        {activated.map((r) => (
-          <div key={r.entryId} className="rounded-md border border-green-500/50 bg-green-500/10 p-3 text-sm">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
-                <span className="font-medium truncate">{r.comment || "Untitled"}</span>
-                {!r.enabled && (
-                  <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
-                    disabled
-                  </Badge>
-                )}
-              </div>
-              <span className="text-xs font-mono tabular-nums shrink-0 text-green-500">{r.similarity.toFixed(4)}</span>
-            </div>
-            <p className="text-muted-foreground text-xs line-clamp-2 pl-4">{r.content}</p>
-          </div>
-        ))}
+      {activated.length > 0 && visibleBelow.length > 0 && (
+        <div className="flex items-center gap-2 py-2 px-1">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-muted-foreground text-[11px] shrink-0">below threshold ({threshold.toFixed(2)})</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+      )}
 
-        {activated.length > 0 && visibleBelow.length > 0 && (
-          <div className="flex items-center gap-2 py-2 px-1">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-muted-foreground text-[11px] shrink-0">below threshold ({threshold.toFixed(2)})</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-        )}
+      {visibleBelow.map((r) => (
+        <RagTestResultRow key={r.entryId} result={r} threshold={threshold} />
+      ))}
 
-        {visibleBelow.map((r) => (
-          <div key={r.entryId} className="rounded-md border border-border p-3 text-sm opacity-50">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-medium truncate">{r.comment || "Untitled"}</span>
-              </div>
-              <span className="text-xs font-mono tabular-nums shrink-0 text-muted-foreground">{r.similarity.toFixed(4)}</span>
-            </div>
-            <p className="text-muted-foreground text-xs line-clamp-1 truncate">{r.content}</p>
-          </div>
-        ))}
+      {hiddenBelowCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAllBelow(true)}
+          className="flex items-center justify-center gap-1 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronDown className="h-3.5 w-3.5" />
+          Show {hiddenBelowCount} more
+        </button>
+      )}
 
-        {hiddenBelowCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowAllBelow(true)}
-            className="flex items-center justify-center gap-1 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-            Show {hiddenBelowCount} more
-          </button>
-        )}
-
-        {showAllBelow && belowThreshold.length > BELOW_THRESHOLD_PREVIEW && (
-          <button
-            type="button"
-            onClick={() => setShowAllBelow(false)}
-            className="flex items-center justify-center gap-1 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Show less
-          </button>
-        )}
-      </div>
+      {showAllBelow && belowThreshold.length > BELOW_THRESHOLD_PREVIEW && (
+        <button
+          type="button"
+          onClick={() => setShowAllBelow(false)}
+          className="flex items-center justify-center gap-1 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Show less
+        </button>
+      )}
     </div>
   );
 }
@@ -249,79 +295,188 @@ function RagTestDialog({ open, onOpenChange, lorebook, entries }: { open: boolea
   const [results, setResults] = useState<RagTestResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [recentQueries, setRecentQueries] = useState<string[]>([]);
+  const [thresholdOverride, setThresholdOverride] = useState<number | null>(null);
+  const [timing, setTiming] = useState<SearchTiming | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSearch = useCallback(async () => {
-    if (!query.trim() || !lorebook.embedding_model_id) {
-      return;
-    }
-    setIsSearching(true);
-    setHasSearched(true);
-    try {
-      const { embedding: queryVector } = await embedText(lorebook.embedding_model_id, query.trim());
-      const scored: RagTestResult[] = [];
-      let dimensionMismatchCount = 0;
-      for (const entry of entries) {
-        const entryVector = parseStoredVector(entry.vector_content);
-        if (!entryVector) {
-          continue;
-        }
-        if (entryVector.length !== queryVector.length) {
-          dimensionMismatchCount++;
-          continue;
-        }
-        const similarity = cosineSimilarity(queryVector, entryVector);
-        scored.push({ entryId: entry.id, comment: entry.comment, similarity, content: entry.content, enabled: entry.enabled });
+  const baseThreshold = lorebook.similarity_threshold ?? 0.7;
+  const threshold = thresholdOverride ?? baseThreshold;
+  const indexedCount = useMemo(() => entries.filter((e) => parseStoredVector(e.vector_content)).length, [entries]);
+
+  const runSearch = useCallback(
+    async (rawQuery: string) => {
+      const q = rawQuery.trim();
+      if (!q || !lorebook.embedding_model_id) {
+        return;
       }
-      scored.sort((a, b) => b.similarity - a.similarity);
-      setResults(scored);
-      if (dimensionMismatchCount > 0) {
-        toast.warning(`Skipped ${dimensionMismatchCount} entr${dimensionMismatchCount === 1 ? "y" : "ies"} indexed under a different embedding model. Re-index this lorebook.`);
+      setIsSearching(true);
+      setHasSearched(true);
+      try {
+        const embedStart = performance.now();
+        const { embedding: queryVector } = await embedText(lorebook.embedding_model_id, q);
+        const embedMs = performance.now() - embedStart;
+
+        const matchStart = performance.now();
+        const scored: RagTestResult[] = [];
+        let dimensionMismatchCount = 0;
+        for (const entry of entries) {
+          const entryVector = parseStoredVector(entry.vector_content);
+          if (!entryVector) {
+            continue;
+          }
+          if (entryVector.length !== queryVector.length) {
+            dimensionMismatchCount++;
+            continue;
+          }
+          const similarity = cosineSimilarity(queryVector, entryVector);
+          const keywordMatched = matchKeywords(q, entry.keywords, entry.case_sensitive, entry.match_partial_words);
+          const effectiveScore = keywordMatched ? Math.min(1, similarity + KEYWORD_MATCH_BOOST) : similarity;
+          scored.push({ entryId: entry.id, comment: entry.comment, similarity, effectiveScore, keywordMatched, content: entry.content, enabled: entry.enabled });
+        }
+        scored.sort((a, b) => b.effectiveScore - a.effectiveScore);
+        const matchMs = performance.now() - matchStart;
+
+        setResults(scored);
+        setTiming({ embed: embedMs, match: matchMs });
+        setRecentQueries((prev) => [q, ...prev.filter((p) => p !== q)].slice(0, MAX_RECENT_QUERIES));
+
+        if (dimensionMismatchCount > 0) {
+          toast.warning(`Skipped ${dimensionMismatchCount} entr${dimensionMismatchCount === 1 ? "y" : "ies"} indexed under a different embedding model. Re-index this lorebook.`);
+        }
+      } catch (err) {
+        toast.error(`Search failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      } finally {
+        setIsSearching(false);
       }
-    } catch (err) {
-      toast.error(`Search failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-    } finally {
-      setIsSearching(false);
-    }
-  }, [query, lorebook.embedding_model_id, entries]);
+    },
+    [lorebook.embedding_model_id, entries],
+  );
+
+  const handleSearch = useCallback(() => runSearch(query), [runSearch, query]);
+
+  const handleRunRecent = useCallback(
+    (recent: string) => {
+      setQuery(recent);
+      runSearch(recent);
+    },
+    [runSearch],
+  );
 
   useEffect(() => {
     if (!open) {
       setQuery("");
       setResults([]);
       setHasSearched(false);
+      setRecentQueries([]);
+      setThresholdOverride(null);
+      setTiming(null);
+      return;
     }
+    const handle = window.setTimeout(() => textareaRef.current?.focus(), 50);
+    return () => window.clearTimeout(handle);
   }, [open]);
 
-  const threshold = lorebook.similarity_threshold ?? 0.7;
+  const stats = useMemo(() => {
+    if (results.length === 0) {
+      return null;
+    }
+    const activated = results.filter((r) => r.effectiveScore >= threshold).length;
+    const keywordHits = results.filter((r) => r.keywordMatched).length;
+    const top = results[0]?.effectiveScore ?? 0;
+    const avg = results.reduce((sum, r) => sum + r.effectiveScore, 0) / results.length;
+    return { activated, keywordHits, top, avg };
+  }, [results, threshold]);
+
+  const totalMs = timing ? timing.embed + timing.match : 0;
+  const canSubmit = !isSearching && query.trim().length > 0 && !!lorebook.embedding_model_id;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="large">
         <DialogHeader>
-          <DialogTitle>Test RAG Search</DialogTitle>
+          <DialogTitle className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2">
+              <LuFlaskConical className="h-4 w-4 text-primary" />
+              Test RAG Search
+            </span>
+            <Badge variant="outline" className="font-mono text-[10px] font-normal">
+              {indexedCount} indexed
+            </Badge>
+          </DialogTitle>
         </DialogHeader>
         <DialogBody className="space-y-4 py-4">
-          <div className="flex gap-2">
-            <Textarea
-              placeholder="Enter a query to test against indexed entries..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="min-h-[80px] flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                  handleSearch();
-                }
-              }}
-            />
+          <div className="space-y-2">
+            <div className="relative">
+              <Textarea
+                ref={textareaRef}
+                placeholder="Type a query, then press Enter to search (Shift+Enter for newline)…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="min-h-[88px] resize-none pr-32"
+                disabled={isSearching}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+              />
+              <Button size="sm" className="absolute bottom-2 right-2" onClick={handleSearch} disabled={!canSubmit}>
+                {isSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LuSend className="h-3.5 w-3.5" />}
+                <span className="ml-1.5">{isSearching ? "Searching" : "Search"}</span>
+              </Button>
+            </div>
+            {recentQueries.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <LuHistory className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">Recent</span>
+                {recentQueries.map((rq) => (
+                  <button
+                    key={rq}
+                    type="button"
+                    onClick={() => handleRunRecent(rq)}
+                    disabled={isSearching}
+                    title={rq}
+                    className="max-w-[220px] truncate rounded-full border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {rq}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-xs">
-              Threshold: <span className="font-medium text-foreground">{threshold.toFixed(2)}</span> · {entries.filter((e) => parseStoredVector(e.vector_content)).length} indexed entries
-            </span>
-            <Button size="sm" onClick={handleSearch} disabled={isSearching || !query.trim()}>
-              {isSearching ? "Searching..." : "Search"}
-            </Button>
+
+          <div
+            className="flex items-center gap-3 rounded-md border border-border/60 bg-muted/20 px-3 py-2"
+            title={`Tune locally to preview which entries activate. Saved threshold is ${baseThreshold.toFixed(2)}.`}
+          >
+            <span className="text-xs font-medium shrink-0">Threshold</span>
+            <Slider min={0} max={1} step={0.01} value={[threshold]} onValueChange={(v) => setThresholdOverride(v[0] ?? baseThreshold)} className="flex-1" />
+            <span className="font-mono tabular-nums text-xs text-foreground shrink-0 w-9 text-right">{threshold.toFixed(2)}</span>
+            {thresholdOverride !== null ? (
+              <button
+                type="button"
+                onClick={() => setThresholdOverride(null)}
+                className="text-[10px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 shrink-0"
+                title={`Reset to saved threshold (${baseThreshold.toFixed(2)})`}
+              >
+                reset
+              </button>
+            ) : (
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">saved</span>
+            )}
           </div>
+
+          {hasSearched && results.length > 0 && stats && (
+            <div className="flex items-stretch divide-x divide-border/60 overflow-hidden rounded-md border border-border/60 bg-muted/20">
+              <Stat label="Activated" value={`${stats.activated} / ${results.length}`} accent="green" />
+              <Stat label="Keyword hits" value={`${stats.keywordHits}`} hint={`Entries whose keywords matched the query (boost +${KEYWORD_MATCH_BOOST.toFixed(2)})`} />
+              <Stat label="Top" value={stats.top.toFixed(3)} />
+              <Stat label="Avg" value={stats.avg.toFixed(3)} />
+              <Stat label="Time" value={`${totalMs.toFixed(0)}ms`} hint={timing ? `embed ${timing.embed.toFixed(0)}ms · match ${timing.match.toFixed(0)}ms` : undefined} />
+            </div>
+          )}
 
           {hasSearched && <RagTestResults results={results} threshold={threshold} />}
         </DialogBody>
@@ -695,7 +850,7 @@ export function LorebookEntries({ lorebookId, compact = false }: LorebookEntries
                         <span className="text-xs">Constant</span>
                       </Button>
                     </TableHead>
-                    {!ragEnabled && <TableHead className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>Keywords</TableHead>}
+                    <TableHead className={cn("w-[15%] max-w-[250px] text-center", compact && "text-xs")}>Keywords</TableHead>
                     <TableHead className="w-[10%] text-center">
                       <Button variant="ghost" size="sm" className={cn("mx-auto font-medium", compact && "text-xs h-8")} onClick={() => handleSort("priority")}>
                         Priority

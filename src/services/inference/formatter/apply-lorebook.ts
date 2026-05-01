@@ -20,10 +20,15 @@ export interface LorebookContentResponse {
   }[];
 }
 
+// Additive boost applied to RAG similarity when one of the entry's keywords matches the recent
+// chat window. Sized so a typical match (boost + low-to-moderate similarity) crosses the default
+// thresholds (0.35–0.7) without making keyword presence an unconditional trigger at very high thresholds.
+export const KEYWORD_MATCH_BOOST = 0.5;
+
 /**
  * Matches keywords in a given text based on entry settings.
  */
-function matchKeywords(text: string, keywords: string[], caseSensitive: boolean, matchPartialWords: boolean): boolean {
+export function matchKeywords(text: string, keywords: string[], caseSensitive: boolean, matchPartialWords: boolean): boolean {
   if (keywords.length === 0) {
     return false; // No keywords to match
   }
@@ -39,6 +44,22 @@ function matchKeywords(text: string, keywords: string[], caseSensitive: boolean,
     }
   }
   return false; // No keywords matched
+}
+
+function entryKeywordMatches(entry: LorebookEntry, reversedMessages: { text: string }[]): boolean {
+  if (entry.keywords.length === 0) {
+    return false;
+  }
+  const scanDepth = entry.depth > 0 ? Math.min(entry.depth, reversedMessages.length) : reversedMessages.length;
+  if (scanDepth === 0) {
+    return false;
+  }
+  for (const message of reversedMessages.slice(0, scanDepth)) {
+    if (matchKeywords(message.text, entry.keywords, entry.case_sensitive, entry.match_partial_words)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export async function getLorebookContent(orderedLorebookIds: string[], budget: number, Messages: InferenceMessage[], lorebookSeparator = "\n---\n"): Promise<LorebookContentResponse> {
@@ -105,7 +126,6 @@ export async function getLorebookContent(orderedLorebookIds: string[], budget: n
 
     for (const entry of enabledEntries) {
       let triggered = false;
-
       if (entry.constant) {
         triggered = true;
       } else {
@@ -113,33 +133,31 @@ export async function getLorebookContent(orderedLorebookIds: string[], budget: n
           continue;
         }
 
+        const keywordMatched = entryKeywordMatches(entry, reversedMessages);
+
         if (queryEmbedding) {
+          // Combined RAG + keyword scoring. Keywords act as an additive boost on top of cosine similarity
+          // so users can author specific triggers that coexist with semantic matching.
           const entryVector = parseStoredVector(entry.vector_content);
-          // Skip entries whose vector dimension doesn't match the current query — happens after switching embedding models without re-indexing.
-          if (entryVector && entryVector.length === queryEmbedding.length) {
-            const similarity = cosineSimilarity(queryEmbedding, entryVector);
-            if (similarity >= lorebook.similarity_threshold) {
-              triggered = true;
-            }
-          }
+          const similarity = entryVector && entryVector.length === queryEmbedding.length ? cosineSimilarity(queryEmbedding, entryVector) : 0;
+          const effectiveScore = keywordMatched ? Math.min(1, similarity + KEYWORD_MATCH_BOOST) : similarity;
+          triggered = effectiveScore >= lorebook.similarity_threshold;
         } else {
-          // Keyword matching (RAG disabled, or embedding failed as graceful fallback)
-          const scanDepth = entry.depth > 0 ? Math.min(entry.depth, reversedMessages.length) : reversedMessages.length;
-          if (scanDepth > 0) {
-            const messagesToScan = reversedMessages.slice(0, scanDepth);
-            for (const message of messagesToScan) {
-              if (matchKeywords(message.text, entry.keywords, entry.case_sensitive, entry.match_partial_words)) {
-                triggered = true;
-                break;
-              }
-            }
-          }
+          // Keyword-only path: RAG disabled or embedding failed.
+          triggered = keywordMatched;
         }
       }
 
-      if (triggered) {
-        candidateEntries.push(entry);
+      if (!triggered) {
+        continue;
       }
+
+      // Per-entry probability gate. Default is 100 (always include).
+      if (entry.trigger_chance < 100 && Math.random() * 100 >= entry.trigger_chance) {
+        continue;
+      }
+
+      candidateEntries.push(entry);
     }
 
     candidateEntries.sort((a, b) => b.priority - a.priority);

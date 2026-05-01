@@ -192,7 +192,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
 
               <DialogBody>
                 <TabsContent value="basic" className="space-y-4">
-                  <div className={`grid gap-4 ${ragEnabled ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"}`}>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="comment"
@@ -211,26 +211,30 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                         </FormItem>
                       )}
                     />
-                    {!ragEnabled && (
-                      <FormField
-                        control={form.control}
-                        name="keywords"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center gap-1">
-                              <FormLabel>Keywords</FormLabel>
-                              <HelpTooltip>
-                                <p>Keywords that trigger this entry to be included. Press Enter or comma to add.</p>
-                              </HelpTooltip>
-                            </div>
-                            <FormControl>
-                              <CommandTagInput placeholder="Add keywords..." value={field.value || []} onChange={field.onChange} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
+                    <FormField
+                      control={form.control}
+                      name="keywords"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Keywords{ragEnabled && <span className="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>}</FormLabel>
+                            <HelpTooltip>
+                              <p>Keywords that trigger this entry. Press Enter or comma to add.</p>
+                              {ragEnabled && (
+                                <p className="mt-1">
+                                  RAG is enabled: a keyword match boosts the entry's similarity score so it can activate even when semantic similarity alone is below the threshold. Leave empty to rely
+                                  only on similarity.
+                                </p>
+                              )}
+                            </HelpTooltip>
+                          </div>
+                          <FormControl>
+                            <CommandTagInput placeholder={ragEnabled ? "Optional — add keywords to boost matches…" : "Add keywords..."} value={field.value || []} onChange={field.onChange} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   {/* Combine Insertion Type and Depth in one row */}
@@ -346,7 +350,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             <div className="flex items-center gap-1">
                               <FormLabel>Enabled</FormLabel>
                               <HelpTooltip>
-                                <p>When disabled, this entry will never be included in the context regardless of {ragEnabled ? "similarity matches" : "keyword matches"}.</p>
+                                <p>When disabled, this entry will never be included in the context regardless of similarity or keyword matches.</p>
                               </HelpTooltip>
                             </div>
                           </div>
@@ -366,7 +370,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                             <div className="flex items-center gap-1">
                               <FormLabel>Constant</FormLabel>
                               <HelpTooltip>
-                                <p>If enabled, this entry is always included, ignoring {ragEnabled ? "similarity matching" : "keywords"}.</p>
+                                <p>If enabled, this entry is always included, bypassing both similarity and keyword matching.</p>
                               </HelpTooltip>
                             </div>
                           </div>
@@ -380,7 +384,7 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                 </TabsContent>
 
                 <TabsContent value="advanced" className="space-y-4">
-                  <div className={`grid grid-cols-1 gap-4 ${ragEnabled ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <FormField
                       control={form.control}
                       name="group_key"
@@ -435,26 +439,24 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                       )}
                     />
 
-                    {!ragEnabled && (
-                      <FormField
-                        control={form.control}
-                        name="trigger_chance"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center gap-1">
-                              <FormLabel>Trigger Chance (%)</FormLabel>
-                              <HelpTooltip>
-                                <p>The probability (1-100%) that this entry will be included if its keywords match.</p>
-                              </HelpTooltip>
-                            </div>
-                            <FormControl>
-                              <StepButton min={1} max={100} step={1} value={field.value ?? 100} onValueChange={(val) => field.onChange(Math.floor(val))} showSlider={true} ticks={11} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
+                    <FormField
+                      control={form.control}
+                      name="trigger_chance"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Trigger Chance (%)</FormLabel>
+                            <HelpTooltip>
+                              <p>The probability (1-100%) that this entry will be included once it matches.</p>
+                            </HelpTooltip>
+                          </div>
+                          <FormControl>
+                            <StepButton min={1} max={100} step={1} value={field.value ?? 100} onValueChange={(val) => field.onChange(Math.floor(val))} showSlider={true} ticks={11} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <FormField
                       control={form.control}
@@ -476,49 +478,47 @@ export function LorebookEntryDialog({ open, onOpenChange, lorebookId, entry, gro
                     />
                   </div>
 
-                  {!ragEnabled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                      <FormField
-                        control={form.control}
-                        name="case_sensitive"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-1">
-                                <FormLabel>Case Sensitive Keywords</FormLabel>
-                                <HelpTooltip>
-                                  <p>If enabled, keyword matching will respect case sensitivity (e.g., "Apple" won't match "apple").</p>
-                                </HelpTooltip>
-                              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <FormField
+                      control={form.control}
+                      name="case_sensitive"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <FormLabel>Case Sensitive Keywords</FormLabel>
+                              <HelpTooltip>
+                                <p>If enabled, keyword matching will respect case sensitivity (e.g., "Apple" won't match "apple").</p>
+                              </HelpTooltip>
                             </div>
-                            <FormControl>
-                              <Switch checked={field.value} onCheckedChange={field.onChange} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                      <FormField
-                        control={form.control}
-                        name="match_partial_words"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-1">
-                                <FormLabel>Match Partial Words</FormLabel>
-                                <HelpTooltip>
-                                  <p>If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word matches occur.</p>
-                                </HelpTooltip>
-                              </div>
+                    <FormField
+                      control={form.control}
+                      name="match_partial_words"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <FormLabel>Match Partial Words</FormLabel>
+                              <HelpTooltip>
+                                <p>If enabled, keywords can match parts of words (e.g., "cat" could match "caterpillar"). If disabled, only whole word matches occur.</p>
+                              </HelpTooltip>
                             </div>
-                            <FormControl>
-                              <Switch checked={field.value} onCheckedChange={field.onChange} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  )}
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </TabsContent>
               </DialogBody>
             </Tabs>
