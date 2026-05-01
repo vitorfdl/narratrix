@@ -19,7 +19,7 @@ import { LorebookFormDialog } from "./components/LorebookFormDialog";
 import { LorebookImport, LorebookImportHandle } from "./components/LorebookImport";
 import { LorebookSidebar } from "./components/LorebookSidebar";
 
-const lorebookGridTemplateColumns = "repeat(auto-fill, minmax(min(100%, 24rem), 1fr))";
+const lorebookGridTemplateColumns = "repeat(auto-fill, minmax(min(100%, 22rem), 1fr))";
 const lorebookLoadingSkeletonKeys = Array.from({ length: 8 }, (_, index) => `lorebook-loading-${index}`);
 export default function LorebooksPage() {
   const currentProfile = useCurrentProfile();
@@ -308,7 +308,11 @@ export default function LorebooksPage() {
                         setSettings((prev) => ({ ...prev, sort: { field, direction } }));
                       }}
                     >
-                      <SelectTrigger noChevron className={buttonVariants({ variant: "outline", size: "icon", className: "bg-background" })} title="Sort Lorebooks">
+                      <SelectTrigger
+                        noChevron
+                        className={buttonVariants({ variant: "outline", size: "icon", className: "bg-background" })}
+                        title="Sort Lorebooks"
+                      >
                         <SortAsc className="h-4 w-4" />
                       </SelectTrigger>
                       <SelectContent align="end">
@@ -331,7 +335,7 @@ export default function LorebooksPage() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-muted/10 to-background">
+            <div className="min-h-0 flex-1 overflow-y-auto bg-linear-to-b from-muted/10 to-background">
               <div className="hidden">
                 <LorebookImport
                   ref={importComponentRef}
@@ -386,7 +390,9 @@ export default function LorebooksPage() {
                     </div>
                     <h3 className="text-lg font-semibold">{hasActiveFilters ? "No lorebooks match your filters" : "No lorebooks yet"}</h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      {hasActiveFilters ? "Try another search or clear the active filters." : "Create or import a lorebook to organize reusable world, character, and ruleset context."}
+                      {hasActiveFilters
+                        ? "Try another search or clear the active filters."
+                        : "Create or import a lorebook to organize reusable world, character, and ruleset context."}
                     </p>
                     <div className="mt-6 flex flex-wrap justify-center gap-2">
                       {hasActiveFilters ? (
@@ -426,7 +432,13 @@ export default function LorebooksPage() {
               <div className="flex shrink-0 items-center gap-2">
                 {selectedLorebook && (
                   <>
-                    <Button variant="outline" size="icon" className="bg-background" onClick={() => handleExportLorebook(selectedLorebook)} title="Export Lorebook">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="bg-background"
+                      onClick={() => handleExportLorebook(selectedLorebook)}
+                      title="Export Lorebook"
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                     <Button
@@ -447,13 +459,15 @@ export default function LorebooksPage() {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-muted/10 to-background">
+          <div className="flex min-h-0 flex-1 overflow-hidden bg-linear-to-b from-muted/10 to-background">
             <LorebookEntries lorebookId={selectedLorebookId} profileId={currentProfile?.id || ""} />
           </div>
         </div>
       )}
 
-      {currentProfile?.id && <LorebookFormDialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen} profileId={currentProfile.id} initialLorebook={lorebookToEdit} />}
+      {currentProfile?.id && (
+        <LorebookFormDialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen} profileId={currentProfile.id} initialLorebook={lorebookToEdit} />
+      )}
 
       {lorebookToDelete && currentProfile?.id && (
         <DestructiveConfirmDialog

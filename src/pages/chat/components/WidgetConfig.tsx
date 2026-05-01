@@ -1,5 +1,6 @@
 import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import isEqual from "react-fast-compare";
 import { toast } from "sonner";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { TemplatePicker } from "@/components/shared/TemplatePicker";
@@ -61,9 +62,9 @@ const isTemplateUpdateUnchanged = (template: ChatTemplate | undefined, updateDat
   return (
     (template.model_id ?? null) === (updateData.model_id ?? null) &&
     (template.format_template_id ?? null) === (updateData.format_template_id ?? null) &&
-    JSON.stringify(template.lorebook_list ?? []) === JSON.stringify(updateData.lorebook_list ?? []) &&
-    JSON.stringify(template.config ?? {}) === JSON.stringify(updateData.config ?? {}) &&
-    JSON.stringify(template.custom_prompts ?? []) === JSON.stringify(updateData.custom_prompts ?? [])
+    isEqual(template.lorebook_list ?? [], updateData.lorebook_list ?? []) &&
+    isEqual(template.config ?? {}, updateData.config ?? {}) &&
+    isEqual(template.custom_prompts ?? [], updateData.custom_prompts ?? [])
   );
 };
 
@@ -117,8 +118,9 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     lorebookCount: number;
   } | null>(null);
 
+  const fallbackChatTemplateID = useCurrentChatTemplateID();
   if (!currentChatTemplateID && !onChatTemplateChange) {
-    currentChatTemplateID = useCurrentChatTemplateID();
+    currentChatTemplateID = fallbackChatTemplateID;
   }
   const currentTemplate = useChatTemplate(currentChatTemplateID || "");
 
@@ -399,25 +401,33 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   };
 
   const availableFields = useMemo(() => {
+    const isSupported = (fieldName: string) => {
+      if (!selectedModelId || !selectedModelManifest) {
+        return true;
+      }
+      return availableInferenceFields.includes(fieldName);
+    };
+
     return configFields
       .filter((field) => !activeFields.includes(field.name))
-      .map((field) => {
-        const isSupported = isFieldSupportedByModel(field.name);
-        return {
-          label: field.title,
-          value: field.name,
-          disabled: !isSupported || isDisabled,
-        };
-      })
+      .map((field) => ({
+        label: field.title,
+        value: field.name,
+        disabled: !isSupported(field.name) || isDisabled,
+      }))
       .sort((a, b) => (a.disabled ? 1 : 0) - (b.disabled ? 1 : 0));
-  }, [activeFields, selectedModelId, availableInferenceFields, isDisabled]);
+  }, [activeFields, selectedModelId, selectedModelManifest, availableInferenceFields, isDisabled]);
 
-  const modelOptions = sortTemplatesByFavoriteAndName(models.filter((model: Model) => model.type === "llm")).map((model: Model) => ({
-    label: model.name,
-    value: model.id,
-    favorite: model.favorite,
-    onFavoriteToggle: () => updateModel(model.id, { favorite: !model.favorite }),
-  }));
+  const modelOptions = useMemo(
+    () =>
+      sortTemplatesByFavoriteAndName(models.filter((model: Model) => model.type === "llm")).map((model: Model) => ({
+        label: model.name,
+        value: model.id,
+        favorite: model.favorite,
+        onFavoriteToggle: () => updateModel(model.id, { favorite: !model.favorite }),
+      })),
+    [models, updateModel],
+  );
 
   /**
    * Handles adding a field to the active fields list.

@@ -50,27 +50,35 @@ body,
 }
 
 :root {
-  --background: hsl(263 15% 93%); /* #EFEEF4 - soft lavender gray */
-  --foreground: hsl(263 30% 15%); /* #2A2535 - deep purple-tinted black */
-  --content: hsl(263 10% 96%);
-  --sidebar: hsl(263 20% 88%); /* #E4E1ED - muted lavender */
-  --card: hsl(263 10% 96%); /* #F7F6F9 - off-white with purple tint */
-  --card-foreground: hsl(263 25% 20%); /* #3B3547 - softer than pure black */
-  --popover: hsl(263 15% 91%); /* #EAE8F0 - slightly darker than background */
-  --popover-foreground: hsl(263 30% 15%); /* #2A2535 */
-  --primary: hsl(265 60% 65%); /* #9F7AFA - slightly deeper purple */
-  --primary-foreground: hsl(0 0% 98%); /* #FAFAFA */
-  --secondary: hsl(263 12% 85%); /* #DAD7E0 - purple-tinted gray */
-  --secondary-foreground: hsl(263 20% 25%); /* #473F54 */
-  --muted: hsl(263 10% 88%); /* #E5E3E9 - soft muted purple */
-  --muted-foreground: hsl(263 15% 45%); /* #6B6175 - purple gray */
-  --accent: hsl(263 18% 90%); /* #E8E5EE - subtle purple accent */
-  --accent-foreground: hsl(265 60% 60%); /* #8E66FA - matches primary family */
-  --destructive: hsl(350 60% 50%); /* #CC3366 - softer red with purple undertone */
-  --destructive-foreground: hsl(0 0% 98%); /* #FAFAFA */
-  --border: hsl(263 15% 82%); /* #D2CED9 - subtle purple border */
-  --input: hsl(263 12% 85%); /* #DAD7E0 - matches secondary */
-  --ring: hsl(265 60% 65%); /* #9F7AFA - matches primary */
+  /* Surfaces — tinted-canvas / white-panels: gives transparency overlays
+     somewhere to register, mirroring how dark mode uses luminance for elevation */
+  --background: oklch(95.5% 0.012 290); /* tinted canvas */
+  --content: oklch(100% 0 0);
+  --card: oklch(100% 0 0); /* pure white — panels elevate against canvas */
+  --popover: oklch(100% 0 0);
+  --sidebar: oklch(91.5% 0.022 290); /* sunken nav, more saturated */
+  --muted: oklch(93.5% 0.014 290); /* chip / subtle hover */
+  --accent: oklch(90% 0.025 290); /* active hover state */
+  --secondary: oklch(91% 0.02 290);
+  --border: oklch(85% 0.022 290); /* visible separators */
+  --input: oklch(89% 0.02 290);
+
+  /* Text — perceptually deep, slight violet bias to match brand */
+  --foreground: oklch(22% 0.04 290);
+  --card-foreground: oklch(25% 0.04 290);
+  --popover-foreground: oklch(22% 0.04 290);
+  --secondary-foreground: oklch(28% 0.035 290);
+  --muted-foreground: oklch(50% 0.025 290); /* AA on white card */
+  --accent-foreground: oklch(48% 0.18 290);
+
+  /* Brand — single chroma cliff so accent reads as the only saturated color */
+  --primary: oklch(58% 0.18 290);
+  --primary-foreground: oklch(100% 0 0);
+  --ring: oklch(58% 0.18 290);
+
+  /* Status */
+  --destructive: oklch(58% 0.2 25);
+  --destructive-foreground: oklch(100% 0 0);
   --chart-1: hsl(265 60% 65%); /* #9F7AFA - primary purple */
   --chart-2: hsl(280 50% 55%); /* #9966CC - deeper purple */
   --chart-3: hsl(250 45% 60%); /* #8080D9 - blue-purple */
