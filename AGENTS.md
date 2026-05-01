@@ -49,6 +49,10 @@ Before working on a feature area you're unfamiliar with, check for relevant skil
 - Keep changes small and focused. One concern per commit.
 - If something looks wrong in the existing code, mention it — but fix only what was requested unless asked.
 
+# Profile Restrictions
+- Whenever you have to access database, ensure to always filter with current Profile ID.
+- Double-check that you're not exposing data from other profiles
+
 IMPORTANT: Run `pnpm biome check --fix` before committing. Verify the build passes.
 
 IMPORTANT: Never log or expose secrets. API keys stay per-profile and never leave the encryption layer.
