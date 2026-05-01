@@ -30,10 +30,12 @@ function getAnthropicProviderOptions(parameters: Record<string, any>, modelName?
 
   const hasBudget = "reasoning_budget" in parameters && parameters.reasoning_budget > 0;
   const hasEffort = "reasoning_temperature" in parameters && parameters.reasoning_temperature !== -1;
+  const explicitlyOff = parameters.reasoning_temperature === -1;
 
   if (usesAdaptiveReasoning(modelName)) {
-    if (hasEffort || hasBudget) {
-      providerOptions.thinking = { type: "adaptive" };
+    if (!explicitlyOff && (hasEffort || hasBudget)) {
+      // display defaults to "omitted" on Opus 4.7+; opt back into "summarized" so the reasoning UI keeps showing progress.
+      providerOptions.thinking = { type: "adaptive", display: "summarized" };
       providerOptions.effort = mapAdaptiveEffort(parameters.reasoning_temperature) ?? "high";
     }
   } else if (hasBudget) {

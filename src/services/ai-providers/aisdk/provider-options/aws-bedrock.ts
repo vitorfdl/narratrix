@@ -30,11 +30,13 @@ function getAWSBedrockProviderOptions(parameters: Record<string, any>, modelName
 
   const hasBudget = "reasoning_budget" in parameters && parameters.reasoning_budget > 0;
   const hasEffort = "reasoning_temperature" in parameters && parameters.reasoning_temperature !== -1;
+  const explicitlyOff = parameters.reasoning_temperature === -1;
 
   if (usesAdaptiveReasoning(modelName)) {
-    if (hasEffort || hasBudget) {
+    if (!explicitlyOff && (hasEffort || hasBudget)) {
       const effort = mapAdaptiveEffort(parameters.reasoning_temperature) ?? "high";
-      providerOptions.reasoningConfig = { type: "adaptive", maxReasoningEffort: effort };
+      // display defaults to "omitted" on Opus 4.7+; opt back into "summarized" so the reasoning UI keeps showing progress.
+      providerOptions.reasoningConfig = { type: "adaptive", maxReasoningEffort: effort, display: "summarized" };
     }
   } else if (hasBudget) {
     providerOptions.reasoningConfig = { type: "enabled", budgetTokens: parameters.reasoning_budget };
