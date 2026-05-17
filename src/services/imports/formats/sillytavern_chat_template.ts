@@ -2,6 +2,17 @@ import { z } from "zod";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
+// PromptManager.js `dummyId` — keys the default solo-chat prompt order in an exported preset.
+const SILLYTAVERN_DEFAULT_CHARACTER_ID = 100000;
+
+// Non-marker built-in prompts. SillyTavern ships these with empty `content` by default and
+// expects the user to fill them in; we skip blank ones on import to avoid empty rows.
+const BUILTIN_NON_MARKER_IDS = new Set(["main", "nsfw", "jailbreak", "enhanceDefinitions"]);
+
+function stripTemplateExtension(fileName: string): string {
+  return fileName.replace(/\.(json|jsonl)$/i, "");
+}
+
 // Zod schema for SillyTavern prompt structure
 const SillyTavernPromptSchema = z.object({
   identifier: z.string(),
@@ -119,71 +130,76 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
     config.n = data.n;
   }
 
-  // Filter prompts to only include those with 36-character identifiers (UUIDs)
   const customPrompts: ChatTemplateCustomPrompt[] = [];
   const promptOrderMap = new Map<string, { enabled: boolean; position: number }>();
 
-  // Build prompt order map from the first prompt_order entry
+  // SillyTavern stores the default solo-chat prompt ordering under character_id 100000 (the
+  // PromptManager `dummyId`). 100001 is the default group-chat order. Per-character custom
+  // orderings can also appear; prefer the dummy default, fall back to the first entry.
+  let chatHistoryOrderIndex = -1;
   if (data.prompt_order && data.prompt_order.length > 0) {
-    const firstOrder = data.prompt_order[0];
-    firstOrder.order.forEach((orderItem, index) => {
+    const defaultOrder = data.prompt_order.find((entry) => entry.character_id === SILLYTAVERN_DEFAULT_CHARACTER_ID) ?? data.prompt_order[0];
+    defaultOrder.order.forEach((orderItem, index) => {
       promptOrderMap.set(orderItem.identifier, {
         enabled: orderItem.enabled,
         position: index,
       });
+      if (orderItem.identifier === "chatHistory") {
+        chatHistoryOrderIndex = index;
+      }
     });
   }
 
-  // Process prompts with 36-character identifiers
-  const eligiblePrompts = data.prompts.filter((prompt) => prompt.identifier.length === 36);
+  // Skip markers (chatHistory, charDescription, scenario, worldInfoBefore, etc.) — those are
+  // SillyTavern context-manager placeholders without content; narratrix injects equivalent
+  // data via its format template and chat structure, not via custom_prompts.
+  const eligiblePrompts = data.prompts.filter((prompt) => !prompt.marker);
 
   // biome-ignore lint/complexity/noForEach: should run quick enough
   eligiblePrompts.forEach((prompt) => {
     const orderInfo = promptOrderMap.get(prompt.identifier);
+    const transformedContent = replaceSillytavernFunctions(prompt.content || "");
 
-    // Determine role mapping
+    // Built-in identifiers ship empty by default in SillyTavern (the user is expected to fill
+    // them in). Importing them as blank rows just adds noise — skip if there's nothing to
+    // carry over. Custom (UUID) prompts are kept even when empty since the user authored them.
+    if (BUILTIN_NON_MARKER_IDS.has(prompt.identifier) && transformedContent.trim() === "") {
+      return;
+    }
+
     let role: "user" | "character" | "system" = "system";
     if (prompt.role === "user") {
       role = "user";
     } else if (prompt.role === "assistant") {
       role = "character";
-    } else {
-      role = "system";
     }
 
-    // Determine position mapping
-    let position: "top" | "bottom" | "depth" = "depth";
+    // injection_position 1 = absolute depth injection; 0/undefined = relative slot. For the
+    // relative case, narratrix has no "in-line at this slot" position, so place the prompt
+    // above or below chat history based on its order index relative to the chatHistory marker.
+    let position: "top" | "bottom" | "depth";
     let depth = 1;
-
-    if (prompt.injection_depth !== undefined) {
-      depth = prompt.injection_depth;
+    if (prompt.injection_position === 1) {
+      position = "depth";
+      depth = prompt.injection_depth ?? 4;
+    } else if (orderInfo && chatHistoryOrderIndex >= 0) {
+      position = orderInfo.position < chatHistoryOrderIndex ? "top" : "bottom";
+    } else {
+      position = "top";
     }
 
-    // Map injection_position to our position system
-    // if (prompt.injection_position === 0) {
-    //   position = "top";
-    // } else {
-    position = "depth";
-    // }
-
-    // Transform prompt content placeholders
-    const transformedContent = replaceSillytavernFunctions(prompt.content || "");
-
-    const customPrompt: ChatTemplateCustomPrompt = {
+    customPrompts.push({
       id: prompt.identifier,
       name: prompt.name,
       role,
-      filter: {}, // SillyTavern doesn't have filters in the same way
+      filter: {},
       position,
       depth,
       prompt: transformedContent,
-      enabled: orderInfo?.enabled ?? prompt.enabled ?? true,
-    };
-
-    customPrompts.push(customPrompt);
+      enabled: orderInfo?.enabled ?? prompt.enabled ?? false,
+    });
   });
 
-  // Sort custom prompts by their position in the prompt order
   customPrompts.sort((a, b) => {
     const aOrder = promptOrderMap.get(a.id);
     const bOrder = promptOrderMap.get(b.id);
@@ -191,18 +207,14 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
     if (aOrder && bOrder) {
       return aOrder.position - bOrder.position;
     }
-
-    // If no order info, maintain original order
     return 0;
   });
 
-  // Create the template object
   const template: Omit<ChatTemplate, "id" | "created_at" | "updated_at"> = {
     profile_id: profileId,
     favorite: false,
-    // Remove file extension from fileName if present before assigning as template name
-    name: fileName,
-    model_id: null, // SillyTavern stores model info differently, we'll leave this null
+    name: stripTemplateExtension(fileName),
+    model_id: null,
     format_template_id: null,
     lorebook_list: [],
     config,
