@@ -2,12 +2,30 @@ import { z } from "zod";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { replaceSillytavernFunctions } from "./sillytavern_helper";
 
-// PromptManager.js `dummyId` — keys the default solo-chat prompt order in an exported preset.
-const SILLYTAVERN_DEFAULT_CHARACTER_ID = 100000;
+// SillyTavern keys the active "global" prompt order under a synthetic character_id (`dummyId`
+// in PromptManager). The chat-completion PromptManager is constructed in openai.js with
+// dummyId=100001; the 100000 value is the base-class default and shows up in older presets as
+// a hardcoded-defaults leftover. Prefer 100001, fall back to 100000, then first entry.
+const SILLYTAVERN_PRIMARY_CHARACTER_ID = 100001;
+const SILLYTAVERN_LEGACY_CHARACTER_ID = 100000;
 
 // Non-marker built-in prompts. SillyTavern ships these with empty `content` by default and
 // expects the user to fill them in; we skip blank ones on import to avoid empty rows.
 const BUILTIN_NON_MARKER_IDS = new Set(["main", "nsfw", "jailbreak", "enhanceDefinitions"]);
+
+// Marker prompts are content-less placeholders SillyTavern's context manager fills at render
+// time. Narratrix fills the same data through {{...}} placeholders, so markers with an
+// equivalent become placeholder prompts (preserving their slot in the order). chatHistory and
+// dialogueExamples have no placeholder equivalent — chat structure handles them.
+const MARKER_PLACEHOLDER_CONTENT: Record<string, string> = {
+  personaDescription: "{{user.personality}}",
+  // ST splits description/personality; narratrix has a single personality field. Map the
+  // meatier description marker to it and drop charPersonality to avoid injecting it twice.
+  charDescription: "{{character.personality}}",
+  scenario: "{{chapter.scenario}}",
+  worldInfoBefore: "{{lorebook.top}}",
+  worldInfoAfter: "{{lorebook.bottom}}",
+};
 
 function stripTemplateExtension(fileName: string): string {
   return fileName.replace(/\.(json|jsonl)$/i, "");
@@ -133,13 +151,13 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
   const customPrompts: ChatTemplateCustomPrompt[] = [];
   const promptOrderMap = new Map<string, { enabled: boolean; position: number }>();
 
-  // SillyTavern stores the default solo-chat prompt ordering under character_id 100000 (the
-  // PromptManager `dummyId`). 100001 is the default group-chat order. Per-character custom
-  // orderings can also appear; prefer the dummy default, fall back to the first entry.
   let chatHistoryOrderIndex = -1;
   if (data.prompt_order && data.prompt_order.length > 0) {
-    const defaultOrder = data.prompt_order.find((entry) => entry.character_id === SILLYTAVERN_DEFAULT_CHARACTER_ID) ?? data.prompt_order[0];
-    defaultOrder.order.forEach((orderItem, index) => {
+    const activeOrder =
+      data.prompt_order.find((entry) => entry.character_id === SILLYTAVERN_PRIMARY_CHARACTER_ID) ??
+      data.prompt_order.find((entry) => entry.character_id === SILLYTAVERN_LEGACY_CHARACTER_ID) ??
+      data.prompt_order[0];
+    activeOrder.order.forEach((orderItem, index) => {
       promptOrderMap.set(orderItem.identifier, {
         enabled: orderItem.enabled,
         position: index,
@@ -150,21 +168,28 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
     });
   }
 
-  // Skip markers (chatHistory, charDescription, scenario, worldInfoBefore, etc.) — those are
-  // SillyTavern context-manager placeholders without content; narratrix injects equivalent
-  // data via its format template and chat structure, not via custom_prompts.
-  const eligiblePrompts = data.prompts.filter((prompt) => !prompt.marker);
+  const promptsById = new Map(data.prompts.map((prompt) => [prompt.identifier, prompt]));
 
-  // biome-ignore lint/complexity/noForEach: should run quick enough
-  eligiblePrompts.forEach((prompt) => {
+  const toCustomPrompt = (prompt: (typeof data.prompts)[number]): ChatTemplateCustomPrompt | null => {
     const orderInfo = promptOrderMap.get(prompt.identifier);
-    const transformedContent = replaceSillytavernFunctions(prompt.content || "");
 
-    // Built-in identifiers ship empty by default in SillyTavern (the user is expected to fill
-    // them in). Importing them as blank rows just adds noise — skip if there's nothing to
-    // carry over. Custom (UUID) prompts are kept even when empty since the user authored them.
-    if (BUILTIN_NON_MARKER_IDS.has(prompt.identifier) && transformedContent.trim() === "") {
-      return;
+    let transformedContent: string;
+    if (prompt.marker) {
+      const placeholder = MARKER_PLACEHOLDER_CONTENT[prompt.identifier];
+      // chatHistory / dialogueExamples markers have no placeholder equivalent — narratrix's
+      // chat structure provides that data, so they carry nothing as custom prompts.
+      if (!placeholder) {
+        return null;
+      }
+      transformedContent = placeholder;
+    } else {
+      transformedContent = replaceSillytavernFunctions(prompt.content || "");
+      // Built-in identifiers ship empty by default in SillyTavern (the user is expected to
+      // fill them in). Importing them as blank rows just adds noise. Custom (UUID) prompts
+      // are kept even when empty since the user authored them.
+      if (BUILTIN_NON_MARKER_IDS.has(prompt.identifier) && transformedContent.trim() === "") {
+        return null;
+      }
     }
 
     let role: "user" | "character" | "system" = "system";
@@ -188,7 +213,7 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
       position = "top";
     }
 
-    customPrompts.push({
+    return {
       id: prompt.identifier,
       name: prompt.name,
       role,
@@ -197,18 +222,31 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
       depth,
       prompt: transformedContent,
       enabled: orderInfo?.enabled ?? prompt.enabled ?? false,
-    });
-  });
+    };
+  };
 
-  customPrompts.sort((a, b) => {
-    const aOrder = promptOrderMap.get(a.id);
-    const bOrder = promptOrderMap.get(b.id);
-
-    if (aOrder && bOrder) {
-      return aOrder.position - bOrder.position;
+  // Walk the order list so imported prompts keep the exact arrangement the user set up in
+  // SillyTavern, then append any prompts absent from the order (disabled by default).
+  const orderedIdentifiers = [...promptOrderMap.keys()];
+  for (const identifier of orderedIdentifiers) {
+    const prompt = promptsById.get(identifier);
+    if (!prompt) {
+      continue;
     }
-    return 0;
-  });
+    const customPrompt = toCustomPrompt(prompt);
+    if (customPrompt) {
+      customPrompts.push(customPrompt);
+    }
+  }
+  for (const prompt of data.prompts) {
+    if (promptOrderMap.has(prompt.identifier)) {
+      continue;
+    }
+    const customPrompt = toCustomPrompt(prompt);
+    if (customPrompt) {
+      customPrompts.push(customPrompt);
+    }
+  }
 
   const template: Omit<ChatTemplate, "id" | "created_at" | "updated_at"> = {
     profile_id: profileId,

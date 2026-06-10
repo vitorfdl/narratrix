@@ -56,11 +56,9 @@ Follow Conventional Commits
 - Subject: `<type>(<scope>)?: <imperative summary>`. Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `style`, `test`, `chore`. Lowercase, no trailing period, ≤ 72 chars.
 - Scope is optional but encouraged for cross-cutting areas: `rag`, `inference`, `db`, `ui`, `agent`, `lorebook`, `chat`, `profile`. Example: `feat(rag): combine keyword and vector matching`.
 - Breaking changes: append `!` to the type (`feat!:` / `refactor(db)!:`) **and** add a `BREAKING CHANGE: <description>` footer.
-- Body (optional, wrap ~100 chars) explains *why* and trade-offs, not *what*.
+- Body (optional, wrap ~40 chars) explains *why* and trade-offs, not *what*.
 - One concern per commit. Don't bundle unrelated changes; split them.
 - PR titles follow the same subject rule — squash merges use the PR title as the final commit.
-- Branch: `<type>/<short-kebab-topic>` (e.g. `feat/rag-support`, `fix/opus-thinking`). Match the type to the branch's primary commit.
-- Never force-push `master` or any branch with an open PR without explicit approval.
 
 # Profile Restrictions
 - Whenever you have to access database, ensure to always filter with current Profile ID.
