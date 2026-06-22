@@ -1,5 +1,5 @@
 import { useReactFlow } from "@xyflow/react";
-import { Zap } from "lucide-react";
+import { Braces, Wrench, Zap } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import type { AgentTriggerType, TriggerContext } from "@/schema/agent-schema";
 import type { NodeExecutionResult, NodeExecutor } from "@/services/agent-workflow/types";
 import { useTakeSnapshot } from "../../hooks/useUndoRedo";
+import JsonSchemaCreator from "../json-schema/JsonSchemaCreator";
+import type { SchemaDefinition } from "../json-schema/types";
 import { NodeBase, type NodeOutput } from "../tool-components/NodeBase";
 import { NodeConfigButton, NodeConfigPreview, NodeField } from "../tool-components/node-content-ui";
 import { createNodeTheme, NodeRegistry } from "../tool-components/node-registry";
@@ -17,6 +19,11 @@ import type { NodeProps } from "./nodeTypes";
 export interface TriggerNodeConfig {
   triggerType: AgentTriggerType;
   messageCount?: number;
+  /**
+   * Tool trigger only: JSON Schema for the tool. Its `title` is the tool name and
+   * `description` is the tool description sent to the LLM; `properties` are the arguments.
+   */
+  toolParameters?: SchemaDefinition | null;
 }
 
 const TRIGGER_TYPE_LABELS: Record<AgentTriggerType, string> = {
@@ -29,6 +36,7 @@ const TRIGGER_TYPE_LABELS: Record<AgentTriggerType, string> = {
   before_any_message: "Before Any Message",
   after_all_participants: "After All Participants",
   every_x_messages: "Every X Messages",
+  tool: "Tool",
 };
 
 /**
@@ -78,7 +86,27 @@ const TRIGGER_OUTPUT_MAP: Record<AgentTriggerType, NodeOutput[]> = {
     { id: "out-participant", label: "Agent Participant ID", edgeType: "string" },
     { id: "out-chat-id", label: "Chat ID", edgeType: "string" },
   ],
+  // Tool outputs are derived from the tool's parameter schema — see computeTriggerOutputs.
+  tool: [{ id: "out-chat-id", label: "Chat ID", edgeType: "string" }],
 };
+
+/**
+ * Output handles for the trigger node. For "tool" triggers the handles are derived
+ * from the tool's parameter schema (one per argument) so the graph can consume the
+ * values the LLM supplies when it calls the agent. All other triggers use the static map.
+ */
+function computeTriggerOutputs(config: TriggerNodeConfig): NodeOutput[] {
+  if (config.triggerType === "tool") {
+    const properties = config.toolParameters?.properties ?? {};
+    const argOutputs: NodeOutput[] = Object.keys(properties).map((key) => ({
+      id: `out-arg-${key}`,
+      label: key,
+      edgeType: "string",
+    }));
+    return [...argOutputs, { id: "out-chat-id", label: "Chat ID", edgeType: "string" }];
+  }
+  return TRIGGER_OUTPUT_MAP[config.triggerType] ?? TRIGGER_OUTPUT_MAP.manual;
+}
 
 /**
  * Node Execution — reads TriggerContext injected by the runner and populates
@@ -86,12 +114,27 @@ const TRIGGER_OUTPUT_MAP: Record<AgentTriggerType, NodeOutput[]> = {
  */
 const executeTriggerNode: NodeExecutor = async (node, _inputs, context): Promise<NodeExecutionResult> => {
   const triggerCtx = context.nodeValues.get("workflow-trigger-context") as TriggerContext | undefined;
+  const config = (node.config || {}) as TriggerNodeConfig;
+  const chatId = triggerCtx?.chatId ?? "";
+
+  // Tool trigger: expose each LLM-supplied argument on its own handle so the graph
+  // can wire them downstream. Non-string values are JSON-serialized for the string edges.
+  if (config.triggerType === "tool") {
+    const toolInputs = triggerCtx?.toolInputs ?? {};
+    const properties = config.toolParameters?.properties ?? {};
+    for (const key of Object.keys(properties)) {
+      const value = toolInputs[key];
+      const serialized = typeof value === "string" ? value : value === undefined || value === null ? "" : JSON.stringify(value);
+      context.nodeValues.set(`${node.id}::out-arg-${key}`, serialized);
+    }
+    context.nodeValues.set(`${node.id}::out-chat-id`, chatId);
+    return { success: true, value: chatId };
+  }
 
   // participantId: for character/any triggers use the triggering character;
   // for user triggers use the user's persona character ID;
   // for manual/every_x fall back to the agent's own ID stored in participantId.
   const participantId = triggerCtx?.participantId ?? "";
-  const chatId = triggerCtx?.chatId ?? "";
 
   context.nodeValues.set(`${node.id}::out-participant`, participantId);
   context.nodeValues.set(`${node.id}::out-chat-id`, chatId);
@@ -129,7 +172,7 @@ namespace TriggerNodeConfigProvider {
 
 // ─── Config Dialog ────────────────────────────────────────────────────────────
 
-type TriggerTiming = "before" | "after" | "manual" | "interval" | "round";
+type TriggerTiming = "before" | "after" | "manual" | "interval" | "round" | "tool";
 
 interface TriggerTypeConfig {
   label: string;
@@ -184,9 +227,16 @@ const TRIGGER_TYPE_CONFIG: Record<AgentTriggerType, TriggerTypeConfig> = {
     description: "Fires automatically after every N messages are added to the chat, regardless of who sent them. Participant ID outputs the agent's own ID.",
     timing: "interval",
   },
+  tool: {
+    label: "Tool",
+    description:
+      "Exposes this agent as a tool the chat LLM can call on demand. Set the tool's name, description, and arguments in the parameters editor; each argument becomes an output handle. End the workflow with a Tool Response node to return a result.",
+    timing: "tool",
+  },
 };
 
 const TRIGGER_GROUPS: { label: string; items: AgentTriggerType[] }[] = [
+  { label: "Tool", items: ["tool"] },
   { label: "Flow Control", items: ["manual", "after_all_participants", "every_x_messages"] },
   { label: "User Messages", items: ["after_user_message", "before_user_message"] },
   { label: "Character Messages", items: ["after_character_message", "before_character_message"] },
@@ -199,6 +249,7 @@ const TIMING_STYLES: Record<TriggerTiming, { label: string; className: string }>
   manual: { label: "Manual", className: "bg-blue-500/15 text-blue-600 dark:text-blue-400" },
   interval: { label: "Interval", className: "bg-purple-500/15 text-purple-600 dark:text-purple-400" },
   round: { label: "Round End", className: "bg-teal-500/15 text-teal-600 dark:text-teal-400" },
+  tool: { label: "Tool", className: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400" },
 };
 
 const TimingBadge = ({ timing }: { timing: TriggerTiming }) => {
@@ -214,16 +265,21 @@ interface TriggerConfigDialogProps {
 }
 
 const TriggerConfigDialog: React.FC<TriggerConfigDialogProps> = ({ open, initialConfig, onSave, onCancel }) => {
-  const { control, handleSubmit, reset } = useForm<TriggerNodeConfig>({
+  const { control, handleSubmit, reset, watch, setValue } = useForm<TriggerNodeConfig>({
     defaultValues: { messageCount: 5, ...initialConfig },
     mode: "onChange",
   });
+  const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
       reset({ messageCount: 5, ...initialConfig });
     }
   }, [open, reset, initialConfig]);
+
+  const toolParameters = watch("toolParameters");
+  const toolName = toolParameters?.title;
+  const paramCount = toolParameters?.properties ? Object.keys(toolParameters.properties).length : 0;
 
   const onSubmit = (data: TriggerNodeConfig) => onSave(data);
 
@@ -284,6 +340,34 @@ const TriggerConfigDialog: React.FC<TriggerConfigDialogProps> = ({ open, initial
                                   </div>
                                 </div>
                               )}
+                              {value === "tool" && isSelected && (
+                                <div className="mt-2 flex items-center gap-2 border-t border-border/30 pt-2">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-xxs font-medium text-foreground">{toolName || "Unnamed tool"}</p>
+                                    <p className="text-xxs text-muted-foreground">{paramCount > 0 ? `${paramCount} parameter${paramCount === 1 ? "" : "s"}` : "No parameters yet"}</p>
+                                  </div>
+                                  {/* Not a <button> — this lives inside the option button; nested buttons are invalid HTML. */}
+                                  <div
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSchemaDialogOpen(true);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        setSchemaDialogOpen(true);
+                                      }
+                                    }}
+                                    className="inline-flex h-7 shrink-0 cursor-pointer items-center gap-1 rounded-md border border-border bg-background px-2 text-xs font-medium hover:bg-muted"
+                                  >
+                                    <Braces className="h-3 w-3" />
+                                    {toolParameters ? "Edit Tool" : "Define Tool"}
+                                  </div>
+                                </div>
+                              )}
                             </button>
                           );
                         })}
@@ -303,6 +387,16 @@ const TriggerConfigDialog: React.FC<TriggerConfigDialogProps> = ({ open, initial
             </Button>
           </DialogFooter>
         </form>
+        <JsonSchemaCreator
+          open={schemaDialogOpen}
+          onOpenChange={setSchemaDialogOpen}
+          initialSchema={toolParameters ?? null}
+          onSave={(schema) => {
+            setValue("toolParameters", schema, { shouldDirty: true });
+            setSchemaDialogOpen(false);
+          }}
+          onCancel={() => setSchemaDialogOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -312,6 +406,9 @@ const TriggerConfigDialog: React.FC<TriggerConfigDialogProps> = ({ open, initial
 
 const TriggerContent = memo<{ config: TriggerNodeConfig; onConfigure: () => void }>(({ config, onConfigure }) => {
   const label = TRIGGER_TYPE_LABELS[config.triggerType] ?? "Manual";
+  const isTool = config.triggerType === "tool";
+  const toolName = config.toolParameters?.title;
+  const paramCount = config.toolParameters?.properties ? Object.keys(config.toolParameters.properties).length : 0;
 
   return (
     <div className="space-y-2 w-full">
@@ -321,6 +418,14 @@ const TriggerContent = memo<{ config: TriggerNodeConfig; onConfigure: () => void
           {config.triggerType === "every_x_messages" && config.messageCount && <span className="text-xxs text-muted-foreground ml-auto flex-shrink-0">×{config.messageCount}</span>}
         </NodeConfigPreview>
       </NodeField>
+
+      {isTool && (
+        <NodeField label="Tool" icon={Wrench}>
+          <NodeConfigPreview variant="text" empty="Not configured">
+            {toolName ? `${toolName}${paramCount > 0 ? ` · ${paramCount} param${paramCount === 1 ? "" : "s"}` : ""}` : undefined}
+          </NodeConfigPreview>
+        </NodeField>
+      )}
     </div>
   );
 });
@@ -339,8 +444,8 @@ export const TriggerNode = memo(({ id, data, selected }: NodeProps) => {
     (newConfig: TriggerNodeConfig) => {
       takeSnapshot();
 
-      const newOutputs = TRIGGER_OUTPUT_MAP[newConfig.triggerType] ?? [];
-      const oldOutputs = TRIGGER_OUTPUT_MAP[config.triggerType] ?? [];
+      const newOutputs = computeTriggerOutputs(newConfig);
+      const oldOutputs = computeTriggerOutputs(config);
 
       const removedHandleIds = new Set(oldOutputs.filter((o) => !newOutputs.some((n) => n.id === o.id)).map((o) => o.id));
 
@@ -351,7 +456,7 @@ export const TriggerNode = memo(({ id, data, selected }: NodeProps) => {
       setNodes((nodes) => nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, config: newConfig, dynamicOutputs: newOutputs } } : node)));
       setConfigDialogOpen(false);
     },
-    [id, config.triggerType, setNodes, setEdges, takeSnapshot],
+    [id, config, setNodes, setEdges, takeSnapshot],
   );
 
   const handleConfigure = useCallback(() => {
@@ -382,7 +487,7 @@ NodeRegistry.register({
   configProvider: TriggerNodeConfigProvider,
   executor: executeTriggerNode,
   getDynamicOutputs: (config) => {
-    const triggerConfig = config as TriggerNodeConfig;
-    return TRIGGER_OUTPUT_MAP[triggerConfig?.triggerType] ?? TRIGGER_OUTPUT_MAP.manual;
+    const triggerConfig = (config as TriggerNodeConfig) ?? { triggerType: "manual" as AgentTriggerType };
+    return computeTriggerOutputs(triggerConfig);
   },
 });
