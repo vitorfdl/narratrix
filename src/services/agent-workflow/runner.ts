@@ -75,7 +75,17 @@ async function executeNode(node: AgentNodeType, edges: AgentEdgeType[], context:
 
   const res = await executor(node, baseInputs, context, agent, deps);
   // Preserve multi-output behavior for nodes with dynamic outputs by reflecting onto handle-scoped keys
-  if ((node.type === "javascript" || node.type === "userChoice" || node.type === "searchLorebook" || node.type === "addLorebookEntry") && res.success) {
+  if (
+    (node.type === "javascript" ||
+      node.type === "userChoice" ||
+      node.type === "searchLorebook" ||
+      node.type === "addLorebookEntry" ||
+      node.type === "listParticipants" ||
+      node.type === "setParticipantEnabled" ||
+      node.type === "getParticipantData" ||
+      node.type === "rollDice") &&
+    res.success
+  ) {
     if (typeof res.value === "string") {
       // Execution mode returned text
       context.nodeValues.set(`${node.id}::out-string`, res.value);
@@ -187,6 +197,16 @@ export async function executeWorkflow(
     }
 
     deps?.onUpdateLog?.(agentRunLogId, { durationMs: Date.now() - agentRunStartTime });
+
+    // When invoked as a tool, return the first Tool Response node's value so the
+    // result flows back to the calling LLM without posting a chat message.
+    const triggerType = typeof triggerContext === "object" && triggerContext !== null ? triggerContext.type : undefined;
+    if (triggerType === "tool") {
+      const toolReturns = agent.nodes.filter((n) => n.type === "toolResponse");
+      if (toolReturns.length > 0) {
+        return (context.nodeValues.get(toolReturns[0].id) as string | null) ?? null;
+      }
+    }
 
     const outputs = agent.nodes.filter((n) => n.type === "chatOutput");
     if (outputs.length > 0) {

@@ -16,6 +16,8 @@ export function mapHandleToInputName(handle: string): string {
     "in-comment": "comment",
     "in-keywords": "keywords",
     "in-query": "query",
+    "in-participant": "participantId",
+    "in-notation": "notation",
     // Trigger node outputs
     "out-participant": "participantId",
   };
