@@ -48,6 +48,37 @@ export function applyTextReplacements(text: string, config: PromptFormatterConfi
   return processedText;
 }
 
+/**
+ * Renders a character-context section for ONE specific character, resolving the character-scoped
+ * macros ({{char}}, {{character.name}}, {{character.personality}}) up front. This is used when a
+ * format template repeats the character-context section per enabled character: the single global
+ * placeholder pass only knows one character, so each repeated block must be pre-resolved here.
+ *
+ * Character-scoped macros inside the personality are resolved against THIS character; every other
+ * macro ({{user}}, {{chapter}}, dice, date, …) is left untouched for the later global pass.
+ * {{character.personality}} is always replaced (with "" when empty/non-character) so it can never
+ * fall through to the global pass and pick up the generating character's personality.
+ */
+export function renderCharacterContext(content: string, character: NonNullable<PromptFormatterConfig["chatConfig"]>["character"]): string {
+  const name = character?.name ?? "";
+  const rawPersonality = character?.type === "character" ? ((character?.custom as any)?.personality ?? "") : "";
+  // Resolve the character-scoped macros inside the personality against THIS character and strip any
+  // self-referential {{character.personality}}, so no character-scoped macro can survive into the
+  // global pass (which only knows the generating character). Replacement values are passed via
+  // functions so "$" sequences in user-authored names/personalities are treated literally.
+  const personality: string = rawPersonality
+    ? rawPersonality
+        .replace(/\{\{char\}\}/gi, () => name)
+        .replace(/\{\{character\.name\}\}/gi, () => name)
+        .replace(/\{\{character\.personality\}\}/gi, "")
+    : "";
+
+  return content
+    .replace(/\{\{char\}\}/gi, () => name)
+    .replace(/\{\{character\.name\}\}/gi, () => name)
+    .replace(/\{\{character\.personality\}\}/gi, () => personality);
+}
+
 function normalizeConfig(config: PromptFormatterConfig["chatConfig"]): PromptFormatterConfig["chatConfig"] {
   if (!config) {
     return config;
