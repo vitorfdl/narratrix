@@ -34,7 +34,7 @@ const DEFAULT_CONFIG: UserChoiceNodeConfig = {
   prompt: "What would you like to do?",
   choices: ["Option A", "Option B"],
   toolName: "userChoice",
-  toolDescription: "Present the user with a multiple-choice prompt and return their selection",
+  toolDescription: "Ask the user one or more multiple-choice questions in sequence and return their answers.",
   timeoutSeconds: 0,
 };
 
@@ -71,7 +71,7 @@ function parseChoices(raw: unknown, fallback: string[]): PendingChoiceOption[] {
   return fallback.map((s) => ({ label: s, value: s }));
 }
 
-function createPendingChoice(runKey: string, executionId: string, prompt: string, choices: PendingChoiceOption[], timeoutSeconds: number): Promise<string | null> {
+function createPendingChoice(runKey: string, executionId: string, prompt: string, choices: PendingChoiceOption[], timeoutSeconds: number, allowCustom = false): Promise<string | null> {
   return new Promise((resolve) => {
     const choiceId = `choice_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -90,6 +90,7 @@ function createPendingChoice(runKey: string, executionId: string, prompt: string
       executionId,
       prompt,
       choices,
+      allowCustom,
       resolve: wrappedResolve,
     });
 
@@ -124,31 +125,53 @@ const executeUserChoiceNode: NodeExecutor = async (node, inputs, context, agent)
       inputSchema: {
         type: "object",
         properties: {
-          prompt: { type: "string", description: "The question or prompt to show the user" },
-          choices: {
+          questions: {
             type: "array",
-            items: { type: "string" },
-            description: "List of choices for the user to pick from",
+            description: "One or more questions to ask the user. They are shown one at a time, in order, each after the previous is answered.",
+            items: {
+              type: "object",
+              properties: {
+                prompt: { type: "string", description: "The question or prompt to show the user" },
+                choices: { type: "array", items: { type: "string" }, description: "The options the user can choose from. May be empty when allowCustom is true." },
+                allowCustom: { type: "boolean", description: "If true, also let the user type a custom free-text answer instead of picking one of the choices." },
+              },
+              required: ["prompt", "choices"],
+            },
           },
         },
-        required: ["prompt", "choices"],
+        required: ["questions"],
       },
-      invoke: async (args: { prompt?: string; choices?: string[] }) => {
-        const prompt = args.prompt || cfg.prompt;
-        const choices = parseChoices(args.choices, cfg.choices);
-        if (choices.length === 0) {
-          return "No choices provided";
+      invoke: async (args: { questions?: Array<{ prompt?: string; choices?: unknown; allowCustom?: unknown }>; prompt?: string; choices?: unknown }) => {
+        // Accept the questions array; fall back to a single {prompt, choices} for resilience.
+        const rawQuestions = Array.isArray(args.questions) && args.questions.length > 0 ? args.questions : [{ prompt: args.prompt, choices: args.choices }];
+
+        const questions = rawQuestions.map((q) => ({
+          prompt: typeof q.prompt === "string" && q.prompt ? q.prompt : cfg.prompt,
+          choices: parseChoices(q.choices, cfg.choices),
+          allowCustom: q.allowCustom === true,
+        }));
+
+        // A question needs choices unless it allows a custom free-text answer.
+        if (questions.some((q) => q.choices.length === 0 && !q.allowCustom)) {
+          return "Each question must include a non-empty 'choices' array (or set allowCustom to true).";
         }
 
-        if (!context.isRunning) {
-          throw new Error("Workflow cancelled");
+        // Ask sequentially: each createPendingChoice resolves on the user's answer before
+        // the next question is shown, so only one prompt is visible at a time.
+        const answers: string[] = [];
+        for (const question of questions) {
+          if (!context.isRunning) {
+            throw new Error("Workflow cancelled");
+          }
+          const selected = await createPendingChoice(context.runKey, context.executionId, question.prompt, question.choices, cfg.timeoutSeconds, question.allowCustom);
+          if (selected === null) {
+            throw new Error("Workflow cancelled");
+          }
+          answers.push(selected);
         }
 
-        const selected = await createPendingChoice(context.runKey, context.executionId, prompt, choices, cfg.timeoutSeconds);
-        if (selected === null) {
-          throw new Error("Workflow cancelled");
-        }
-        return selected;
+        // Single question → bare answer. Multiple → ordered array (index = question position).
+        return answers.length === 1 ? answers[0] : JSON.stringify(answers);
       },
     };
 
@@ -275,7 +298,8 @@ const UserChoiceConfigDialog: React.FC<UserChoiceConfigDialogProps> = ({ open, i
                       <span className="font-semibold">Script</span> — Pauses the workflow and waits for the user to select a choice. The selected value flows to the next node.
                     </p>
                     <p>
-                      <span className="font-semibold">Tool</span> — Exposes a callable tool for Agent nodes. The agent can invoke it with a dynamic prompt and choices.
+                      <span className="font-semibold">Tool</span> — Exposes a callable tool. The caller passes one or more questions (each with its own choices); they are asked one at a time and the
+                      answers are returned together.
                     </p>
                   </HelpTooltip>
                 </div>

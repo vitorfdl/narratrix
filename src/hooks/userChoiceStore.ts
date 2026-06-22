@@ -11,6 +11,8 @@ export interface PendingChoice {
   executionId: string;
   prompt: string;
   choices: PendingChoiceOption[];
+  /** When true, the user may type a custom free-text answer instead of picking a choice. */
+  allowCustom?: boolean;
   resolve: (value: string | null) => void;
 }
 
