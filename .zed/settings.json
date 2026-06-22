@@ -107,10 +107,5 @@
     "**/.next",
     "**/.turbo",
     "**/pnpm-lock.yaml"
-  ],
-  "terminal": {
-    "shell": {
-      "program": "bash"
-    }
-  }
+  ]
 }
