@@ -1,6 +1,6 @@
 import { ReactNode, useMemo, useState } from "react";
 import { BiSolidZap } from "react-icons/bi";
-import { LuSearch, LuUser, LuUsers } from "react-icons/lu";
+import { LuSearch, LuTag, LuUser, LuUsers, LuX } from "react-icons/lu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,6 +19,7 @@ type ParticipantItem = {
   type: "character" | "agent";
   avatar_path?: string | null;
   description?: string | null;
+  tags: string[];
 };
 
 interface AddParticipantPopoverProps {
@@ -52,6 +53,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const availableParticipants = useMemo<ParticipantItem[]>(() => {
     const characterItems: ParticipantItem[] = characters.map((character: Character) => ({
@@ -60,6 +62,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
       type: "character" as const,
       avatar_path: character.avatar_path,
       description: character.custom?.personality || null,
+      tags: character.tags ?? [],
     }));
 
     // Tool agents are invoked by the LLM, not added as turn-taking participants.
@@ -71,6 +74,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
         type: "agent" as const,
         avatar_path: null,
         description: agent.description,
+        tags: agent.tags ?? [],
       }));
 
     const sorted = sortTemplatesByFavoriteAndName([...characterItems, ...agentItems]);
@@ -86,19 +90,30 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
     });
   }, [characters, agents, existingParticipantIds, pickableParticipantIds]);
 
-  const counts = useMemo(
-    () => ({
-      all: availableParticipants.length,
-      characters: availableParticipants.filter((p) => p.type === "character").length,
-      agents: availableParticipants.filter((p) => p.type === "agent").length,
-    }),
+  const availableTags = useMemo(
+    () =>
+      Array.from(new Set(availableParticipants.flatMap((p) => p.tags)))
+        .filter((tag): tag is string => Boolean(tag))
+        .sort((a, b) => a.localeCompare(b)),
     [availableParticipants],
   );
+
+  const counts = useMemo(() => {
+    const tagged = availableParticipants.filter((p) => selectedTags.every((tag) => p.tags.includes(tag)));
+    return {
+      all: tagged.length,
+      characters: tagged.filter((p) => p.type === "character").length,
+      agents: tagged.filter((p) => p.type === "agent").length,
+    };
+  }, [availableParticipants, selectedTags]);
 
   const filteredParticipants = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
     return availableParticipants.filter((participant) => {
-      if (search && !participant.name.toLowerCase().includes(search)) {
+      if (search && !participant.name.toLowerCase().includes(search) && !participant.tags.some((tag) => tag.toLowerCase().includes(search))) {
+        return false;
+      }
+      if (!selectedTags.every((tag) => participant.tags.includes(tag))) {
         return false;
       }
       if (activeTab === "characters") {
@@ -109,7 +124,7 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
       }
       return true;
     });
-  }, [availableParticipants, searchTerm, activeTab]);
+  }, [availableParticipants, searchTerm, activeTab, selectedTags]);
 
   const groupedParticipants = useMemo(() => {
     if (activeTab !== "all") {
@@ -130,6 +145,10 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
   const handleSelect = (participant: ParticipantItem) => {
     onSelectCharacter(participant.id);
     onOpenChange(false);
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
   return (
@@ -169,6 +188,36 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
               );
             })}
           </div>
+
+          {/* Tag filter — single-row scrollable pill strip */}
+          {availableTags.length > 0 && (
+            <div className="flex items-center gap-1.5 border-b border-border/40 px-2 py-1.5">
+              <LuTag className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+              <div className="flex flex-1 items-center gap-1 overflow-x-auto custom-scrollbar">
+                {availableTags.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                        isSelected ? "bg-primary/20 text-primary ring-1 ring-inset ring-primary/40" : "bg-muted/40 text-muted-foreground/80 hover:bg-muted/70 hover:text-foreground",
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedTags.length > 0 && (
+                <button type="button" onClick={() => setSelectedTags([])} className="shrink-0 rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground" title="Clear tags">
+                  <LuX className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Participant list */}
           <CommandList>
@@ -218,8 +267,8 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted/40">
                     <LuUsers className="h-4 w-4 text-muted-foreground/60" />
                   </div>
-                  <p className="text-xs text-muted-foreground">{searchTerm ? "No participants found" : "No participants available"}</p>
-                  {searchTerm ? <p className="text-[10.5px] text-muted-foreground/60">Try a different search or filter</p> : null}
+                  <p className="text-xs text-muted-foreground">{searchTerm || selectedTags.length > 0 ? "No participants found" : "No participants available"}</p>
+                  {searchTerm || selectedTags.length > 0 ? <p className="text-[10.5px] text-muted-foreground/60">Try a different search or filter</p> : null}
                 </div>
               )}
             </ScrollArea>
