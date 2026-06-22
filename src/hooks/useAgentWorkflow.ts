@@ -4,10 +4,13 @@ import { useConsoleStore } from "@/hooks/consoleStore";
 import { useModelManifests } from "@/hooks/manifestStore";
 import { type ExecutableToolDefinition, useInference } from "@/hooks/useInference";
 import { useUserChoiceStore } from "@/hooks/userChoiceStore";
-import type { AgentType, TriggerContext } from "@/schema/agent-schema";
+import { NodeRegistry } from "@/pages/agents/components/tool-components/node-registry";
+import type { AgentNodeType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import type { InferenceCancelledResponse, InferenceCompletedResponse } from "@/schema/inference-engine-schema";
+import type { ChatTemplateTool } from "@/schema/template-chat-schema";
+import { extractToolFromResult, getAgentToolDefinition, getBuiltinNodeTool } from "@/services/agent-tools";
 import { cancelWorkflow as cancelWf, executeWorkflow as executeWf, isWorkflowRunning as isWfRunning } from "@/services/agent-workflow/runner";
-import type { NodeExecutionResult, WorkflowToolDefinition } from "@/services/agent-workflow/types";
+import type { NodeExecutionResult, WorkflowExecutionContext, WorkflowToolDefinition } from "@/services/agent-workflow/types";
 
 export type { TriggerContext };
 
@@ -27,6 +30,29 @@ import { useProfileStore } from "./ProfileStore";
 
 // Re-export from the store so consumers can import from one place
 export type { AgentWorkflowState } from "./agentWorkflowStore";
+
+/**
+ * Wraps a single built-in tool node in a minimal agent so its executor can run standalone.
+ * Only `nodes`/`edges` are read by node executors in tool mode.
+ */
+function makeBuiltinToolAgent(node: AgentNodeType): AgentType {
+  const now = new Date();
+  return {
+    id: `builtin_${node.type}`,
+    profile_id: "",
+    favorite: false,
+    name: node.label,
+    description: null,
+    version: "1.0.0",
+    tags: [],
+    nodes: [node],
+    edges: [],
+    settings: { run_on: { type: "tool" } },
+    category: null,
+    created_at: now,
+    updated_at: now,
+  };
+}
 
 /**
  * Hook for executing agent workflows with proper integration to inference service
@@ -321,10 +347,115 @@ export function useAgentWorkflow() {
     return isWfRunning(runKey);
   }, []);
 
+  /**
+   * Resolve a chat template's tool references into AI-SDK-ready ExecutableToolDefinitions.
+   * - Agent refs ({agent_id}) run the whole "tool"-trigger workflow with the LLM's args.
+   * - Built-in node refs ({node_type}) run that node's executor (in a synthetic single-node
+   *   agent) to obtain its WorkflowToolDefinition, then invoke it.
+   * `agents` must already be scoped to the current profile; unknown refs are skipped.
+   */
+  const buildChatTools = useCallback(
+    (refs: ChatTemplateTool[], agents: AgentType[], chatId?: string): ExecutableToolDefinition[] => {
+      const tools: ExecutableToolDefinition[] = [];
+      const seenNames = new Set<string>();
+
+      const pushTool = (executable: ExecutableToolDefinition) => {
+        if (!executable.name || seenNames.has(executable.name)) {
+          if (executable.name) {
+            console.warn(`Skipping duplicate chat tool name: ${executable.name}`);
+          }
+          return;
+        }
+        seenNames.add(executable.name);
+        tools.push(executable);
+      };
+
+      for (const ref of refs) {
+        // Built-in standalone node tool (no agent required).
+        if (ref.node_type) {
+          const builtin = getBuiltinNodeTool(ref.node_type);
+          const executor = builtin ? NodeRegistry.getExecutor(ref.node_type) : undefined;
+          if (!builtin || !executor) {
+            continue;
+          }
+          const node: AgentNodeType = {
+            id: `builtin_${ref.node_type}`,
+            type: ref.node_type,
+            position: { x: 0, y: 0 },
+            label: builtin.name,
+            config: builtin.buildConfig(),
+          };
+          const syntheticAgent = makeBuiltinToolAgent(node);
+          const wf: WorkflowToolDefinition = {
+            name: builtin.name,
+            description: builtin.description,
+            inputSchema: builtin.parameters,
+            invoke: async (args: Record<string, unknown>) => {
+              const ctx: WorkflowExecutionContext = {
+                agentId: syntheticAgent.id,
+                runKey: makeRunKey(syntheticAgent.id, chatId),
+                chatId,
+                executionId: `tool_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                nodeValues: new Map(),
+                executedNodes: new Set(),
+                isRunning: true,
+              };
+              const res = await executor(node, {}, ctx, syntheticAgent, deps);
+              if (!res.success) {
+                throw new Error(res.error || `Tool node ${ref.node_type} failed`);
+              }
+              const tool = extractToolFromResult(res.value);
+              if (!tool) {
+                throw new Error(`Node ${ref.node_type} did not produce a callable tool`);
+              }
+              return tool.invoke(args);
+            },
+          };
+          pushTool(toExecutableTool(wf));
+          continue;
+        }
+
+        // Agent-as-tool (trigger === "tool").
+        const agent = agents.find((a) => a.id === ref.agent_id);
+        if (!agent) {
+          // Fail closed — missing or cross-profile agent ids are ignored.
+          continue;
+        }
+        const descriptor = getAgentToolDefinition(agent);
+        if (!descriptor) {
+          continue;
+        }
+        const wf: WorkflowToolDefinition = {
+          name: descriptor.name,
+          description: descriptor.description,
+          inputSchema: descriptor.parameters,
+          invoke: async (args: Record<string, unknown>) => {
+            if (isWfRunning(makeRunKey(agent.id, chatId))) {
+              return "This tool is already running; wait for it to finish before calling it again.";
+            }
+            const triggerContext: TriggerContext = {
+              type: "tool",
+              chatId,
+              toolInputs: args,
+              toolCallId: `tc_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+            };
+            const result = await executeWorkflow(agent, triggerContext);
+            return result ?? "";
+          },
+        };
+        pushTool(toExecutableTool(wf));
+      }
+
+      return tools;
+    },
+    [deps, toExecutableTool, executeWorkflow],
+  );
+
   return {
     workflowState,
     executeWorkflow,
     cancelWorkflow,
     isWorkflowRunning,
+    buildChatTools,
   };
 }

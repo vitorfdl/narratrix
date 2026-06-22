@@ -87,5 +87,11 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: include_str!("./migrations/14_lorebook_rag.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 15,
+            description: "chat_template_tools",
+            sql: include_str!("./migrations/15_chat_template_tools.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }

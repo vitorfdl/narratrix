@@ -2,9 +2,12 @@ import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useCurrentChatActiveChapterID, useCurrentChatId } from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
+import { useChatToolset } from "@/hooks/useChatToolset";
 import { useInference } from "@/hooks/useInference";
-import type { ModelSpecs } from "@/schema/inference-engine-schema";
+import type { MessageToolCall } from "@/schema/chat-message-schema";
+import type { InferenceToolCall, ModelSpecs } from "@/schema/inference-engine-schema";
 import { chatEventBus } from "./chat-event-bus";
+import { getChatMessageById, updateChatMessage } from "./chat-message-service";
 import { formatFinalText } from "./inference/formatter/format-response";
 import { removeNestedFields } from "./inference/formatter/remove-nested-fields";
 import { useMessageManager } from "./inference/message-manager";
@@ -13,6 +16,29 @@ import { processStreamChunk } from "./inference/stream-processor";
 import { useStreamingStateManager } from "./inference/streaming-state-manager";
 import type { GenerationOptions } from "./inference/types";
 import { batchedStreamingUpdate, playBeepSound } from "./inference/utils";
+
+const QUIET_MESSAGE_ID = "generate-input-area";
+
+/**
+ * Persist the tool calls an assistant message made into its `extra` field, preserving
+ * any existing extra metadata. Runs after generation completes.
+ */
+async function persistMessageToolCalls(messageId: string, toolCalls: InferenceToolCall[]): Promise<void> {
+  try {
+    const existing = await getChatMessageById(messageId);
+    const mapped: MessageToolCall[] = toolCalls.map((tc) => ({
+      id: tc.id,
+      name: tc.name,
+      arguments: tc.arguments,
+      result: tc.result,
+      error: tc.error,
+      textOffset: tc.textOffset,
+    }));
+    await updateChatMessage(messageId, { extra: { ...(existing?.extra ?? {}), tool_calls: mapped } });
+  } catch (error) {
+    console.error("Failed to persist tool calls:", error);
+  }
+}
 
 /**
  * Main inference service hook that orchestrates all inference functionality.
@@ -30,6 +56,7 @@ export function useInferenceService() {
   const streamingManager = useStreamingStateManager();
   const messageManager = useMessageManager();
   const promptFormatter = usePromptFormatter();
+  const { buildToolsForTemplate } = useChatToolset();
 
   // Per-request message snapshot: preserves the messages array at generation start
   // so streaming updates can correctly rebuild the array for any chat (not just the selected one).
@@ -46,13 +73,22 @@ export function useInferenceService() {
       // (processStreamChunk also mutates chunkBuffer/isThinking on this reference)
       session.accumulatedReasoning += response.result.reasoning || "";
 
-      const currentChunk = response.result.text || response.result.full_response || "";
+      // Tool-call/result events carry no text delta but DO carry full_response (the cumulative
+      // text so far). Treating that as a chunk would re-append the pre-tool text — so for
+      // tool-only events the chunk is empty. The full_response fallback stays for non-streaming.
+      const isToolOnlyEvent = !response.result.text && (response.result.tool_calls?.length ?? 0) > 0;
+      const currentChunk = isToolOnlyEvent ? "" : response.result.text || response.result.full_response || "";
       const { textToAdd, reasoningToAdd } = processStreamChunk(currentChunk, session, session.formatTemplate);
 
       streamingManager.batchUpdateSessionByRequest(requestId, (s) => ({
         accumulatedText: s.accumulatedText + textToAdd,
         accumulatedReasoning: s.accumulatedReasoning + reasoningToAdd,
       }));
+
+      // Surface tool calls/results to the session so the UI can render them live.
+      if (response.result.tool_calls && response.result.tool_calls.length > 0) {
+        streamingManager.updateSessionByRequest(requestId, { toolCalls: response.result.tool_calls });
+      }
 
       const updated = streamingManager.getSessionByRequest(requestId);
       if (updated?.characterId && updated?.messageId) {
@@ -79,6 +115,11 @@ export function useInferenceService() {
 
         const snapshot = messageSnapshotsRef.current.get(requestId);
         messageManager.updateMessageDirect(session.chatId!, session.messageId, finalText, session.messageIndex || 0, snapshot);
+
+        const toolCalls = response.result?.tool_calls;
+        if (toolCalls && toolCalls.length > 0 && session.messageId !== QUIET_MESSAGE_ID) {
+          void persistMessageToolCalls(session.messageId, toolCalls);
+        }
 
         streamingManager.resetSessionByRequest(requestId);
         messageSnapshotsRef.current.delete(requestId);
@@ -234,6 +275,10 @@ export function useInferenceService() {
           parameters.stop = parameters.stop ? [...parameters.stop, ...customStopStrings] : customStopStrings;
         }
 
+        // Resolve agent/node tools attached to this chat template so the LLM can call them
+        // mid-generation. Skip the quiet input-area path where tools have no meaningful target.
+        const tools = quietResponse ? [] : buildToolsForTemplate(chatTemplate, chatId);
+
         const confirmID = await runInference({
           messages: inferenceMessages,
           modelSpecs,
@@ -241,6 +286,7 @@ export function useInferenceService() {
           parameters,
           stream,
           requestId: localRequestId,
+          tools: tools.length > 0 ? tools : undefined,
         });
 
         if (!confirmID) {
@@ -273,7 +319,7 @@ export function useInferenceService() {
         throw error;
       }
     },
-    [streamingManager, messageManager, promptFormatter, currentChatId, currentChapterID, runInference],
+    [streamingManager, messageManager, promptFormatter, currentChatId, currentChapterID, runInference, buildToolsForTemplate],
   );
 
   const regenerateMessage = useCallback(
