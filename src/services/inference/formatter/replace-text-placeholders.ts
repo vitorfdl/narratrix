@@ -227,13 +227,23 @@ export function replaceDateTimePattern(text: string, now = new Date()): string {
  * @param text
  */
 export function replaceCommentPattern(text: string): string {
-  // Regular expression to match comment patterns like {{// any text here}}
-  // This regex looks for {{ followed by // and then matches everything until the closing }}
-  // It uses a non-greedy approach to handle nested braces properly
-  const commentRegex = /\{\{\/\/.*?\}\}/g;
+  // [\s\S] (not .) so a comment spanning multiple lines is removed, matching SillyTavern.
+  // Lazy (*?) so the body terminates at the first closing braces.
+  const commentRegex = /\{\{\/\/[\s\S]*?\}\}/g;
 
   // Remove all comment patterns by replacing them with empty string
   return text.replace(commentRegex, "");
+}
+
+/**
+ * Removes {{trim}} markers along with the newlines immediately surrounding them, matching
+ * SillyTavern. Only newlines are consumed — adjacent spaces and tabs are preserved — which
+ * lets a prompt collapse blank lines left behind by conditional or empty macros.
+ * Case-insensitive, so {{trim}}, {{Trim}}, and {{TRIM}} all apply.
+ * @param text
+ */
+export function replaceTrimPattern(text: string): string {
+  return text.replace(/(?:\r?\n)*\{\{trim\}\}(?:\r?\n)*/gi, "");
 }
 
 // Value allows one level of nested {{...}} macros before the closing braces
@@ -296,7 +306,7 @@ export function replaceStringPlaceholders(text: string, config: PromptFormatterC
  * Replace placeholder text in messages and system prompt
  */
 export function replaceTextPlaceholders(messages: InferenceMessage[], systemPrompt: string | undefined, config: PromptFormatterConfig["chatConfig"]): FormattedPromptResult {
-  const { character, user_character, chapter, extra, censorship } = config || {};
+  const { censorship } = config || {};
 
   // Variable macros run first across all texts so getvar-inserted content
   // still goes through the remaining replacement chain ({{char}}, random, etc.)
@@ -306,11 +316,10 @@ export function replaceTextPlaceholders(messages: InferenceMessage[], systemProm
     ...(variableTexts[index] !== undefined ? { text: variableTexts[index] } : {}),
   }));
 
-  // Skip if no replacements needed
-  if (!character && !user_character && !chapter && !extra && !censorship) {
-    return { inferenceMessages: variableMessages, systemPrompt: variableSystemPrompt };
-  }
-
+  // processText always runs (no early-out on empty config): the content-independent macros
+  // below — random, dice, date/time, comments, and {{trim}} — must resolve on every path, or
+  // a {{// note}} or {{trim}} would leak to the model whenever no chat config is present.
+  // applyTextReplacements and applyCensorship are no-ops without config / censor words.
   const normalizedConfig = normalizeConfig(config);
 
   const processText = (text: string): string => {
@@ -319,7 +328,8 @@ export function replaceTextPlaceholders(messages: InferenceMessage[], systemProm
     const withDiceRolls = replaceDiceRollPattern(withRandomPattern);
     const withDateTimePattern = replaceDateTimePattern(withDiceRolls);
     const withCommentPattern = replaceCommentPattern(withDateTimePattern);
-    return applyCensorship(withCommentPattern, censorship?.words || []);
+    const withTrimPattern = replaceTrimPattern(withCommentPattern);
+    return applyCensorship(withTrimPattern, censorship?.words || []);
   };
 
   // Process text replacements in messages
