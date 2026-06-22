@@ -1,6 +1,7 @@
 import { stepCountIs, streamText } from "ai";
 import { FinalParams } from "../start-inference";
 import type { AIEvent } from "../types/ai-event.type";
+import { createToolCallTracker } from "./tool-events";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -35,9 +36,11 @@ async function streamResponse(event: AIEvent, params: FinalParams): Promise<stri
   });
 
   let fullText = "";
+  // Offset = assistant text emitted so far, so tool calls render inline at their position.
+  const toolTracker = createToolCallTracker(event, () => fullText.length);
 
   try {
-    const { textStream } = streamText({
+    const { fullStream } = streamText({
       ...params,
       stopWhen: stepCountIs(15),
       abortSignal: abortController.signal,
@@ -45,37 +48,44 @@ async function streamResponse(event: AIEvent, params: FinalParams): Promise<stri
         event.sendError({ message: getErrorMessage(error) });
       },
       onFinish({ finishReason }) {
-        if (finishReason !== "stop") {
+        // "tool-calls" is a normal intermediate stop while the SDK runs a tool step.
+        if (finishReason !== "stop" && finishReason !== "tool-calls") {
           event.sendError({ message: `Inference stopped: ${finishReason}` });
-        }
-      },
-      onChunk: ({ chunk }) => {
-        // TODO: Decide if use onChunk or fullTream
-        // if (chunk.type === "text-delta") {
-        //   fullText += chunk.text;
-
-        //   event.sendStream({
-        //     text: chunk.text,
-        //   });
-        // }
-        if (chunk.type === "reasoning-delta") {
-          event.sendStream({
-            reasoning: chunk.text,
-          });
         }
       },
     });
 
-    for await (const textPart of textStream) {
+    // fullStream surfaces text, reasoning, and tool-call/result parts in one ordered stream.
+    for await (const part of fullStream) {
       if (isAborted) {
         break;
       }
-      fullText += textPart;
 
-      // Direct streaming
-      event.sendStream({
-        text: textPart,
-      });
+      switch (part.type) {
+        case "text-delta": {
+          const text = (part as { text?: string; textDelta?: string }).text ?? (part as { textDelta?: string }).textDelta ?? "";
+          if (text) {
+            fullText += text;
+            event.sendStream({ text });
+          }
+          break;
+        }
+        case "reasoning-delta": {
+          const reasoning = (part as { text?: string; textDelta?: string }).text ?? (part as { textDelta?: string }).textDelta ?? "";
+          if (reasoning) {
+            event.sendStream({ reasoning });
+          }
+          break;
+        }
+        case "tool-call":
+          toolTracker.onToolCall(part as Parameters<typeof toolTracker.onToolCall>[0]);
+          break;
+        case "tool-result":
+          toolTracker.onToolResult(part as Parameters<typeof toolTracker.onToolResult>[0]);
+          break;
+        default:
+          break;
+      }
     }
 
     // Signal completion if not aborted

@@ -19,7 +19,17 @@ const dateTimeSuggestionList: SuggestionItem[] = [
   { title: "isodate", description: "Current ISO date (YYYY-MM-DD)", type: "function" },
 ];
 
-const commentSuggestionList: SuggestionItem[] = [{ title: "// comment text", description: "Internal note (removed from output)", type: "function" }];
+const variableSuggestionList: SuggestionItem[] = [
+  { title: "setvar::name::value", description: "Set a temporary variable (removed from output)", type: "function" },
+  { title: "getvar::name", description: "Insert a temporary variable's value", type: "function" },
+  { title: "setglobalvar::name::value", description: "Set a global variable (removed from output)", type: "function" },
+  { title: "getglobalvar::name", description: "Insert a global variable's value", type: "function" },
+];
+
+const structuralSuggestionList: SuggestionItem[] = [
+  { title: "// comment text", description: "Internal note (removed from output)", type: "function" },
+  { title: "trim", description: "Remove the newlines surrounding this marker", type: "function" },
+];
 
 export const basicPromptSuggestionList: SuggestionItem[] = [
   { title: "user", description: "User Character/Profile Name", section: "prompt" },
@@ -30,7 +40,8 @@ export const basicPromptSuggestionList: SuggestionItem[] = [
   { title: "groups", description: "Comma-separated list of characters in the chat", section: "prompt" },
   ...functionSuggestionList.map((item) => ({ ...item, section: "function" as const })),
   ...dateTimeSuggestionList.map((item) => ({ ...item, section: "function" as const })),
-  ...commentSuggestionList.map((item) => ({ ...item, section: "function" as const })),
+  ...variableSuggestionList.map((item) => ({ ...item, section: "function" as const })),
+  ...structuralSuggestionList.map((item) => ({ ...item, section: "function" as const })),
 ];
 
 export const promptReplacementSuggestionList: SuggestionItem[] = [
@@ -59,6 +70,19 @@ export const promptConfigSchema = z.object({
 
 export type PromptConfig = z.infer<typeof promptConfigSchema>;
 
+export const messageToolCallSchema = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  arguments: z.union([z.string(), z.record(z.string(), z.any())]),
+  result: z.string().optional(),
+  error: z.string().optional(),
+  durationMs: z.number().optional(),
+  // Character offset in the message text where this call occurred (for inline rendering).
+  textOffset: z.number().optional(),
+});
+
+export type MessageToolCall = z.infer<typeof messageToolCallSchema>;
+
 const extraSchema = z.object({
   script: z.enum(["agent", "summary", "start_chapter"]).optional(),
   name: z.string().optional(),
@@ -68,6 +92,7 @@ const extraSchema = z.object({
   promptConfig: promptConfigSchema.optional(),
   triggerContext: z.record(z.string(), z.unknown()).optional(),
   executionId: z.string().optional(),
+  tool_calls: messageToolCallSchema.array().optional(),
 });
 
 /**
