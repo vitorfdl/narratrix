@@ -1,9 +1,10 @@
-import { Bot, CalendarClock, GitBranch, Heart, Network, Trash2 } from "lucide-react";
+import { Bot, CalendarClock, GitBranch, Heart, Network, Trash2, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { AgentType } from "@/schema/agent-schema";
+import { isToolAgent } from "@/services/agent-tools";
 
 interface AgentCardProps {
   agent: AgentType;
@@ -40,6 +41,7 @@ export function AgentCard({ agent, cardSize, onEdit, onDelete, onToggleFavorite 
   const visibleTags = tags.slice(0, sizeClass.tagLimit);
   const hiddenTagsCount = Math.max(tags.length - visibleTags.length, 0);
   const updatedDate = new Date(agent.updated_at).toLocaleDateString();
+  const isTool = isToolAgent(agent);
 
   return (
     <Card
@@ -59,13 +61,21 @@ export function AgentCard({ agent, cardSize, onEdit, onDelete, onToggleFavorite 
     >
       <CardContent className={cn("flex min-h-48 flex-1 flex-col gap-3", sizeClass.body)}>
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Bot className="h-5 w-5" />
+          <div className={cn("mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", isTool ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" : "bg-primary/10 text-primary")}>
+            {isTool ? <Wrench className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className={cn("truncate font-semibold leading-tight text-foreground", sizeClass.title)} title={agent.name}>
-              {agent.name}
-            </h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className={cn("truncate font-semibold leading-tight text-foreground", sizeClass.title)} title={agent.name}>
+                {agent.name}
+              </h3>
+              {isTool && (
+                <Badge variant="outline" className="shrink-0 gap-0.5 rounded-full border-yellow-500/40 bg-yellow-500/10 px-1.5 py-0 text-[0.625rem] font-medium text-yellow-600 dark:text-yellow-400">
+                  <Wrench className="h-2.5 w-2.5" />
+                  Tool
+                </Badge>
+              )}
+            </div>
             {agent.version && <p className="mt-0.5 text-xs text-muted-foreground">v{agent.version}</p>}
           </div>
           <div className="flex shrink-0 gap-1">

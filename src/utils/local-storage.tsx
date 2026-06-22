@@ -37,6 +37,7 @@ export function useLocalCharactersPagesSettings() {
  * Local storage for agent page settings
  */
 const agentPageSettingsAtom = atomWithStorage<AgentPageSettings>("agentPageSettings", {
+  segment: "all",
   view: {
     mode: "grid",
     cardsPerRow: 4,

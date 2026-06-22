@@ -255,6 +255,7 @@ export function transformSillyTavernTemplate(data: SillyTavernChatTemplate, prof
     model_id: null,
     format_template_id: null,
     lorebook_list: [],
+    tools: [],
     config,
     custom_prompts: customPrompts,
   };

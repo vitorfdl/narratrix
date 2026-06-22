@@ -92,7 +92,8 @@ export function useAgentTriggerManager(chatId: string) {
       for (const agent of agentParticipants) {
         const { triggerType, messageCount } = getAgentTriggerConfig(agent);
 
-        if (triggerType === "manual") {
+        // "manual" is user-driven; "tool" agents are invoked by the LLM, never by chat events.
+        if (triggerType === "manual" || triggerType === "tool") {
           continue;
         }
 

@@ -194,6 +194,7 @@ const TRIGGER_LABEL: Record<AgentTriggerType, string> = {
   before_any_message: "Before Any",
   after_all_participants: "After All",
   every_x_messages: "Every X",
+  tool: "Tool",
 };
 
 interface AgentParticipantCardProps {

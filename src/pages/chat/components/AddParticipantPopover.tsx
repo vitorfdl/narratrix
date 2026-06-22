@@ -10,6 +10,7 @@ import { useCharacterAvatars, useCharacters } from "@/hooks/characterStore";
 import { cn } from "@/lib/utils";
 import type { AgentType } from "@/schema/agent-schema";
 import type { Character } from "@/schema/characters-schema";
+import { isToolAgent } from "@/services/agent-tools";
 import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
 
 type ParticipantItem = {
@@ -61,13 +62,16 @@ const AddParticipantPopover = ({ children, isOpen, onOpenChange, onSelectCharact
       description: character.custom?.personality || null,
     }));
 
-    const agentItems: ParticipantItem[] = agents.map((agent: AgentType) => ({
-      id: agent.id,
-      name: agent.name,
-      type: "agent" as const,
-      avatar_path: null,
-      description: agent.description,
-    }));
+    // Tool agents are invoked by the LLM, not added as turn-taking participants.
+    const agentItems: ParticipantItem[] = agents
+      .filter((agent: AgentType) => !isToolAgent(agent))
+      .map((agent: AgentType) => ({
+        id: agent.id,
+        name: agent.name,
+        type: "agent" as const,
+        avatar_path: null,
+        description: agent.description,
+      }));
 
     const sorted = sortTemplatesByFavoriteAndName([...characterItems, ...agentItems]);
 
