@@ -17,6 +17,7 @@ import {
   LuUsers,
   LuWifiOff,
 } from "react-icons/lu";
+import { toast } from "sonner";
 import { useThrottledCallback } from "use-debounce";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -141,6 +142,17 @@ const formatExpressionLabel = (expression?: string | null): string => {
 
 // A character qualifies for the expression widget only if it has at least one expression image.
 const hasExpressionImages = (character: Character): boolean => Boolean(character.expressions?.some((expression) => expression.image_path));
+
+// generateQuietly rejects with a string message, so Error-based extraction alone loses the real cause.
+const extractErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+  return "An unknown error occurred";
+};
 
 const WidgetExpressions = () => {
   const isDecorated = useGridCardDecorated();
@@ -325,7 +337,7 @@ const WidgetExpressions = () => {
 
   // Single-character generation: only the current speaker (or selected text's author)
   const generateSingleExpression = useCallback(
-    async (userPickedText?: string) => {
+    async (userPickedText?: string, notifyOnError = false) => {
       const currentSpeakerId = userPickedText ? selectedMessageCharacterId : lastSpeakerIdRef.current;
       const currentLastMessage = lastMessageRef.current;
 
@@ -359,9 +371,12 @@ const WidgetExpressions = () => {
         await runCharacterExpression(targetCharacter, messageContentToUse, currentLastMessage?.chapter_id);
         setConnectionError(null);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        const errorMessage = extractErrorMessage(error);
         setConnectionError(`Expression generation failed for ${targetCharacter.name}: ${errorMessage}`);
         console.error(`Error generating expression for ${targetCharacter.name}:`, error);
+        if (notifyOnError) {
+          toast.error("Expression generation failed", { id: "expression-generation", description: `${targetCharacter.name}: ${errorMessage}` });
+        }
         setCharacterExpressions((prev) => ({
           ...prev,
           [currentSpeakerId]: "neutral",
@@ -379,7 +394,7 @@ const WidgetExpressions = () => {
   // Multi-character generation: every active participant that owns an expression list, run in parallel.
   // The model's concurrency queue (max_concurrency) serializes these automatically.
   const generateAllExpressions = useCallback(
-    async (userPickedText?: string) => {
+    async (userPickedText?: string, notifyOnError = false) => {
       if (!expressionSettings.chatTemplateId) {
         if (selectedText) {
           clearSelection();
@@ -419,7 +434,7 @@ const WidgetExpressions = () => {
               return { ok: true as const, name: character.name };
             } catch (error) {
               console.error(`Error generating expression for ${character.name}:`, error);
-              return { ok: false as const, name: character.name };
+              return { ok: false as const, name: character.name, message: extractErrorMessage(error) };
             } finally {
               setGeneratingCharacterIds((prev) => {
                 const next = new Set(prev);
@@ -430,9 +445,14 @@ const WidgetExpressions = () => {
           }),
         );
 
-        const failures = results.filter((result) => !result.ok);
+        const failures = results.filter((result): result is { ok: false; name: string; message: string } => !result.ok);
         if (failures.length) {
-          setConnectionError(`Expression generation failed for ${failures.map((failure) => failure.name).join(", ")}`);
+          const names = failures.map((failure) => failure.name).join(", ");
+          const detail = failures[0].message;
+          setConnectionError(`Expression generation failed for ${names}: ${detail}`);
+          if (notifyOnError) {
+            toast.error("Expression generation failed", { id: "expression-generation", description: `${names}: ${detail}` });
+          }
         } else {
           setConnectionError(null);
         }
@@ -446,13 +466,14 @@ const WidgetExpressions = () => {
     [activeCharacters, runCharacterExpression, getLastMessageContentForCharacter, expressionSettings.chatTemplateId, expressionSettings.multiGenerationMode, selectedText, clearSelection],
   );
 
-  // Route to single- or multi-character generation based on the current setting
+  // Route to single- or multi-character generation based on the current setting.
+  // notifyOnError is set by user-initiated calls so background auto-refresh failures stay quiet.
   const generateExpression = useCallback(
-    (userPickedText?: string) => {
+    (userPickedText?: string, notifyOnError = false) => {
       if (expressionSettings.showAllCharacters) {
-        return generateAllExpressions(userPickedText);
+        return generateAllExpressions(userPickedText, notifyOnError);
       }
-      return generateSingleExpression(userPickedText);
+      return generateSingleExpression(userPickedText, notifyOnError);
     },
     [expressionSettings.showAllCharacters, generateAllExpressions, generateSingleExpression],
   );
@@ -483,7 +504,7 @@ const WidgetExpressions = () => {
   // Manual text selection always bypasses throttle -- it's a deliberate user action
   useEffect(() => {
     if (autoRefreshEnabled && expressionSettings.chatTemplateId && selectedText && selectedMessageCharacterId) {
-      generateExpression(selectedText);
+      generateExpression(selectedText, true);
     }
   }, [autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, selectedMessageCharacterId, generateExpression]);
 
@@ -705,7 +726,7 @@ const WidgetExpressions = () => {
                 variant={isGenerating ? "default" : "ghost"}
                 size="xs"
                 className="px-1"
-                onClick={() => generateExpression()}
+                onClick={() => generateExpression(undefined, true)}
                 disabled={isGenerating || !expressionSettings.chatTemplateId || (!selectedText && !lastSpeakerId)}
                 aria-label={
                   expressionSettings.showAllCharacters ? "Generate expressions for all characters" : selectedText ? "Generate expression from selection" : "Generate expression for current speaker"
