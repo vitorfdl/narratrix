@@ -597,7 +597,7 @@ const WidgetExpressions = () => {
   const { multiContainerClass, multiCellClass } = useMemo(() => {
     switch (multiLayout) {
       case "vertical":
-        return { multiContainerClass: "flex flex-col items-center gap-2 overflow-y-auto", multiCellClass: "w-full max-w-[55%] aspect-square shrink-0" };
+        return { multiContainerClass: "flex flex-col items-stretch justify-center gap-2 overflow-y-auto", multiCellClass: "w-full flex-1 min-h-[120px]" };
       case "grid":
         return { multiContainerClass: "grid gap-2 overflow-y-auto content-start", multiCellClass: "aspect-square" };
       default:
@@ -825,7 +825,9 @@ const WidgetExpressions = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div className="space-y-1">
-                                <Label htmlFor="multi-layout">Layout</Label>
+                                <div className="flex h-5 items-center gap-1">
+                                  <Label htmlFor="multi-layout">Layout</Label>
+                                </div>
                                 <Select value={tempMultiLayout} onValueChange={(value) => setTempMultiLayout(value as ExpressionLayoutMode)} disabled={!tempShowAllCharacters}>
                                   <SelectTrigger id="multi-layout">
                                     <SelectValue placeholder="Select layout" />
@@ -844,7 +846,7 @@ const WidgetExpressions = () => {
                               </div>
 
                               <div className="space-y-1">
-                                <div className="flex items-center gap-1">
+                                <div className="flex h-5 items-center gap-1">
                                   <Label htmlFor="multi-generation-mode">Reaction Source</Label>
                                   <HelpTooltip>{selectedMultiGenerationDescription || "Choose what text each character reacts to when showing all characters."}</HelpTooltip>
                                 </div>
