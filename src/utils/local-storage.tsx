@@ -148,6 +148,9 @@ const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSetti
     throttleInterval: 8000, // Default 8 seconds
     disableLogs: false,
     imageObjectFit: "cover",
+    showAllCharacters: false,
+    multiLayout: "horizontal",
+    multiGenerationMode: "latest-message",
   },
   {
     getItem: (key, initialValue) => {
@@ -167,6 +170,9 @@ const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSetti
           throttleInterval: parsed.throttleInterval ?? initialValue.throttleInterval,
           disableLogs: parsed.disableLogs ?? initialValue.disableLogs,
           imageObjectFit: parsed.imageObjectFit ?? initialValue.imageObjectFit,
+          showAllCharacters: parsed.showAllCharacters ?? initialValue.showAllCharacters,
+          multiLayout: parsed.multiLayout ?? initialValue.multiLayout,
+          multiGenerationMode: parsed.multiGenerationMode ?? initialValue.multiGenerationMode,
         } satisfies ExpressionGenerateSettings;
       } catch (error) {
         console.error("Failed to parse expression generation settings:", error);
