@@ -135,6 +135,18 @@ export function useLocalChatTabs(profileId: string) {
 }
 
 /**
+ * Local storage for chat sidebar widget widths (one entry per widget)
+ */
+const DEFAULT_WIDGET_WIDTH = 450;
+
+const widgetWidthAtomFamily = atomFamily((widgetId: string) => atomWithStorage<number>(`chatWidgetWidth-${widgetId}`, DEFAULT_WIDGET_WIDTH));
+
+export function useLocalWidgetWidth(widgetId: string) {
+  const widthAtom = useMemo(() => widgetWidthAtomFamily(widgetId), [widgetId]);
+  return useAtom(widthAtom);
+}
+
+/**
  * Local storage for expression settings
  */
 const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSettings>(
