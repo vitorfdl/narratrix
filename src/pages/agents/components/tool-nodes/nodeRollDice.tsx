@@ -77,7 +77,7 @@ const ROLL_DICE_NODE_METADATA = {
   label: "Roll Dice",
   description: "Roll dice from standard notation (e.g. 2d6+3) — usable as a tool or in a workflow",
   icon: Dices,
-  category: "Chat",
+  category: "Utility",
   theme: createNodeTheme("green"),
   deletable: true,
   inputs: [{ id: "in-notation", label: "Notation", edgeType: "string" as const, targetRef: "notation-section" }] as NodeInput[],
