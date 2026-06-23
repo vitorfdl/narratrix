@@ -18,8 +18,20 @@ const USER_CHOICE_TOOL_SCHEMA: Record<string, unknown> = {
         type: "object",
         properties: {
           prompt: { type: "string", description: "The question or prompt to show the user" },
-          choices: { type: "array", items: { type: "string" }, description: "The options the user can choose from. May be empty when allowCustom is true." },
+          choices: {
+            type: "array",
+            description: "The options the user can choose from. May be empty when allowCustom is true.",
+            items: {
+              type: "object",
+              properties: {
+                label: { type: "string", description: "The option text shown to the user" },
+                description: { type: "string", description: "Optional secondary text shown beneath the label" },
+              },
+              required: ["label"],
+            },
+          },
           allowCustom: { type: "boolean", description: "If true, also let the user type a custom free-text answer instead of picking one of the choices." },
+          allowMultiple: { type: "boolean", description: "If true, let the user select more than one option. The answer is returned as a JSON array of the chosen values." },
         },
         required: ["prompt", "choices"],
       },

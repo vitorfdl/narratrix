@@ -3,6 +3,8 @@ import { create } from "zustand";
 export interface PendingChoiceOption {
   label: string;
   value: string;
+  /** Optional secondary text shown beneath the label. */
+  description?: string;
 }
 
 export interface PendingChoice {
@@ -13,6 +15,8 @@ export interface PendingChoice {
   choices: PendingChoiceOption[];
   /** When true, the user may type a custom free-text answer instead of picking a choice. */
   allowCustom?: boolean;
+  /** When true, the user may select more than one option; the answer is a JSON array string. */
+  allowMultiple?: boolean;
   resolve: (value: string | null) => void;
 }
 
