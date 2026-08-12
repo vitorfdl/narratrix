@@ -758,6 +758,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
         initialData={characterList.find((char) => char.id === isEditCharacterModalOpen) as Character}
         setIsEditing={() => {}}
         onSuccess={() => setIsEditCharacterModalOpen(null)}
+        chatSheetScope={true}
       />
     </div>
   );
