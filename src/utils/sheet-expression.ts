@@ -1,4 +1,4 @@
-import type { SheetValues } from "@/schema/template-character-sheet-schema";
+import type { SheetField, SheetSection, SheetTableColumn, SheetValues } from "@/schema/template-character-sheet-schema";
 
 export interface SheetExpressionContext {
   characterName?: string;
@@ -169,4 +169,40 @@ export function resolveSheetExpression(expression: string, values: SheetValues, 
 
 export function isExpressionField(expression: string | null | undefined): expression is string {
   return typeof expression === "string" && expression.trim().length > 0;
+}
+
+export function slugifyKey(label: string): string {
+  return (
+    label
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "field"
+  );
+}
+
+export function tableColumnKey(column: SheetTableColumn): string {
+  return slugifyKey(column.label);
+}
+
+export function getRawSheetValue(field: SheetField, values: SheetValues): unknown {
+  const value = values[field.key];
+  return value !== undefined ? value : field.default_value;
+}
+
+export function buildResolvedSheetValues(sections: SheetSection[], values: SheetValues, characterName?: string): SheetValues {
+  const fields = sections.flatMap((section) => section.fields);
+  const resolved: SheetValues = {};
+  for (const field of fields) {
+    resolved[field.key] = getRawSheetValue(field, values);
+  }
+  // Two passes so an expression can reference another expression field
+  for (let pass = 0; pass < 2; pass++) {
+    for (const field of fields) {
+      if (isExpressionField(field.expression)) {
+        resolved[field.key] = resolveSheetExpression(field.expression, resolved, { characterName });
+      }
+    }
+  }
+  return resolved;
 }

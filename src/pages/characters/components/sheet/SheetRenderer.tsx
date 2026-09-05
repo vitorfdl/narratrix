@@ -8,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { SheetField, SheetSection, SheetValues } from "@/schema/template-character-sheet-schema";
-import { isExpressionField, resolveSheetExpression } from "@/utils/sheet-expression";
+import { buildResolvedSheetValues, getRawSheetValue, isExpressionField, resolveSheetExpression, tableColumnKey } from "@/utils/sheet-expression";
 import { SectionFrame } from "./SectionFrame";
 import { SECTION_STYLE_PRESETS, type SectionStylePreset } from "./sheet-style-presets";
-import { tableColumnKey } from "./sheet-utils";
 
 interface SheetRendererProps {
   sections: SheetSection[];
@@ -23,28 +22,6 @@ interface SheetRendererProps {
 
 // Solid surface so controls stand out against tinted/dark section frames
 const CONTROL_SURFACE = "border-border/70 bg-background/70 shadow-sm backdrop-blur-sm";
-
-function getRawValue(field: SheetField, values: SheetValues): unknown {
-  const value = values[field.key];
-  return value !== undefined ? value : field.default_value;
-}
-
-function buildResolvedValues(sections: SheetSection[], values: SheetValues, characterName?: string): SheetValues {
-  const fields = sections.flatMap((section) => section.fields);
-  const resolved: SheetValues = {};
-  for (const field of fields) {
-    resolved[field.key] = getRawValue(field, values);
-  }
-  // Two passes so an expression can reference another expression field
-  for (let pass = 0; pass < 2; pass++) {
-    for (const field of fields) {
-      if (isExpressionField(field.expression)) {
-        resolved[field.key] = resolveSheetExpression(field.expression, resolved, { characterName });
-      }
-    }
-  }
-  return resolved;
-}
 
 function toStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item ?? "")) : [];
@@ -302,7 +279,7 @@ function FieldControl({ field, rawValue, resolvedValue, resolvedValues, preset, 
 // ─── Renderer Root ────────────────────────────────────────────────────────────
 
 export function SheetRenderer({ sections, values, onValuesChange, characterName, readOnly = false }: SheetRendererProps) {
-  const resolvedValues = buildResolvedValues(sections, values, characterName);
+  const resolvedValues = buildResolvedSheetValues(sections, values, characterName);
 
   const handleFieldChange = (field: SheetField, value: unknown) => {
     onValuesChange({ ...values, [field.key]: value });
@@ -327,7 +304,7 @@ export function SheetRenderer({ sections, values, onValuesChange, characterName,
                     <Label className="text-xs text-muted-foreground">{field.label}</Label>
                     <FieldControl
                       field={field}
-                      rawValue={getRawValue(field, values)}
+                      rawValue={getRawSheetValue(field, values)}
                       resolvedValue={resolvedValues[field.key]}
                       resolvedValues={resolvedValues}
                       preset={preset}

@@ -4,11 +4,13 @@ import { useModelManifests } from "@/hooks/manifestStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { Character } from "@/schema/characters-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
-import { formatPrompt as formatPromptUtil } from "@/services/inference/formatter";
+import type { SheetValues } from "@/schema/template-character-sheet-schema";
+import { CharacterSheetContext, formatPrompt as formatPromptUtil } from "@/services/inference/formatter";
 import { useLocalSummarySettings } from "@/utils/local-storage";
 import { listCharacters } from "../character-service";
-import { ChatParticipant, getChatById } from "../chat-service";
+import { Chat, ChatParticipant, getChatById } from "../chat-service";
 import { listModels } from "../model-service";
+import { getCharacterSheetTemplateById } from "../template-character-sheet-service";
 import { listChatTemplates } from "../template-chat-service";
 import { getFormatTemplateById } from "../template-format-service";
 import { listInferenceTemplates } from "../template-inference-service";
@@ -36,6 +38,31 @@ function getParticipantGroups(participantsList: ChatParticipant[], characterList
     .filter(Boolean);
 
   return names.join(", ");
+}
+
+/**
+ * Resolves a character's sheet for {{char.SECTION}} / {{user.SECTION}} references:
+ * template sections plus values merged from the character's defaults and the
+ * chat-scoped overrides (participant settings / user_character_settings).
+ */
+async function resolveCharacterSheet(character: Character | undefined, currentChat: Chat | null, participantsList: ChatParticipant[] | undefined): Promise<CharacterSheetContext | undefined> {
+  if (character?.type !== "character" || !character.custom?.sheet_template_id) {
+    return undefined;
+  }
+
+  const sheetTemplate = await getCharacterSheetTemplateById(character.custom.sheet_template_id);
+  if (!sheetTemplate) {
+    return undefined;
+  }
+
+  const participant = participantsList?.find((p) => p.id === character.id);
+  const userEntry = currentChat?.user_character_id === character.id ? currentChat?.user_character_settings?.find((entry) => entry.id === character.id) : undefined;
+  const overrides = (participant?.settings?.sheet_values ?? userEntry?.settings?.sheet_values) as SheetValues | undefined;
+
+  return {
+    sections: sheetTemplate.sections,
+    values: { ...(character.custom.sheet_values ?? {}), ...(overrides ?? {}) },
+  };
 }
 
 /**
@@ -147,22 +174,26 @@ export function usePromptFormatter() {
 
       const characterPromptOverride = characterList.find((character) => character.id === characterId)?.system_override;
       const character = characterList.find((character) => character.id === characterId);
+      const [characterSheet, userSheet] = await Promise.all([resolveCharacterSheet(character, currentChat, participantsList), resolveCharacterSheet(userCharacter, currentChat, participantsList)]);
 
       // When the format template injects every enabled character, gather them in participant order
       // (excluding the user persona, which has its own user-context). The generating character is
       // always included even if it is currently disabled (e.g. regenerating an old message), appended
       // last so enabled participants keep their natural order. Characters with no personality are
       // skipped — they would only add a bare name line with nothing to say.
-      let contextCharacters: Character[] | undefined;
+      let contextCharacters: (Character & { sheet?: CharacterSheetContext })[] | undefined;
       if (formatTemplate.config.settings.character_context_all_enabled) {
         const userCharacterId = currentChat?.user_character_id;
         const orderedIds = (participantsList || []).filter((participant) => participant.enabled && participant.id !== userCharacterId).map((participant) => participant.id);
         if (characterId && !orderedIds.includes(characterId)) {
           orderedIds.push(characterId);
         }
-        contextCharacters = [...new Set(orderedIds)]
+        const enabledCharacters = [...new Set(orderedIds)]
           .map((id) => characterList.find((c) => c.id === id))
           .filter((c): c is Character => !!c && c.type === "character" && !!c.custom?.personality?.trim());
+        contextCharacters = await Promise.all(
+          enabledCharacters.map(async (contextCharacter) => ({ ...contextCharacter, sheet: await resolveCharacterSheet(contextCharacter, currentChat, participantsList) })),
+        );
       }
 
       // Extra Suggestions
@@ -187,6 +218,8 @@ export function usePromptFormatter() {
             summary: localSummarySettings.injectionPrompt,
           },
           character,
+          characterSheet,
+          userSheet,
           contextCharacters,
           user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
           chapter: chapterList.find((chapter) => chapter.id === currentChapterID),

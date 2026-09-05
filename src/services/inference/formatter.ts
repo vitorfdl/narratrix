@@ -3,6 +3,7 @@ import { ChatChapter } from "@/schema/chat-chapter-schema";
 import { ChatMessage } from "@/schema/chat-message-schema";
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { Model } from "@/schema/models-schema";
+import type { SheetSection, SheetValues } from "@/schema/template-character-sheet-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 import { InferenceTemplate } from "@/schema/template-inferance-schema";
@@ -17,6 +18,11 @@ import { renderCharacterContext, replaceTextPlaceholders } from "./formatter/rep
  */
 interface MessageWithCharacter extends ChatMessage {
   character_name?: string;
+}
+
+export interface CharacterSheetContext {
+  sections: SheetSection[];
+  values: SheetValues;
 }
 
 /**
@@ -41,9 +47,14 @@ export interface PromptFormatterConfig {
     injectionPrompts?: Record<string, string>;
     user_character?: Pick<Character, "name" | "custom" | "lorebook_id">;
     character?: Pick<Character, "name" | "settings" | "custom" | "type" | "lorebook_id">;
+    // Sheets (template sections + merged values) backing {{char.*}} / {{user.*}}
+    // section and field references, rendered as markdown.
+    characterSheet?: CharacterSheetContext;
+    userSheet?: CharacterSheetContext;
     // Enabled characters whose context should be injected when the format template's
     // character_context_all_enabled setting is on. Ordered; includes the generating character.
-    contextCharacters?: Pick<Character, "name" | "settings" | "custom" | "type" | "lorebook_id">[];
+    // Each carries its own sheet so {{char.*}} inside its personality resolves against it.
+    contextCharacters?: (Pick<Character, "name" | "settings" | "custom" | "type" | "lorebook_id"> & { sheet?: CharacterSheetContext })[];
     chapter?: Pick<ChatChapter, "title" | "scenario" | "instructions">;
     extra?: Record<string, string>;
     censorship?: {
