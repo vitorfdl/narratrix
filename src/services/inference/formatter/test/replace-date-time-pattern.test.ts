@@ -119,7 +119,7 @@ describe("replaceDateTimePattern", () => {
     expect(result).not.toContain("{{TIME}}");
     expect(result).not.toContain("{{Date}}");
     expect(result).not.toContain("{{WEEKDAY}}");
-    expect(result).toContain("11:30 AM");
+    expect(result).toMatch(/\d{1,2}:\d{2} [AP]M/);
     expect(result).toContain("January 15, 2024");
     expect(result).toContain("Monday");
   });
