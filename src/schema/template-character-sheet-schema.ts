@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { slugifyKey } from "@/utils/sheet-expression";
 import { baseTemplateSchema } from "./template-base-schema";
 
 export const SHEET_FIELD_TYPES = ["text", "textarea", "number", "number_stepper", "dropdown", "multi_select", "list", "table"] as const;
@@ -63,6 +64,8 @@ const sheetFieldSchema = z.object({
 
 const sheetSectionSchema = z.object({
   id: z.string(),
+  // Key used to reference the section in prompts: {{char.key}}
+  key: z.string(),
   title: z.string(),
   style: sheetSectionStyleEnum.default("plain"),
   columns: z.number().min(1).max(4).default(2),
@@ -71,8 +74,30 @@ const sheetSectionSchema = z.object({
   fields: z.array(sheetFieldSchema).default([]),
 });
 
+// Sections saved before keys existed get one derived from their title, kept unique
+function ensureSectionKeys(sections: unknown): unknown {
+  if (!Array.isArray(sections)) {
+    return sections;
+  }
+  const used = new Set<string>();
+  return sections.map((section) => {
+    if (typeof section !== "object" || section === null) {
+      return section;
+    }
+    const record = section as Record<string, unknown>;
+    let key = typeof record.key === "string" && record.key ? record.key : slugifyKey(typeof record.title === "string" ? record.title : "section");
+    const base = key;
+    let counter = 2;
+    while (used.has(key)) {
+      key = `${base}_${counter++}`;
+    }
+    used.add(key);
+    return { ...record, key };
+  });
+}
+
 export const characterSheetTemplateSchema = baseTemplateSchema.extend({
-  sections: z.array(sheetSectionSchema).default([]),
+  sections: z.preprocess(ensureSectionKeys, z.array(sheetSectionSchema).default([])),
 });
 
 export const newCharacterSheetTemplateSchema = characterSheetTemplateSchema.omit({

@@ -40,9 +40,9 @@ import {
   type SheetSection,
   type SheetSectionStyle,
 } from "@/schema/template-character-sheet-schema";
+import { slugifyKey, tableColumnKey } from "@/utils/sheet-expression";
 import { SectionFrame } from "./SectionFrame";
 import { SECTION_STYLE_PRESETS } from "./sheet-style-presets";
-import { slugifyKey, tableColumnKey } from "./sheet-utils";
 
 interface SheetTemplateEditorProps {
   sections: SheetSection[];
@@ -81,6 +81,20 @@ function createField(type: SheetFieldType, existingKeys: Set<string>): SheetFiel
     expression: null,
     default_value: undefined,
   };
+}
+
+// A key is "auto" while it still matches the slug the field was created with
+// ("text", "text_2"). Renaming the label re-derives such keys; once a label has
+// been set the key stays put so stored values keyed by it are not orphaned.
+function isAutoFieldKey(field: SheetField): boolean {
+  const base = slugifyKey(SHEET_FIELD_TYPE_LABELS[field.type]);
+  return new RegExp(`^${base}(_\\d+)?$`).test(field.key);
+}
+
+function withoutKey(keys: Set<string>, key: string): Set<string> {
+  const next = new Set(keys);
+  next.delete(key);
+  return next;
 }
 
 function duplicateField(field: SheetField, existingKeys: Set<string>): SheetField {
@@ -267,6 +281,9 @@ function FieldSettings({ field, onChange }: { field: SheetField; onChange: (fiel
               <p>
                 Reference this field in expressions as <code>{`\${sheet.${field.key || "key"}}`}</code>.
               </p>
+              <p>
+                In prompts, insert its value with <code>{`{{char.${field.key || "key"}}}`}</code>.
+              </p>
             </HelpTooltip>
           </div>
           <Input value={field.key} onChange={(e) => onChange({ ...field, key: slugifyKey(e.target.value) })} />
@@ -337,12 +354,13 @@ function FieldSettings({ field, onChange }: { field: SheetField; onChange: (fiel
 interface SortableFieldRowProps {
   field: SheetField;
   sectionColumns: number;
+  allKeys: Set<string>;
   onChange: (field: SheetField) => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }
 
-function SortableFieldRow({ field, sectionColumns, onChange, onDuplicate, onDelete }: SortableFieldRowProps) {
+function SortableFieldRow({ field, sectionColumns, allKeys, onChange, onDuplicate, onDelete }: SortableFieldRowProps) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: field.id, data: { type: "field" } });
   const span = Math.min(field.span, sectionColumns);
@@ -374,7 +392,11 @@ function SortableFieldRow({ field, sectionColumns, onChange, onDuplicate, onDele
         className="h-5 min-w-0 flex-1 rounded-sm border-none bg-transparent px-0.5 text-xs font-medium shadow-none focus-visible:bg-background/40 focus-visible:ring-0"
         value={field.label}
         placeholder="Field label"
-        onChange={(e) => onChange({ ...field, label: e.target.value })}
+        onChange={(e) => {
+          const label = e.target.value;
+          const key = isAutoFieldKey(field) && label.trim() ? uniqueKey(slugifyKey(label), withoutKey(allKeys, field.key)) : field.key;
+          onChange({ ...field, label, key });
+        }}
       />
       <Badge variant="outline" className="h-5 flex-shrink-0 px-1.5 text-[10px] font-normal text-muted-foreground">
         {SHEET_FIELD_TYPE_LABELS[field.type]}
@@ -438,14 +460,23 @@ function SortableFieldRow({ field, sectionColumns, onChange, onDuplicate, onDele
 interface SectionEditorProps {
   section: SheetSection;
   allKeys: Set<string>;
+  sectionKeys: Set<string>;
   dragHandleProps: Record<string, unknown>;
   onChange: (section: SheetSection) => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }
 
-function SectionEditor({ section, allKeys, dragHandleProps, onChange, onDuplicate, onDelete }: SectionEditorProps) {
+function SectionEditor({ section, allKeys, sectionKeys, dragHandleProps, onChange, onDuplicate, onDelete }: SectionEditorProps) {
   const preset = SECTION_STYLE_PRESETS[section.style];
+  const otherSectionKeys = withoutKey(sectionKeys, section.key);
+
+  // The key follows the title until the user edits it by hand
+  const handleTitleChange = (title: string) => {
+    const follows = section.key === slugifyKey(section.title);
+    const key = follows && title.trim() ? uniqueKey(slugifyKey(title), otherSectionKeys) : section.key;
+    onChange({ ...section, title, key });
+  };
 
   const handleAddField = (type: SheetFieldType) => {
     onChange({ ...section, fields: [...section.fields, createField(type, allKeys)] });
@@ -469,8 +500,29 @@ function SectionEditor({ section, allKeys, dragHandleProps, onChange, onDuplicat
           className={cn("h-6 min-w-0 flex-1 rounded-sm border-none bg-transparent px-1 text-sm font-semibold shadow-none focus-visible:bg-background/40 focus-visible:ring-0", preset.title)}
           value={section.title}
           placeholder="Section title"
-          onChange={(e) => onChange({ ...section, title: e.target.value })}
+          onChange={(e) => handleTitleChange(e.target.value)}
         />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" title="Section settings">
+              <LuPencil className="h-3.5 w-3.5" />
+            </Button>
+          </PopoverTrigger>
+          <SettingsPopoverContent title="Section Settings" icon={<LuSettings2 className="h-3.5 w-3.5 text-muted-foreground/70" />} side="bottom" align="end">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs">Key</Label>
+                <HelpTooltip>
+                  <p>
+                    Insert this whole section in prompts with <code>{`{{char.${section.key || "key"}}}`}</code>, or a single field with <code>{`{{char.${section.key || "key"}.field_key}}`}</code>.
+                  </p>
+                  <p>The key follows the title until you edit it here.</p>
+                </HelpTooltip>
+              </div>
+              <Input value={section.key} onChange={(e) => onChange({ ...section, key: uniqueKey(slugifyKey(e.target.value), otherSectionKeys) })} />
+            </div>
+          </SettingsPopoverContent>
+        </Popover>
         <Select value={section.style} onValueChange={(style) => onChange({ ...section, style: style as SheetSectionStyle })}>
           <SelectTrigger className="h-6 w-24 flex-shrink-0 border-border/40 bg-transparent text-xs" title="Section style">
             <SelectValue />
@@ -511,6 +563,7 @@ function SectionEditor({ section, allKeys, dragHandleProps, onChange, onDuplicat
               key={field.id}
               field={field}
               sectionColumns={section.columns}
+              allKeys={allKeys}
               onChange={(updated) => onChange({ ...section, fields: section.fields.map((f) => (f.id === updated.id ? updated : f)) })}
               onDuplicate={() => handleDuplicateField(field)}
               onDelete={() => onChange({ ...section, fields: section.fields.filter((f) => f.id !== field.id) })}
@@ -540,12 +593,13 @@ function SectionEditor({ section, allKeys, dragHandleProps, onChange, onDuplicat
 interface SortableSectionProps {
   section: SheetSection;
   allKeys: Set<string>;
+  sectionKeys: Set<string>;
   onChange: (section: SheetSection) => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }
 
-function SortableSection({ section, allKeys, onChange, onDuplicate, onDelete }: SortableSectionProps) {
+function SortableSection({ section, allKeys, sectionKeys, onChange, onDuplicate, onDelete }: SortableSectionProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id, data: { type: "section" } });
   const span = Math.min(section.span, 4);
   const { elementRef, previewSpan, onResizeStart } = useSpanResize(span, 4, (next) => onChange({ ...section, span: next }));
@@ -565,7 +619,15 @@ function SortableSection({ section, allKeys, onChange, onDuplicate, onDelete }: 
       style={{ gridColumn: `span ${displaySpan} / span ${displaySpan}`, transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.35 : 1 }}
       className={cn("group/resize relative min-w-0", previewSpan !== null && "rounded-lg ring-2 ring-primary/40", isDragging && "rounded-lg outline-dashed outline-2 outline-primary/50")}
     >
-      <SectionEditor section={section} allKeys={allKeys} dragHandleProps={{ ...attributes, ...listeners }} onChange={onChange} onDuplicate={onDuplicate} onDelete={onDelete} />
+      <SectionEditor
+        section={section}
+        allKeys={allKeys}
+        sectionKeys={sectionKeys}
+        dragHandleProps={{ ...attributes, ...listeners }}
+        onChange={onChange}
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+      />
       <ResizeHandle onResizeStart={onResizeStart} title="Drag to resize section width" />
     </div>
   );
@@ -663,6 +725,7 @@ export function SheetTemplateEditor({ sections, onChange }: SheetTemplateEditorP
   }, [sections]);
 
   const allKeys = new Set(localSections.flatMap((s) => s.fields.map((f) => f.key)));
+  const sectionKeys = new Set(localSections.map((s) => s.key));
 
   const commit = (next: SheetSection[]) => {
     setLocalSections(next);
@@ -767,7 +830,8 @@ export function SheetTemplateEditor({ sections, onChange }: SheetTemplateEditorP
   };
 
   const handleAddSection = () => {
-    commit([...localSections, { id: crypto.randomUUID(), title: "New Section", style: "plain", columns: 2, span: 4, fields: [] }]);
+    const title = "New Section";
+    commit([...localSections, { id: crypto.randomUUID(), key: uniqueKey(slugifyKey(title), sectionKeys), title, style: "plain", columns: 2, span: 4, fields: [] }]);
   };
 
   const handleDuplicateSection = (section: SheetSection) => {
@@ -775,6 +839,7 @@ export function SheetTemplateEditor({ sections, onChange }: SheetTemplateEditorP
     const copy: SheetSection = {
       ...structuredClone(section),
       id: crypto.randomUUID(),
+      key: uniqueKey(section.key, sectionKeys),
       fields: section.fields.map((field) => {
         const duplicated = duplicateField(field, keys);
         keys.add(duplicated.key);
@@ -808,6 +873,7 @@ export function SheetTemplateEditor({ sections, onChange }: SheetTemplateEditorP
                     key={section.id}
                     section={section}
                     allKeys={allKeys}
+                    sectionKeys={sectionKeys}
                     onChange={(updated) => commit(localSections.map((s) => (s.id === updated.id ? updated : s)))}
                     onDuplicate={() => handleDuplicateSection(section)}
                     onDelete={() => commit(localSections.filter((s) => s.id !== section.id))}

@@ -1,13 +1,23 @@
 import { InferenceMessage } from "@/schema/inference-engine-schema";
 import { FormattedPromptResult, PromptFormatterConfig } from "../formatter";
 import { applyCensorship } from "./apply-censorship";
+import { replaceSheetPattern } from "./replace-sheet-pattern";
 
 /**
  * Applies placeholder replacements to a given text string based on the configuration.
  */
 export function applyTextReplacements(text: string, config: PromptFormatterConfig["chatConfig"]): string {
-  const { character, user_character, chapter, extra } = config || {};
+  const { character, user_character, chapter, extra, characterSheet, userSheet } = config || {};
   let processedText = structuredClone(text);
+
+  // Sheet references first: their rendered markdown may itself contain macros
+  // like {{char}} inside user-authored cell text, which the passes below resolve.
+  if (characterSheet) {
+    processedText = replaceSheetPattern(processedText, { ...characterSheet, characterName: character?.name }, "char");
+  }
+  if (userSheet) {
+    processedText = replaceSheetPattern(processedText, { ...userSheet, characterName: user_character?.name }, "user");
+  }
 
   if (character?.name) {
     processedText = processedText.replace(/\{\{char\}\}/gi, character.name);
@@ -59,21 +69,22 @@ export function applyTextReplacements(text: string, config: PromptFormatterConfi
  * {{character.personality}} is always replaced (with "" when empty/non-character) so it can never
  * fall through to the global pass and pick up the generating character's personality.
  */
-export function renderCharacterContext(content: string, character: NonNullable<PromptFormatterConfig["chatConfig"]>["character"]): string {
+export function renderCharacterContext(content: string, character: NonNullable<NonNullable<PromptFormatterConfig["chatConfig"]>["contextCharacters"]>[number] | undefined): string {
   const name = character?.name ?? "";
   const rawPersonality = character?.type === "character" ? ((character?.custom as any)?.personality ?? "") : "";
+  const sheet = character?.sheet ? { ...character.sheet, characterName: name } : undefined;
   // Resolve the character-scoped macros inside the personality against THIS character and strip any
   // self-referential {{character.personality}}, so no character-scoped macro can survive into the
   // global pass (which only knows the generating character). Replacement values are passed via
   // functions so "$" sequences in user-authored names/personalities are treated literally.
   const personality: string = rawPersonality
-    ? rawPersonality
+    ? replaceSheetPattern(rawPersonality, sheet, "char")
         .replace(/\{\{char\}\}/gi, () => name)
         .replace(/\{\{character\.name\}\}/gi, () => name)
         .replace(/\{\{character\.personality\}\}/gi, "")
     : "";
 
-  return content
+  return replaceSheetPattern(content, sheet, "char")
     .replace(/\{\{char\}\}/gi, () => name)
     .replace(/\{\{character\.name\}\}/gi, () => name)
     .replace(/\{\{character\.personality\}\}/gi, () => personality);
