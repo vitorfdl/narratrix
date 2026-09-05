@@ -73,6 +73,8 @@ export const CharacterSchema = BaseCharacterTypeSchema.extend({
   custom: z
     .object({
       personality: z.string().nullable().optional(),
+      sheet_template_id: z.string().nullable().optional(),
+      sheet_values: z.record(z.string(), z.unknown()).nullable().optional(),
     })
     .nullable()
     .default({}),

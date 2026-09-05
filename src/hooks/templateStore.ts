@@ -1,6 +1,14 @@
 import { create } from "zustand";
+import { CharacterSheetTemplate, NewCharacterSheetTemplate } from "@/schema/template-character-sheet-schema";
 import { FormatTemplate, NewFormatTemplate } from "@/schema/template-format-schema";
 import { CreateInferenceTemplateParams, InferenceTemplate } from "@/schema/template-inferance-schema";
+import {
+  createCharacterSheetTemplate as createCharacterSheetTemplateAPI,
+  deleteCharacterSheetTemplate as deleteCharacterSheetTemplateAPI,
+  getCharacterSheetTemplateById as getCharacterSheetTemplateByIdAPI,
+  listCharacterSheetTemplates as listCharacterSheetTemplatesAPI,
+  updateCharacterSheetTemplate as updateCharacterSheetTemplateAPI,
+} from "@/services/template-character-sheet-service";
 import {
   createFormatTemplate as createFormatTemplateAPI,
   deleteFormatTemplate as deleteFormatTemplateAPI,
@@ -26,6 +34,7 @@ interface TemplateState {
   // Template collections
   formatTemplates: FormatTemplate[];
   inferenceTemplates: InferenceTemplate[];
+  characterSheetTemplates: CharacterSheetTemplate[];
 
   actions: {
     createFormatTemplate: (templateData: NewFormatTemplate) => Promise<FormatTemplate>;
@@ -43,6 +52,13 @@ interface TemplateState {
     fetchInferenceTemplates: (filter?: InferenceTemplateFilter) => Promise<void>;
     getInferenceTemplatesByProfile: (profileId: string) => Promise<InferenceTemplate[]>;
 
+    // Character Sheet Template Operations
+    createCharacterSheetTemplate: (templateData: NewCharacterSheetTemplate) => Promise<CharacterSheetTemplate>;
+    getCharacterSheetTemplateById: (id: string) => Promise<CharacterSheetTemplate | null>;
+    updateCharacterSheetTemplate: (id: string, updateData: Partial<Omit<CharacterSheetTemplate, "id" | "profile_id" | "created_at" | "updated_at">>) => Promise<CharacterSheetTemplate | null>;
+    deleteCharacterSheetTemplate: (id: string) => Promise<boolean>;
+    fetchCharacterSheetTemplates: (profileId: string) => Promise<void>;
+
     // Utility Functions
     clearTemplates: () => void;
     clearError: () => void;
@@ -55,6 +71,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   error: null,
   formatTemplates: [],
   inferenceTemplates: [],
+  characterSheetTemplates: [],
   promptTemplates: [],
   chatTemplates: [],
 
@@ -339,11 +356,108 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       }
     },
 
+    // Character Sheet Template Operations
+    createCharacterSheetTemplate: async (templateData: NewCharacterSheetTemplate) => {
+      try {
+        set({ isLoading: true, error: null });
+        const newTemplate = await createCharacterSheetTemplateAPI(templateData);
+
+        set((state) => ({
+          characterSheetTemplates: [...state.characterSheetTemplates, newTemplate],
+          isLoading: false,
+        }));
+
+        return newTemplate;
+      } catch (error) {
+        set({
+          error: `Failed to create character sheet template: ${error instanceof Error ? error.message : String(error)}`,
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    getCharacterSheetTemplateById: async (id: string) => {
+      try {
+        const cachedTemplate = get().characterSheetTemplates.find((template) => template.id === id);
+        if (cachedTemplate) {
+          return cachedTemplate;
+        }
+
+        const template = await getCharacterSheetTemplateByIdAPI(id);
+
+        if (template) {
+          set((state) => ({
+            characterSheetTemplates: [...state.characterSheetTemplates.filter((t) => t.id !== id), template],
+          }));
+        }
+
+        return template;
+      } catch (error) {
+        set({
+          error: `Failed to get character sheet template with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        });
+        return null;
+      }
+    },
+
+    updateCharacterSheetTemplate: async (id: string, updateData) => {
+      try {
+        set({ error: null });
+        const updatedTemplate = await updateCharacterSheetTemplateAPI(id, updateData);
+
+        if (updatedTemplate) {
+          set((state) => ({
+            characterSheetTemplates: state.characterSheetTemplates.map((template) => (template.id === id ? updatedTemplate : template)),
+          }));
+        }
+
+        return updatedTemplate;
+      } catch (error) {
+        set({
+          error: `Failed to update character sheet template with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        });
+        return null;
+      }
+    },
+
+    deleteCharacterSheetTemplate: async (id: string) => {
+      try {
+        set({ error: null });
+        const success = await deleteCharacterSheetTemplateAPI(id);
+
+        if (success) {
+          set((state) => ({
+            characterSheetTemplates: state.characterSheetTemplates.filter((template) => template.id !== id),
+          }));
+        }
+
+        return success;
+      } catch (error) {
+        set({
+          error: `Failed to delete character sheet template with ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        });
+        return false;
+      }
+    },
+
+    fetchCharacterSheetTemplates: async (profileId: string) => {
+      try {
+        const templates = await listCharacterSheetTemplatesAPI(profileId);
+        set({ characterSheetTemplates: templates });
+      } catch (error) {
+        set({
+          error: `Failed to fetch character sheet templates: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      }
+    },
+
     // Utility Functions
     clearTemplates: () =>
       set({
         formatTemplates: [],
         inferenceTemplates: [],
+        characterSheetTemplates: [],
       }),
 
     clearError: () => set({ error: null }),
@@ -352,6 +466,9 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
 export const useFormatTemplateList = () => useTemplateStore((state) => state.formatTemplates);
 export const useInferenceTemplateList = () => useTemplateStore((state) => state.inferenceTemplates);
+
+export const useCharacterSheetTemplateList = () => useTemplateStore((state) => state.characterSheetTemplates);
+export const useCharacterSheetTemplate = (id: string | null) => useTemplateStore((state) => (id ? state.characterSheetTemplates.find((template) => template.id === id) : undefined));
 
 export const useFormatTemplate = (id: string) => useTemplateStore((state) => state.formatTemplates.find((template) => template.id === id));
 export const useInferenceTemplate = (id: string) => useTemplateStore((state) => state.inferenceTemplates.find((template) => template.id === id));

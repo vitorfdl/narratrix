@@ -93,5 +93,11 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: include_str!("./migrations/15_chat_template_tools.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 16,
+            description: "create_character_sheet_templates",
+            sql: include_str!("./migrations/16_create_character_sheet_templates.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }
