@@ -4,7 +4,7 @@ Execution engine for agent node graphs authored in `src/pages/agents`. Persisten
 
 ## Execution
 
-`runner.ts#executeWorkflow(agent, triggerContext?, deps, onNodeExecuted?)` topologically sorts the DAG of `AgentNodeType` + `AgentEdgeType` (`@/schema/agent-schema`), then walks nodes sequentially. For each it builds an `inputs` record from incoming edges via `handles.ts#getNodeInputs`, looks up the executor in `NodeRegistry`, and awaits it. Successful values are stored in `context.nodeValues` keyed by node id; multi-output nodes (`javascript`, `userChoice`, `searchLorebook`, `addLorebookEntry`) also write handle-scoped keys (`${nodeId}::out-string`). The first `chatOutput` node's value is the workflow's return.
+`runner.ts#executeWorkflow(agent, triggerContext?, deps, onNodeExecuted?)` topologically sorts the DAG of `AgentNodeType` + `AgentEdgeType` (`@/schema/agent-schema`), then walks nodes sequentially. For each it builds an `inputs` record from incoming edges via `handles.ts#getNodeInputs`, looks up the executor in `NodeRegistry`, and awaits it. Successful values are stored in `context.nodeValues` keyed by node id; multi-output / dual-mode nodes (`javascript`, `userChoice`, `searchLorebook`, `addLorebookEntry`, `listParticipants`, `setParticipantEnabled`, `getParticipantData`) also write handle-scoped keys (`${nodeId}::out-string` for script output, `${nodeId}::out-toolset` for tool output). When you add another dual-mode node, append its type to that hardcoded list in `runner.ts`. The first `chatOutput` node's value is the workflow's return.
 
 Live runs are tracked in a module-level `Map<runKey, WorkflowExecutionContext>` where `runKey = "${chatId ?? "global"}::${agentId}"` — the same agent in two chats runs independently.
 

@@ -1,5 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LuClock, LuFileText, LuImage, LuLoaderCircle, LuMessageCircle, LuPause, LuPlay, LuRefreshCw, LuSettings, LuSmile, LuUser, LuWifiOff } from "react-icons/lu";
+import {
+  LuClock,
+  LuFileText,
+  LuImage,
+  LuLayoutGrid,
+  LuLoaderCircle,
+  LuMessageCircle,
+  LuPause,
+  LuPlay,
+  LuRefreshCw,
+  LuRows3,
+  LuSettings,
+  LuSmile,
+  LuStretchHorizontal,
+  LuUser,
+  LuUsers,
+  LuWifiOff,
+} from "react-icons/lu";
+import { toast } from "sonner";
 import { useThrottledCallback } from "use-debounce";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/shared/Dialog";
@@ -19,6 +37,7 @@ import { useExpressionStore } from "@/hooks/expressionStore";
 import { useChatInferenceState } from "@/hooks/useChatInference";
 import { useMultipleImageUrls } from "@/hooks/useImageUrl";
 import { cn } from "@/lib/utils";
+import { useGridCardDecorated } from "@/pages/chat/components/GridCard";
 import WidgetConfig from "@/pages/chat/components/WidgetConfig";
 import { Character, EXPRESSION_LIST } from "@/schema/characters-schema";
 import { basicPromptSuggestionList, ChatMessage } from "@/schema/chat-message-schema";
@@ -28,6 +47,27 @@ import { findClosestExpressionMatch } from "@/utils/fuzzy-search";
 import { useLocalExpressionGenerationSettings } from "@/utils/local-storage";
 
 type ExpressionImageFit = "cover" | "contain" | "fill" | "scale-down" | "none";
+type ExpressionLayoutMode = "horizontal" | "grid" | "vertical";
+type ExpressionMultiGenerationMode = "latest-message" | "own-last-message";
+
+const EXPRESSION_LAYOUT_OPTIONS: { value: ExpressionLayoutMode; label: string; icon: typeof LuUsers }[] = [
+  { value: "horizontal", label: "Horizontal (side-by-side)", icon: LuStretchHorizontal },
+  { value: "grid", label: "Grid", icon: LuLayoutGrid },
+  { value: "vertical", label: "Vertical (stacked)", icon: LuRows3 },
+];
+
+const EXPRESSION_MULTI_GENERATION_OPTIONS: { value: ExpressionMultiGenerationMode; label: string; helper: string }[] = [
+  {
+    value: "latest-message",
+    label: "React to latest message",
+    helper: "Every character reacts to the same latest message (or your selected text).",
+  },
+  {
+    value: "own-last-message",
+    label: "Each character's own last line",
+    helper: "Each character's expression reflects their own most recent message in the chat.",
+  },
+];
 
 const EXPRESSION_IMAGE_FIT_OPTIONS: { value: ExpressionImageFit; label: string; helper: string }[] = [
   {
@@ -66,6 +106,9 @@ export type ExpressionGenerateSettings = {
   throttleInterval: number; // Auto mode update frequency in milliseconds
   disableLogs: boolean;
   imageObjectFit: ExpressionImageFit;
+  showAllCharacters: boolean;
+  multiLayout: ExpressionLayoutMode;
+  multiGenerationMode: ExpressionMultiGenerationMode;
 };
 
 const ExpressionSuggestionList = [
@@ -97,7 +140,22 @@ const formatExpressionLabel = (expression?: string | null): string => {
   return expression.charAt(0).toUpperCase() + expression.slice(1);
 };
 
+// A character qualifies for the expression widget only if it has at least one expression image.
+const hasExpressionImages = (character: Character): boolean => Boolean(character.expressions?.some((expression) => expression.image_path));
+
+// generateQuietly rejects with a string message, so Error-based extraction alone loses the real cause.
+const extractErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+  return "An unknown error occurred";
+};
+
 const WidgetExpressions = () => {
+  const isDecorated = useGridCardDecorated();
   const { generateQuietly } = useBackgroundInference();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State for dialog visibility
   const [activeTab, setActiveTab] = useState("basic"); // State for active tab
@@ -108,7 +166,11 @@ const WidgetExpressions = () => {
   const [tempDisableLogs, setTempDisableLogs] = useState(false);
   const [tempAutoRunAfterComplete, setTempAutoRunAfterComplete] = useState(false);
   const [tempImageObjectFit, setTempImageObjectFit] = useState<ExpressionImageFit>("cover");
+  const [tempShowAllCharacters, setTempShowAllCharacters] = useState(false);
+  const [tempMultiLayout, setTempMultiLayout] = useState<ExpressionLayoutMode>("horizontal");
+  const [tempMultiGenerationMode, setTempMultiGenerationMode] = useState<ExpressionMultiGenerationMode>("latest-message");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingCharacterIds, setGeneratingCharacterIds] = useState<Set<string>>(() => new Set());
 
   // Use the hook for settings
   const [expressionSettings, setExpressionSettings] = useLocalExpressionGenerationSettings();
@@ -137,6 +199,7 @@ const WidgetExpressions = () => {
   const lastMessageContentRef = useRef<string>(""); // Ref for latest message content
   const lastSpeakerIdRef = useRef<string | undefined>(undefined); // Ref for latest speaker ID
   const lastMessageRef = useRef<ChatMessage | null>(null); // Ref for latest message object
+  const messagesRef = useRef<ChatMessage[]>([]); // Ref for full message list (per-character lookup)
 
   useEffect(() => {
     characterExpressionsRef.current = characterExpressions;
@@ -169,6 +232,22 @@ const WidgetExpressions = () => {
     lastMessageRef.current = lastMessage; // Update last message ref
   }, [lastMessage]);
 
+  useEffect(() => {
+    messagesRef.current = messages ?? [];
+  }, [messages]);
+
+  // Most recent message content authored by a specific character (for "own last line" mode)
+  const getLastMessageContentForCharacter = useCallback((characterId: string): string => {
+    const list = messagesRef.current;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const message = list[i];
+      if (message.character_id === characterId) {
+        return message.messages?.[message.message_index] || message.messages?.[0] || "";
+      }
+    }
+    return "";
+  }, []);
+
   // Effect to populate temp state when dialog opens
   useEffect(() => {
     if (isSettingsOpen) {
@@ -179,6 +258,9 @@ const WidgetExpressions = () => {
       setTempDisableLogs(expressionSettings.disableLogs || false);
       setTempAutoRunAfterComplete(expressionSettings.autoRunAfterComplete || false);
       setTempImageObjectFit(expressionSettings.imageObjectFit ?? "cover");
+      setTempShowAllCharacters(expressionSettings.showAllCharacters ?? false);
+      setTempMultiLayout(expressionSettings.multiLayout ?? "horizontal");
+      setTempMultiGenerationMode(expressionSettings.multiGenerationMode ?? "latest-message");
       setActiveTab("basic");
     }
   }, [
@@ -190,6 +272,9 @@ const WidgetExpressions = () => {
     expressionSettings.disableLogs,
     expressionSettings.autoRunAfterComplete,
     expressionSettings.imageObjectFit,
+    expressionSettings.showAllCharacters,
+    expressionSettings.multiLayout,
+    expressionSettings.multiGenerationMode,
   ]);
 
   // --- Load Expression Images ---
@@ -217,9 +302,42 @@ const WidgetExpressions = () => {
 
   const { urlMap: expressionUrlMap } = useMultipleImageUrls(expressionObjectsToLoad, getPathForItem, getIdForItem);
 
-  // Manual expression generation function (now reads from refs AND selected text)
-  const generateExpression = useCallback(
-    async (userPickedText?: string) => {
+  // Run a single inference for one character against a given message and store the resolved expression
+  const runCharacterExpression = useCallback(
+    async (character: Character, messageContent: string, chapterId?: string): Promise<void> => {
+      const availableExpressions = character.expressions?.length ? character.expressions.filter((exp) => exp.image_path).map((exp) => exp.name) : EXPRESSION_LIST;
+      const availableExpressionNames = character.expressions?.length ? character.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
+
+      const expressionResult = await generateQuietly({
+        chatTemplateId: expressionSettings.chatTemplateId,
+        context: {
+          characterID: character.id,
+          chapterID: chapterId,
+          extra: {
+            "expression.list": availableExpressions.join(", "),
+            "expression.last": characterExpressionsRef.current[character.id] || "neutral",
+            "chat.message": messageContent,
+          },
+        },
+        prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
+        systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
+        disableLogs: expressionSettings.disableLogs || false,
+      });
+
+      const rawExpression = expressionResult?.trim().split("\n")[0].split(" ")[0].toLowerCase() || "";
+      const finalExpression = findClosestExpressionMatch(rawExpression, availableExpressionNames, "neutral");
+
+      setCharacterExpressions((prev) => ({
+        ...prev,
+        [character.id]: finalExpression,
+      }));
+    },
+    [generateQuietly, expressionSettings.chatTemplateId, expressionSettings.requestPrompt, expressionSettings.systemPrompt, expressionSettings.disableLogs],
+  );
+
+  // Single-character generation: only the current speaker (or selected text's author)
+  const generateSingleExpression = useCallback(
+    async (userPickedText?: string, notifyOnError = false) => {
       const currentSpeakerId = userPickedText ? selectedMessageCharacterId : lastSpeakerIdRef.current;
       const currentLastMessage = lastMessageRef.current;
 
@@ -232,14 +350,7 @@ const WidgetExpressions = () => {
 
       const messageContentToUse = userPickedText || currentLastMessage?.messages?.[0] || "";
 
-      if (!messageContentToUse) {
-        if (selectedText) {
-          clearSelection();
-        }
-        return;
-      }
-
-      if (messageContentToUse.trim() === "...") {
+      if (!messageContentToUse || messageContentToUse.trim() === "...") {
         if (selectedText) {
           clearSelection();
         }
@@ -255,40 +366,17 @@ const WidgetExpressions = () => {
         return;
       }
 
-      const availableExpressions = targetCharacter.expressions?.length ? targetCharacter.expressions.filter((exp) => exp.image_path).map((exp) => exp.name) : EXPRESSION_LIST;
-      const availableExpressionNames = targetCharacter.expressions?.length ? targetCharacter.expressions.map((exp) => exp.name) : EXPRESSION_LIST;
-
       setIsGenerating(true);
       try {
-        const expressionResult = await generateQuietly({
-          chatTemplateId: expressionSettings.chatTemplateId,
-          context: {
-            characterID: currentSpeakerId,
-            chapterID: currentLastMessage?.chapter_id,
-            extra: {
-              "expression.list": availableExpressions.join(", "),
-              "expression.last": characterExpressionsRef.current[currentSpeakerId] || "neutral",
-              "chat.message": messageContentToUse,
-            },
-          },
-          prompt: expressionSettings.requestPrompt || defaultRequestPrompt,
-          systemPrompt: expressionSettings.systemPrompt || defaultSystemPrompt,
-          disableLogs: expressionSettings.disableLogs || false,
-        });
-
-        const rawExpression = expressionResult?.trim().split("\n")[0].split(" ")[0].toLowerCase() || "";
-        const finalExpression = findClosestExpressionMatch(rawExpression, availableExpressionNames, "neutral");
-
-        setCharacterExpressions((prev) => ({
-          ...prev,
-          [currentSpeakerId]: finalExpression,
-        }));
+        await runCharacterExpression(targetCharacter, messageContentToUse, currentLastMessage?.chapter_id);
         setConnectionError(null);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-        const formattedMessage = `Expression generation failed for ${targetCharacter.name}: ${errorMessage}`;
-        setConnectionError(formattedMessage);
+        const errorMessage = extractErrorMessage(error);
+        setConnectionError(`Expression generation failed for ${targetCharacter.name}: ${errorMessage}`);
         console.error(`Error generating expression for ${targetCharacter.name}:`, error);
+        if (notifyOnError) {
+          toast.error("Expression generation failed", { id: "expression-generation", description: `${targetCharacter.name}: ${errorMessage}` });
+        }
         setCharacterExpressions((prev) => ({
           ...prev,
           [currentSpeakerId]: "neutral",
@@ -300,17 +388,94 @@ const WidgetExpressions = () => {
         setIsGenerating(false);
       }
     },
-    [
-      activeCharacters,
-      generateQuietly,
-      expressionSettings.requestPrompt,
-      expressionSettings.systemPrompt,
-      expressionSettings.chatTemplateId,
-      expressionSettings.disableLogs,
-      selectedText,
-      selectedMessageCharacterId,
-      clearSelection,
-    ],
+    [activeCharacters, runCharacterExpression, expressionSettings.chatTemplateId, selectedText, selectedMessageCharacterId, clearSelection],
+  );
+
+  // Multi-character generation: every active participant that owns an expression list, run in parallel.
+  // The model's concurrency queue (max_concurrency) serializes these automatically.
+  const generateAllExpressions = useCallback(
+    async (userPickedText?: string, notifyOnError = false) => {
+      if (!expressionSettings.chatTemplateId) {
+        if (selectedText) {
+          clearSelection();
+        }
+        return;
+      }
+
+      const triggerText = userPickedText || lastMessageContentRef.current || "";
+      const chapterId = lastMessageRef.current?.chapter_id;
+      const candidates = (activeCharacters ?? []).filter(hasExpressionImages);
+
+      if (!candidates.length) {
+        if (selectedText) {
+          clearSelection();
+        }
+        return;
+      }
+
+      setIsGenerating(true);
+      try {
+        const results = await Promise.all(
+          candidates.map(async (character) => {
+            const messageContent = expressionSettings.multiGenerationMode === "own-last-message" ? getLastMessageContentForCharacter(character.id) : triggerText;
+
+            if (!messageContent || messageContent.trim() === "...") {
+              return { ok: true as const, name: character.name };
+            }
+
+            setGeneratingCharacterIds((prev) => {
+              const next = new Set(prev);
+              next.add(character.id);
+              return next;
+            });
+
+            try {
+              await runCharacterExpression(character, messageContent, chapterId);
+              return { ok: true as const, name: character.name };
+            } catch (error) {
+              console.error(`Error generating expression for ${character.name}:`, error);
+              return { ok: false as const, name: character.name, message: extractErrorMessage(error) };
+            } finally {
+              setGeneratingCharacterIds((prev) => {
+                const next = new Set(prev);
+                next.delete(character.id);
+                return next;
+              });
+            }
+          }),
+        );
+
+        const failures = results.filter((result): result is { ok: false; name: string; message: string } => !result.ok);
+        if (failures.length) {
+          const names = failures.map((failure) => failure.name).join(", ");
+          const detail = failures[0].message;
+          setConnectionError(`Expression generation failed for ${names}: ${detail}`);
+          if (notifyOnError) {
+            toast.error("Expression generation failed", { id: "expression-generation", description: `${names}: ${detail}` });
+          }
+        } else {
+          setConnectionError(null);
+        }
+      } finally {
+        setIsGenerating(false);
+        if (selectedText) {
+          clearSelection();
+        }
+      }
+    },
+    [activeCharacters, runCharacterExpression, getLastMessageContentForCharacter, expressionSettings.chatTemplateId, expressionSettings.multiGenerationMode, selectedText, clearSelection],
+  );
+
+  // Route to single- or multi-character generation based on the current setting.
+  // notifyOnError is set by user-initiated calls so background auto-refresh failures stay quiet.
+  const generateExpression = useCallback(
+    (userPickedText?: string, notifyOnError = false) => {
+      if (expressionSettings.showAllCharacters) {
+        return generateAllExpressions(userPickedText, notifyOnError);
+      }
+      return generateSingleExpression(userPickedText, notifyOnError);
+    },
+    [expressionSettings.showAllCharacters, generateAllExpressions, generateSingleExpression],
   );
 
   // Create a throttled version for updates during streaming - Call useThrottledCallback directly
@@ -339,7 +504,7 @@ const WidgetExpressions = () => {
   // Manual text selection always bypasses throttle -- it's a deliberate user action
   useEffect(() => {
     if (autoRefreshEnabled && expressionSettings.chatTemplateId && selectedText && selectedMessageCharacterId) {
-      generateExpression(selectedText);
+      generateExpression(selectedText, true);
     }
   }, [autoRefreshEnabled, expressionSettings.chatTemplateId, selectedText, selectedMessageCharacterId, generateExpression]);
 
@@ -378,9 +543,24 @@ const WidgetExpressions = () => {
       disableLogs: tempDisableLogs,
       autoRunAfterComplete: tempAutoRunAfterComplete,
       imageObjectFit: tempImageObjectFit,
+      showAllCharacters: tempShowAllCharacters,
+      multiLayout: tempMultiLayout,
+      multiGenerationMode: tempMultiGenerationMode,
     }));
     setIsSettingsOpen(false);
-  }, [setExpressionSettings, tempRequestPrompt, tempSystemPrompt, tempChatTemplateId, tempThrottleInterval, tempDisableLogs, tempAutoRunAfterComplete, tempImageObjectFit]);
+  }, [
+    setExpressionSettings,
+    tempRequestPrompt,
+    tempSystemPrompt,
+    tempChatTemplateId,
+    tempThrottleInterval,
+    tempDisableLogs,
+    tempAutoRunAfterComplete,
+    tempImageObjectFit,
+    tempShowAllCharacters,
+    tempMultiLayout,
+    tempMultiGenerationMode,
+  ]);
 
   // Function to get expression for a character (stable via useCallback)
   const getCharacterExpression = useCallback(
@@ -403,6 +583,13 @@ const WidgetExpressions = () => {
     return getCharacterExpression(displayCharacter.id);
   }, [displayCharacter, getCharacterExpression]);
 
+  const displayImageSrc = useMemo(() => {
+    if (!displayCharacter) {
+      return undefined;
+    }
+    return expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined;
+  }, [displayCharacter, expressionUrlMap, avatarUrlMap]);
+
   const imageObjectFit = expressionSettings.imageObjectFit ?? "cover";
   const imageObjectFitClass = useMemo(() => {
     switch (imageObjectFit) {
@@ -420,10 +607,36 @@ const WidgetExpressions = () => {
     }
   }, [imageObjectFit]);
 
+  // Characters shown in multi-character mode: active participants that own at least one expression image
+  const multiDisplayCharacters = useMemo(() => {
+    return (activeCharacters ?? []).filter(hasExpressionImages);
+  }, [activeCharacters]);
+
+  const isMultiView = expressionSettings.showAllCharacters && multiDisplayCharacters.length > 0;
+
+  const multiLayout = expressionSettings.multiLayout ?? "horizontal";
+  const { multiContainerClass, multiCellClass } = useMemo(() => {
+    switch (multiLayout) {
+      case "vertical":
+        return { multiContainerClass: "flex flex-col items-stretch justify-center gap-2 overflow-y-auto", multiCellClass: "w-full flex-1 min-h-[120px]" };
+      case "grid":
+        return { multiContainerClass: "grid gap-2 overflow-y-auto content-start", multiCellClass: "aspect-square" };
+      default:
+        return { multiContainerClass: "flex flex-row items-stretch justify-center gap-2 overflow-x-auto", multiCellClass: "h-full flex-1 min-w-[100px]" };
+    }
+  }, [multiLayout]);
+
+  const multiContainerStyle = multiLayout === "grid" ? { gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))" } : undefined;
+
   const selectedImageFitDescription = useMemo(() => {
     const match = EXPRESSION_IMAGE_FIT_OPTIONS.find((option) => option.value === tempImageObjectFit);
     return match?.helper ?? "";
   }, [tempImageObjectFit]);
+
+  const selectedMultiGenerationDescription = useMemo(() => {
+    const match = EXPRESSION_MULTI_GENERATION_OPTIONS.find((option) => option.value === tempMultiGenerationMode);
+    return match?.helper ?? "";
+  }, [tempMultiGenerationMode]);
 
   const expressionSourceLabel = useMemo(() => {
     if (!displayCharacter) {
@@ -443,30 +656,52 @@ const WidgetExpressions = () => {
 
   // Fill entire available space - using flex-1 to ensure the component properly fills available space in any container
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
-      <div className="flex-1 min-h-0 flex items-center justify-center bg-background/50 backdrop-blur-sm relative">
+    <div className="w-full h-full flex flex-col overflow-hidden relative">
+      <div className={cn("flex-1 min-h-0 flex items-center justify-center relative", isDecorated && "bg-background/50 backdrop-blur-sm")}>
         <div className="w-full h-full flex items-center justify-center overflow-hidden">
           {activeCharacters && activeCharacters.length > 0 ? (
-            <>
-              {/* Single Character View */}
+            isMultiView ? (
+              /* Multi-Character View */
+              <div className={cn("w-full h-full p-2", multiContainerClass)} style={multiContainerStyle}>
+                {multiDisplayCharacters.map((character) => {
+                  const src = expressionUrlMap[character.id] || avatarUrlMap[character.id] || undefined;
+                  const isCharGenerating = generatingCharacterIds.has(character.id);
+                  return (
+                    <div key={character.id} className={cn("relative min-h-0", multiCellClass)}>
+                      <Avatar className={cn("w-full h-full rounded-md", isDecorated && "shadow-md")} style={{ aspectRatio: "1/1" }}>
+                        <AvatarImage key={src} src={src} alt={character.name} className={cn("w-full h-full transition-opacity duration-200 ease-out opacity-100", imageObjectFitClass)} />
+                        <AvatarFallback>{src ? <LuLoaderCircle className="w-[40%] h-[40%] animate-spin" /> : <LuUser className="w-[35%] h-[35%] text-primary/20" />}</AvatarFallback>
+                      </Avatar>
+                      {isCharGenerating && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/40">
+                          <LuLoaderCircle className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      )}
+                      <span className="absolute bottom-1 left-1/2 max-w-[90%] -translate-x-1/2 truncate rounded bg-background/70 px-1.5 py-0.5 text-[10px] font-medium text-foreground">
+                        {character.name}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Single Character View */
               <div className="w-full h-full flex flex-col items-center justify-center min-h-0">
                 {displayCharacter && (
                   <div className={cn("w-full h-full relative min-h-0")}>
-                    <Avatar className="w-full h-full shadow-lg" style={{ aspectRatio: "1/1" }}>
+                    <Avatar className={cn("w-full h-full", isDecorated && "shadow-lg")} style={{ aspectRatio: "1/1" }}>
                       <AvatarImage
-                        key={(expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id]) as string}
-                        src={expressionUrlMap[displayCharacter.id] || avatarUrlMap[displayCharacter.id] || undefined}
+                        key={displayImageSrc}
+                        src={displayImageSrc}
                         alt={displayCharacter.name}
                         className={cn("w-full h-full transition-opacity duration-200 ease-out opacity-100", imageObjectFitClass)}
                       />
-                      <AvatarFallback>
-                        <LuLoaderCircle className="w-[50%] h-[50%] animate-spin" />
-                      </AvatarFallback>
+                      <AvatarFallback>{displayImageSrc ? <LuLoaderCircle className="w-[50%] h-[50%] animate-spin" /> : <LuUser className="w-[40%] h-[40%] text-primary/20" />}</AvatarFallback>
                     </Avatar>
                   </div>
                 )}
               </div>
-            </>
+            )
           ) : (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-3">
               <LuUser className="h-16 w-16 text-primary/20" />
@@ -477,8 +712,13 @@ const WidgetExpressions = () => {
         </div>
       </div>
 
-      {/* Controls - always visible compact toolbar */}
-      <div className="flex-shrink-0 px-3 mt-2 mb-1">
+      {/* Controls - shown inline when decorated, otherwise overlaid on hover */}
+      <div
+        className={cn(
+          "flex-shrink-0 px-3 mt-2 mb-1",
+          !isDecorated && "absolute bottom-0 left-0 right-0 z-10 mt-0 mb-2 opacity-0 transition-opacity duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto",
+        )}
+      >
         <div className="mx-auto w-full">
           <div className="flex items-center justify-between rounded-md border bg-muted/40 px-2 py-1 shadow-sm">
             <div className="flex items-center gap-2">
@@ -486,10 +726,12 @@ const WidgetExpressions = () => {
                 variant={isGenerating ? "default" : "ghost"}
                 size="xs"
                 className="px-1"
-                onClick={() => generateExpression()}
+                onClick={() => generateExpression(undefined, true)}
                 disabled={isGenerating || !expressionSettings.chatTemplateId || (!selectedText && !lastSpeakerId)}
-                aria-label={selectedText ? "Generate expression from selection" : "Generate expression for current speaker"}
-                title={selectedText ? "Generate from selection" : "Generate for speaker"}
+                aria-label={
+                  expressionSettings.showAllCharacters ? "Generate expressions for all characters" : selectedText ? "Generate expression from selection" : "Generate expression for current speaker"
+                }
+                title={expressionSettings.showAllCharacters ? "Generate for all characters" : selectedText ? "Generate from selection" : "Generate for speaker"}
               >
                 <LuRefreshCw className={cn("!h-3 !w-3", isGenerating && "animate-spin")} />
                 <span className="ml-0.2 hidden sm:inline text-xs">{isGenerating ? "Generating..." : "Generate"}</span>
@@ -572,7 +814,7 @@ const WidgetExpressions = () => {
                     <TabsList className="grid grid-cols-3 mb-3">
                       <TabsTrigger value="basic" className="flex items-center gap-1 py-1">
                         <LuMessageCircle className="h-3 w-3" />
-                        <span>Prompts</span>
+                        <span>General</span>
                       </TabsTrigger>
                       <TabsTrigger value="template" className="flex items-center gap-1 py-1">
                         <LuFileText className="h-3 w-3" />
@@ -587,6 +829,64 @@ const WidgetExpressions = () => {
                     <DialogBody>
                       <TabsContent value="basic" className="space-y-3 my-2">
                         <div className="space-y-4">
+                          <div className="rounded-lg border p-3 space-y-3">
+                            <div className="flex flex-row items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <Label htmlFor="show-all-characters" className="flex items-center gap-1">
+                                  <LuUsers className="h-3 w-3 text-muted-foreground" />
+                                  <span>Show All Characters</span>
+                                </Label>
+                                <HelpTooltip>
+                                  Display every active participant's expression at once instead of only the latest speaker. On generation, runs once per participant (respecting the model's parallel
+                                  limit) and ignores participants without an expression list. Ideal for visual-novel scenes.
+                                </HelpTooltip>
+                              </div>
+                              <Switch id="show-all-characters" checked={tempShowAllCharacters} onCheckedChange={setTempShowAllCharacters} />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <div className="flex h-5 items-center gap-1">
+                                  <Label htmlFor="multi-layout">Layout</Label>
+                                </div>
+                                <Select value={tempMultiLayout} onValueChange={(value) => setTempMultiLayout(value as ExpressionLayoutMode)} disabled={!tempShowAllCharacters}>
+                                  <SelectTrigger id="multi-layout">
+                                    <SelectValue placeholder="Select layout" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {EXPRESSION_LAYOUT_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        <span className="flex items-center gap-2">
+                                          <option.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                                          {option.label}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex h-5 items-center gap-1">
+                                  <Label htmlFor="multi-generation-mode">Reaction Source</Label>
+                                  <HelpTooltip>{selectedMultiGenerationDescription || "Choose what text each character reacts to when showing all characters."}</HelpTooltip>
+                                </div>
+                                <Select value={tempMultiGenerationMode} onValueChange={(value) => setTempMultiGenerationMode(value as ExpressionMultiGenerationMode)} disabled={!tempShowAllCharacters}>
+                                  <SelectTrigger id="multi-generation-mode">
+                                    <SelectValue placeholder="Select reaction source" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {EXPRESSION_MULTI_GENERATION_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="grid gap-2">
                             <Label htmlFor="request-prompt">User Prompt (Request)</Label>
                             <MarkdownTextArea

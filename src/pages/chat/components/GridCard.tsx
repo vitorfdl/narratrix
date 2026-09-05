@@ -1,9 +1,13 @@
 // src/components/GridCard.tsx
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { LuEye, LuEyeOff, LuGrip, LuPinOff } from "react-icons/lu";
 import { CardProps } from "@/schema/grid";
 import { useLocalGridLayout } from "@/utils/local-storage";
+
+// Lets widgets react to their card's decoration state (e.g. go chrome-less when decorations are hidden)
+const GridCardDecorationContext = createContext<boolean>(true);
+export const useGridCardDecorated = () => useContext(GridCardDecorationContext);
 
 export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, buttons = [], dragHandleClassName }) => {
   const [positions, setPositions] = useLocalGridLayout();
@@ -56,7 +60,9 @@ export const GridCard: React.FC<CardProps> = ({ id, title, children, onClose, bu
       </div>
 
       {/* Content */}
-      <div className="p-1 flex-1 overflow-hidden min-h-0">{children}</div>
+      <div className={`flex-1 overflow-hidden min-h-0 ${isDecorated ? "p-1" : ""}`}>
+        <GridCardDecorationContext.Provider value={isDecorated}>{children}</GridCardDecorationContext.Provider>
+      </div>
 
       {/* Custom resize indicator */}
       {isDecorated && (

@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import ResizablePopoverContent from "@/components/ui/ResizablePopoverBar";
 import { Separator } from "@/components/ui/separator";
 import { GridPosition } from "@/schema/grid";
+import { useLocalWidgetWidth } from "@/utils/local-storage";
 import { renderWidget, WidgetId, widgetConfigurations, widgetTitles } from "../hooks/registry";
 
 interface GridSidebarProps {
@@ -15,6 +16,45 @@ interface GridSidebarProps {
   inspectorOpen?: boolean;
   onToggleInspector: () => void;
 }
+
+interface SidebarWidgetItemProps {
+  widgetId: WidgetId;
+  tabId: string;
+  toggleCard: (cardId: string) => void;
+  maxPopoverHeight: number;
+}
+
+const SidebarWidgetItem: React.FC<SidebarWidgetItemProps> = ({ widgetId, tabId, toggleCard, maxPopoverHeight }) => {
+  const [width, setWidth] = useLocalWidgetWidth(widgetId);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          aria-label={`${widgetTitles[widgetId]} widget`}
+          title={`${widgetTitles[widgetId]} widget`}
+          className="m-1 h-auto bg-transparent whitespace-nowrap text-sm p-0.5 pt-1 pb-1 font-light"
+        >
+          <div className="flex items-center gap-1">{widgetConfigurations[widgetId].icon}</div>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent side="right" className="max-w-[80vw] shadow-lg shadow-foreground/25  w-auto  bg-card p-0">
+        <PopoverArrow width={10} height={8} className="fill-muted-foreground" />
+        <div className="flex items-top justify-between px-2 py-1">
+          <span className="text-xs ml-2 font-semibold">{widgetTitles[widgetId]}</span>
+          <button onClick={() => toggleCard(widgetId)} className="p-1 hover:bg-accent rounded">
+            <LuPin className="w-3 h-3" />
+          </button>
+        </div>
+        <hr className="mb-1 mt-0.2 border-t border-border" />
+        <ResizablePopoverContent className="w-full" minWidth={450} maxHeight={maxPopoverHeight} minHeight={widgetId === "expressions" ? 400 : 200} defaultWidth={width} onWidthChange={setWidth}>
+          <div className="w-full h-full">{renderWidget(widgetId, tabId)}</div>
+        </ResizablePopoverContent>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleCard, tabId, onToggleInspector }) => {
   const [maxPopoverHeight, setMaxPopoverHeight] = useState(600);
@@ -43,34 +83,7 @@ export const GridSidebar: React.FC<GridSidebarProps> = ({ hiddenWidgets, toggleC
           .filter((widget) => widget.id in widgetConfigurations)
           .map((widget) => (
             <Fragment key={widget.id}>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    aria-label={`${widgetTitles[widget.id as WidgetId]} widget`}
-                    title={`${widgetTitles[widget.id as WidgetId]} widget`}
-                    className="m-1 h-auto bg-transparent whitespace-nowrap text-sm p-0.5 pt-1 pb-1 font-light"
-                  >
-                    <div className="flex items-center gap-1">
-                      {widgetConfigurations[widget.id as WidgetId].icon}
-                      {/* {widgetTitles[widget.id as WidgetId]} */}
-                    </div>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent side="right" className="max-w-[80vw] shadow-lg shadow-foreground/25  w-auto  bg-card p-0">
-                  <PopoverArrow width={10} height={8} className="fill-muted-foreground" />
-                  <div className="flex items-top justify-between px-2 py-1">
-                    <span className="text-xs ml-2 font-semibold">{widgetTitles[widget.id as WidgetId]}</span>
-                    <button onClick={() => toggleCard(widget.id)} className="p-1 hover:bg-accent rounded">
-                      <LuPin className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <hr className="mb-1 mt-0.2 border-t border-border" />
-                  <ResizablePopoverContent className="w-full" minWidth={450} maxHeight={maxPopoverHeight} minHeight={widget.id === "expressions" ? 400 : 200}>
-                    <div className="w-full h-full">{renderWidget(widget.id as WidgetId, tabId)}</div>
-                  </ResizablePopoverContent>
-                </PopoverContent>
-              </Popover>
+              <SidebarWidgetItem widgetId={widget.id as WidgetId} tabId={tabId} toggleCard={toggleCard} maxPopoverHeight={maxPopoverHeight} />
               <Separator orientation="horizontal" className="my-0" />
             </Fragment>
           ))}

@@ -148,6 +148,23 @@ export function usePromptFormatter() {
       const characterPromptOverride = characterList.find((character) => character.id === characterId)?.system_override;
       const character = characterList.find((character) => character.id === characterId);
 
+      // When the format template injects every enabled character, gather them in participant order
+      // (excluding the user persona, which has its own user-context). The generating character is
+      // always included even if it is currently disabled (e.g. regenerating an old message), appended
+      // last so enabled participants keep their natural order. Characters with no personality are
+      // skipped — they would only add a bare name line with nothing to say.
+      let contextCharacters: Character[] | undefined;
+      if (formatTemplate.config.settings.character_context_all_enabled) {
+        const userCharacterId = currentChat?.user_character_id;
+        const orderedIds = (participantsList || []).filter((participant) => participant.enabled && participant.id !== userCharacterId).map((participant) => participant.id);
+        if (characterId && !orderedIds.includes(characterId)) {
+          orderedIds.push(characterId);
+        }
+        contextCharacters = [...new Set(orderedIds)]
+          .map((id) => characterList.find((c) => c.id === id))
+          .filter((c): c is Character => !!c && c.type === "character" && !!c.custom?.personality?.trim());
+      }
+
       // Extra Suggestions
       const chatExtra = extraSuggestions || {};
       chatExtra.group = getParticipantGroups(participantsList || [], characterList);
@@ -170,6 +187,7 @@ export function usePromptFormatter() {
             summary: localSummarySettings.injectionPrompt,
           },
           character,
+          contextCharacters,
           user_character: (userCharacter as Character) || { name: userCharacterOrProfileName, custom: { personality: "" } },
           chapter: chapterList.find((chapter) => chapter.id === currentChapterID),
           extra: chatExtra,
@@ -188,7 +206,7 @@ export function usePromptFormatter() {
         isChat: !inferenceTemplate,
       };
     },
-    [currentChatId, memoizedDataFetchers, modelManifestList, currentProfile, chapterList, currentChapterID, localSummarySettings, processMessagesWithNames],
+    [currentChatId, memoizedDataFetchers, modelManifestList, currentProfile, chapterList, currentChapterID, localSummarySettings, processMessagesWithNames, participantsList],
   );
 
   return {

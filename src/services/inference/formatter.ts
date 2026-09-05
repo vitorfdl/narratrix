@@ -10,7 +10,7 @@ import { applyContextLimit } from "./formatter/apply-context-limit";
 import { applyInferenceTemplate } from "./formatter/apply-inference-template";
 import { getLorebookContent, LorebookContentResponse, processLorebookMessages } from "./formatter/apply-lorebook";
 import { collapseConsecutiveLines, mergeMessagesOnUser, mergeSubsequentMessages } from "./formatter/format-template-utils";
-import { replaceTextPlaceholders } from "./formatter/replace-text-placeholders";
+import { renderCharacterContext, replaceTextPlaceholders } from "./formatter/replace-text-placeholders";
 
 /**
  * Interface for message with character information
@@ -41,6 +41,9 @@ export interface PromptFormatterConfig {
     injectionPrompts?: Record<string, string>;
     user_character?: Pick<Character, "name" | "custom" | "lorebook_id">;
     character?: Pick<Character, "name" | "settings" | "custom" | "type" | "lorebook_id">;
+    // Enabled characters whose context should be injected when the format template's
+    // character_context_all_enabled setting is on. Ordered; includes the generating character.
+    contextCharacters?: Pick<Character, "name" | "settings" | "custom" | "type" | "lorebook_id">[];
     chapter?: Pick<ChatChapter, "title" | "scenario" | "instructions">;
     extra?: Record<string, string>;
     censorship?: {
@@ -245,6 +248,12 @@ export function createSystemPrompt(config: CreateSystemPromptConfig): string | u
   const hasChapter = !!chatConfig?.chapter?.scenario;
   const hasUserCharacter = !!chatConfig?.user_character?.custom?.personality;
 
+  // When the format template injects every enabled character, the character-context section is
+  // repeated once per character (each pre-rendered below). This stays valid even when the
+  // generating slot has no single resolved character, so it must keep the section alive.
+  const contextCharacters = chatConfig?.contextCharacters;
+  const repeatCharacterContext = !!systemPromptTemplate?.config?.settings?.character_context_all_enabled && !!contextCharacters && contextCharacters.length > 0;
+
   // System Overrides will override the context prompt, or be added at the top if no context prompt is present
   if (systemOverridePrompt) {
     const contextIndex = prompts.findIndex((prompt) => prompt.type === "context");
@@ -264,7 +273,11 @@ export function createSystemPrompt(config: CreateSystemPromptConfig): string | u
   }
 
   if (!hasCharacter) {
-    prompts = prompts.filter((prompt) => prompt.type !== "character-context");
+    // Keep character-context when injecting the full enabled cast — it does not depend on the
+    // generating character being resolved. character-memory is only ever the single character.
+    if (!repeatCharacterContext) {
+      prompts = prompts.filter((prompt) => prompt.type !== "character-context");
+    }
     prompts = prompts.filter((prompt) => prompt.type !== "character-memory");
   }
 
@@ -282,6 +295,14 @@ export function createSystemPrompt(config: CreateSystemPromptConfig): string | u
 
   if (!lorebookContent?.lorebook_bottom) {
     prompts = prompts.filter((prompt) => prompt.type !== "lorebook-bottom");
+  }
+
+  // Repeat the character-context section once per enabled character. Each copy is pre-rendered for
+  // its character; the rest of the section's macros are resolved by the later global placeholder pass.
+  if (repeatCharacterContext && contextCharacters) {
+    prompts = prompts.flatMap((section) =>
+      section.type === "character-context" ? contextCharacters.map((character) => ({ ...section, content: renderCharacterContext(section.content, character) })) : [section],
+    );
   }
 
   if (prompts.length === 0) {

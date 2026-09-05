@@ -27,6 +27,10 @@ const chatParticipantSchema = z.object({
 const chatDisplaySettingsSchema = z.object({
   hideDisabledMessages: z.boolean().default(false),
   hideScriptMessages: z.boolean().default(false),
+  // When true, only characters listed in generationCharacterIds may generate; all others
+  // stay in the chat for context and other features but never produce messages.
+  restrictGeneration: z.boolean().default(false),
+  generationCharacterIds: z.array(z.string()).default([]),
 });
 
 const chatUserSettingsSchema = z.object({

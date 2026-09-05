@@ -1,5 +1,5 @@
 import { parseBoolean } from "@/pages/agents/components/json-schema/schema-utils";
-import { ChatTemplate, ChatTemplateCustomPrompt, chatTemplateSchema } from "@/schema/template-chat-schema";
+import { ChatTemplate, ChatTemplateCustomPrompt, ChatTemplateTool, chatTemplateSchema } from "@/schema/template-chat-schema";
 import { uuidUtils } from "@/schema/utils-schema";
 import { buildUpdateParams, executeDBQuery, selectDBQuery } from "@/utils/database";
 import { formatDateTime } from "@/utils/date-time";
@@ -12,6 +12,7 @@ export interface NewChatTemplateParams {
 
   lorebook_list?: string[];
   custom_prompts?: ChatTemplateCustomPrompt[];
+  tools?: ChatTemplateTool[];
   config?: Record<string, any>;
 }
 
@@ -37,6 +38,7 @@ export async function createChatTemplate(templateData: NewChatTemplateParams): P
     model_id: templateData.model_id,
     custom_prompts: templateData.custom_prompts || [],
     lorebook_list: templateData.lorebook_list || [],
+    tools: templateData.tools || [],
     config: templateData.config || {},
     created_at: new Date(now),
     updated_at: new Date(now),
@@ -45,10 +47,11 @@ export async function createChatTemplate(templateData: NewChatTemplateParams): P
   const configStr = JSON.stringify(validatedTemplate.config);
   const customPromptsStr = JSON.stringify(validatedTemplate.custom_prompts);
   const lorebookListStr = JSON.stringify(validatedTemplate.lorebook_list);
+  const toolsStr = JSON.stringify(validatedTemplate.tools);
 
   await executeDBQuery(
-    `INSERT INTO chat_template (id, profile_id, name, model_id, format_template_id, custom_prompts, lorebook_list, config, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    `INSERT INTO chat_template (id, profile_id, name, model_id, format_template_id, custom_prompts, lorebook_list, tools, config, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       validatedTemplate.id,
       validatedTemplate.profile_id,
@@ -57,6 +60,7 @@ export async function createChatTemplate(templateData: NewChatTemplateParams): P
       validatedTemplate.format_template_id,
       customPromptsStr,
       lorebookListStr,
+      toolsStr,
       configStr,
       now,
       now,
@@ -82,6 +86,7 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
       format_template_id,
       custom_prompts,
       lorebook_list,
+      tools,
       config,
       created_at as created_at,
       updated_at as updated_at
@@ -113,6 +118,13 @@ export async function getChatTemplateById(id: string): Promise<ChatTemplate | nu
     template.lorebook_list = template.lorebook_list || [];
   }
 
+  // Parse tools from string to array
+  if (typeof template.tools === "string") {
+    template.tools = JSON.parse(template.tools);
+  } else {
+    template.tools = template.tools || [];
+  }
+
   template.favorite = parseBoolean(template.favorite);
 
   // Convert date strings to Date objects
@@ -135,6 +147,7 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
       format_template_id,
       custom_prompts,
       lorebook_list,
+      tools,
       config,
       created_at,
       updated_at
@@ -188,6 +201,13 @@ export async function listChatTemplates(filter?: ChatTemplateFilter): Promise<Ch
       template.lorebook_list = template.lorebook_list || [];
     }
 
+    // Parse tools from string to array if needed
+    if (typeof template.tools === "string") {
+      template.tools = JSON.parse(template.tools);
+    } else {
+      template.tools = template.tools || [];
+    }
+
     template.favorite = parseBoolean(template.favorite);
 
     // Convert date strings to Date objects
@@ -214,6 +234,7 @@ export async function updateChatTemplate(id: string, updateData: Partial<Omit<Ch
     config: (value: any) => JSON.stringify(value),
     custom_prompts: (value: ChatTemplateCustomPrompt[]) => JSON.stringify(value),
     lorebook_list: (value: string[]) => JSON.stringify(value),
+    tools: (value: ChatTemplateTool[]) => JSON.stringify(value),
   };
 
   // Build query parts using the utility function

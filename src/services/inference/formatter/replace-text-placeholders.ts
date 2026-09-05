@@ -10,27 +10,27 @@ export function applyTextReplacements(text: string, config: PromptFormatterConfi
   let processedText = structuredClone(text);
 
   if (character?.name) {
-    processedText = processedText.replace(/\{\{char\}\}/g, character.name);
-    processedText = processedText.replace(/\{\{character\.name\}\}/g, character.name);
+    processedText = processedText.replace(/\{\{char\}\}/gi, character.name);
+    processedText = processedText.replace(/\{\{character\.name\}\}/gi, character.name);
   }
   if (user_character?.name) {
-    processedText = processedText.replace(/\{\{user\}\}/g, user_character.name);
-    processedText = processedText.replace(/\{\{user\.name\}\}/g, user_character.name);
+    processedText = processedText.replace(/\{\{user\}\}/gi, user_character.name);
+    processedText = processedText.replace(/\{\{user\.name\}\}/gi, user_character.name);
   }
   if (character?.type === "character") {
     const personality = (character?.custom as any)?.personality;
     if (personality) {
-      processedText = processedText.replace(/\{\{character\.personality\}\}/g, personality);
+      processedText = processedText.replace(/\{\{character\.personality\}\}/gi, personality);
     }
   }
   if (user_character?.custom?.personality) {
-    processedText = processedText.replace(/\{\{user\.personality\}\}/g, user_character.custom.personality);
+    processedText = processedText.replace(/\{\{user\.personality\}\}/gi, user_character.custom.personality);
   }
   if (chapter?.scenario) {
-    processedText = processedText.replace(/\{\{chapter\.scenario\}\}/g, chapter.scenario);
+    processedText = processedText.replace(/\{\{chapter\.scenario\}\}/gi, chapter.scenario);
   }
   if (chapter?.title) {
-    processedText = processedText.replace(/\{\{chapter\.title\}\}/g, chapter.title);
+    processedText = processedText.replace(/\{\{chapter\.title\}\}/gi, chapter.title);
   }
 
   // Process extra replacements
@@ -39,13 +39,44 @@ export function applyTextReplacements(text: string, config: PromptFormatterConfi
       if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         const placeholder = `{{${key}}}`;
         // Use a regex with the 'g' flag for global replacement
-        const regex = new RegExp(placeholder.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"), "g");
+        const regex = new RegExp(placeholder.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"), "gi");
         processedText = processedText.replace(regex, String(value));
       }
     });
   }
 
   return processedText;
+}
+
+/**
+ * Renders a character-context section for ONE specific character, resolving the character-scoped
+ * macros ({{char}}, {{character.name}}, {{character.personality}}) up front. This is used when a
+ * format template repeats the character-context section per enabled character: the single global
+ * placeholder pass only knows one character, so each repeated block must be pre-resolved here.
+ *
+ * Character-scoped macros inside the personality are resolved against THIS character; every other
+ * macro ({{user}}, {{chapter}}, dice, date, …) is left untouched for the later global pass.
+ * {{character.personality}} is always replaced (with "" when empty/non-character) so it can never
+ * fall through to the global pass and pick up the generating character's personality.
+ */
+export function renderCharacterContext(content: string, character: NonNullable<PromptFormatterConfig["chatConfig"]>["character"]): string {
+  const name = character?.name ?? "";
+  const rawPersonality = character?.type === "character" ? ((character?.custom as any)?.personality ?? "") : "";
+  // Resolve the character-scoped macros inside the personality against THIS character and strip any
+  // self-referential {{character.personality}}, so no character-scoped macro can survive into the
+  // global pass (which only knows the generating character). Replacement values are passed via
+  // functions so "$" sequences in user-authored names/personalities are treated literally.
+  const personality: string = rawPersonality
+    ? rawPersonality
+        .replace(/\{\{char\}\}/gi, () => name)
+        .replace(/\{\{character\.name\}\}/gi, () => name)
+        .replace(/\{\{character\.personality\}\}/gi, "")
+    : "";
+
+  return content
+    .replace(/\{\{char\}\}/gi, () => name)
+    .replace(/\{\{character\.name\}\}/gi, () => name)
+    .replace(/\{\{character\.personality\}\}/gi, () => personality);
 }
 
 function normalizeConfig(config: PromptFormatterConfig["chatConfig"]): PromptFormatterConfig["chatConfig"] {
@@ -127,7 +158,7 @@ export function replaceRandomPattern(text: string): string {
  */
 export function replaceDiceRollPattern(text: string): string {
   // Regular expression to match dice roll patterns like {{roll:XdY+Z}} or {{roll:XdY-Z}} or {{roll:XdY}}
-  const diceRollRegex = /\{\{roll:([^}]+)\}\}/g;
+  const diceRollRegex = /\{\{roll:([^}]+)\}\}/gi;
 
   return text.replace(diceRollRegex, (match, rollExpression) => {
     try {
@@ -213,7 +244,7 @@ export function replaceDateTimePattern(text: string, now = new Date()): string {
   Object.entries(patterns).forEach(([pattern, replacement]) => {
     // Use global replacement with escaped regex pattern
     const escapedPattern = pattern.replace(/[{}]/g, "\\$&");
-    const regex = new RegExp(escapedPattern, "g");
+    const regex = new RegExp(escapedPattern, "gi");
     processedText = processedText.replace(regex, replacement);
   });
 
@@ -227,13 +258,67 @@ export function replaceDateTimePattern(text: string, now = new Date()): string {
  * @param text
  */
 export function replaceCommentPattern(text: string): string {
-  // Regular expression to match comment patterns like {{// any text here}}
-  // This regex looks for {{ followed by // and then matches everything until the closing }}
-  // It uses a non-greedy approach to handle nested braces properly
-  const commentRegex = /\{\{\/\/.*?\}\}/g;
+  // [\s\S] (not .) so a comment spanning multiple lines is removed, matching SillyTavern.
+  // Lazy (*?) so the body terminates at the first closing braces.
+  const commentRegex = /\{\{\/\/[\s\S]*?\}\}/g;
 
   // Remove all comment patterns by replacing them with empty string
   return text.replace(commentRegex, "");
+}
+
+/**
+ * Removes {{trim}} markers along with the newlines immediately surrounding them, matching
+ * SillyTavern. Only newlines are consumed — adjacent spaces and tabs are preserved — which
+ * lets a prompt collapse blank lines left behind by conditional or empty macros.
+ * Case-insensitive, so {{trim}}, {{Trim}}, and {{TRIM}} all apply.
+ * @param text
+ */
+export function replaceTrimPattern(text: string): string {
+  return text.replace(/(?:\r?\n)*\{\{trim\}\}(?:\r?\n)*/gi, "");
+}
+
+// Value allows one level of nested {{...}} macros before the closing braces
+const SETVAR_PATTERN = /\{\{set(global)?var::([^:}]+)::((?:\{\{[^{}]*\}\}|[\s\S])*?)\}\}/gi;
+const GETVAR_PATTERN = /\{\{get(global)?var::([^:}]+)\}\}/gi;
+
+/**
+ * Handles SillyTavern-style variable macros across a set of prompt texts:
+ * - {{setvar::name::value}} / {{setglobalvar::name::value}} - stores the value and is removed from the text
+ * - {{getvar::name}} / {{getglobalvar::name}} - replaced with the stored value, or "" when unset
+ *
+ * Variables are ephemeral: they live only for this single call (one prompt-formatting
+ * pass) and are never persisted. Collection runs over all texts before substitution,
+ * so a getvar can reference a setvar declared in a later prompt section — this mirrors
+ * the steady-state behavior of SillyTavern presets without persisting anything.
+ * Local and global variables use separate namespaces, as in SillyTavern.
+ */
+export function replaceVariablePatterns(texts: (string | undefined)[]): (string | undefined)[] {
+  const variables = new Map<string, string>();
+  const keyOf = (globalFlag: string | undefined, name: string) => `${globalFlag ? "global" : "local"}:${name.trim()}`;
+
+  const collected = texts.map((text) =>
+    text?.replace(SETVAR_PATTERN, (_match, globalFlag: string | undefined, name: string, value: string) => {
+      variables.set(keyOf(globalFlag, name), value);
+      return "";
+    }),
+  );
+
+  // Resolve variable references inside stored values (bounded to guard against cycles)
+  for (let depth = 0; depth < 5; depth++) {
+    let changed = false;
+    for (const [key, value] of variables) {
+      const resolved = value.replace(GETVAR_PATTERN, (_match, globalFlag: string | undefined, name: string) => variables.get(keyOf(globalFlag, name)) ?? "");
+      if (resolved !== value) {
+        variables.set(key, resolved);
+        changed = true;
+      }
+    }
+    if (!changed) {
+      break;
+    }
+  }
+
+  return collected.map((text) => text?.replace(GETVAR_PATTERN, (_match, globalFlag: string | undefined, name: string) => variables.get(keyOf(globalFlag, name)) ?? ""));
 }
 
 /**
@@ -252,13 +337,20 @@ export function replaceStringPlaceholders(text: string, config: PromptFormatterC
  * Replace placeholder text in messages and system prompt
  */
 export function replaceTextPlaceholders(messages: InferenceMessage[], systemPrompt: string | undefined, config: PromptFormatterConfig["chatConfig"]): FormattedPromptResult {
-  const { character, user_character, chapter, extra, censorship } = config || {};
+  const { censorship } = config || {};
 
-  // Skip if no replacements needed
-  if (!character && !user_character && !chapter && !extra && !censorship) {
-    return { inferenceMessages: messages, systemPrompt };
-  }
+  // Variable macros run first across all texts so getvar-inserted content
+  // still goes through the remaining replacement chain ({{char}}, random, etc.)
+  const [variableSystemPrompt, ...variableTexts] = replaceVariablePatterns([systemPrompt, ...messages.map((message) => message.text)]);
+  const variableMessages = messages.map((message, index) => ({
+    ...message,
+    ...(variableTexts[index] !== undefined ? { text: variableTexts[index] } : {}),
+  }));
 
+  // processText always runs (no early-out on empty config): the content-independent macros
+  // below — random, dice, date/time, comments, and {{trim}} — must resolve on every path, or
+  // a {{// note}} or {{trim}} would leak to the model whenever no chat config is present.
+  // applyTextReplacements and applyCensorship are no-ops without config / censor words.
   const normalizedConfig = normalizeConfig(config);
 
   const processText = (text: string): string => {
@@ -267,17 +359,18 @@ export function replaceTextPlaceholders(messages: InferenceMessage[], systemProm
     const withDiceRolls = replaceDiceRollPattern(withRandomPattern);
     const withDateTimePattern = replaceDateTimePattern(withDiceRolls);
     const withCommentPattern = replaceCommentPattern(withDateTimePattern);
-    return applyCensorship(withCommentPattern, censorship?.words || []);
+    const withTrimPattern = replaceTrimPattern(withCommentPattern);
+    return applyCensorship(withTrimPattern, censorship?.words || []);
   };
 
   // Process text replacements in messages
-  const processedMessages = messages.map((message) => ({
+  const processedMessages = variableMessages.map((message) => ({
     ...message,
     ...(message.text ? { text: processText(message.text) } : {}),
   }));
 
   // Process text replacements in system prompt
-  const processedSystemPrompt = systemPrompt ? processText(systemPrompt) : undefined;
+  const processedSystemPrompt = variableSystemPrompt ? processText(variableSystemPrompt) : undefined;
 
   return {
     inferenceMessages: processedMessages,

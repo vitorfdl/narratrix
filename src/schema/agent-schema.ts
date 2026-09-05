@@ -45,6 +45,7 @@ export const agentTriggerTypeEnum = z.enum([
   "before_any_message",
   "after_all_participants",
   "every_x_messages",
+  "tool",
 ]);
 
 /**
@@ -58,6 +59,8 @@ export const agentSettingsSchema = z
         .object({
           messageCount: z.number().int().positive().optional(),
           participantId: z.string().optional(),
+          // Tool trigger parameters schema (mirror of the Trigger node config, which stays authoritative).
+          toolParameters: z.record(z.string(), z.any()).optional(),
         })
         .optional(),
     }),
@@ -195,6 +198,10 @@ export interface TriggerContext {
   userCharacterId?: string | null;
   /** Total message count in the chat at time of trigger (used for every_x_messages) */
   messageCount?: number;
+  /** Arguments provided by the LLM when invoking this agent as a tool (type === "tool") */
+  toolInputs?: Record<string, unknown>;
+  /** The LLM tool-call id that invoked this agent (type === "tool") */
+  toolCallId?: string;
 }
 
 export type AgentType = z.infer<typeof agentSchema>;

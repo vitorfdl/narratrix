@@ -49,6 +49,17 @@ Before working on a feature area you're unfamiliar with, check for relevant skil
 - Keep changes small and focused. One concern per commit.
 - If something looks wrong in the existing code, mention it — but fix only what was requested unless asked.
 
+# Commits & Branches
+
+Follow Conventional Commits
+
+- Subject: `<type>(<scope>)?: <imperative summary>`. Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `style`, `test`, `chore`. Lowercase, no trailing period, ≤ 72 chars.
+- Scope is optional but encouraged for cross-cutting areas: `rag`, `inference`, `db`, `ui`, `agent`, `lorebook`, `chat`, `profile`. Example: `feat(rag): combine keyword and vector matching`.
+- Breaking changes: append `!` to the type (`feat!:` / `refactor(db)!:`) **and** add a `BREAKING CHANGE: <description>` footer.
+- Body (optional, wrap ~40 chars) explains *why* and trade-offs, not *what*.
+- One concern per commit. Don't bundle unrelated changes; split them.
+- PR titles follow the same subject rule — squash merges use the PR title as the final commit.
+
 # Profile Restrictions
 - Whenever you have to access database, ensure to always filter with current Profile ID.
 - Double-check that you're not exposing data from other profiles.

@@ -5,12 +5,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BiSolidZap } from "react-icons/bi";
-import { LuCirclePlay, LuCircleStop, LuEyeOff, LuGripVertical, LuMessageSquareOff, LuSettings, LuTrash2, LuUserPlus } from "react-icons/lu";
+import { LuCirclePlay, LuCircleStop, LuEyeOff, LuGripVertical, LuMessageSquareOff, LuSearch, LuSettings, LuTrash2, LuUserPlus } from "react-icons/lu";
 import { RiArrowLeftRightLine, RiCloseLine } from "react-icons/ri";
 import { toast } from "sonner";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { useAgents } from "@/hooks/agentStore";
@@ -26,8 +27,9 @@ import { cn } from "@/lib/utils";
 import { CharacterForm } from "@/pages/characters/components/AddCharacterForm";
 import type { AgentTriggerType, AgentType, TriggerContext } from "@/schema/agent-schema";
 import { Character } from "@/schema/characters-schema";
+import type { ChatDisplaySettings } from "@/schema/chat-schema";
 import { cancelChatGeneration, clearChatGenerationCancellation, isChatGenerationCancelled } from "@/services/chat-generation-cancellation";
-import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
+import { canParticipantGenerate, generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import AddParticipantPopover from "./AddParticipantPopover";
 
 // Types
@@ -37,6 +39,7 @@ export interface Participant {
   type: "character" | "agent" | "user";
   avatar?: string;
   isEnabled?: boolean;
+  canGenerate?: boolean;
 }
 
 interface WidgetParticipantsProps {
@@ -134,6 +137,7 @@ interface CharacterParticipantCardProps {
 
 const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ participant, inInferenceQueue, onToggle, onTrigger, onRemove, onEdit }) => {
   const isEnabled = participant.isEnabled ?? true;
+  const canGenerate = participant.canGenerate ?? true;
 
   return (
     <div
@@ -164,20 +168,26 @@ const CharacterParticipantCard: React.FC<CharacterParticipantCardProps> = ({ par
         <Switch checked={isEnabled} onCheckedChange={() => onToggle(participant.id)} className="data-[state=checked]:bg-primary" aria-label={isEnabled ? "Disable" : "Enable"} size={"sm"} />
       </div>
 
-      {/* Play/Stop — always visible */}
-      <Button variant="ghost" size="icon" className="w-7 h-7 flex-shrink-0" disabled={!isEnabled} onClick={() => onTrigger(participant.id)} title="Start Generation">
-        {inInferenceQueue ? (
-          <motion.div
-            initial={{ scale: 1 }}
-            animate={{ scale: [1, 1.2, 1], rotate: [0, 0, 0, 0, 0, -10, 10, -10, 10, 0] }}
-            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-          >
-            <LuCircleStop className="!h-4 !w-4 text-destructive" />
-          </motion.div>
-        ) : (
-          <LuCirclePlay className="!h-5 !w-5" />
-        )}
-      </Button>
+      {/* Play/Stop — hidden for context-only characters (they stay in the chat but never generate) */}
+      {canGenerate ? (
+        <Button variant="ghost" size="icon" className="w-7 h-7 flex-shrink-0" disabled={!isEnabled} onClick={() => onTrigger(participant.id)} title="Start Generation">
+          {inInferenceQueue ? (
+            <motion.div
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.2, 1], rotate: [0, 0, 0, 0, 0, -10, 10, -10, 10, 0] }}
+              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+            >
+              <LuCircleStop className="!h-4 !w-4 text-destructive" />
+            </motion.div>
+          ) : (
+            <LuCirclePlay className="!h-5 !w-5" />
+          )}
+        </Button>
+      ) : (
+        <span className="px-1.5 text-[10px] text-muted-foreground/60 uppercase tracking-wider flex-shrink-0" title="Context only — this character won't generate">
+          Context
+        </span>
+      )}
     </div>
   );
 };
@@ -194,6 +204,7 @@ const TRIGGER_LABEL: Record<AgentTriggerType, string> = {
   before_any_message: "Before Any",
   after_all_participants: "After All",
   every_x_messages: "Every X",
+  tool: "Tool",
 };
 
 interface AgentParticipantCardProps {
@@ -294,6 +305,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
   const { addParticipant, removeParticipant, toggleParticipantEnabled, updateSelectedChat } = useChatActions();
 
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
+  const [generationSearch, setGenerationSearch] = useState("");
   const inferenceService = useInferenceServiceFromContext();
   const { executeWorkflow: executeAgentWorkflow } = useAgentWorkflow();
 
@@ -330,8 +342,17 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
       avatar = "";
     }
 
-    return { id: p.id, name, type, avatar, isEnabled: p.enabled };
+    return { id: p.id, name, type, avatar, isEnabled: p.enabled, canGenerate: canParticipantGenerate(p.id, chatSettings) };
   });
+
+  const characterParticipants = mappedParticipants.filter((p) => p.type === "character");
+  const restrictGeneration = chatSettings?.restrictGeneration ?? false;
+  const allowedToGenerateIds = chatSettings?.generationCharacterIds ?? [];
+  const allowedSet = new Set(allowedToGenerateIds);
+  const selectedToGenerate = characterParticipants.filter((p) => allowedSet.has(p.id));
+  const generationQuery = generationSearch.trim().toLowerCase();
+  // Typeahead: suggest only chat characters not already allowed, and only once the user types.
+  const generationCandidates = generationQuery ? characterParticipants.filter((p) => !allowedSet.has(p.id) && p.name.toLowerCase().includes(generationQuery)) : [];
 
   const hasUser = mappedParticipants.some((p) => p.id === "user");
   const displayedParticipants: Participant[] = hasUser
@@ -403,6 +424,28 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
     if (id !== "user") {
       toggleParticipantEnabled(id);
     }
+  };
+
+  // updateSelectedChat replaces the whole settings object, so merge over the current values
+  // to avoid clobbering the other display settings.
+  const updateChatSettings = (partial: Partial<ChatDisplaySettings>) => {
+    updateSelectedChat({
+      settings: {
+        hideDisabledMessages: chatSettings?.hideDisabledMessages ?? false,
+        hideScriptMessages: chatSettings?.hideScriptMessages ?? false,
+        restrictGeneration: chatSettings?.restrictGeneration ?? false,
+        generationCharacterIds: chatSettings?.generationCharacterIds ?? [],
+        ...partial,
+      },
+    }).catch((error) => {
+      console.error("Failed to update chat settings:", error);
+    });
+  };
+
+  const handleToggleAllowedToGenerate = (characterId: string, allowed: boolean) => {
+    const current = chatSettings?.generationCharacterIds ?? [];
+    const next = allowed ? [...new Set([...current, characterId])] : current.filter((id) => id !== characterId);
+    updateChatSettings({ generationCharacterIds: next });
   };
 
   const handleTriggerMessage = useCallback(
@@ -586,15 +629,7 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
                   <span className="text-xs font-medium leading-tight">Hide disabled messages</span>
                   <span className="text-[10.5px] leading-tight text-muted-foreground/70">Skip messages from off participants</span>
                 </div>
-                <Switch
-                  size="sm"
-                  checked={chatSettings?.hideDisabledMessages ?? false}
-                  onCheckedChange={(checked) =>
-                    updateSelectedChat({
-                      settings: { hideDisabledMessages: checked, hideScriptMessages: chatSettings?.hideScriptMessages ?? false },
-                    })
-                  }
-                />
+                <Switch size="sm" checked={chatSettings?.hideDisabledMessages ?? false} onCheckedChange={(checked) => updateChatSettings({ hideDisabledMessages: checked })} />
               </label>
               <label className="group/setting flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-muted/50">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/40 transition-colors group-hover/setting:bg-muted/70">
@@ -604,17 +639,114 @@ const WidgetParticipants: React.FC<WidgetParticipantsProps> = (_props) => {
                   <span className="text-xs font-medium leading-tight">Hide injected messages</span>
                   <span className="text-[10.5px] leading-tight text-muted-foreground/70">Skip messages added by chat scripts</span>
                 </div>
-                <Switch
-                  size="sm"
-                  checked={chatSettings?.hideScriptMessages ?? false}
-                  onCheckedChange={(checked) =>
-                    updateSelectedChat({
-                      settings: { hideDisabledMessages: chatSettings?.hideDisabledMessages ?? false, hideScriptMessages: checked },
-                    })
-                  }
-                />
+                <Switch size="sm" checked={chatSettings?.hideScriptMessages ?? false} onCheckedChange={(checked) => updateChatSettings({ hideScriptMessages: checked })} />
               </label>
             </div>
+
+            {characterParticipants.length > 0 && (
+              <div className="border-t border-border/40">
+                <label className="group/setting flex cursor-pointer items-center gap-2.5 px-3 py-2.5 transition-colors hover:bg-muted/50">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/40 transition-colors group-hover/setting:bg-muted/70">
+                    <LuCirclePlay className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-xs font-medium leading-tight">Restrict who can generate</span>
+                    <span className="text-[10.5px] leading-tight text-muted-foreground/70">Only selected characters respond; the rest stay for context</span>
+                  </div>
+                  <Switch
+                    size="sm"
+                    checked={restrictGeneration}
+                    onCheckedChange={(checked) => updateChatSettings({ restrictGeneration: checked })}
+                    className="data-[state=checked]:bg-primary"
+                    aria-label="Restrict who can generate"
+                  />
+                </label>
+
+                {restrictGeneration && (
+                  <div className="px-1.5 pb-1.5">
+                    <div className="flex items-center justify-between px-1 pb-1">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60">{selectedToGenerate.length} allowed</span>
+                      {selectedToGenerate.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => updateChatSettings({ generationCharacterIds: [] })}
+                          className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70 transition-colors hover:text-foreground"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    {selectedToGenerate.length > 0 && (
+                      <div className="flex flex-wrap gap-1 px-1 pb-1.5">
+                        {selectedToGenerate.map((character) => (
+                          <span key={character.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 py-0.5 pl-0.5 pr-1 text-[11px] font-medium">
+                            <Avatar className="h-4 w-4 rounded-full">
+                              {character.avatar ? (
+                                <AvatarImage className="object-cover" src={character.avatar} alt={character.name} />
+                              ) : (
+                                <AvatarFallback className="bg-secondary text-[8px]">{character.name[0]}</AvatarFallback>
+                              )}
+                            </Avatar>
+                            <span className="max-w-[120px] truncate">{character.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAllowedToGenerate(character.id, false)}
+                              className="text-muted-foreground/70 transition-colors hover:text-destructive"
+                              aria-label={`Remove ${character.name}`}
+                            >
+                              <RiCloseLine className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <Command shouldFilter={false} className="rounded-md border border-border/60 bg-muted/20">
+                      <div className="flex items-center gap-2 px-2 py-1.5">
+                        <LuSearch className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                        <input
+                          value={generationSearch}
+                          onChange={(e) => setGenerationSearch(e.target.value)}
+                          placeholder="Type a name to add..."
+                          className="h-5 min-w-0 flex-1 border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground/50 focus:ring-0"
+                        />
+                      </div>
+                      {generationQuery && (
+                        <CommandList className="max-h-40 border-t border-border/40">
+                          {generationCandidates.length > 0 ? (
+                            <CommandGroup className="p-1">
+                              {generationCandidates.map((character) => (
+                                <CommandItem
+                                  key={character.id}
+                                  value={`${character.id}-${character.name}`}
+                                  onSelect={() => {
+                                    handleToggleAllowedToGenerate(character.id, true);
+                                    setGenerationSearch("");
+                                  }}
+                                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 data-[selected=true]:bg-muted/50"
+                                >
+                                  <Avatar className="h-5 w-5 flex-shrink-0 rounded-sm">
+                                    {character.avatar ? (
+                                      <AvatarImage className="object-cover rounded-sm" src={character.avatar} alt={character.name} />
+                                    ) : (
+                                      <AvatarFallback className="bg-secondary text-[9px] rounded-sm">{character.name[0]}</AvatarFallback>
+                                    )}
+                                  </Avatar>
+                                  <span className="min-w-0 flex-1 truncate text-xs">{character.name}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ) : (
+                            <p className="px-2 py-3 text-center text-[11px] text-muted-foreground/60">No matches</p>
+                          )}
+                        </CommandList>
+                      )}
+                    </Command>
+                  </div>
+                )}
+              </div>
+            )}
           </PopoverContent>
         </Popover>
       </div>

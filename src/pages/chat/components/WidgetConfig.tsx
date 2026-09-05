@@ -1,4 +1,4 @@
-import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, XIcon } from "lucide-react";
+import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, Wrench, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import isEqual from "react-fast-compare";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
+import { useAgents } from "@/hooks/agentStore";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatParticipants, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
@@ -21,8 +22,9 @@ import { useModels, useModelsActions } from "@/hooks/modelsStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
-import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
+import { ChatTemplate, ChatTemplateCustomPrompt, ChatTemplateTool } from "@/schema/template-chat-schema";
 import type { SectionField } from "@/schema/template-chat-settings-types";
+import { type ChatToolOption, listChatToolOptions, toolRefKey } from "@/services/agent-tools";
 import { parseChatTemplateContent, validateAndTransformChatTemplateData } from "@/services/imports/import-chat-template";
 import { validateAndTransformFormatTemplateData } from "@/services/imports/import-format-template";
 import { importLorebook, validateAndTransformLorebookData } from "@/services/imports/import-lorebook";
@@ -45,6 +47,8 @@ const SAVE_DEBOUNCE_MS = 100;
 interface ChatTemplateConfigProps {
   currentChatTemplateID?: string | null;
   onChatTemplateChange?: (chatTemplateID: string) => void;
+  /** When true, shows the Tools picker (agent/node tools the chat LLM can call). Chat-level only. */
+  enableAgentTools?: boolean;
 }
 
 type ChatTemplateUpdateData = Partial<Omit<ChatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>;
@@ -63,6 +67,7 @@ const isTemplateUpdateUnchanged = (template: ChatTemplate | undefined, updateDat
     (template.model_id ?? null) === (updateData.model_id ?? null) &&
     (template.format_template_id ?? null) === (updateData.format_template_id ?? null) &&
     isEqual(template.lorebook_list ?? [], updateData.lorebook_list ?? []) &&
+    isEqual(template.tools ?? [], updateData.tools ?? []) &&
     isEqual(template.config ?? {}, updateData.config ?? {}) &&
     isEqual(template.custom_prompts ?? [], updateData.custom_prompts ?? [])
   );
@@ -75,7 +80,7 @@ const isTemplateUpdateUnchanged = (template: ChatTemplate | undefined, updateDat
  * It allows you to add custom prompts, inference settings, and other configuration options.
  *
  */
-const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTemplateConfigProps) => {
+const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange, enableAgentTools = false }: ChatTemplateConfigProps) => {
   const chatTemplateList = useChatTemplateList();
   const { updateChatTemplate } = useChatTemplateActions();
   const { fetchFormatTemplates, updateFormatTemplate } = useTemplateActions();
@@ -85,6 +90,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const lorebooks = useLorebooks();
   const participants = useCurrentChatParticipants();
   const characterList = useCharacters();
+  const agents = useAgents();
 
   const { loadLorebooks } = useLorebookStoreActions();
 
@@ -101,6 +107,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string | null>(null);
   const [selectedLorebookList, setSelectedLorebookList] = useState<string[]>([]);
+  const [selectedTools, setSelectedTools] = useState<ChatTemplateTool[]>([]);
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
   const [maxDepth, setMaxDepth] = useState<number>(1000);
@@ -214,6 +221,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       setSelectedModelId(currentTemplate.model_id ?? null);
       setSelectedFormatTemplateId(currentTemplate.format_template_id ?? null);
       setSelectedLorebookList(currentTemplate.lorebook_list ?? []);
+      setSelectedTools(currentTemplate.tools ?? []);
 
       if (currentTemplate.config) {
         setContextSize(currentTemplate.config.max_context || 4096);
@@ -250,6 +258,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       setLorebookTokenBudget(2048);
       setCustomPrompts([]);
       setSelectedLorebookList([]);
+      setSelectedTools([]);
     }
   }, [currentTemplate, flushPendingSave]);
 
@@ -290,6 +299,22 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       value: lorebook.id,
     }));
   }, [lorebooks]);
+
+  const availableTools = useMemo(() => (enableAgentTools ? listChatToolOptions(profileId ? agents.filter((agent) => agent.profile_id === profileId) : []) : []), [agents, profileId, enableAgentTools]);
+
+  const isToolSelected = (option: ChatToolOption) => selectedTools.some((ref) => toolRefKey(ref) === option.key);
+
+  const handleToggleTool = (option: ChatToolOption) => {
+    if (isDisabled) {
+      return;
+    }
+    setSelectedTools((prev) => {
+      if (prev.some((ref) => toolRefKey(ref) === option.key)) {
+        return prev.filter((ref) => toolRefKey(ref) !== option.key);
+      }
+      return [...prev, option.ref];
+    });
+  };
 
   // Check if component should be disabled (no template selected)
   const isDisabled = !currentChatTemplateID;
@@ -530,6 +555,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       model_id: selectedModelId || null,
       format_template_id: selectedFormatTemplateId && selectedFormatTemplateId !== "none" ? selectedFormatTemplateId : null,
       lorebook_list: selectedLorebookList,
+      tools: selectedTools,
       config: configValues,
       custom_prompts: customPrompts,
     };
@@ -552,6 +578,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     selectedModelId,
     selectedFormatTemplateId,
     selectedLorebookList,
+    selectedTools,
     contextSize,
     responseLength,
     maxDepth,
@@ -1089,6 +1116,75 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
           </div>
         </div>
       </div>
+
+      {enableAgentTools && (
+        <>
+          <Separator className="my-2" />
+          <div className={`space-y-2 mb-3 mx-1 ${isDisabled ? "opacity-50" : ""}`}>
+            <div className="flex items-center gap-1">
+              <Wrench className="!h-3 !w-3" />
+              <h3 className="text-xs font-normal my-auto">Tools</h3>
+              <HelpTooltip>Agents whose trigger is set to Tool, plus built-in tool nodes (e.g. User Choice) that need no agent. The chat model can call these during a reply.</HelpTooltip>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-xs px-2 h-auto min-h-7" disabled={isDisabled}>
+                  <div className="flex gap-1 flex-wrap items-center">
+                    {selectedTools.length > 0 ? (
+                      selectedTools.map((ref) => {
+                        const key = toolRefKey(ref);
+                        const option = availableTools.find((t) => t.key === key);
+                        return (
+                          <Badge
+                            variant="default"
+                            key={key}
+                            className="px-1 py-0 rounded-sm text-[10px] flex items-center gap-0.5"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTools((prev) => prev.filter((r) => toolRefKey(r) !== key));
+                            }}
+                          >
+                            {option?.name ?? ref.agent_id ?? ref.node_type}
+                            <XIcon className="h-2 w-2" />
+                          </Badge>
+                        );
+                      })
+                    ) : (
+                      <span className="text-muted-foreground">Select tools...</span>
+                    )}
+                  </div>
+                  <ChevronDown className="ml-auto !h-3 !w-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search tools..." className="h-8 text-xs" />
+                  <CommandList>
+                    <CommandEmpty>No tools available. Create an agent whose trigger is Tool.</CommandEmpty>
+                    <CommandGroup>
+                      {availableTools.map((option) => {
+                        const selected = isToolSelected(option);
+                        return (
+                          <CommandItem key={option.key} value={`${option.agentName ?? "built-in"} ${option.name}`} className="text-xs items-start" onSelect={() => handleToggleTool(option)}>
+                            <Checkbox checked={selected} className="mr-2 mt-0.5 h-4 w-4" />
+                            <div className="flex flex-col min-w-0">
+                              <span className="truncate">
+                                {option.name}
+                                <span className="text-muted-foreground">{option.kind === "agent" ? ` · ${option.agentName}` : " · Built-in"}</span>
+                              </span>
+                              {option.description && <span className="text-xxs text-muted-foreground line-clamp-1">{option.description}</span>}
+                            </div>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </>
+      )}
 
       <Separator className="my-2" />
 
