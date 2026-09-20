@@ -7,7 +7,16 @@ export interface SheetExpressionContext {
 }
 
 const REFERENCE_PATTERN = /\$\{([^}]+)\}/g;
-const ARITHMETIC_PATTERN = /^[\d\s+\-*/().]+$/;
+const ARITHMETIC_PATTERN = /^[\d\s+\-*/(),.a-z]+$/i;
+
+const ARITHMETIC_FUNCTIONS: Record<string, (...args: number[]) => number> = {
+  floor: Math.floor,
+  ceil: Math.ceil,
+  round: Math.round,
+  abs: Math.abs,
+  min: Math.min,
+  max: Math.max,
+};
 
 function formatValue(value: unknown): string {
   if (value === undefined || value === null || value === "") {
@@ -44,8 +53,43 @@ function evaluateArithmetic(input: string): number | null {
     return Number.isNaN(num) ? null : num;
   }
 
+  function parseFunctionCall(): number | null {
+    const start = pos;
+    while (pos < input.length && /[a-z]/i.test(input[pos])) {
+      pos++;
+    }
+    const fn = ARITHMETIC_FUNCTIONS[input.slice(start, pos).toLowerCase()];
+    skipSpaces();
+    if (!fn || peek() !== "(") {
+      return null;
+    }
+    pos++;
+    const args: number[] = [];
+    for (;;) {
+      const arg = parseExpression();
+      if (arg === null) {
+        return null;
+      }
+      args.push(arg);
+      skipSpaces();
+      if (peek() === ",") {
+        pos++;
+        continue;
+      }
+      break;
+    }
+    if (peek() !== ")") {
+      return null;
+    }
+    pos++;
+    return fn(...args);
+  }
+
   function parseFactor(): number | null {
     skipSpaces();
+    if (/[a-z]/i.test(peek() ?? "")) {
+      return parseFunctionCall();
+    }
     if (peek() === "(") {
       pos++;
       const value = parseExpression();
@@ -126,8 +170,9 @@ function resolveCharacterAttribute(key: string, context?: SheetExpressionContext
  * - ${row.key} — a sibling cell in the same table row (column label as key)
  * - ${char.name} / ${name} — character attributes; a bare ${key} resolves the
  *   sheet field first and falls back to the character attribute
- * If the substituted result is pure arithmetic it is computed, otherwise
- * returned as a plain string.
+ * If the substituted result is pure arithmetic it is computed — including
+ * floor(), ceil(), round(), abs(), min() and max() — otherwise returned as a
+ * plain string.
  */
 export function resolveSheetExpression(expression: string, values: SheetValues, context?: SheetExpressionContext): string {
   const substituted = expression.replace(REFERENCE_PATTERN, (_match, rawPath: string) => {
