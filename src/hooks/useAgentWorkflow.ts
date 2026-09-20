@@ -355,7 +355,7 @@ export function useAgentWorkflow() {
    * `agents` must already be scoped to the current profile; unknown refs are skipped.
    */
   const buildChatTools = useCallback(
-    (refs: ChatTemplateTool[], agents: AgentType[], chatId?: string): ExecutableToolDefinition[] => {
+    async (refs: ChatTemplateTool[], agents: AgentType[], chatId?: string): Promise<ExecutableToolDefinition[]> => {
       const tools: ExecutableToolDefinition[] = [];
       const seenNames = new Set<string>();
 
@@ -386,31 +386,41 @@ export function useAgentWorkflow() {
             config: builtin.buildConfig(),
           };
           const syntheticAgent = makeBuiltinToolAgent(node);
-          const wf: WorkflowToolDefinition = {
+          const runNode = async (): Promise<WorkflowToolDefinition> => {
+            const ctx: WorkflowExecutionContext = {
+              agentId: syntheticAgent.id,
+              runKey: makeRunKey(syntheticAgent.id, chatId),
+              chatId,
+              executionId: `tool_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+              nodeValues: new Map(),
+              executedNodes: new Set(),
+              isRunning: true,
+            };
+            const res = await executor(node, {}, ctx, syntheticAgent, deps);
+            if (!res.success) {
+              throw new Error(res.error || `Tool node ${ref.node_type} failed`);
+            }
+            const tool = extractToolFromResult(res.value);
+            if (!tool) {
+              throw new Error(`Node ${ref.node_type} did not produce a callable tool`);
+            }
+            return tool;
+          };
+
+          let wf: WorkflowToolDefinition = {
             name: builtin.name,
             description: builtin.description,
             inputSchema: builtin.parameters,
-            invoke: async (args: Record<string, unknown>) => {
-              const ctx: WorkflowExecutionContext = {
-                agentId: syntheticAgent.id,
-                runKey: makeRunKey(syntheticAgent.id, chatId),
-                chatId,
-                executionId: `tool_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-                nodeValues: new Map(),
-                executedNodes: new Set(),
-                isRunning: true,
-              };
-              const res = await executor(node, {}, ctx, syntheticAgent, deps);
-              if (!res.success) {
-                throw new Error(res.error || `Tool node ${ref.node_type} failed`);
-              }
-              const tool = extractToolFromResult(res.value);
-              if (!tool) {
-                throw new Error(`Node ${ref.node_type} did not produce a callable tool`);
-              }
-              return tool.invoke(args);
-            },
+            invoke: async (args: Record<string, unknown>) => (await runNode()).invoke(args),
           };
+          if (builtin.dynamicSchema) {
+            try {
+              const tool = await runNode();
+              wf = { name: builtin.name, description: tool.description ?? builtin.description, inputSchema: tool.inputSchema ?? builtin.parameters, invoke: tool.invoke };
+            } catch (error) {
+              console.error(`Failed to build dynamic schema for tool ${builtin.name}; using the static one:`, error);
+            }
+          }
           pushTool(toExecutableTool(wf));
           continue;
         }

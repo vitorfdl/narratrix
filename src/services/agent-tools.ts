@@ -1,11 +1,29 @@
 import { ROLL_DICE_TOOL_SCHEMA } from "@/pages/agents/components/tool-nodes/dice-tools";
+import { GET_CHARACTER_SHEET_TOOL_DESCRIPTION } from "@/pages/agents/components/tool-nodes/nodeGetCharacterSheet";
 import type { TriggerNodeConfig } from "@/pages/agents/components/tool-nodes/nodeTrigger";
+import { UPDATE_CHARACTER_SHEET_TOOL_DESCRIPTION } from "@/pages/agents/components/tool-nodes/nodeUpdateCharacterSheet";
 import { GET_PARTICIPANT_DATA_TOOL_SCHEMA, LIST_PARTICIPANTS_TOOL_SCHEMA, SET_PARTICIPANT_ENABLED_TOOL_SCHEMA } from "@/pages/agents/components/tool-nodes/participant-tools";
 import type { AgentType } from "@/schema/agent-schema";
 import type { ChatTemplateTool } from "@/schema/template-chat-schema";
 import type { WorkflowToolDefinition } from "@/services/agent-workflow/types";
 
 const EMPTY_OBJECT_SCHEMA: Record<string, unknown> = { type: "object", properties: {} };
+
+// Picker-only placeholders: the sheet tools build their real schema per chat when the
+// tool is assembled (the character enum and field catalog depend on the participants).
+const CHARACTER_SHEET_PICKER_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  properties: { character: { type: "string", description: "Name of a chat participant that has a character sheet." } },
+  required: ["character"],
+};
+const UPDATE_CHARACTER_SHEET_PICKER_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  properties: {
+    character: { type: "string", description: "Name of a chat participant that has a character sheet." },
+    updates: { type: "array", description: "Field changes: { field, op: set|add|remove, value }.", items: { type: "object" } },
+  },
+  required: ["character", "updates"],
+};
 
 /** Input schema the User Choice node exposes in tool mode (mirrors its executor). */
 const USER_CHOICE_TOOL_SCHEMA: Record<string, unknown> = {
@@ -90,18 +108,32 @@ export function isToolAgent(agent: AgentType): boolean {
  * Limited to nodes that work with no setup — the LLM supplies everything at call time.
  * `buildConfig` returns the node config used to run the node executor in tool mode.
  */
+export type BuiltinToolCategory = "story" | "participants" | "sheets";
+
 export interface BuiltinNodeTool {
   nodeType: string;
+  /** Provider-facing identifier sent to the LLM. Never shown to end users. */
   name: string;
+  /** Provider-facing description sent to the LLM. */
   description: string;
+  /** Human-friendly title shown in the chat template picker. */
+  label: string;
+  /** One short sentence telling the user what enabling this does. */
+  summary: string;
+  category: BuiltinToolCategory;
   parameters: Record<string, unknown>;
   buildConfig: () => Record<string, unknown>;
+  /** Run the node when the toolset is assembled so its schema/description can depend on the chat (e.g. participant names). `parameters` is then only a picker placeholder. */
+  dynamicSchema?: boolean;
 }
 
 export const BUILTIN_NODE_TOOLS: BuiltinNodeTool[] = [
   {
     nodeType: "userChoice",
     name: "userChoice",
+    label: "Ask the User",
+    summary: "Pauses the reply to offer you choices before continuing.",
+    category: "story",
     description: "Ask the user one or more multiple-choice questions in sequence and return their answers.",
     parameters: USER_CHOICE_TOOL_SCHEMA,
     buildConfig: () => ({
@@ -116,6 +148,9 @@ export const BUILTIN_NODE_TOOLS: BuiltinNodeTool[] = [
   {
     nodeType: "listParticipants",
     name: "listParticipants",
+    label: "See Who's Here",
+    summary: "Lets the AI know which characters are in the chat.",
+    category: "participants",
     description: "List the participants in the current chat with their id, name, kind and whether they are currently enabled.",
     parameters: LIST_PARTICIPANTS_TOOL_SCHEMA,
     buildConfig: () => ({
@@ -129,6 +164,9 @@ export const BUILTIN_NODE_TOOLS: BuiltinNodeTool[] = [
   {
     nodeType: "setParticipantEnabled",
     name: "setParticipantEnabled",
+    label: "Enter & Leave Scene",
+    summary: "Lets the AI bring characters into the scene or send them away.",
+    category: "participants",
     description: "Enable or disable a chat participant by id. Disabled participants stay in the chat but are excluded from generation.",
     parameters: SET_PARTICIPANT_ENABLED_TOOL_SCHEMA,
     buildConfig: () => ({
@@ -141,6 +179,9 @@ export const BUILTIN_NODE_TOOLS: BuiltinNodeTool[] = [
   {
     nodeType: "getParticipantData",
     name: "getParticipantData",
+    label: "Character Details",
+    summary: "Lets the AI look up a character's personality and tags.",
+    category: "participants",
     description: "Get a chat participant's data (name, kind, enabled state, personality, tags, avatar) by id.",
     parameters: GET_PARTICIPANT_DATA_TOOL_SCHEMA,
     buildConfig: () => ({
@@ -151,8 +192,46 @@ export const BUILTIN_NODE_TOOLS: BuiltinNodeTool[] = [
     }),
   },
   {
+    nodeType: "getCharacterSheet",
+    name: "getCharacterSheet",
+    label: "Read Character Sheet",
+    summary: "Lets the AI check stats, inventory and notes on a sheet.",
+    category: "sheets",
+    description: GET_CHARACTER_SHEET_TOOL_DESCRIPTION,
+    parameters: CHARACTER_SHEET_PICKER_SCHEMA,
+    dynamicSchema: true,
+    buildConfig: () => ({
+      mode: "tool",
+      toolName: "getCharacterSheet",
+      toolDescription: GET_CHARACTER_SHEET_TOOL_DESCRIPTION,
+      characterId: "",
+      includeUserCharacter: true,
+    }),
+  },
+  {
+    nodeType: "updateCharacterSheet",
+    name: "updateCharacterSheet",
+    label: "Update Character Sheet",
+    summary: "Lets the AI change stats, inventory and notes as the story unfolds.",
+    category: "sheets",
+    description: UPDATE_CHARACTER_SHEET_TOOL_DESCRIPTION,
+    parameters: UPDATE_CHARACTER_SHEET_PICKER_SCHEMA,
+    dynamicSchema: true,
+    buildConfig: () => ({
+      mode: "tool",
+      toolName: "updateCharacterSheet",
+      toolDescription: UPDATE_CHARACTER_SHEET_TOOL_DESCRIPTION,
+      characterId: "",
+      includeUserCharacter: true,
+      scope: "chat",
+    }),
+  },
+  {
     nodeType: "rollDice",
     name: "rollDice",
+    label: "Roll Dice",
+    summary: "Lets the AI roll real dice (like 2d6+3) instead of guessing.",
+    category: "story",
     description: "Roll dice using standard notation (e.g. 2d6+3) and return the individual rolls and their total.",
     parameters: ROLL_DICE_TOOL_SCHEMA,
     buildConfig: () => ({
@@ -173,14 +252,18 @@ export function toolRefKey(ref: ChatTemplateTool): string {
   return ref.agent_id ? `agent:${ref.agent_id}` : `node:${ref.node_type ?? ""}`;
 }
 
-/** A tool selectable in the chat config picker. */
+export type ChatToolGroup = "agents" | BuiltinToolCategory;
+
+/** A tool selectable in the chat config picker. `name`/`description` are LLM-facing; `label`/`summary` are what users see. */
 export interface ChatToolOption {
   key: string;
   name: string;
   description?: string;
+  label: string;
+  summary?: string;
   kind: "agent" | "node";
-  /** Display subtitle: the agent's name for agent tools, undefined for built-in nodes. */
-  agentName?: string;
+  group: ChatToolGroup;
+  nodeType?: string;
   ref: ChatTemplateTool;
 }
 
@@ -194,12 +277,31 @@ export function listChatToolOptions(agents: AgentType[]): ChatToolOption[] {
   for (const agent of agents) {
     const descriptor = getAgentToolDefinition(agent);
     if (descriptor) {
-      options.push({ key: `agent:${agent.id}`, name: descriptor.name, description: descriptor.description, kind: "agent", agentName: agent.name, ref: { agent_id: agent.id } });
+      options.push({
+        key: `agent:${agent.id}`,
+        name: descriptor.name,
+        description: descriptor.description,
+        label: agent.name,
+        summary: agent.description || descriptor.description,
+        kind: "agent",
+        group: "agents",
+        ref: { agent_id: agent.id },
+      });
     }
   }
 
   for (const builtin of BUILTIN_NODE_TOOLS) {
-    options.push({ key: `node:${builtin.nodeType}`, name: builtin.name, description: builtin.description, kind: "node", ref: { node_type: builtin.nodeType } });
+    options.push({
+      key: `node:${builtin.nodeType}`,
+      name: builtin.name,
+      description: builtin.description,
+      label: builtin.label,
+      summary: builtin.summary,
+      kind: "node",
+      group: builtin.category,
+      nodeType: builtin.nodeType,
+      ref: { node_type: builtin.nodeType },
+    });
   }
 
   return options;

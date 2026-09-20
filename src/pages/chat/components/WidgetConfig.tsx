@@ -24,7 +24,7 @@ import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore
 import { Model } from "@/schema/models-schema";
 import { ChatTemplate, ChatTemplateCustomPrompt, ChatTemplateTool } from "@/schema/template-chat-schema";
 import type { SectionField } from "@/schema/template-chat-settings-types";
-import { type ChatToolOption, listChatToolOptions, toolRefKey } from "@/services/agent-tools";
+import { listChatToolOptions } from "@/services/agent-tools";
 import { parseChatTemplateContent, validateAndTransformChatTemplateData } from "@/services/imports/import-chat-template";
 import { validateAndTransformFormatTemplateData } from "@/services/imports/import-format-template";
 import { importLorebook, validateAndTransformLorebookData } from "@/services/imports/import-lorebook";
@@ -34,6 +34,7 @@ import { createFormatTemplate, getFormatTemplateById } from "@/services/template
 import { ExportType, exportSingleToJsonFile } from "@/utils/export-utils";
 import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
 import { configFields } from "../manifests/configFields";
+import { ChatToolPicker } from "./ChatToolPicker";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
 import { ExportOptions, ExportOptionsDialog } from "./ExportOptionsDialog";
@@ -301,20 +302,6 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange, enableAgent
   }, [lorebooks]);
 
   const availableTools = useMemo(() => (enableAgentTools ? listChatToolOptions(profileId ? agents.filter((agent) => agent.profile_id === profileId) : []) : []), [agents, profileId, enableAgentTools]);
-
-  const isToolSelected = (option: ChatToolOption) => selectedTools.some((ref) => toolRefKey(ref) === option.key);
-
-  const handleToggleTool = (option: ChatToolOption) => {
-    if (isDisabled) {
-      return;
-    }
-    setSelectedTools((prev) => {
-      if (prev.some((ref) => toolRefKey(ref) === option.key)) {
-        return prev.filter((ref) => toolRefKey(ref) !== option.key);
-      }
-      return [...prev, option.ref];
-    });
-  };
 
   // Check if component should be disabled (no template selected)
   const isDisabled = !currentChatTemplateID;
@@ -1124,64 +1111,9 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange, enableAgent
             <div className="flex items-center gap-1">
               <Wrench className="!h-3 !w-3" />
               <h3 className="text-xs font-normal my-auto">Tools</h3>
-              <HelpTooltip>Agents whose trigger is set to Tool, plus built-in tool nodes (e.g. User Choice) that need no agent. The chat model can call these during a reply.</HelpTooltip>
+              <HelpTooltip>Abilities the AI can use while it writes, like asking you a question or rolling dice. Agents with a Tool trigger appear here as well.</HelpTooltip>
             </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-xs px-2 h-auto min-h-7" disabled={isDisabled}>
-                  <div className="flex gap-1 flex-wrap items-center">
-                    {selectedTools.length > 0 ? (
-                      selectedTools.map((ref) => {
-                        const key = toolRefKey(ref);
-                        const option = availableTools.find((t) => t.key === key);
-                        return (
-                          <Badge
-                            variant="default"
-                            key={key}
-                            className="px-1 py-0 rounded-sm text-[10px] flex items-center gap-0.5"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTools((prev) => prev.filter((r) => toolRefKey(r) !== key));
-                            }}
-                          >
-                            {option?.name ?? ref.agent_id ?? ref.node_type}
-                            <XIcon className="h-2 w-2" />
-                          </Badge>
-                        );
-                      })
-                    ) : (
-                      <span className="text-muted-foreground">Select tools...</span>
-                    )}
-                  </div>
-                  <ChevronDown className="ml-auto !h-3 !w-3" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search tools..." className="h-8 text-xs" />
-                  <CommandList>
-                    <CommandEmpty>No tools available. Create an agent whose trigger is Tool.</CommandEmpty>
-                    <CommandGroup>
-                      {availableTools.map((option) => {
-                        const selected = isToolSelected(option);
-                        return (
-                          <CommandItem key={option.key} value={`${option.agentName ?? "built-in"} ${option.name}`} className="text-xs items-start" onSelect={() => handleToggleTool(option)}>
-                            <Checkbox checked={selected} className="mr-2 mt-0.5 h-4 w-4" />
-                            <div className="flex flex-col min-w-0">
-                              <span className="truncate">
-                                {option.name}
-                                <span className="text-muted-foreground">{option.kind === "agent" ? ` · ${option.agentName}` : " · Built-in"}</span>
-                              </span>
-                              {option.description && <span className="text-xxs text-muted-foreground line-clamp-1">{option.description}</span>}
-                            </div>
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <ChatToolPicker options={availableTools} selected={selectedTools} onChange={setSelectedTools} disabled={isDisabled} />
           </div>
         </>
       )}

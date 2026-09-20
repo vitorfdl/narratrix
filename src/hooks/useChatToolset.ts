@@ -17,7 +17,7 @@ export function useChatToolset() {
   const profileId = currentProfile?.id;
 
   const buildToolsForTemplate = useCallback(
-    (chatTemplate: ChatTemplate | null | undefined, chatId?: string): ExecutableToolDefinition[] => {
+    async (chatTemplate: ChatTemplate | null | undefined, chatId?: string): Promise<ExecutableToolDefinition[]> => {
       const refs = chatTemplate?.tools ?? [];
       if (refs.length === 0 || !profileId) {
         return [];

@@ -277,7 +277,7 @@ export function useInferenceService() {
 
         // Resolve agent/node tools attached to this chat template so the LLM can call them
         // mid-generation. Skip the quiet input-area path where tools have no meaningful target.
-        const tools = quietResponse ? [] : buildToolsForTemplate(chatTemplate, chatId);
+        const tools = quietResponse ? [] : await buildToolsForTemplate(chatTemplate, chatId);
 
         const confirmID = await runInference({
           messages: inferenceMessages,

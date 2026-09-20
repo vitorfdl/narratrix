@@ -83,7 +83,9 @@ async function executeNode(node: AgentNodeType, edges: AgentEdgeType[], context:
       node.type === "listParticipants" ||
       node.type === "setParticipantEnabled" ||
       node.type === "getParticipantData" ||
-      node.type === "rollDice") &&
+      node.type === "rollDice" ||
+      node.type === "getCharacterSheet" ||
+      node.type === "updateCharacterSheet") &&
     res.success
   ) {
     if (typeof res.value === "string") {

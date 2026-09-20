@@ -18,6 +18,8 @@ import "./nodeDisableMessage";
 import "./nodeGetLorebook";
 import "./nodeSearchLorebook";
 import "./nodeAddLorebookEntry";
+import "./nodeGetCharacterSheet";
+import "./nodeUpdateCharacterSheet";
 
 // Re-export the NodeProps interface
 export type { NodeProps } from "./nodeTypes";
