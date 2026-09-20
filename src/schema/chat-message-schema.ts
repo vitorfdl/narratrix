@@ -37,6 +37,8 @@ export const basicPromptSuggestionList: SuggestionItem[] = [
   { title: "character.name", description: "Same as {{char}}", section: "prompt" },
   { title: "user.personality", section: "prompt" },
   { title: "character.personality", section: "prompt" },
+  { title: "char.sheet", description: "Character's full character sheet (also char.section_key or char.section_key.field_key)", section: "prompt" },
+  { title: "user.sheet", description: "Your persona's full character sheet", section: "prompt" },
   { title: "groups", description: "Comma-separated list of characters in the chat", section: "prompt" },
   ...functionSuggestionList.map((item) => ({ ...item, section: "function" as const })),
   ...dateTimeSuggestionList.map((item) => ({ ...item, section: "function" as const })),
