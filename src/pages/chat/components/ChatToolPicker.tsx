@@ -95,20 +95,22 @@ export function ChatToolPicker({ options, selected, onChange, disabled }: ChatTo
           <CommandList>
             <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">No matching ability.</CommandEmpty>
             {groups.map(({ group, items }) => (
-              <CommandGroup key={group} heading={GROUP_LABEL[group]}>
+              <CommandGroup
+                key={group}
+                heading={GROUP_LABEL[group]}
+                className="[&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide"
+              >
                 {items.map((option) => {
                   const isSelected = selectedKeys.has(option.key);
                   const Icon = getOptionIcon(option);
                   return (
-                    <CommandItem key={option.key} value={`${option.label} ${option.summary ?? ""} ${option.name}`} className="text-xs items-center gap-2 py-1.5" onSelect={() => toggle(option)}>
-                      <Checkbox checked={isSelected} className="h-4 w-4 shrink-0" />
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                        <Icon className="h-3.5 w-3.5" />
+                    <CommandItem key={option.key} value={`${option.label} ${option.summary ?? ""} ${option.name}`} className="text-xs gap-1.5 py-1 items-start" onSelect={() => toggle(option)}>
+                      <Checkbox checked={isSelected} className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <Icon className="!size-3.5 mt-0.5 text-muted-foreground" />
+                      <span className="flex flex-col min-w-0 leading-tight">
+                        <span className="font-medium truncate">{option.label}</span>
+                        {option.summary && <span className="text-xxs text-muted-foreground">{option.summary}</span>}
                       </span>
-                      <div className="flex flex-col min-w-0">
-                        <span className="truncate font-medium">{option.label}</span>
-                        {option.summary && <span className="text-xxs text-muted-foreground truncate">{option.summary}</span>}
-                      </div>
                     </CommandItem>
                   );
                 })}
