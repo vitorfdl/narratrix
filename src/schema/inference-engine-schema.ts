@@ -6,6 +6,13 @@ const InferenceToolCallSchema = z.object({
   id: z.string().optional(),
   name: z.string(),
   arguments: z.union([z.string(), z.record(z.string(), z.any())]),
+  // Populated locally once the tool resolves so the result can ride back with the call
+  // for rendering/persistence. Not part of the provider wire format.
+  result: z.string().optional(),
+  error: z.string().optional(),
+  // Character offset in the assistant text where this call occurred, so the UI can render
+  // the tool inline at the right position. Captured during streaming.
+  textOffset: z.number().optional(),
 });
 
 const InferenceToolDefinitionSchema = z.object({

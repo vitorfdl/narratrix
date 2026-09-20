@@ -53,13 +53,11 @@ function validateInternalChatTemplateJSON(data: any): ValidationTransformationRe
  * @returns A result object containing the validation status, errors, transformed data (if valid), and detected format.
  */
 export function validateAndTransformChatTemplateData(data: any, profileId: string, fileName: string): ValidationTransformationResult {
-  // 1. Try validating as internal JSON
-  const internalResult = validateInternalChatTemplateJSON({ ...data, profile_id: profileId });
-  if (internalResult.valid) {
-    return internalResult;
-  }
-
-  // 2. Try validating as SillyTavern format
+  // SillyTavern is checked before the internal format because the internal Zod schema is
+  // permissive (almost every field has a default), so a SillyTavern preset with a top-level
+  // `name` field would silently pass internal validation and produce an empty template,
+  // swallowing all the actual prompts. SillyTavern's schema strictly requires a top-level
+  // `prompts` array of identifier+name objects, which narratrix's own exports never have.
   const sillyTavernValidation = validateSillyTavernTemplate(data);
   if (sillyTavernValidation.valid) {
     const transformed = transformSillyTavernTemplate(data as SillyTavernChatTemplate, profileId, fileName);
@@ -71,10 +69,14 @@ export function validateAndTransformChatTemplateData(data: any, profileId: strin
     };
   }
 
-  // 3. Unknown format
+  const internalResult = validateInternalChatTemplateJSON({ ...data, profile_id: profileId });
+  if (internalResult.valid) {
+    return internalResult;
+  }
+
   return {
     valid: false,
-    errors: [...internalResult.errors, ...sillyTavernValidation.errors, "Unknown or unsupported chat template file format. Only internal JSON and SillyTavern formats are currently supported."],
+    errors: [...sillyTavernValidation.errors, ...internalResult.errors, "Unknown or unsupported chat template file format. Only internal JSON and SillyTavern formats are currently supported."],
     data: null,
     format: "unknown",
   };

@@ -36,35 +36,17 @@ function pickFromParticipants(mode: ParticipantPickerMode, agentId: string | und
   }
 
   if (mode === "prevCharacter" || mode === "nextCharacter") {
+    const len = participants.length;
     const agentIndex = agentId ? participants.findIndex((p) => p.id === agentId) : -1;
-    if (agentIndex === -1) {
-      // fall back to last/next in full list if agent not present
-      if (mode === "prevCharacter") {
-        for (let i = participants.length - 1; i >= 0; i--) {
-          if (isCharacterId(participants[i].id)) {
-            return participants[i].id;
-          }
-        }
-      } else {
-        for (let i = 0; i < participants.length; i++) {
-          if (isCharacterId(participants[i].id)) {
-            return participants[i].id;
-          }
-        }
-      }
-      return null;
-    }
+    const step = mode === "prevCharacter" ? -1 : 1;
+    // Virtual anchor when the agent isn't in the list: just past the edge so offset 1 lands on the first slot in the search direction.
+    const anchor = agentIndex === -1 ? (mode === "prevCharacter" ? len : -1) : agentIndex;
 
-    if (mode === "prevCharacter") {
-      for (let i = agentIndex - 1; i >= 0; i--) {
-        if (isCharacterId(participants[i].id)) {
-          return participants[i].id;
-        }
+    for (let offset = 1; offset <= len; offset++) {
+      const i = (((anchor + step * offset) % len) + len) % len;
+      if (i === agentIndex) {
+        continue;
       }
-      return null;
-    }
-
-    for (let i = agentIndex + 1; i < participants.length; i++) {
       if (isCharacterId(participants[i].id)) {
         return participants[i].id;
       }
@@ -162,13 +144,13 @@ const PICKER_MODE_CONFIG: Record<ParticipantPickerMode, PickerModeConfig> = {
   },
   prevCharacter: {
     label: "Previous Character",
-    description: "Outputs the ID of the nearest character that appears before this agent in the participant order.",
+    description: "Outputs the ID of the nearest character before this agent in the participant order. Wraps to the end of the list if the agent is at the start.",
     badge: "Prev",
     badgeClass: "bg-green-500/15 text-green-600 dark:text-green-400",
   },
   nextCharacter: {
     label: "Next Character",
-    description: "Outputs the ID of the nearest character that appears after this agent in the participant order.",
+    description: "Outputs the ID of the nearest character after this agent in the participant order. Wraps to the start of the list if the agent is at the end.",
     badge: "Next",
     badgeClass: "bg-teal-500/15 text-teal-600 dark:text-teal-400",
   },

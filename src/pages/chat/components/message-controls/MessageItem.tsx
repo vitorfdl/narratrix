@@ -4,10 +4,11 @@ import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { useLazyRender } from "@/hooks/useLazyRender";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, PromptConfig, UpdateChatMessageParams } from "@/schema/chat-message-schema";
+import type { ChatMessage, MessageToolCall, PromptConfig, UpdateChatMessageParams } from "@/schema/chat-message-schema";
 import { ContextCutDivider, EditControls, MessageActions, StreamingIndicator } from "./AdditionalActions";
 import { MessageAvatar } from "./MessageAvatar";
 import { ReasoningSection } from "./ReasoningCollapsible";
+import { ToolCallInline, ToolCallsSection } from "./ToolCallsCollapsible";
 import { VersionControls } from "./VersionButtons";
 
 // Script type configurations with icons and styling
@@ -169,6 +170,38 @@ const ScriptHeader = ({
   );
 };
 
+/**
+ * Renders the assistant text with tool calls interleaved at their captured positions.
+ * The text is split at each tool's `textOffset`; a tool with no offset (or beyond the end)
+ * renders after the remaining text. Offsets are clamped and kept monotonic so out-of-order
+ * or drifted values still render sensibly.
+ */
+const MessageBodyWithTools = memo<{ text: string; toolCalls: MessageToolCall[]; markdownClassName: string }>(({ text, toolCalls, markdownClassName }) => {
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+
+  for (const call of toolCalls) {
+    const rawOffset = call.textOffset ?? text.length;
+    const offset = Math.min(Math.max(rawOffset, cursor), text.length);
+    const segment = text.slice(cursor, offset);
+    if (segment.length > 0) {
+      // cursor (segment start) is strictly increasing, so it is a stable unique key.
+      nodes.push(<MarkdownTextArea key={`seg-${cursor}`} initialValue={segment} editable={false} className={markdownClassName} />);
+    }
+    nodes.push(<ToolCallInline key={`tool-${call.id ?? `${call.name}-${offset}`}`} call={call} />);
+    cursor = offset;
+  }
+
+  const tail = text.slice(cursor);
+  if (tail.length > 0 || nodes.length === 0) {
+    nodes.push(<MarkdownTextArea key="seg-tail" initialValue={tail} editable={false} className={markdownClassName} />);
+  }
+
+  return <>{nodes}</>;
+});
+
+MessageBodyWithTools.displayName = "MessageBodyWithTools";
+
 interface MessageItemProps {
   message: ChatMessage;
   index: number;
@@ -177,6 +210,8 @@ interface MessageItemProps {
   isStreaming: boolean;
   hasReasoningData: boolean;
   reasoningContent?: string;
+  /** Live tool calls captured from the active stream; falls back to message.extra.tool_calls when absent. */
+  toolCalls?: MessageToolCall[];
   /** Pre-computed: isEditingID === message.id -- avoids re-rendering all messages when edit state changes */
   isEditing: boolean;
   editedContent: string;
@@ -200,6 +235,7 @@ const MessageItem = ({
   isStreaming,
   hasReasoningData,
   reasoningContent,
+  toolCalls,
   isEditing,
   editedContent,
   avatarPath,
@@ -311,6 +347,12 @@ const MessageItem = ({
     await handleSaveEdit(message.id);
   };
 
+  // Prefer live tool calls from the active stream; fall back to the persisted ones.
+  const effectiveToolCalls: MessageToolCall[] = (toolCalls && toolCalls.length > 0 ? toolCalls : message.extra?.tool_calls) ?? [];
+  const sortedToolCalls = React.useMemo(() => [...effectiveToolCalls].sort((a, b) => (a.textOffset ?? Number.MAX_SAFE_INTEGER) - (b.textOffset ?? Number.MAX_SAFE_INTEGER)), [effectiveToolCalls]);
+  // Interleave tools into the body only for display; editing keeps a single editor.
+  const interleaveTools = !isEditing && message.type === "character" && sortedToolCalls.length > 0;
+
   return (
     <>
       {isContextCut && <ContextCutDivider />}
@@ -348,18 +390,24 @@ const MessageItem = ({
                 </div>
               ))}
 
-            <MarkdownTextArea
-              autofocus={isEditing}
-              initialValue={isEditing ? editedContent : displayContent}
-              editable={isEditing && !isStreaming}
-              placeholder="Edit message..."
-              className={markdownClassName}
-              onChange={(newContent) => {
-                if (isEditing) {
-                  setEditedContent(newContent);
-                }
-              }}
-            />
+            {interleaveTools ? (
+              <MessageBodyWithTools text={displayContent} toolCalls={sortedToolCalls} markdownClassName={markdownClassName} />
+            ) : (
+              <MarkdownTextArea
+                autofocus={isEditing}
+                initialValue={isEditing ? editedContent : displayContent}
+                editable={isEditing && !isStreaming}
+                placeholder="Edit message..."
+                className={markdownClassName}
+                onChange={(newContent) => {
+                  if (isEditing) {
+                    setEditedContent(newContent);
+                  }
+                }}
+              />
+            )}
+
+            {isEditing && message.type === "character" && sortedToolCalls.length > 0 && <ToolCallsSection toolCalls={sortedToolCalls} />}
 
             <div className={MESSAGE_BASE_CLASSES.controlsContainer}>
               {isEditing ? (
@@ -425,6 +473,8 @@ export default memo(MessageItem, (prevProps, nextProps) => {
     prevProps.isLastMessage === nextProps.isLastMessage &&
     prevProps.hasReasoningData === nextProps.hasReasoningData &&
     (prevProps.hasReasoningData === false || prevProps.reasoningContent === nextProps.reasoningContent) &&
+    prevProps.toolCalls === nextProps.toolCalls &&
+    prevProps.message.extra === nextProps.message.extra &&
     prevProps.message.messages === nextProps.message.messages &&
     prevProps.avatarPath === nextProps.avatarPath &&
     prevProps.showAvatar === nextProps.showAvatar &&

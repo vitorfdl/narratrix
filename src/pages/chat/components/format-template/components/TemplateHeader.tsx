@@ -37,6 +37,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         apply_censorship: false,
         merge_messages_on_user: false,
         merge_subsequent_messages: true,
+        character_context_all_enabled: false,
       },
     [localSettings],
   );
@@ -132,6 +133,7 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
           apply_censorship: false,
           merge_messages_on_user: false,
           merge_subsequent_messages: true,
+          character_context_all_enabled: false,
         },
         reasoning: {
           prefix: "<think>",
@@ -311,6 +313,25 @@ export function TemplateHeader({ formatTemplateID, onTemplateChange }: TemplateH
         {/* Message Formatting */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-muted-foreground">Message Formatting</h3>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="characterContextAllEnabled"
+              checked={memoizedSettings.character_context_all_enabled}
+              onCheckedChange={useCallback((checked: boolean | "indeterminate") => handleSettingChange("character_context_all_enabled", checked as boolean), [handleSettingChange])}
+              disabled={!currentTemplate}
+            />
+            <div className="flex items-center space-x-1">
+              <Label htmlFor="characterContextAllEnabled">Inject all enabled characters</Label>
+              <HelpTooltip>
+                <p>
+                  Repeats the <strong>Character</strong> context section once for every enabled character in the chat, so the model sees all of them — not just the character currently generating.
+                  <br />
+                  <br />
+                  When off, only the generating character is injected. The user persona and characters without a personality are skipped.
+                </p>
+              </HelpTooltip>
+            </div>
+          </div>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="mergeMessages"

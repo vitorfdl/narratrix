@@ -8,14 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { useAgentActions, useAgentError, useAgentLoading, useAgents } from "@/hooks/agentStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useUIStore } from "@/hooks/UIStore";
+import { cn } from "@/lib/utils";
 import { AgentType } from "@/schema/agent-schema";
+import { isToolAgent } from "@/services/agent-tools";
 import { useLocalAgentPageSettings } from "@/utils/local-storage";
 import AddAgentDialog from "./components/AddAgentDialog";
 import { AgentCard } from "./components/AgentCard";
 import { AgentSidebar } from "./components/AgentSidebar";
 import EditAgentPage from "./EditAgentPage";
 
+export type AgentPageSegment = "all" | "participants" | "tools";
+
 export type AgentPageSettings = {
+  segment?: AgentPageSegment;
   view: {
     mode: "grid" | "list";
     cardsPerRow: number;
@@ -26,6 +31,12 @@ export type AgentPageSettings = {
     direction: "asc" | "desc";
   };
   selectedTags: string[];
+};
+
+const SEGMENT_LABELS: Record<AgentPageSegment, string> = {
+  all: "All",
+  participants: "Participants",
+  tools: "Tools",
 };
 
 const agentGridMinWidthBySize: Record<AgentPageSettings["view"]["cardSize"], number> = {
@@ -94,12 +105,15 @@ export default function AgentPage() {
     handleClearTags();
   };
 
+  const segment: AgentPageSegment = settings.segment ?? "all";
+
   const filteredAgents = useMemo(() => {
     return agents
       .filter((agent) => {
         const matchesSearch = search === "" || agent.name.toLowerCase().includes(search.toLowerCase()) || agent.description?.toLowerCase().includes(search.toLowerCase());
         const matchesTags = settings.selectedTags.length === 0 || settings.selectedTags.every((tag) => (agent.tags ?? []).includes(tag));
-        return matchesSearch && matchesTags;
+        const matchesSegment = segment === "all" || (segment === "tools" ? isToolAgent(agent) : !isToolAgent(agent));
+        return matchesSearch && matchesTags && matchesSegment;
       })
       .sort((a, b) => {
         const direction = settings.sort.direction === "asc" ? 1 : -1;
@@ -113,7 +127,7 @@ export default function AgentPage() {
         const bDate = settings.sort.field === "created_at" ? b.created_at : b.updated_at;
         return direction * (new Date(bDate).getTime() - new Date(aDate).getTime());
       });
-  }, [agents, search, settings.selectedTags, settings.sort]);
+  }, [agents, search, settings.selectedTags, settings.sort, segment]);
 
   const hasActiveFilters = search.trim().length > 0 || settings.selectedTags.length > 0;
   const gridTemplateColumns = useMemo(() => {
@@ -234,6 +248,19 @@ export default function AgentPage() {
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
+                <div className="inline-flex overflow-hidden rounded-md border border-border/60 bg-muted/20">
+                  {(Object.keys(SEGMENT_LABELS) as AgentPageSegment[]).map((seg) => (
+                    <button
+                      key={seg}
+                      type="button"
+                      onClick={() => setSettings((prev: AgentPageSettings) => ({ ...prev, segment: seg }))}
+                      className={cn("h-9 px-3 text-xs font-medium transition-colors", segment === seg ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/40")}
+                    >
+                      {SEGMENT_LABELS[seg]}
+                    </button>
+                  ))}
+                </div>
+
                 <Button variant="outline" size="icon" className="bg-background" onClick={handleRefresh} disabled={isLoading} title="Refresh Agents">
                   <LuRefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                 </Button>

@@ -209,6 +209,7 @@ export function transformSillyTavernFormatTemplate(data: SillyTavernFormatTempla
     apply_censorship: false, // Default value, not in SillyTavern
     merge_messages_on_user: false, // Default value, not in SillyTavern
     merge_subsequent_messages: true, // Default value, not in SillyTavern
+    character_context_all_enabled: false, // Default value, not in SillyTavern
   };
 
   // Map reasoning configuration

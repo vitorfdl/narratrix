@@ -3,9 +3,18 @@ import { LuLayoutTemplate, LuPencilLine, LuSend, LuUserPlus } from "react-icons/
 import { toast } from "sonner";
 import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea";
 import { Button } from "@/components/ui/button";
-import { useChatActions, useCurrentChatActiveChapterID, useCurrentChatChapters, useCurrentChatId, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import {
+  useChatActions,
+  useCurrentChatActiveChapterID,
+  useCurrentChatChapters,
+  useCurrentChatId,
+  useCurrentChatParticipants,
+  useCurrentChatSettings,
+  useCurrentChatUserCharacterID,
+} from "@/hooks/chatStore";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { getCharacterById } from "@/services/character-service";
+import { canParticipantGenerate } from "@/services/chat-generation-orchestrator";
 import { replaceStringPlaceholders } from "@/services/inference/formatter/replace-text-placeholders";
 
 export const NoMessagePlaceholder: React.FC = () => {
@@ -14,6 +23,7 @@ export const NoMessagePlaceholder: React.FC = () => {
   const activeChapterId = useCurrentChatActiveChapterID();
   const inferenceService = useInferenceServiceFromContext();
   const currentChatParticipants = useCurrentChatParticipants();
+  const chatSettings = useCurrentChatSettings();
   const userCharacterId = useCurrentChatUserCharacterID();
   const { addChatMessage } = useChatActions();
   const [isSending, setIsSending] = useState(false);
@@ -42,8 +52,8 @@ export const NoMessagePlaceholder: React.FC = () => {
         if (!currentChatParticipants || currentChatParticipants.length === 0) {
           throw new Error("No chat participants available.");
         }
-        // Find the first enabled participant for character_id
-        const enabledParticipant = currentChatParticipants.find((p) => p.enabled);
+        // Find the first enabled participant allowed to generate for character_id
+        const enabledParticipant = currentChatParticipants.find((p) => p.enabled && canParticipantGenerate(p.id, chatSettings));
         if (!enabledParticipant) {
           throw new Error("No enabled chat participant found.");
         }
@@ -69,7 +79,7 @@ export const NoMessagePlaceholder: React.FC = () => {
       }
 
       // If auto-inference is not enabled, use the default behavior
-      const characterID = currentChatParticipants?.find((p) => p.enabled)?.id;
+      const characterID = currentChatParticipants?.find((p) => p.enabled && canParticipantGenerate(p.id, chatSettings))?.id;
       if (!characterID) {
         throw new Error("No enabled chat participant found.");
       }

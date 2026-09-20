@@ -1,4 +1,5 @@
 import { ChatMessage } from "@/schema/chat-message-schema";
+import { InferenceToolCall } from "@/schema/inference-engine-schema";
 import { FormatTemplate } from "@/schema/template-format-schema";
 
 /**
@@ -24,6 +25,8 @@ export interface StreamingState {
    * Set by the orchestrator to prevent double-firing agent triggers.
    */
   emitChatEvents?: boolean;
+  /** Tool calls (and their results) the LLM made during this generation, for live display. */
+  toolCalls?: InferenceToolCall[];
 }
 
 /**

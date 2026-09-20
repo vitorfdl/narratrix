@@ -37,6 +37,7 @@ export function useLocalCharactersPagesSettings() {
  * Local storage for agent page settings
  */
 const agentPageSettingsAtom = atomWithStorage<AgentPageSettings>("agentPageSettings", {
+  segment: "all",
   view: {
     mode: "grid",
     cardsPerRow: 4,
@@ -134,6 +135,18 @@ export function useLocalChatTabs(profileId: string) {
 }
 
 /**
+ * Local storage for chat sidebar widget widths (one entry per widget)
+ */
+const DEFAULT_WIDGET_WIDTH = 450;
+
+const widgetWidthAtomFamily = atomFamily((widgetId: string) => atomWithStorage<number>(`chatWidgetWidth-${widgetId}`, DEFAULT_WIDGET_WIDTH));
+
+export function useLocalWidgetWidth(widgetId: string) {
+  const widthAtom = useMemo(() => widgetWidthAtomFamily(widgetId), [widgetId]);
+  return useAtom(widthAtom);
+}
+
+/**
  * Local storage for expression settings
  */
 const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSettings>(
@@ -147,6 +160,9 @@ const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSetti
     throttleInterval: 8000, // Default 8 seconds
     disableLogs: false,
     imageObjectFit: "cover",
+    showAllCharacters: false,
+    multiLayout: "horizontal",
+    multiGenerationMode: "latest-message",
   },
   {
     getItem: (key, initialValue) => {
@@ -166,6 +182,9 @@ const expressionGenerationSettingsAtom = atomWithStorage<ExpressionGenerateSetti
           throttleInterval: parsed.throttleInterval ?? initialValue.throttleInterval,
           disableLogs: parsed.disableLogs ?? initialValue.disableLogs,
           imageObjectFit: parsed.imageObjectFit ?? initialValue.imageObjectFit,
+          showAllCharacters: parsed.showAllCharacters ?? initialValue.showAllCharacters,
+          multiLayout: parsed.multiLayout ?? initialValue.multiLayout,
+          multiGenerationMode: parsed.multiGenerationMode ?? initialValue.multiGenerationMode,
         } satisfies ExpressionGenerateSettings;
       } catch (error) {
         console.error("Failed to parse expression generation settings:", error);

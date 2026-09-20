@@ -24,6 +24,7 @@ const v12Migration = async (profile: ProfileResponse): Promise<ProfileResponse> 
             name: template.name,
             config: {
               settings: {
+                character_context_all_enabled: false,
                 ...template.config.settings,
                 prefix_messages: template.config.settings.prefix_messages as "never" | "always" | "characters",
               },

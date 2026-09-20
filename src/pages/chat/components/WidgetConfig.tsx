@@ -1,4 +1,4 @@
-import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, XIcon } from "lucide-react";
+import { BookOpenCheck, ChevronDown, Layers, Layers2, PaperclipIcon, Pencil, PlusIcon, ServerIcon, Wrench, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import isEqual from "react-fast-compare";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { StepButton } from "@/components/ui/step-button";
+import { useAgents } from "@/hooks/agentStore";
 import { useCharacters } from "@/hooks/characterStore";
 import { useChatActions, useCurrentChatParticipants, useCurrentChatTemplateID } from "@/hooks/chatStore";
 import { useChatTemplate, useChatTemplateActions, useChatTemplateList } from "@/hooks/chatTemplateStore";
@@ -21,8 +22,9 @@ import { useModels, useModelsActions } from "@/hooks/modelsStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useFormatTemplateList, useTemplateActions } from "@/hooks/templateStore";
 import { Model } from "@/schema/models-schema";
-import { ChatTemplate, ChatTemplateCustomPrompt } from "@/schema/template-chat-schema";
+import { ChatTemplate, ChatTemplateCustomPrompt, ChatTemplateTool } from "@/schema/template-chat-schema";
 import type { SectionField } from "@/schema/template-chat-settings-types";
+import { listChatToolOptions } from "@/services/agent-tools";
 import { parseChatTemplateContent, validateAndTransformChatTemplateData } from "@/services/imports/import-chat-template";
 import { validateAndTransformFormatTemplateData } from "@/services/imports/import-format-template";
 import { importLorebook, validateAndTransformLorebookData } from "@/services/imports/import-lorebook";
@@ -32,6 +34,7 @@ import { createFormatTemplate, getFormatTemplateById } from "@/services/template
 import { ExportType, exportSingleToJsonFile } from "@/utils/export-utils";
 import { sortTemplatesByFavoriteAndName } from "@/utils/sorting";
 import { configFields } from "../manifests/configFields";
+import { ChatToolPicker } from "./ChatToolPicker";
 import { CustomPromptModal } from "./custom-prompt/CustomPromptModal";
 import { CustomPromptsList } from "./custom-prompt/CustomPromptsList";
 import { ExportOptions, ExportOptionsDialog } from "./ExportOptionsDialog";
@@ -45,6 +48,8 @@ const SAVE_DEBOUNCE_MS = 100;
 interface ChatTemplateConfigProps {
   currentChatTemplateID?: string | null;
   onChatTemplateChange?: (chatTemplateID: string) => void;
+  /** When true, shows the Tools picker (agent/node tools the chat LLM can call). Chat-level only. */
+  enableAgentTools?: boolean;
 }
 
 type ChatTemplateUpdateData = Partial<Omit<ChatTemplate, "id" | "profile_id" | "created_at" | "updated_at">>;
@@ -63,6 +68,7 @@ const isTemplateUpdateUnchanged = (template: ChatTemplate | undefined, updateDat
     (template.model_id ?? null) === (updateData.model_id ?? null) &&
     (template.format_template_id ?? null) === (updateData.format_template_id ?? null) &&
     isEqual(template.lorebook_list ?? [], updateData.lorebook_list ?? []) &&
+    isEqual(template.tools ?? [], updateData.tools ?? []) &&
     isEqual(template.config ?? {}, updateData.config ?? {}) &&
     isEqual(template.custom_prompts ?? [], updateData.custom_prompts ?? [])
   );
@@ -75,7 +81,7 @@ const isTemplateUpdateUnchanged = (template: ChatTemplate | undefined, updateDat
  * It allows you to add custom prompts, inference settings, and other configuration options.
  *
  */
-const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTemplateConfigProps) => {
+const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange, enableAgentTools = false }: ChatTemplateConfigProps) => {
   const chatTemplateList = useChatTemplateList();
   const { updateChatTemplate } = useChatTemplateActions();
   const { fetchFormatTemplates, updateFormatTemplate } = useTemplateActions();
@@ -85,6 +91,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const lorebooks = useLorebooks();
   const participants = useCurrentChatParticipants();
   const characterList = useCharacters();
+  const agents = useAgents();
 
   const { loadLorebooks } = useLorebookStoreActions();
 
@@ -101,6 +108,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [selectedFormatTemplateId, setSelectedFormatTemplateId] = useState<string | null>(null);
   const [selectedLorebookList, setSelectedLorebookList] = useState<string[]>([]);
+  const [selectedTools, setSelectedTools] = useState<ChatTemplateTool[]>([]);
   const [contextSize, setContextSize] = useState<number>(4096);
   const [responseLength, setResponseLength] = useState<number>(1024);
   const [maxDepth, setMaxDepth] = useState<number>(1000);
@@ -214,6 +222,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       setSelectedModelId(currentTemplate.model_id ?? null);
       setSelectedFormatTemplateId(currentTemplate.format_template_id ?? null);
       setSelectedLorebookList(currentTemplate.lorebook_list ?? []);
+      setSelectedTools(currentTemplate.tools ?? []);
 
       if (currentTemplate.config) {
         setContextSize(currentTemplate.config.max_context || 4096);
@@ -250,6 +259,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       setLorebookTokenBudget(2048);
       setCustomPrompts([]);
       setSelectedLorebookList([]);
+      setSelectedTools([]);
     }
   }, [currentTemplate, flushPendingSave]);
 
@@ -290,6 +300,8 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       value: lorebook.id,
     }));
   }, [lorebooks]);
+
+  const availableTools = useMemo(() => (enableAgentTools ? listChatToolOptions(profileId ? agents.filter((agent) => agent.profile_id === profileId) : []) : []), [agents, profileId, enableAgentTools]);
 
   // Check if component should be disabled (no template selected)
   const isDisabled = !currentChatTemplateID;
@@ -530,6 +542,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
       model_id: selectedModelId || null,
       format_template_id: selectedFormatTemplateId && selectedFormatTemplateId !== "none" ? selectedFormatTemplateId : null,
       lorebook_list: selectedLorebookList,
+      tools: selectedTools,
       config: configValues,
       custom_prompts: customPrompts,
     };
@@ -552,6 +565,7 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
     selectedModelId,
     selectedFormatTemplateId,
     selectedLorebookList,
+    selectedTools,
     contextSize,
     responseLength,
     maxDepth,
@@ -1089,6 +1103,20 @@ const WidgetConfig = ({ currentChatTemplateID, onChatTemplateChange }: ChatTempl
           </div>
         </div>
       </div>
+
+      {enableAgentTools && (
+        <>
+          <Separator className="my-2" />
+          <div className={`space-y-2 mb-3 mx-1 ${isDisabled ? "opacity-50" : ""}`}>
+            <div className="flex items-center gap-1">
+              <Wrench className="!h-3 !w-3" />
+              <h3 className="text-xs font-normal my-auto">Tools</h3>
+              <HelpTooltip>Abilities the AI can use while it writes, like asking you a question or rolling dice. Agents with a Tool trigger appear here as well.</HelpTooltip>
+            </div>
+            <ChatToolPicker options={availableTools} selected={selectedTools} onChange={setSelectedTools} disabled={isDisabled} />
+          </div>
+        </>
+      )}
 
       <Separator className="my-2" />
 

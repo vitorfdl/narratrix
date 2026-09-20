@@ -51,7 +51,7 @@ export const widgetConfigurations: Record<WidgetId, WidgetConfiguration<any>> = 
     id: "config",
     title: widgetTitles.config,
     component: WidgetConfig,
-    defaultProps: {},
+    defaultProps: { enableAgentTools: true },
     icon: <Settings className="w-4 h-4" />,
   },
   generate: {

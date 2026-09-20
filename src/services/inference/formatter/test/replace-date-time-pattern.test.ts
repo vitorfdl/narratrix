@@ -112,12 +112,16 @@ describe("replaceDateTimePattern", () => {
     expect(result).toBe("");
   });
 
-  it("should handle case sensitivity correctly", () => {
-    const input = "{{TIME}} {{Date}} {{WEEKDAY}} should not be replaced";
+  it("should match macros case-insensitively (SillyTavern parity)", () => {
+    const input = "{{TIME}} {{Date}} {{WEEKDAY}}";
     const result = replaceDateTimePattern(input, mockDate);
 
-    // Should not replace uppercase versions
-    expect(result).toBe(input);
+    expect(result).not.toContain("{{TIME}}");
+    expect(result).not.toContain("{{Date}}");
+    expect(result).not.toContain("{{WEEKDAY}}");
+    expect(result).toMatch(/\d{1,2}:\d{2} [AP]M/);
+    expect(result).toContain("January 15, 2024");
+    expect(result).toContain("Monday");
   });
 
   it("should handle partial matches correctly", () => {

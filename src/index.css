@@ -212,6 +212,30 @@ body,
     @apply border-b-2 border-b-primary/20 border-border/30 focus:border-b-primary;
     @apply transition-colors duration-200;
   }
+
+  /* Character sheet control surface. Declared after (and at the same
+     specificity as) the theme-specific .input-fields rules so the section's
+     --sheet-accent theming wins over the generic input treatment. */
+  :root .sheet-surface,
+  .dark .sheet-surface {
+    @apply rounded-sm transition-colors duration-150;
+    background: color-mix(in srgb, var(--foreground) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--sheet-accent) 22%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--sheet-accent) 50%, transparent);
+  }
+
+  :root .sheet-surface:hover,
+  .dark .sheet-surface:hover {
+    background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
+
+  :root .sheet-surface:focus,
+  :root .sheet-surface:focus-within,
+  .dark .sheet-surface:focus,
+  .dark .sheet-surface:focus-within {
+    background: color-mix(in srgb, var(--foreground) 9%, transparent);
+    border-bottom-color: var(--sheet-accent);
+  }
 }
 @layer components {
   /* Custom animation for the speaker border */

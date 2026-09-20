@@ -21,6 +21,13 @@ const executeChatOutputNode: NodeExecutor = async (node, inputs, context, agent,
     return { success: false, error: "Chat output node missing response text" };
   }
 
+  // When the agent runs as a tool, never post to the chat — the value is returned to
+  // the calling LLM instead (the Tool Response node is the preferred terminal node).
+  const toolTriggerCtx = context.nodeValues.get("workflow-trigger-context") as TriggerContext | undefined;
+  if (toolTriggerCtx?.type === "tool") {
+    return { success: true, value: response };
+  }
+
   if (!participantId) {
     return { success: false, error: "Chat output node requires a participant ID" };
   }

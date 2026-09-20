@@ -3,6 +3,7 @@ import { getProfileById, updateProfile } from "@/services/profile-service";
 import { v10Migration } from "./version_10";
 import { v11Migration } from "./version_11";
 import { v12Migration } from "./version_12";
+import { v13Migration } from "./version_13";
 
 // Type for a migration function
 export type ProfileMigration = (profile: ProfileResponse) => Promise<ProfileResponse>;
@@ -12,6 +13,7 @@ const migrations: Record<number, () => Promise<ProfileMigration>> = {
   10: async () => v10Migration,
   11: async () => v11Migration,
   12: async () => v12Migration,
+  13: async () => v13Migration,
   // Add future migrations here
 };
 

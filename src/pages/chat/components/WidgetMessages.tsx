@@ -20,6 +20,7 @@ import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import { useInferenceServiceFromContext } from "@/hooks/useChatInference";
 import { useImageUrl } from "@/hooks/useImageUrl";
 import type { TriggerContext } from "@/schema/agent-schema";
+import type { MessageToolCall } from "@/schema/chat-message-schema";
 import { generateCharacterWithAgents } from "@/services/chat-generation-orchestrator";
 import type { ChatMessage } from "@/services/chat-message-service";
 import { deleteChatMessage as apiDeleteChatMessage, getChatMessagesByChatId, updateChatMessagesUsingFilter } from "@/services/chat-message-service";
@@ -73,6 +74,7 @@ const WidgetMessages: React.FC = () => {
   const [editedContent, setEditedContent] = useState<string>("");
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [messageReasonings, setMessageReasonings] = useState<Record<string, string>>({});
+  const [messageToolCalls, setMessageToolCalls] = useState<Record<string, MessageToolCall[]>>({});
   const [isAtBottom, setIsAtBottom] = useState(true);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -197,6 +199,21 @@ const WidgetMessages: React.FC = () => {
           });
         }
 
+        if (messageToolCalls[messageId]) {
+          setMessageToolCalls((prev) => {
+            const next = { ...prev };
+            delete next[messageId];
+            return next;
+          });
+        }
+
+        // Drop the previous generation's persisted tool calls so they don't linger in
+        // history when the regenerated response makes fewer (or no) tool calls.
+        if (message.extra?.tool_calls && message.extra.tool_calls.length > 0) {
+          const { tool_calls: _clearedToolCalls, ...restExtra } = message.extra;
+          await updateChatMessage(messageId, { extra: restExtra });
+        }
+
         // Run before agents → regenerate → run after agents, with emitChatEvents: false
         // to prevent the inference service from re-firing agent events that are already
         // handled here, which would cause double-execution via useAgentTriggerManager.
@@ -229,7 +246,20 @@ const WidgetMessages: React.FC = () => {
         setStreamingMessageId(null);
       }
     },
-    [messages, characters, messageReasonings, inferenceService, currentChatId, currentChatParticipants, agentList, currentChatUserCharacterID, executeWorkflow, onRegenerateAgentMessage],
+    [
+      messages,
+      characters,
+      messageReasonings,
+      messageToolCalls,
+      inferenceService,
+      currentChatId,
+      currentChatParticipants,
+      agentList,
+      currentChatUserCharacterID,
+      executeWorkflow,
+      onRegenerateAgentMessage,
+      updateChatMessage,
+    ],
   );
 
   const handleSwipe = useCallback(
@@ -279,6 +309,13 @@ const WidgetMessages: React.FC = () => {
           setMessageReasonings((prev) => ({
             ...prev,
             [streamingState.messageId as string]: streamingState.accumulatedReasoning,
+          }));
+        }
+
+        if (streamingState.toolCalls && streamingState.toolCalls.length > 0) {
+          setMessageToolCalls((prev) => ({
+            ...prev,
+            [streamingState.messageId as string]: streamingState.toolCalls as MessageToolCall[],
           }));
         }
       } else if (streamingMessageIdRef.current) {
@@ -463,6 +500,7 @@ const WidgetMessages: React.FC = () => {
             const isStreaming = streamingMessageId === message.id;
             const hasReasoningData = !!messageReasonings[message.id];
             const reasoningContent = messageReasonings[message.id] || "";
+            const liveToolCalls = messageToolCalls[message.id];
             const showMidLayer = index > 0 && !message.disabled && filteredMessages[index - 1] && !filteredMessages[index - 1].disabled;
             const isEditing = isEditingID === message.id;
 
@@ -492,6 +530,7 @@ const WidgetMessages: React.FC = () => {
                     isStreaming={isStreaming}
                     hasReasoningData={hasReasoningData}
                     reasoningContent={reasoningContent}
+                    toolCalls={liveToolCalls}
                     isEditing={isEditing}
                     editedContent={editedContent}
                     avatarPath={avatarPath}

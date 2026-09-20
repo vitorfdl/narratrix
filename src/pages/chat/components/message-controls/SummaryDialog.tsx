@@ -58,7 +58,7 @@ export const SummaryDialog: React.FC<SummaryDialogProps> = ({ isOpen, onOpenChan
     <Dialog open={isOpen} onOpenChange={(open) => !open && onOpenChange(false)}>
       <DialogContent size="window">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-1 text-lg">
+          <DialogTitle className="flex items-center gap-1">
             <TextSelect className="h-4 w-4 text-primary" />
             Summary Settings
           </DialogTitle>

@@ -42,7 +42,7 @@ DialogContent.displayName = "DialogContent";
  * Use for the dialog's header section.
  */
 export const DialogHeader: React.FC<React.ComponentProps<typeof ShadDialog.DialogHeader>> = ({ className = "", ...props }) => {
-  const mergedClassName = ["sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-4", className].filter(Boolean).join(" ");
+  const mergedClassName = ["sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-2.5", className].filter(Boolean).join(" ");
   return <ShadDialog.DialogHeader className={mergedClassName} {...props} />;
 };
 DialogHeader.displayName = "DialogHeader";
@@ -50,14 +50,18 @@ DialogHeader.displayName = "DialogHeader";
 /**
  * DialogTitle component for the dialog's title area.
  */
-export const DialogTitle = ShadDialog.DialogTitle;
+export const DialogTitle: React.FC<React.ComponentProps<typeof ShadDialog.DialogTitle>> = ({ className = "", ...props }) => {
+  const mergedClassName = ["text-base", className].filter(Boolean).join(" ");
+  return <ShadDialog.DialogTitle className={mergedClassName} {...props} />;
+};
+DialogTitle.displayName = "DialogTitle";
 
 /**
  * DialogFooter component with sticky positioning and custom background/border.
  * Use for the dialog's footer section (actions/buttons).
  */
 export const DialogFooter: React.FC<React.ComponentProps<typeof ShadDialog.DialogFooter>> = ({ className = "", ...props }) => {
-  const mergedClassName = ["sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t border-border px-6 py-4 flex gap-3", className].filter(Boolean).join(" ");
+  const mergedClassName = ["sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t border-border px-6 py-2.5 flex gap-2 [&>button]:h-7 [&>button]:text-xs", className].filter(Boolean).join(" ");
   return <ShadDialog.DialogFooter className={mergedClassName} {...props} />;
 };
 DialogFooter.displayName = "DialogFooter";

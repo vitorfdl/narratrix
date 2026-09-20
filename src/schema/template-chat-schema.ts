@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { baseTemplateSchema } from "./template-base-schema";
 
+/**
+ * Reference to a tool the chat LLM can call. Either a whole agent whose trigger is
+ * "tool" (agent_id), or a standalone built-in tool node that needs no agent (node_type,
+ * e.g. "userChoice"). Exactly one field is set.
+ */
+const chatTemplateToolSchema = z.object({
+  agent_id: z.string().optional(),
+  node_type: z.string().optional(),
+});
+
 const chatTemplateCustomPromptSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -20,6 +30,7 @@ export const chatTemplateSchema = baseTemplateSchema.extend({
   format_template_id: z.string().nullable().optional(),
 
   lorebook_list: z.string().array().optional().default([]),
+  tools: chatTemplateToolSchema.array().optional().default([]),
   config: z
     .object({
       max_tokens: z.number(),
@@ -52,3 +63,4 @@ export const chatTemplateSchema = baseTemplateSchema.extend({
 
 export type ChatTemplate = z.infer<typeof chatTemplateSchema>;
 export type ChatTemplateCustomPrompt = z.infer<typeof chatTemplateCustomPromptSchema>;
+export type ChatTemplateTool = z.infer<typeof chatTemplateToolSchema>;

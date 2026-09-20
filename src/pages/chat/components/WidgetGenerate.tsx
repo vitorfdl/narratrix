@@ -6,7 +6,16 @@ import { MarkdownTextArea } from "@/components/markdownRender/markdown-textarea"
 import { Button } from "@/components/ui/button";
 import { useAgents } from "@/hooks/agentStore";
 import { cancelAgentWorkflow, useAgentWorkflowStore } from "@/hooks/agentWorkflowStore";
-import { getCurrentChatId, useChatStore, useCurrentChatActiveChapterID, useCurrentChatId, useCurrentChatMessages, useCurrentChatParticipants, useCurrentChatUserCharacterID } from "@/hooks/chatStore";
+import {
+  getCurrentChatId,
+  useChatStore,
+  useCurrentChatActiveChapterID,
+  useCurrentChatId,
+  useCurrentChatMessages,
+  useCurrentChatParticipants,
+  useCurrentChatSettings,
+  useCurrentChatUserCharacterID,
+} from "@/hooks/chatStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useAgentWorkflow } from "@/hooks/useAgentWorkflow";
 import type { GenerationOptions, StreamingState } from "@/hooks/useChatInference";
@@ -38,6 +47,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
   const currentChatActiveChapterId = useCurrentChatActiveChapterID();
   const sendCommand = currentProfile?.settings.chat.sendShortcut;
   const participants = useCurrentChatParticipants();
+  const chatSettings = useCurrentChatSettings();
   const chatMessages = useCurrentChatMessages();
   const userCharacterId = useCurrentChatUserCharacterID() ?? null;
   const agentList = useAgents();
@@ -199,6 +209,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
           participants: participants ?? [],
           agents: agentList,
           userCharacterId,
+          chatSettings: chatSettings ?? null,
           addUserMessage: async (text) => {
             await addUserMessageToChat(targetChatId, targetChapterId, text);
           },
@@ -234,6 +245,7 @@ const WidgetGenerate: React.FC<WidgetGenerateProps> = () => {
       participants,
       agentList,
       userCharacterId,
+      chatSettings,
       inferenceService,
       executeWorkflow,
       generationInputHistory,

@@ -4,7 +4,12 @@ import "./nodeChatHistory";
 import "./nodeChatOutput";
 import "./nodeJavascript";
 import "./nodeText";
+import "./nodeToolResponse";
 import "./nodeParticipantPicker";
+import "./nodeListParticipants";
+import "./nodeSetParticipantEnabled";
+import "./nodeGetParticipantData";
+import "./nodeRollDice";
 import "./nodePromptInjection";
 import "./nodeTrigger";
 import "./nodeUserChoice";
@@ -13,6 +18,8 @@ import "./nodeDisableMessage";
 import "./nodeGetLorebook";
 import "./nodeSearchLorebook";
 import "./nodeAddLorebookEntry";
+import "./nodeGetCharacterSheet";
+import "./nodeUpdateCharacterSheet";
 
 // Re-export the NodeProps interface
 export type { NodeProps } from "./nodeTypes";

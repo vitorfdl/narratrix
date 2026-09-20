@@ -20,7 +20,7 @@
 
 import type { TriggerNodeConfig } from "@/pages/agents/components/tool-nodes/nodeTrigger";
 import type { AgentTriggerType, AgentType, TriggerContext } from "@/schema/agent-schema";
-import type { ChatParticipant } from "@/schema/chat-schema";
+import type { ChatDisplaySettings, ChatParticipant } from "@/schema/chat-schema";
 import type { NodeExecutionResult } from "@/services/agent-workflow/types";
 import type { GenerationOptions } from "@/services/inference/types";
 
@@ -34,6 +34,8 @@ export interface OrchestrationDeps {
   agents: AgentType[];
   /** The user's persona character ID (null if not set) */
   userCharacterId: string | null;
+  /** Chat display settings — gates which characters may generate when restrict mode is on */
+  chatSettings: ChatDisplaySettings | null;
   /** Insert a user message into the chat */
   addUserMessage: (text: string) => Promise<void>;
   /** Execute an agent workflow */
@@ -70,6 +72,22 @@ export function getAgentTriggerConfig(agent: AgentType): { triggerType: AgentTri
     triggerType: agent.settings?.run_on?.type ?? "manual",
     messageCount: agent.settings?.run_on?.config?.messageCount,
   };
+}
+
+/**
+ * Whether a participant is allowed to generate a message.
+ *
+ * When the chat's "restrict generation" mode is off, everyone generates (default behavior).
+ * When it is on, only characters listed in generationCharacterIds generate — every other
+ * character (including ones added later) stays in the chat for context and other features
+ * but never generates and exposes no play button. Agents are gated separately by the loop,
+ * so passing an agent id here while restricted simply returns false.
+ */
+export function canParticipantGenerate(participantId: string, settings: ChatDisplaySettings | null | undefined): boolean {
+  if (!settings?.restrictGeneration) {
+    return true;
+  }
+  return (settings.generationCharacterIds ?? []).includes(participantId);
 }
 
 /**
@@ -195,7 +213,7 @@ export async function generateCharacterWithAgents(characterParticipantId: string
  * @param deps      Resolved dependencies
  */
 export async function orchestrateGeneration(userText: string, deps: OrchestrationDeps): Promise<void> {
-  const { chatId, participants, agents, userCharacterId, addUserMessage, executeWorkflow, generateMessage, waitForGenerationToFinish, isAborted } = deps;
+  const { chatId, participants, agents, userCharacterId, chatSettings, addUserMessage, executeWorkflow, generateMessage, waitForGenerationToFinish, isAborted } = deps;
 
   // Identify all enabled agent participants and their trigger configs, in participant order
   const enabledParticipants = participants.filter((p) => p.enabled);
@@ -272,6 +290,11 @@ export async function orchestrateGeneration(userText: string, deps: Orchestratio
 
     // Skip the virtual "user" participant — user message is already inserted above
     if (participant.id === "user") {
+      continue;
+    }
+
+    // In restrict-generation mode, only allow-listed characters generate; the rest stay for context
+    if (!canParticipantGenerate(participant.id, chatSettings)) {
       continue;
     }
 

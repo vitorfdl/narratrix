@@ -48,6 +48,9 @@ const templateSettingsSchema = z.object({
   apply_censorship: z.boolean().default(false),
   merge_messages_on_user: z.boolean().default(false),
   merge_subsequent_messages: z.boolean().default(true),
+  // When true, the character-context section is repeated once per enabled character in the
+  // chat instead of only the generating character. Default false preserves single-character behavior.
+  character_context_all_enabled: z.boolean().default(false),
 });
 
 const formatTemplateSchema = baseTemplateSchema.extend({

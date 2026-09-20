@@ -87,10 +87,10 @@ const ProfileMenuContent: React.FC<ProfileMenuProps> = ({ onSettings, onLogout }
   };
 
   return (
-    <DropdownMenuContent align="start" sideOffset={8} className="w-64 font-ui p-1 bg-accent border shadow-lg rounded-lg">
+    <DropdownMenuContent align="start" sideOffset={8} className="w-48 font-ui p-1 bg-accent border shadow-lg rounded-lg">
       <div className="px-2 pt-1.5 pb-1">
-        <div className="font-display italic text-[10.5px] text-muted-foreground/60 lowercase pb-1.5">appearance</div>
-        <div className="flex items-center rounded-md bg-muted/50 p-0.5 gap-0.5">
+        <div className="font-display italic text-[10.5px] text-muted-foreground lowercase pb-1.5">appearance</div>
+        <div className="flex items-center rounded-md bg-muted/60 p-0.5 gap-0.5">
           {THEME_OPTIONS.map((opt) => {
             const isSelected = theme === opt.id;
             return (
@@ -98,9 +98,10 @@ const ProfileMenuContent: React.FC<ProfileMenuProps> = ({ onSettings, onLogout }
                 key={opt.id}
                 onClick={() => handleThemeChange(opt.id)}
                 aria-pressed={isSelected}
+                title={opt.label}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 h-6 rounded text-[11px] font-medium transition-colors",
-                  isSelected ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  "flex-1 flex items-center justify-center gap-1 h-6 rounded text-[10.5px] font-medium transition-colors",
+                  isSelected ? "bg-secondary text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {opt.icon}
@@ -115,7 +116,7 @@ const ProfileMenuContent: React.FC<ProfileMenuProps> = ({ onSettings, onLogout }
 
       <DropdownMenuItem
         onClick={onSettings}
-        className="font-ui text-[12.5px] gap-2.5 px-2 py-1.5 rounded-sm cursor-pointer [&>svg]:size-3.5 [&>svg]:text-muted-foreground/70 focus:[&>svg]:text-foreground"
+        className="font-ui text-[12.5px] text-foreground gap-2.5 px-2 py-1.5 rounded-sm cursor-pointer focus:bg-foreground/[0.06] [&>svg]:size-3.5 [&>svg]:text-muted-foreground focus:[&>svg]:text-foreground"
       >
         <Settings strokeWidth={1.5} />
         <span>Settings</span>
@@ -123,7 +124,7 @@ const ProfileMenuContent: React.FC<ProfileMenuProps> = ({ onSettings, onLogout }
 
       <DropdownMenuItem
         onClick={onLogout}
-        className="font-ui text-[12.5px] gap-2.5 px-2 py-1.5 rounded-sm cursor-pointer text-muted-foreground/85 [&>svg]:size-3.5 [&>svg]:text-muted-foreground/60 focus:bg-destructive/10 focus:text-destructive focus:[&>svg]:text-destructive"
+        className="font-ui text-[12.5px] gap-2.5 px-2 py-1.5 rounded-sm cursor-pointer text-foreground/90 [&>svg]:size-3.5 [&>svg]:text-muted-foreground focus:bg-destructive/10 focus:text-destructive focus:[&>svg]:text-destructive"
       >
         <LogOut strokeWidth={1.5} />
         <span>Sign out</span>

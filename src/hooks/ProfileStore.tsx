@@ -251,7 +251,7 @@ export const useProfileSynchronization = () => {
   const currentProfile = useProfileStore((state) => state.currentProfile);
   const { fetchManifests } = useModelManifestsActions();
   const { fetchModels } = useModelsActions();
-  const { fetchFormatTemplates, fetchInferenceTemplates } = useTemplateActions();
+  const { fetchFormatTemplates, fetchInferenceTemplates, fetchCharacterSheetTemplates } = useTemplateActions();
   const { fetchCharacters } = useCharacterActions();
   const { fetchChatList } = useChatActions();
   const { fetchChatTemplates } = useChatTemplateActions();
@@ -264,6 +264,7 @@ export const useProfileSynchronization = () => {
       fetchManifests();
       fetchFormatTemplates(currentProfile.id);
       fetchInferenceTemplates({ profile_id: currentProfile.id });
+      fetchCharacterSheetTemplates(currentProfile.id);
       fetchChatTemplates({ profile_id: currentProfile.id });
       fetchCharacters(currentProfile.id);
       fetchChatList(currentProfile.id);
@@ -274,7 +275,7 @@ export const useProfileSynchronization = () => {
     } else {
       console.log("No current profile or settings, skipping data synchronization.");
     }
-  }, [currentProfile, fetchManifests, fetchFormatTemplates, fetchInferenceTemplates, fetchChatTemplates, fetchCharacters, fetchChatList, loadLorebooks, setTheme]);
+  }, [currentProfile, fetchManifests, fetchFormatTemplates, fetchInferenceTemplates, fetchCharacterSheetTemplates, fetchChatTemplates, fetchCharacters, fetchChatList, loadLorebooks, setTheme]);
 
   return null;
 };

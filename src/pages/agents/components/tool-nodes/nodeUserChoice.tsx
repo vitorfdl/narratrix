@@ -7,6 +7,7 @@ import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useProfileStore } from "@/hooks/ProfileStore";
 import { type PendingChoiceOption, useUserChoiceStore } from "@/hooks/userChoiceStore";
@@ -24,6 +25,7 @@ export interface UserChoiceNodeConfig {
   mode: "script" | "tool";
   prompt: string;
   choices: string[];
+  allowMultiple: boolean;
   toolName: string;
   toolDescription: string;
   timeoutSeconds: number;
@@ -33,8 +35,9 @@ const DEFAULT_CONFIG: UserChoiceNodeConfig = {
   mode: "script",
   prompt: "What would you like to do?",
   choices: ["Option A", "Option B"],
+  allowMultiple: false,
   toolName: "userChoice",
-  toolDescription: "Present the user with a multiple-choice prompt and return their selection",
+  toolDescription: "Ask the user one or more multiple-choice questions in sequence and return their answers.",
   timeoutSeconds: 0,
 };
 
@@ -61,8 +64,12 @@ function parseChoices(raw: unknown, fallback: string[]): PendingChoiceOption[] {
       if (typeof item === "string") {
         return { label: item, value: item };
       }
-      if (item && typeof item === "object" && "label" in item && "value" in item) {
-        return { label: String((item as Record<string, unknown>).label), value: String((item as Record<string, unknown>).value) };
+      if (item && typeof item === "object") {
+        const obj = item as Record<string, unknown>;
+        const label = obj.label != null ? String(obj.label) : obj.value != null ? String(obj.value) : `Option ${i + 1}`;
+        const value = obj.value != null ? String(obj.value) : label;
+        const description = obj.description != null ? String(obj.description) : undefined;
+        return description ? { label, value, description } : { label, value };
       }
       return { label: `Option ${i + 1}`, value: String(item) };
     });
@@ -71,7 +78,14 @@ function parseChoices(raw: unknown, fallback: string[]): PendingChoiceOption[] {
   return fallback.map((s) => ({ label: s, value: s }));
 }
 
-function createPendingChoice(runKey: string, executionId: string, prompt: string, choices: PendingChoiceOption[], timeoutSeconds: number): Promise<string | null> {
+function createPendingChoice(
+  runKey: string,
+  executionId: string,
+  prompt: string,
+  choices: PendingChoiceOption[],
+  timeoutSeconds: number,
+  options: { allowCustom?: boolean; allowMultiple?: boolean } = {},
+): Promise<string | null> {
   return new Promise((resolve) => {
     const choiceId = `choice_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -90,6 +104,8 @@ function createPendingChoice(runKey: string, executionId: string, prompt: string
       executionId,
       prompt,
       choices,
+      allowCustom: options.allowCustom ?? false,
+      allowMultiple: options.allowMultiple ?? false,
       resolve: wrappedResolve,
     });
 
@@ -124,31 +140,69 @@ const executeUserChoiceNode: NodeExecutor = async (node, inputs, context, agent)
       inputSchema: {
         type: "object",
         properties: {
-          prompt: { type: "string", description: "The question or prompt to show the user" },
-          choices: {
+          questions: {
             type: "array",
-            items: { type: "string" },
-            description: "List of choices for the user to pick from",
+            description: "One or more questions to ask the user. They are shown one at a time, in order, each after the previous is answered.",
+            items: {
+              type: "object",
+              properties: {
+                prompt: { type: "string", description: "The question or prompt to show the user" },
+                choices: {
+                  type: "array",
+                  description: "The options the user can choose from. May be empty when allowCustom is true.",
+                  items: {
+                    type: "object",
+                    properties: {
+                      label: { type: "string", description: "The option text shown to the user" },
+                      description: { type: "string", description: "Optional secondary text shown beneath the label" },
+                    },
+                    required: ["label"],
+                  },
+                },
+                allowCustom: { type: "boolean", description: "If true, also let the user type a custom free-text answer instead of picking one of the choices." },
+                allowMultiple: { type: "boolean", description: "If true, let the user select more than one option. The answer is returned as a JSON array of the chosen values." },
+              },
+              required: ["prompt", "choices"],
+            },
           },
         },
-        required: ["prompt", "choices"],
+        required: ["questions"],
       },
-      invoke: async (args: { prompt?: string; choices?: string[] }) => {
-        const prompt = args.prompt || cfg.prompt;
-        const choices = parseChoices(args.choices, cfg.choices);
-        if (choices.length === 0) {
-          return "No choices provided";
+      invoke: async (args: { questions?: Array<{ prompt?: string; choices?: unknown; allowCustom?: unknown; allowMultiple?: unknown }>; prompt?: string; choices?: unknown }) => {
+        // Accept the questions array; fall back to a single {prompt, choices} for resilience.
+        const rawQuestions = Array.isArray(args.questions) && args.questions.length > 0 ? args.questions : [{ prompt: args.prompt, choices: args.choices }];
+
+        const questions = rawQuestions.map((q) => ({
+          prompt: typeof q.prompt === "string" && q.prompt ? q.prompt : cfg.prompt,
+          choices: parseChoices(q.choices, cfg.choices),
+          allowCustom: q.allowCustom === true,
+          allowMultiple: q.allowMultiple === true,
+        }));
+
+        // A question needs choices unless it allows a custom free-text answer.
+        if (questions.some((q) => q.choices.length === 0 && !q.allowCustom)) {
+          return "Each question must include a non-empty 'choices' array (or set allowCustom to true).";
         }
 
-        if (!context.isRunning) {
-          throw new Error("Workflow cancelled");
+        // Ask sequentially: each createPendingChoice resolves on the user's answer before
+        // the next question is shown, so only one prompt is visible at a time.
+        const answers: string[] = [];
+        for (const question of questions) {
+          if (!context.isRunning) {
+            throw new Error("Workflow cancelled");
+          }
+          const selected = await createPendingChoice(context.runKey, context.executionId, question.prompt, question.choices, cfg.timeoutSeconds, {
+            allowCustom: question.allowCustom,
+            allowMultiple: question.allowMultiple,
+          });
+          if (selected === null) {
+            throw new Error("Workflow cancelled");
+          }
+          answers.push(selected);
         }
 
-        const selected = await createPendingChoice(context.runKey, context.executionId, prompt, choices, cfg.timeoutSeconds);
-        if (selected === null) {
-          throw new Error("Workflow cancelled");
-        }
-        return selected;
+        // Single question → bare answer. Multiple → ordered array (index = question position).
+        return answers.length === 1 ? answers[0] : JSON.stringify(answers);
       },
     };
 
@@ -163,7 +217,7 @@ const executeUserChoiceNode: NodeExecutor = async (node, inputs, context, agent)
     return { success: false, error: "User choice node has no choices configured" };
   }
 
-  const selected = await createPendingChoice(context.runKey, context.executionId, prompt, choices, cfg.timeoutSeconds);
+  const selected = await createPendingChoice(context.runKey, context.executionId, prompt, choices, cfg.timeoutSeconds, { allowMultiple: cfg.allowMultiple });
 
   if (selected === null) {
     return { success: false, error: "User cancelled the choice" };
@@ -275,7 +329,8 @@ const UserChoiceConfigDialog: React.FC<UserChoiceConfigDialogProps> = ({ open, i
                       <span className="font-semibold">Script</span> — Pauses the workflow and waits for the user to select a choice. The selected value flows to the next node.
                     </p>
                     <p>
-                      <span className="font-semibold">Tool</span> — Exposes a callable tool for Agent nodes. The agent can invoke it with a dynamic prompt and choices.
+                      <span className="font-semibold">Tool</span> — Exposes a callable tool. The caller passes one or more questions (each with its own choices); they are asked one at a time and the
+                      answers are returned together.
                     </p>
                   </HelpTooltip>
                 </div>
@@ -359,8 +414,8 @@ const UserChoiceConfigDialog: React.FC<UserChoiceConfigDialogProps> = ({ open, i
                               <p>{'["A", "B", "C"]'}</p>
                             </div>
                             <div className="font-mono text-[11px] bg-muted/60 rounded p-1.5 space-y-0.5">
-                              <p className="text-muted-foreground">{"// Custom values"}</p>
-                              <p>{'[{"label":"Go left",\n  "value":"left"}]'}</p>
+                              <p className="text-muted-foreground">{"// Custom values + descriptions"}</p>
+                              <p>{'[{"label":"Go left",\n  "value":"left",\n  "description":"..."}]'}</p>
                             </div>
                           </div>
                         </HelpTooltip>
@@ -391,6 +446,23 @@ const UserChoiceConfigDialog: React.FC<UserChoiceConfigDialogProps> = ({ open, i
                       {(currentChoices ?? []).length === 0 && <p className="text-xs text-muted-foreground italic text-center py-2">No choices. Click + to add one.</p>}
                     </div>
                   </div>
+
+                  {/* Multi-selection */}
+                  <Controller
+                    name="allowMultiple"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label className="text-xs font-medium">Allow multiple selections</Label>
+                          <HelpTooltip>
+                            <span className="text-xs">When enabled, the user can pick more than one option. The selected value is returned as a JSON array string (e.g. {'["a","b"]'}).</span>
+                          </HelpTooltip>
+                        </div>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </div>
+                    )}
+                  />
                 </>
               )}
 
@@ -498,8 +570,8 @@ const UserChoiceContent = memo<{ nodeId: string; config: UserChoiceNodeConfig; o
                   <p>{'["A", "B", "C"]'}</p>
                 </div>
                 <div className="space-y-1 font-mono text-[11px] bg-muted/60 rounded p-1.5">
-                  <p className="text-muted-foreground">{"// Label/value pairs"}</p>
-                  <p>{'[{"label":"Go left","value":"left"}]'}</p>
+                  <p className="text-muted-foreground">{"// Label/value pairs + descriptions"}</p>
+                  <p>{'[{"label":"Go left","value":"left","description":"..."}]'}</p>
                 </div>
                 <p className="text-muted-foreground">When connected, overrides the default choices configured below.</p>
               </div>

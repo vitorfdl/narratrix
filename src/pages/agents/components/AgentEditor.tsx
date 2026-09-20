@@ -3,7 +3,6 @@ import {
   Background,
   BackgroundVariant,
   Connection,
-  Controls,
   Edge,
   EdgeChange,
   type EdgeTypes,
@@ -15,10 +14,12 @@ import {
   reconnectEdge,
   useEdgesState,
   useNodesState,
+  useReactFlow,
 } from "@xyflow/react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Lock, Map as MapIcon, Maximize2, Redo2, Sparkles, Undo2, Unlock, ZoomIn, ZoomOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/hooks/ThemeContext";
-import { deepEqual } from "@/lib/utils";
+import { cn, deepEqual } from "@/lib/utils";
 import { AgentType } from "@/schema/agent-schema";
 import "@xyflow/react/dist/style.css";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -31,18 +32,66 @@ import { NodeRegistry } from "./tool-components/node-registry";
 import { convertCoreNodeToReactFlow, convertReactFlowNodeToCore } from "./tool-components/node-utils";
 import { ToolEditorProps, ToolNodeData } from "./tool-components/types";
 
-// Import all node types to ensure they register themselves
 import "./tool-nodes";
+
+type WorkflowStatus = {
+  variant: "ok" | "warn" | "error";
+  message: string;
+};
+
+const STATUS_STYLES: Record<WorkflowStatus["variant"], string> = {
+  ok: "bg-green-500/10 border-green-500/40 text-green-600 dark:text-green-400",
+  warn: "bg-yellow-500/15 border-yellow-500/40 text-yellow-600 dark:text-yellow-400",
+  error: "bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400",
+};
+
+const STATUS_ICON: Record<WorkflowStatus["variant"], React.ComponentType<{ className?: string }>> = {
+  ok: CheckCircle2,
+  warn: AlertTriangle,
+  error: AlertTriangle,
+};
+
+interface CanvasControlsProps {
+  interactive: boolean;
+  onToggleInteractive: () => void;
+  showMiniMap: boolean;
+  onToggleMiniMap: () => void;
+}
+
+const CanvasControls: React.FC<CanvasControlsProps> = ({ interactive, onToggleInteractive, showMiniMap, onToggleMiniMap }) => {
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+
+  const buttonClass = "h-7 w-7 p-0 hover:bg-accent";
+
+  return (
+    <div className="absolute bottom-3 left-3 z-40 flex flex-col gap-0.5 rounded-md border border-border/60 bg-background/90 p-1 shadow-sm backdrop-blur-sm">
+      <Button variant="ghost" size="sm" className={buttonClass} onClick={() => zoomIn({ duration: 200 })} title="Zoom in">
+        <ZoomIn className="h-3.5 w-3.5" />
+      </Button>
+      <Button variant="ghost" size="sm" className={buttonClass} onClick={() => zoomOut({ duration: 200 })} title="Zoom out">
+        <ZoomOut className="h-3.5 w-3.5" />
+      </Button>
+      <Button variant="ghost" size="sm" className={buttonClass} onClick={() => fitView({ duration: 250, maxZoom: 1 })} title="Fit view">
+        <Maximize2 className="h-3.5 w-3.5" />
+      </Button>
+      <div className="my-0.5 h-px bg-border/60" />
+      <Button variant="ghost" size="sm" className={buttonClass} onClick={onToggleInteractive} title={interactive ? "Lock canvas" : "Unlock canvas"}>
+        {interactive ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5 text-yellow-500" />}
+      </Button>
+      <Button variant="ghost" size="sm" className={cn(buttonClass, !showMiniMap && "text-muted-foreground")} onClick={onToggleMiniMap} title={showMiniMap ? "Hide minimap" : "Show minimap"}>
+        <MapIcon className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+};
 
 const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, readOnly = false }) => {
   const resolvedTheme = useThemeStore((s) => s.resolvedTheme);
 
-  // Get node types from registry
   const nodeTypes = NodeRegistry.getNodeTypes();
 
   const edgeTypes = useMemo<EdgeTypes>(() => ({ default: DeletableEdge }), []);
 
-  // Connection state for visual feedback during edge dragging
   const [connectionState, setConnectionState] = useState<any>({
     isConnecting: false,
     sourceNodeId: undefined,
@@ -50,7 +99,9 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     sourceEdgeType: undefined,
   });
 
-  // Initialize nodes and edges from toolConfig with proper validation
+  const [showMiniMap, setShowMiniMap] = useState(true);
+  const [interactive, setInteractive] = useState(true);
+
   const initialNodes = useMemo(() => {
     if (!toolConfig?.nodes) {
       return [];
@@ -63,10 +114,8 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
       return [];
     }
 
-    // Validate and fix edges before loading
     const validatedEdges = toolConfig.edges.map((edge) => validateAndFixEdge(edge, toolConfig.nodes || [])).filter((edge): edge is NonNullable<typeof edge> => edge !== null);
 
-    // Log any corrections made
     if (validatedEdges.length !== toolConfig.edges.length) {
       console.warn(`Corrected ${toolConfig.edges.length - validatedEdges.length} invalid edges`);
     }
@@ -79,18 +128,15 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const lastSentConfigRef = useRef<AgentType | null>(null);
 
-  const { takeSnapshot, undo, redo } = useUndoRedo<Node<ToolNodeData>, Edge>(nodes, edges, setNodes, setEdges, { resetKey: toolConfig?.id });
+  const { takeSnapshot, undo, redo, canUndo, canRedo } = useUndoRedo<Node<ToolNodeData>, Edge>(nodes, edges, setNodes, setEdges, { resetKey: toolConfig?.id });
 
-  // Update nodes and edges when toolConfig changes (but avoid double initialization)
   useEffect(() => {
     if (toolConfig && (toolConfig.id || toolConfig.version)) {
       const newNodes = toolConfig.nodes?.map(convertCoreNodeToReactFlow) || [];
 
-      // Validate and fix edges before loading
       const validatedEdges = toolConfig.edges?.map((edge) => validateAndFixEdge(edge, toolConfig.nodes || [])).filter((edge): edge is NonNullable<typeof edge> => edge !== null) || [];
       const newEdges = validatedEdges.map(convertCoreEdgeToReactFlow);
 
-      // Only update if the nodes/edges have actually changed
       const nodesChanged =
         JSON.stringify(nodes.map((n) => ({ id: n.id, position: n.position, type: n.type }))) !== JSON.stringify(newNodes.map((n) => ({ id: n.id, position: n.position, type: n.type })));
       const edgesChanged =
@@ -103,22 +149,18 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         setEdges(newEdges);
       }
     }
-  }, [toolConfig?.id, toolConfig?.version, nodes.map, setEdges, setNodes, toolConfig, edges.map]); // Only trigger on config ID or version change
+  }, [toolConfig?.id, toolConfig?.version, nodes.map, setEdges, setNodes, toolConfig, edges.map]);
 
-  // Handle edge changes with validation and style updates
   const handleEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
       try {
-        // Apply changes first
         onEdgesChange(changes);
 
-        // Then update styles in the next tick to avoid conflicts
         setTimeout(() => {
           setEdges((currentEdges) => updateEdgeStyles(currentEdges));
         }, 0);
       } catch (error) {
         console.error("Error handling edge changes:", error);
-        // Reset edges to a valid state if there's an error
         const validEdges = edges.filter((edge) => {
           const validation = isValidEdgeConnection(edge.source, edge.sourceHandle || "", edge.target, edge.targetHandle || "", nodes, edges);
           if (!validation.valid) {
@@ -133,7 +175,6 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     [onEdgesChange, edges, nodes, setEdges],
   );
 
-  // Convert current state to core configuration
   const getCurrentConfiguration = useCallback((): AgentType => {
     return {
       ...toolConfig,
@@ -149,12 +190,10 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     };
   }, [nodes, edges, toolConfig]);
 
-  // Notify parent of changes only when there are actual changes
   useEffect(() => {
     if (onChange) {
       const currentConfig = getCurrentConfiguration();
 
-      // Only call onChange if the configuration has actually changed
       if (!lastSentConfigRef.current || !deepEqual(currentConfig, lastSentConfigRef.current)) {
         lastSentConfigRef.current = currentConfig;
         onChange(currentConfig);
@@ -190,13 +229,11 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
       setEdges((eds) => {
         let updatedEdges = eds;
 
-        // If there's an existing edge to the same input, remove it first
         if (validation.existingEdge) {
           console.log(`Replacing existing edge ${validation.existingEdge.id} with new connection`);
           updatedEdges = eds.filter((edge) => edge.id !== validation.existingEdge!.id);
         }
 
-        // Add the new edge and update styles
         return updateEdgeStyles(addEdge(newEdge, updatedEdges));
       });
     },
@@ -211,7 +248,7 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
         newConnection.target!,
         newConnection.targetHandle || "",
         nodes,
-        edges.filter((edge) => edge.id !== oldEdge.id), // Exclude the old edge from validation
+        edges.filter((edge) => edge.id !== oldEdge.id),
       );
 
       if (!validation.valid && !validation.existingEdge) {
@@ -226,16 +263,13 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
       setEdges((eds) => {
         let updatedEdges = eds;
 
-        // If there's an existing edge to the same input, remove it first
         if (validation.existingEdge) {
           console.log(`Replacing existing edge ${validation.existingEdge.id} with reconnection`);
           updatedEdges = eds.filter((edge) => edge.id !== validation.existingEdge!.id);
         }
 
-        // Use React Flow's reconnectEdge utility and update the edge data
         const reconnectedEdges = reconnectEdge(oldEdge, newConnection, updatedEdges);
 
-        // Update the reconnected edge with proper edge type and style
         return updateEdgeStyles(
           reconnectedEdges.map((edge) => {
             if (edge.source === newConnection.source && edge.target === newConnection.target && edge.sourceHandle === newConnection.sourceHandle && edge.targetHandle === newConnection.targetHandle) {
@@ -253,10 +287,8 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     [setEdges, nodes, edges, takeSnapshot],
   );
 
-  // Handle connection start for visual feedback
   const onConnectStart = useCallback((_event: any, { nodeId, handleId, handleType }: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
     if (nodeId && handleId && handleType) {
-      // Get the actual edge type from the handle instead of hardcoding
       const sourceEdgeType = handleType === "source" ? getEdgeTypeFromHandle(nodeId, handleId) : undefined;
       setConnectionState({
         isConnecting: true,
@@ -267,7 +299,6 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     }
   }, []);
 
-  // Handle connection end to reset visual feedback
   const onConnectEnd = useCallback((_event: any, _connectionState: any) => {
     setConnectionState({
       isConnecting: false,
@@ -354,7 +385,6 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     [nodes, edges, setNodes, setEdges, readOnly, undo, redo, takeSnapshot, isInteractiveTarget],
   );
 
-  // Add keyboard event listener
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
     return () => {
@@ -378,12 +408,21 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     takeSnapshot();
   }, [takeSnapshot]);
 
-  // Validate that exactly one trigger node exists
   const triggerNodeCount = useMemo(() => nodes.filter((n) => n.type === "trigger").length, [nodes]);
-  const hasTriggerNode = triggerNodeCount > 0;
-  const hasDuplicateTriggerNode = triggerNodeCount > 1;
 
-  // Global connection validation for ReactFlow
+  const workflowStatus = useMemo<WorkflowStatus>(() => {
+    if (nodes.length === 0) {
+      return { variant: "warn", message: "Empty workflow — drop a Trigger to start." };
+    }
+    if (triggerNodeCount === 0) {
+      return { variant: "warn", message: "Add a Trigger node to define when this runs." };
+    }
+    if (triggerNodeCount > 1) {
+      return { variant: "error", message: "Multiple Trigger nodes — only one is allowed." };
+    }
+    return { variant: "ok", message: "Workflow ready" };
+  }, [nodes.length, triggerNodeCount]);
+
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
       const validation = isValidEdgeConnection(connection.source!, connection.sourceHandle || "", connection.target!, connection.targetHandle || "", nodes, edges);
@@ -399,27 +438,28 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
     [nodes, edges],
   );
 
+  const StatusIcon = STATUS_ICON[workflowStatus.variant];
+  const showEmptyState = !readOnly && nodes.length === 0;
+
   return (
     <UndoRedoProvider value={takeSnapshot}>
-      <div className="w-full h-full min-h-[400px] dark:bg-background border-2 border-dashed border-primary/40 rounded-lg flex">
-        {/* Sidebar */}
+      <div className="w-full h-full min-h-[400px] dark:bg-background flex">
         {!readOnly && <AgentSidebar className="flex-shrink-0" />}
 
-        {/* Main Editor */}
         <div className="flex-1 relative" style={{ minHeight: 350 }} ref={reactFlowWrapper}>
           <NodeDeleteProvider onDelete={handleDeleteNode}>
             <ConnectionStateProvider connectionState={connectionState}>
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={readOnly ? () => {} : onNodesChange}
-                onEdgesChange={readOnly ? () => {} : handleEdgesChange}
-                onConnect={readOnly ? () => {} : onConnect}
-                onReconnect={readOnly ? () => {} : onReconnect}
-                onConnectStart={readOnly ? () => {} : onConnectStart}
-                onConnectEnd={readOnly ? () => {} : onConnectEnd}
-                onNodeDragStart={readOnly ? undefined : onNodeDragStart}
-                isValidConnection={readOnly ? () => false : isValidConnection}
+                onNodesChange={readOnly || !interactive ? () => {} : onNodesChange}
+                onEdgesChange={readOnly || !interactive ? () => {} : handleEdgesChange}
+                onConnect={readOnly || !interactive ? () => {} : onConnect}
+                onReconnect={readOnly || !interactive ? () => {} : onReconnect}
+                onConnectStart={readOnly || !interactive ? () => {} : onConnectStart}
+                onConnectEnd={readOnly || !interactive ? () => {} : onConnectEnd}
+                onNodeDragStart={readOnly || !interactive ? undefined : onNodeDragStart}
+                isValidConnection={readOnly || !interactive ? () => false : isValidConnection}
                 nodeTypes={nodeTypes as NodeTypes}
                 edgeTypes={edgeTypes}
                 proOptions={{ hideAttribution: true }}
@@ -428,29 +468,77 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
                 colorMode={resolvedTheme()}
                 minZoom={0.5}
                 maxZoom={1.5}
-                nodesDraggable={!readOnly}
-                nodesConnectable={!readOnly}
-                nodesFocusable={!readOnly}
-                edgesFocusable={!readOnly}
-                elementsSelectable={!readOnly}
+                nodesDraggable={!readOnly && interactive}
+                nodesConnectable={!readOnly && interactive}
+                nodesFocusable={!readOnly && interactive}
+                edgesFocusable={!readOnly && interactive}
+                elementsSelectable={!readOnly && interactive}
                 defaultEdgeOptions={{ style: { strokeWidth: 2 } }}
                 connectionLineStyle={{ strokeWidth: 2, stroke: "var(--primary)", strokeDasharray: "5,5" }}
                 snapToGrid={true}
                 snapGrid={[10, 10]}
                 connectionRadius={20}
               >
-                <MiniMap className="border border-foreground" />
-                <Controls />
-                <Background variant={BackgroundVariant.Dots} />
+                <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+                {showMiniMap && (
+                  <MiniMap
+                    position="bottom-right"
+                    pannable
+                    zoomable
+                    maskColor="rgba(0,0,0,0.35)"
+                    className="!bg-background/80 !border !border-border/60 !rounded-md !shadow-sm overflow-hidden"
+                    style={{ margin: 12 }}
+                  />
+                )}
               </ReactFlow>
             </ConnectionStateProvider>
           </NodeDeleteProvider>
-          {/* Trigger node validation banner */}
-          {!readOnly && (!hasTriggerNode || hasDuplicateTriggerNode) && (
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-yellow-500/15 border border-yellow-500/40 text-yellow-600 dark:text-yellow-400 text-xs font-medium shadow-sm backdrop-blur-sm">
-                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                {hasDuplicateTriggerNode ? "Multiple Trigger nodes detected — only one is allowed." : "Add a Trigger node to define when this workflow runs."}
+
+          {/* Top-left: workflow status pill */}
+          {!readOnly && (
+            <div className="pointer-events-none absolute left-3 top-3 z-40 flex items-center gap-2">
+              <div className={cn("flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-sm", STATUS_STYLES[workflowStatus.variant])}>
+                <StatusIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{workflowStatus.message}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Top-right: undo/redo + counts */}
+          {!readOnly && (
+            <div className="absolute right-3 top-3 z-40 flex items-center gap-2">
+              <div className="flex items-center gap-2 rounded-md border border-border/60 bg-background/90 px-2 py-1 text-[11px] text-muted-foreground shadow-sm backdrop-blur-sm tabular-nums">
+                <span>
+                  <span className="font-medium text-foreground">{nodes.length}</span> nodes
+                </span>
+                <span className="text-border">·</span>
+                <span>
+                  <span className="font-medium text-foreground">{edges.length}</span> edges
+                </span>
+              </div>
+              <div className="flex items-center gap-0.5 rounded-md border border-border/60 bg-background/90 p-1 shadow-sm backdrop-blur-sm">
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 disabled:opacity-40" disabled={!canUndo} onClick={undo} title="Undo (Ctrl+Z)">
+                  <Undo2 className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 disabled:opacity-40" disabled={!canRedo} onClick={redo} title="Redo (Ctrl+Shift+Z)">
+                  <Redo2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom-left: custom controls */}
+          {!readOnly && <CanvasControls interactive={interactive} onToggleInteractive={() => setInteractive((v) => !v)} showMiniMap={showMiniMap} onToggleMiniMap={() => setShowMiniMap((v) => !v)} />}
+
+          {/* Empty state hint */}
+          {showEmptyState && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border/60 bg-background/70 px-6 py-5 text-center shadow-sm backdrop-blur-sm">
+                <Sparkles className="h-5 w-5 text-primary/70" />
+                <div className="text-sm font-medium text-foreground">Build your first workflow</div>
+                <div className="max-w-xs text-xs text-muted-foreground">
+                  Click a node in the Node Library to add it to the canvas. Start with a <span className="font-medium text-foreground">Trigger</span>.
+                </div>
               </div>
             </div>
           )}
@@ -460,7 +548,6 @@ const ToolEditorContent: React.FC<ToolEditorProps> = ({ toolConfig, onChange, re
   );
 };
 
-// Wrap component with ReactFlowProvider
 const ToolEditor: React.FC<ToolEditorProps> = ({ toolConfig, onChange, readOnly }) => {
   return (
     <ReactFlowProvider>

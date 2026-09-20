@@ -80,17 +80,15 @@ const mergeToolCalls = (existing: InferenceToolCall[], incoming?: InferenceToolC
 
   const callMap = new Map<string, InferenceToolCall>();
   for (const call of existing) {
-    if (call.id) {
-      callMap.set(call.id, call);
-    }
+    callMap.set(call.id ?? `${call.name}-${callMap.size}`, call);
   }
 
+  // Field-merge by id so a tool-result (which only adds result/error) preserves the
+  // name/arguments captured by the earlier tool-call-start.
   for (const call of incoming) {
-    if (call.id) {
-      callMap.set(call.id, call);
-    } else {
-      callMap.set(`${call.name}-${callMap.size}`, call);
-    }
+    const key = call.id ?? `${call.name}-${callMap.size}`;
+    const previous = callMap.get(key);
+    callMap.set(key, previous ? { ...previous, ...call } : call);
   }
 
   return Array.from(callMap.values());
@@ -300,6 +298,8 @@ export function useInference(options: UseInferenceOptions = {}) {
       requestId,
       sendStream: (payload) => handleStream(requestId, payload),
       sendThinkingStream: (text: string) => handleStream(requestId, { reasoning: text }),
+      sendToolCallStart: (payload) => handleStream(requestId, { toolCalls: [payload.toolCall] }),
+      sendToolCallResult: (payload) => handleStream(requestId, { toolCalls: [{ ...payload.toolCall, result: payload.output, error: payload.error }] }),
       sendError: (error) => handleError(requestId, error),
       finish: (payload) => handleCompletion(requestId, payload),
       registerAborter: (aborter: () => void) => {

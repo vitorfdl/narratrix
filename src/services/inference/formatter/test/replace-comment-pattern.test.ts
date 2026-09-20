@@ -77,6 +77,20 @@ describe("replaceCommentPattern", () => {
     expect(result).toBe("Line 1 \nLine 2 ");
   });
 
+  it("should remove a comment whose body spans multiple lines", () => {
+    const input = "{{// custom header which grounds\nThe scene and affects\nThe entire roleplay}}Visible text.";
+    const result = replaceCommentPattern(input);
+
+    expect(result).toBe("Visible text.");
+  });
+
+  it("should stop a multi-line comment at the first closing braces", () => {
+    const input = "{{// note line one\nnote line two}} kept }} text";
+    const result = replaceCommentPattern(input);
+
+    expect(result).toBe(" kept }} text");
+  });
+
   it("should handle nested braces within comments", () => {
     const input = "Text {{// this comment has {braces} inside}} more text.";
     const result = replaceCommentPattern(input);

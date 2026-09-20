@@ -1,15 +1,15 @@
-import { ArrowLeft, Check, Clipboard, Pencil } from "lucide-react";
-import React, { useMemo, useRef, useState } from "react";
+import { ArrowLeft, Check, Clipboard, Tag } from "lucide-react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAgentActions, useAgents } from "@/hooks/agentStore";
 import { useCurrentProfile } from "@/hooks/ProfileStore";
 import { useUIStore } from "@/hooks/UIStore";
+import { cn } from "@/lib/utils";
 import { AgentType } from "@/schema/agent-schema";
 import ToolEditor from "./components/AgentEditor";
 
-// Props for EditAgentPage
 interface EditAgentPageProps {
   agent: AgentType;
   onBack: () => void;
@@ -20,13 +20,11 @@ const EditAgentPage: React.FC<EditAgentPageProps> = ({ agent, onBack, returnTo }
   const [currentAgent, setCurrentAgent] = useState<AgentType>(agent);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(agent.name);
-  const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState(agent.description ?? "");
   const [tagsValue, setTagsValue] = useState<string[]>(agent.tags ?? []);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const [copied, setCopied] = useState(false);
+
   const currentProfile = useCurrentProfile();
   const { updateAgent } = useAgentActions();
   const { navigateToSection } = useUIStore();
@@ -46,18 +44,10 @@ const EditAgentPage: React.FC<EditAgentPageProps> = ({ agent, onBack, returnTo }
     setHasUnsavedChanges(false);
   };
 
-  const startEditingName = () => {
-    setIsEditingName(true);
-    setTimeout(() => {
-      nameInputRef.current?.select();
-    }, 0);
-  };
-
   const commitNameChange = () => {
     const trimmed = nameValue.trim();
     if (!trimmed) {
       setNameValue(currentAgent.name);
-      setIsEditingName(false);
       return;
     }
     if (trimmed !== currentAgent.name) {
@@ -65,24 +55,6 @@ const EditAgentPage: React.FC<EditAgentPageProps> = ({ agent, onBack, returnTo }
       setCurrentAgent((prev) => ({ ...prev, name: trimmed }));
       setLastSaved(new Date());
     }
-    setIsEditingName(false);
-  };
-
-  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      commitNameChange();
-    } else if (e.key === "Escape") {
-      setNameValue(currentAgent.name);
-      setIsEditingName(false);
-    }
-  };
-
-  const startEditingDescription = () => {
-    setIsEditingDescription(true);
-    setTimeout(() => {
-      descriptionRef.current?.focus();
-      descriptionRef.current?.select();
-    }, 0);
   };
 
   const commitDescriptionChange = () => {
@@ -93,14 +65,6 @@ const EditAgentPage: React.FC<EditAgentPageProps> = ({ agent, onBack, returnTo }
       setCurrentAgent((prev) => ({ ...prev, description: newDescription }));
       setLastSaved(new Date());
     }
-    setIsEditingDescription(false);
-  };
-
-  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Escape") {
-      setDescriptionValue(currentAgent.description ?? "");
-      setIsEditingDescription(false);
-    }
   };
 
   const handleTagsChange = (newTags: string[]) => {
@@ -110,80 +74,113 @@ const EditAgentPage: React.FC<EditAgentPageProps> = ({ agent, onBack, returnTo }
     setLastSaved(new Date());
   };
 
-  const [copied, setCopied] = useState(false);
   const handleCopyConfig = async () => {
     await navigator.clipboard.writeText(JSON.stringify(currentAgent, null, 2));
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const savedTimeLabel = lastSaved?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const inlineInputBase =
+    "w-full border border-transparent bg-transparent px-1.5 py-0.5 -mx-1.5 rounded-md outline-none transition-colors " +
+    "hover:bg-muted/50 hover:border-border/40 " +
+    "focus:bg-background focus:border-border focus:ring-1 focus:ring-primary/30 " +
+    "placeholder:italic placeholder:text-muted-foreground/60 truncate";
+
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Header with back button and agent name */}
-      <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="flex items-center gap-1 pt-1 px-4">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => (returnTo ? navigateToSection(returnTo) : onBack())} title={returnTo ? `Back to ${returnTo}` : "Back to Agents"}>
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center gap-2 px-4 py-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={() => (returnTo ? navigateToSection(returnTo) : onBack())}
+            title={returnTo ? `Back to ${returnTo}` : "Back to Agents"}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="font-bold mr-auto title flex items-center gap-1.5">
-            <span className="text-muted-foreground">Agent:</span>
-            {isEditingName ? (
-              <Input
-                ref={nameInputRef}
-                value={nameValue}
-                onChange={(e) => setNameValue(e.target.value)}
-                onBlur={commitNameChange}
-                onKeyDown={handleNameKeyDown}
-                className="h-7 w-48 py-0 px-1.5 font-bold italic text-primary text-base border-primary/50 focus-visible:ring-1"
-              />
-            ) : (
-              <button type="button" onClick={startEditingName} className="group flex items-center gap-1 italic text-primary hover:opacity-80 transition-opacity cursor-text">
-                {currentAgent.name}
-                <Pencil className="h-3.5 w-3.5 opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
-              </button>
-            )}
-          </h1>
-          {hasUnsavedChanges && <span className="text-sm text-muted-foreground">• Unsaved changes</span>}
-          {lastSaved && <span className="text-sm text-muted-foreground">• Last saved: {lastSaved.toLocaleTimeString()}</span>}
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={handleCopyConfig} title="Copy agent configuration as JSON">
-            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Clipboard className="h-3.5 w-3.5" />}
-          </Button>
-        </div>
 
-        {/* Second row: description and tags */}
-        <div className="flex items-start gap-2 pb-2 px-4">
-          {/* Spacer to align with name (past back button + gap) */}
-          <div className="w-8 shrink-0" />
+          <div className="h-9 w-1 shrink-0 rounded-full bg-primary" />
 
-          {/* Description */}
-          <div className="flex-1 min-w-0">
-            {isEditingDescription ? (
-              <textarea
-                ref={descriptionRef}
-                value={descriptionValue}
-                onChange={(e) => setDescriptionValue(e.target.value)}
-                onBlur={commitDescriptionChange}
-                onKeyDown={handleDescriptionKeyDown}
-                rows={2}
-                placeholder="Add a description..."
-                className="w-full text-xs text-muted-foreground bg-transparent border border-border/60 rounded-sm px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:italic placeholder:opacity-50"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={startEditingDescription}
-                className="group flex items-center gap-1 text-left w-full text-xs text-muted-foreground hover:text-foreground/80 transition-colors cursor-text"
-                title="Edit description"
-              >
-                <span className="truncate">{currentAgent.description ? currentAgent.description : <span className="italic opacity-40">Add a description...</span>}</span>
-                <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity shrink-0" />
-              </button>
-            )}
+          {/* Title stack: name + description (always-editable, no mode switch) */}
+          <div className="min-w-0 flex-1 flex flex-col">
+            <input
+              type="text"
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onBlur={commitNameChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                } else if (e.key === "Escape") {
+                  setNameValue(currentAgent.name);
+                  e.currentTarget.blur();
+                }
+              }}
+              placeholder="Untitled agent"
+              spellCheck={false}
+              className={cn(inlineInputBase, "text-base font-semibold leading-tight text-foreground")}
+              title={nameValue}
+            />
+            <input
+              type="text"
+              value={descriptionValue}
+              onChange={(e) => setDescriptionValue(e.target.value)}
+              onBlur={commitDescriptionChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                } else if (e.key === "Escape") {
+                  setDescriptionValue(currentAgent.description ?? "");
+                  e.currentTarget.blur();
+                }
+              }}
+              placeholder="Add a description..."
+              className={cn(inlineInputBase, "text-xs leading-tight text-muted-foreground focus:text-foreground")}
+              title={descriptionValue || undefined}
+            />
           </div>
 
-          {/* Tags */}
-          <div className="w-72 shrink-0">
-            <CommandTagInput value={tagsValue} onChange={handleTagsChange} suggestions={allTags} placeholder="Add tags..." maxTags={10} />
+          {/* Right cluster */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Save status */}
+            <div
+              className={cn(
+                "hidden md:flex items-center gap-1.5 rounded-md border px-2 h-8 text-[11px] font-medium tabular-nums",
+                hasUnsavedChanges
+                  ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+                  : lastSaved
+                    ? "border-green-500/30 bg-green-500/5 text-green-600 dark:text-green-400"
+                    : "border-border/60 bg-muted/30 text-muted-foreground",
+              )}
+            >
+              <span className={cn("h-1.5 w-1.5 rounded-full", hasUnsavedChanges ? "bg-yellow-500 animate-pulse" : lastSaved ? "bg-green-500" : "bg-muted-foreground/50")} />
+              <span>{hasUnsavedChanges ? "Saving…" : lastSaved ? `Saved ${savedTimeLabel}` : "Not saved"}</span>
+            </div>
+
+            {/* Tags popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 bg-background px-2.5" title="Tags">
+                  <Tag className="h-3.5 w-3.5" />
+                  <span className="text-xs tabular-nums">{tagsValue.length > 0 ? tagsValue.length : <span className="text-muted-foreground">Tags</span>}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-3">
+                <div className="space-y-1.5">
+                  <div className="text-xs font-medium text-foreground">Tags</div>
+                  <CommandTagInput value={tagsValue} onChange={handleTagsChange} suggestions={allTags} placeholder="Add tags..." maxTags={10} />
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Copy config */}
+            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0 bg-background" onClick={handleCopyConfig} title="Copy agent configuration as JSON">
+              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Clipboard className="h-3.5 w-3.5" />}
+            </Button>
           </div>
         </div>
       </div>
