@@ -63,7 +63,7 @@ export default function FormatTemplateModal({ open, onOpenChange, selectedTempla
       <DialogContent size="window" className="max-h-[95vh]">
         <DialogHeader>
           <div className="flex gap-2 items-center w-full">
-            <DialogTitle className="text-lg font-semibold">Format Template Editor</DialogTitle>
+            <DialogTitle>Format Template Editor</DialogTitle>
             <Button variant="ghost" size="icon" className="ml-auto" asChild title="Open Format Template Documentation">
               <a href="https://github.com/vitorfdl/narratrix/wiki/Prompt-Format-Template" target="_blank" rel="noopener noreferrer" aria-label="Open Format Template Documentation">
                 <LuCircleHelp className="h-5 w-5" />

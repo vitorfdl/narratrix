@@ -208,7 +208,7 @@ const AgentNodeConfigDialog: React.FC<AgentNodeConfigDialogProps> = ({ open, con
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent size="window">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-1 text-lg">
+          <DialogTitle className="flex items-center gap-1">
             <Bot className="h-4 w-4 text-primary" />
             Agent Configuration
           </DialogTitle>

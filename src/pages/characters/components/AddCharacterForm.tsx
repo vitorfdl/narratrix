@@ -436,8 +436,8 @@ export const CharacterForm = forwardRef<CharacterFormRef, CharacterFormProps>(
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent size="large">
           <DialogHeader>
-            <DialogTitle className="flex gap-2 items-center text-lg font-semibold">
-              <LuUserRoundPen className="h-5 w-5" />
+            <DialogTitle className="flex gap-2 items-center">
+              <LuUserRoundPen className="h-4 w-4" />
               {title || (mode === "edit" ? `Edit ${initialData?.type === "character" ? "Character" : "Agent"}` : "Add New Character / Agent")}
             </DialogTitle>
           </DialogHeader>

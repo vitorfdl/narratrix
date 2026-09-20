@@ -78,7 +78,7 @@ export const QuickActionDialog: React.FC<QuickActionDialogProps> = ({ isOpen, on
     <Dialog open={isOpen} onOpenChange={(open) => !open && onOpenChange(false)}>
       <DialogContent size="window">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-1 text-lg">
+          <DialogTitle className="flex items-center gap-1">
             <MessageSquarePlus className="h-4 w-4 text-primary" />
             {isEditMode ? "Edit Quick Action" : "Add Quick Action"}
           </DialogTitle>

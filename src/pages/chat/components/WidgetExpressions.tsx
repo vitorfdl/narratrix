@@ -803,7 +803,7 @@ const WidgetExpressions = () => {
                 </DialogTrigger>
                 <DialogContent size="window" className="max-h-[85vh] overflow-hidden">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-1 text-lg">
+                    <DialogTitle className="flex items-center gap-1">
                       <LuSettings className="h-4 w-4 text-primary" />
                       Configure Expression Settings
                     </DialogTitle>

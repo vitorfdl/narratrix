@@ -194,7 +194,7 @@ export default function AddAgentDialog({ open, onOpenChange, onSuccess }: AddAge
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="large">
         <DialogHeader>
-          <DialogTitle className="flex gap-2 items-center text-lg font-semibold">
+          <DialogTitle className="flex gap-2 items-center">
             <LuBot className="h-5 w-5 text-primary" />
             Create New Agent
           </DialogTitle>
