@@ -7,7 +7,7 @@ const sections: SheetSection[] = [
     id: "s1",
     key: "basic_info",
     title: "Basic Info",
-    style: "plain",
+    style: { base: "clean", accent: null, background: null },
     columns: 2,
     span: 4,
     fields: [
@@ -67,7 +67,7 @@ const sections: SheetSection[] = [
     id: "s2",
     key: "inventory",
     title: "Inventory",
-    style: "plain",
+    style: { base: "clean", accent: null, background: null },
     columns: 1,
     span: 4,
     fields: [

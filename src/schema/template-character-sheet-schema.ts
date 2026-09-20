@@ -17,17 +17,43 @@ export const SHEET_FIELD_TYPE_LABELS: Record<SheetFieldType, string> = {
 
 const sheetFieldTypeEnum = z.enum(SHEET_FIELD_TYPES);
 
-export const SHEET_SECTION_STYLES = ["plain", "parchment", "ornate", "arcane", "shadow"] as const;
+export const SHEET_STYLE_BASES = ["clean", "tome", "grimoire", "arcane", "novel"] as const;
 
-export const SHEET_SECTION_STYLE_LABELS: Record<SheetSectionStyle, string> = {
-  plain: "Plain",
-  parchment: "Parchment",
-  ornate: "Ornate Frame",
+export const SHEET_STYLE_BASE_LABELS: Record<SheetStyleBase, string> = {
+  clean: "Clean",
+  tome: "Tome",
+  grimoire: "Grimoire",
   arcane: "Arcane",
-  shadow: "Shadow",
+  novel: "Novel",
 };
 
-const sheetSectionStyleEnum = z.enum(SHEET_SECTION_STYLES);
+// Styles saved before they were customizable were plain preset-name strings
+const LEGACY_STYLE_BASES: Record<string, SheetStyleBase> = {
+  plain: "clean",
+  parchment: "tome",
+  ornate: "grimoire",
+  arcane: "arcane",
+  shadow: "clean",
+};
+
+export const sheetSectionStyleSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") {
+      return { base: LEGACY_STYLE_BASES[value] ?? "clean" };
+    }
+    return value ?? { base: "clean" };
+  },
+  z.object({
+    base: z.enum(SHEET_STYLE_BASES).default("clean"),
+    // Color overrides (hex); null falls back to the base recipe's palette
+    accent: z.string().nullable().default(null),
+    background: z.string().nullable().default(null),
+  }),
+);
+
+export function defaultSectionStyle(): SheetSectionStyle {
+  return { base: "clean", accent: null, background: null };
+}
 
 // Accepts a bare string (earlier format) and upgrades it to a column object
 const sheetTableColumnSchema = z.preprocess(
@@ -67,7 +93,7 @@ const sheetSectionSchema = z.object({
   // Key used to reference the section in prompts: {{char.key}}
   key: z.string(),
   title: z.string(),
-  style: sheetSectionStyleEnum.default("plain"),
+  style: sheetSectionStyleSchema,
   columns: z.number().min(1).max(4).default(2),
   // How many columns of the 4-column sheet grid this section spans (4 = full width)
   span: z.number().min(1).max(4).default(4),
@@ -107,7 +133,8 @@ export const newCharacterSheetTemplateSchema = characterSheetTemplateSchema.omit
 });
 
 export type SheetFieldType = (typeof SHEET_FIELD_TYPES)[number];
-export type SheetSectionStyle = (typeof SHEET_SECTION_STYLES)[number];
+export type SheetStyleBase = (typeof SHEET_STYLE_BASES)[number];
+export type SheetSectionStyle = z.infer<typeof sheetSectionStyleSchema>;
 export type SheetTableColumn = z.infer<typeof sheetTableColumnSchema>;
 export type SheetField = z.infer<typeof sheetFieldSchema>;
 export type SheetSection = z.infer<typeof sheetSectionSchema>;

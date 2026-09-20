@@ -15,9 +15,28 @@ import {
 import { arrayMove, rectSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { LuCopy, LuEllipsisVertical, LuGripVertical, LuPencil, LuPlus, LuSettings2, LuX } from "react-icons/lu";
+import type { IconType } from "react-icons";
+import {
+  LuAlignLeft,
+  LuChevronDown,
+  LuCopy,
+  LuDiff,
+  LuEllipsisVertical,
+  LuGripVertical,
+  LuHash,
+  LuList,
+  LuListChecks,
+  LuLock,
+  LuPaintbrush,
+  LuPencil,
+  LuPlus,
+  LuSettings2,
+  LuTable,
+  LuType,
+  LuX,
+} from "react-icons/lu";
 import { ConfirmDeleteButton } from "@/components/shared/ConfirmDeleteButton";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
 import { SettingsPopoverContent } from "@/components/shared/SettingsPopover";
@@ -31,22 +50,46 @@ import { Popover, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
+  defaultSectionStyle,
   SHEET_FIELD_TYPE_LABELS,
   SHEET_FIELD_TYPES,
-  SHEET_SECTION_STYLE_LABELS,
-  SHEET_SECTION_STYLES,
+  SHEET_STYLE_BASE_LABELS,
+  SHEET_STYLE_BASES,
   type SheetField,
   type SheetFieldType,
   type SheetSection,
-  type SheetSectionStyle,
+  type SheetStyleBase,
 } from "@/schema/template-character-sheet-schema";
 import { slugifyKey, tableColumnKey } from "@/utils/sheet-expression";
 import { SectionFrame } from "./SectionFrame";
-import { SECTION_STYLE_PRESETS } from "./sheet-style-presets";
+import { resolveSectionStyle, SHEET_ADD_BUTTON } from "./sheet-style-presets";
 
 interface SheetTemplateEditorProps {
   sections: SheetSection[];
   onChange: (sections: SheetSection[]) => void;
+}
+
+const FIELD_TYPE_ICONS: Record<SheetFieldType, IconType> = {
+  text: LuType,
+  textarea: LuAlignLeft,
+  number: LuHash,
+  number_stepper: LuDiff,
+  dropdown: LuChevronDown,
+  multi_select: LuListChecks,
+  list: LuList,
+  table: LuTable,
+};
+
+// Dashed tracks rendered behind a grid so column boundaries stay visible while laying fields out
+function ColumnGuides({ columns, gapClassName, trackClassName }: { columns: number; gapClassName: string; trackClassName: string }) {
+  return (
+    <div aria-hidden className={cn("pointer-events-none absolute inset-0 grid", gapClassName)} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+      {Array.from({ length: columns }, (_, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: tracks are positional
+        <div key={index} className={trackClassName} />
+      ))}
+    </div>
+  );
 }
 
 function uniqueKey(base: string, existingKeys: Set<string>): string {
@@ -169,8 +212,10 @@ function TableSettings({ field, onChange }: { field: SheetField; onChange: (fiel
     onChange({ ...field, columns, rows });
   };
 
+  const rowGridTemplate = `repeat(${Math.max(field.columns.length, 1)}, minmax(0, 1fr)) 1.75rem`;
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="space-y-1">
         <div className="flex items-center gap-1">
           <Label className="text-xs">Table Mode</Label>
@@ -200,59 +245,95 @@ function TableSettings({ field, onChange }: { field: SheetField; onChange: (fiel
           <HelpTooltip>
             <p>A column with an expression is computed per row and read-only.</p>
             <p>
-              Reference sibling cells with <code>{`\${row.column_label}`}</code> and sheet fields with <code>{`\${sheet.key}`}</code>.
+              Reference sibling cells with <code>{`\${row.column_label}`}</code> and sheet fields with <code>{`\${sheet.key}`}</code>, e.g.{" "}
+              <code>{`\${row.${tableColumnKey(field.columns[0] ?? { id: "", label: "name", expression: null })}} + 1`}</code>.
             </p>
           </HelpTooltip>
         </div>
-        {field.columns.map((column) => (
-          <div key={column.id} className="flex items-center gap-1">
-            <Input className="flex-1" value={column.label} placeholder="Label" onChange={(e) => updateColumns(field.columns.map((c) => (c.id === column.id ? { ...c, label: e.target.value } : c)))} />
-            <Input
-              className="flex-1"
-              value={column.expression ?? ""}
-              placeholder={`\${row.${tableColumnKey(field.columns[0] ?? column)}} + 1`}
-              title="Expression (optional)"
-              onChange={(e) => updateColumns(field.columns.map((c) => (c.id === column.id ? { ...c, expression: e.target.value === "" ? null : e.target.value } : c)))}
-            />
-            <ConfirmDeleteButton className="h-6 w-6 flex-shrink-0" title="Delete column" onDelete={() => updateColumns(field.columns.filter((c) => c.id !== column.id))} />
-          </div>
-        ))}
+        <div className="grid items-center gap-1" style={{ gridTemplateColumns: "1fr 1.25fr 1.5rem" }}>
+          <span className="px-0.5 text-[10px] text-muted-foreground/70">Label</span>
+          <span className="px-0.5 text-[10px] text-muted-foreground/70">Expression (optional)</span>
+          <span />
+          {field.columns.map((column) => (
+            <Fragment key={column.id}>
+              <Input
+                className="h-7 text-xs"
+                value={column.label}
+                placeholder="Label"
+                onChange={(e) => updateColumns(field.columns.map((c) => (c.id === column.id ? { ...c, label: e.target.value } : c)))}
+              />
+              <Input
+                className="h-7 font-mono text-xs"
+                value={column.expression ?? ""}
+                onChange={(e) => updateColumns(field.columns.map((c) => (c.id === column.id ? { ...c, expression: e.target.value === "" ? null : e.target.value } : c)))}
+              />
+              <ConfirmDeleteButton className="h-6 w-6" title="Delete column" onDelete={() => updateColumns(field.columns.filter((c) => c.id !== column.id))} />
+            </Fragment>
+          ))}
+        </div>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="h-7 text-xs"
+          className={SHEET_ADD_BUTTON}
           onClick={() => updateColumns([...field.columns, { id: crypto.randomUUID(), label: `Column ${field.columns.length + 1}`, expression: null }])}
         >
-          <LuPlus className="h-3 w-3" /> Add Column
+          <LuPlus className="!size-3" /> Add Column
         </Button>
       </div>
 
       {field.table_mode === "static" && (
         <div className="space-y-1">
-          <Label className="text-xs">Rows</Label>
-          {field.rows.map((row, rowIndex) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional
-            <div key={rowIndex} className="flex items-center gap-1">
-              {field.columns.map((column, colIndex) => (
-                <Input
-                  key={column.id}
-                  className="flex-1"
-                  value={row[colIndex] ?? ""}
-                  placeholder={column.label}
-                  disabled={!!column.expression}
-                  onChange={(e) => {
-                    const rows = field.rows.map((r) => [...r]);
-                    rows[rowIndex][colIndex] = e.target.value;
-                    onChange({ ...field, rows });
-                  }}
-                />
+          <div className="flex items-center gap-1">
+            <Label className="text-xs">Rows</Label>
+            <HelpTooltip>
+              <p>Fixed rows every character sees when filling the sheet.</p>
+              <p>
+                Cells may contain expressions like <code>{`\${sheet.level} + 2`}</code>. Cells in a computed column are filled automatically.
+              </p>
+            </HelpTooltip>
+          </div>
+          <div className="overflow-hidden rounded-md border border-border/60">
+            <div className="grid items-center border-b border-border/60 bg-muted/60" style={{ gridTemplateColumns: rowGridTemplate }}>
+              {field.columns.map((column) => (
+                <span key={column.id} className="flex items-center gap-1 truncate px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                  {column.label || "Untitled"}
+                  {column.expression && <LuLock className="h-2.5 w-2.5 flex-shrink-0 opacity-60" />}
+                </span>
               ))}
-              <ConfirmDeleteButton className="h-6 w-6 flex-shrink-0" title="Delete row" onDelete={() => onChange({ ...field, rows: field.rows.filter((_, i) => i !== rowIndex) })} />
+              <span />
             </div>
-          ))}
-          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => onChange({ ...field, rows: [...field.rows, field.columns.map(() => "")] })}>
-            <LuPlus className="h-3 w-3" /> Add Row
+            {field.rows.length === 0 && <div className="px-2 py-2 text-center text-[11px] text-muted-foreground/60">No rows yet.</div>}
+            {field.rows.map((row, rowIndex) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional
+              <div key={rowIndex} className="grid items-center border-b border-border/30 last:border-b-0" style={{ gridTemplateColumns: rowGridTemplate }}>
+                {field.columns.map((column, colIndex) =>
+                  column.expression ? (
+                    <div key={column.id} className="flex h-7 items-center px-2 font-mono text-[10px] italic text-muted-foreground/50" title={column.expression}>
+                      auto
+                    </div>
+                  ) : (
+                    <Input
+                      key={column.id}
+                      className="h-7 rounded-none border-none bg-transparent px-2 text-xs shadow-none focus-visible:bg-background/40 focus-visible:ring-0"
+                      value={row[colIndex] ?? ""}
+                      placeholder={column.label}
+                      onChange={(e) => {
+                        const rows = field.rows.map((r) => [...r]);
+                        rows[rowIndex][colIndex] = e.target.value;
+                        onChange({ ...field, rows });
+                      }}
+                    />
+                  ),
+                )}
+                <div className="flex justify-center">
+                  <ConfirmDeleteButton className="h-6 w-6" title="Delete row" onDelete={() => onChange({ ...field, rows: field.rows.filter((_, i) => i !== rowIndex) })} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <Button type="button" variant="ghost" size="sm" className={SHEET_ADD_BUTTON} onClick={() => onChange({ ...field, rows: [...field.rows, field.columns.map(() => "")] })}>
+            <LuPlus className="!size-3" /> Add Row
           </Button>
         </div>
       )}
@@ -326,9 +407,18 @@ function FieldSettings({ field, onChange }: { field: SheetField; onChange: (fiel
                 Reference other fields with <code>{`\${sheet.fieldkey}`}</code> and the character with <code>{`\${name}`}</code>. Arithmetic is evaluated, e.g.{" "}
                 <code>{`10 + \${sheet.level} * 2`}</code>.
               </p>
+              <p>
+                Functions: <code>floor()</code>, <code>ceil()</code>, <code>round()</code>, <code>abs()</code>, <code>min()</code>, <code>max()</code> — e.g.{" "}
+                <code>{`floor((\${sheet.strength} - 10) / 2)`}</code>.
+              </p>
             </HelpTooltip>
           </div>
-          <Input value={field.expression ?? ""} placeholder={`e.g. 10 + \${sheet.level}`} onChange={(e) => onChange({ ...field, expression: e.target.value === "" ? null : e.target.value })} />
+          <Input
+            className="font-mono text-xs"
+            value={field.expression ?? ""}
+            placeholder={`e.g. 10 + \${sheet.level}`}
+            onChange={(e) => onChange({ ...field, expression: e.target.value === "" ? null : e.target.value })}
+          />
         </div>
       )}
 
@@ -366,6 +456,7 @@ function SortableFieldRow({ field, sectionColumns, allKeys, onChange, onDuplicat
   const span = Math.min(field.span, sectionColumns);
   const { elementRef, previewSpan, onResizeStart } = useSpanResize(span, sectionColumns, (next) => onChange({ ...field, span: next }));
   const displaySpan = previewSpan ?? span;
+  const FieldTypeIcon = FIELD_TYPE_ICONS[field.type];
 
   const setRefs = useCallback(
     (node: HTMLDivElement | null) => {
@@ -398,11 +489,14 @@ function SortableFieldRow({ field, sectionColumns, allKeys, onChange, onDuplicat
           onChange({ ...field, label, key });
         }}
       />
-      <Badge variant="outline" className="h-5 flex-shrink-0 px-1.5 text-[10px] font-normal text-muted-foreground">
-        {SHEET_FIELD_TYPE_LABELS[field.type]}
-      </Badge>
+      <span className="max-w-32 flex-shrink-0 truncate font-mono text-[10px] leading-none text-muted-foreground/60" title={`Key: \${sheet.${field.key}}`}>
+        {field.key}
+      </span>
+      <span className="flex-shrink-0 text-muted-foreground/50" title={SHEET_FIELD_TYPE_LABELS[field.type]}>
+        <FieldTypeIcon className="h-3 w-3" />
+      </span>
       {(field.expression || field.columns.some((c) => c.expression)) && (
-        <Badge variant="secondary" className="h-5 flex-shrink-0 px-1.5 text-[10px] font-normal">
+        <Badge variant="secondary" className="h-4 flex-shrink-0 px-1 text-[9px] font-normal" title="Computed by an expression">
           fx
         </Badge>
       )}
@@ -465,10 +559,33 @@ interface SectionEditorProps {
   onChange: (section: SheetSection) => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onApplyStyleToAll: () => void;
 }
 
-function SectionEditor({ section, allKeys, sectionKeys, dragHandleProps, onChange, onDuplicate, onDelete }: SectionEditorProps) {
-  const preset = SECTION_STYLE_PRESETS[section.style];
+function ColorOverrideInput({ label, value, fallback, onChange }: { label: string; value: string | null; fallback: string; onChange: (value: string | null) => void }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center gap-1">
+        <input
+          type="color"
+          className="h-7 w-9 flex-shrink-0 cursor-pointer rounded border border-border/60 bg-transparent p-0.5"
+          value={value ?? fallback}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-muted-foreground/70">{value ?? "preset"}</span>
+        {value && (
+          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" title="Reset to preset color" onClick={() => onChange(null)}>
+            <LuX className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionEditor({ section, allKeys, sectionKeys, dragHandleProps, onChange, onDuplicate, onDelete, onApplyStyleToAll }: SectionEditorProps) {
+  const { recipe: preset } = resolveSectionStyle(section.style);
   const otherSectionKeys = withoutKey(sectionKeys, section.key);
 
   // The key follows the title until the user edits it by hand
@@ -502,88 +619,125 @@ function SectionEditor({ section, allKeys, sectionKeys, dragHandleProps, onChang
           placeholder="Section title"
           onChange={(e) => handleTitleChange(e.target.value)}
         />
+        <span className="max-w-40 flex-shrink-0 truncate font-mono text-[10px] leading-none text-muted-foreground/60" title={`Key: {{char.${section.key}}}`}>
+          {section.key}
+        </span>
         <Popover>
           <PopoverTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" title="Section settings">
-              <LuPencil className="h-3.5 w-3.5" />
+            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 opacity-60 hover:opacity-100" title="Section settings">
+              <LuSettings2 className="h-3.5 w-3.5" />
             </Button>
           </PopoverTrigger>
           <SettingsPopoverContent title="Section Settings" icon={<LuSettings2 className="h-3.5 w-3.5 text-muted-foreground/70" />} side="bottom" align="end">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1">
-                <Label className="text-xs">Key</Label>
-                <HelpTooltip>
-                  <p>
-                    Insert this whole section in prompts with <code>{`{{char.${section.key || "key"}}}`}</code>, or a single field with <code>{`{{char.${section.key || "key"}.field_key}}`}</code>.
-                  </p>
-                  <p>The key follows the title until you edit it here.</p>
-                </HelpTooltip>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Key</Label>
+                  <HelpTooltip>
+                    <p>
+                      Insert this whole section in prompts with <code>{`{{char.${section.key || "key"}}}`}</code>, or a single field with <code>{`{{char.${section.key || "key"}.field_key}}`}</code>.
+                    </p>
+                    <p>The key follows the title until you edit it here.</p>
+                  </HelpTooltip>
+                </div>
+                <Input value={section.key} onChange={(e) => onChange({ ...section, key: uniqueKey(slugifyKey(e.target.value), otherSectionKeys) })} />
               </div>
-              <Input value={section.key} onChange={(e) => onChange({ ...section, key: uniqueKey(slugifyKey(e.target.value), otherSectionKeys) })} />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Style</Label>
+                  <Select value={section.style.base} onValueChange={(base) => onChange({ ...section, style: { ...section.style, base: base as SheetStyleBase } })}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SHEET_STYLE_BASES.map((base) => (
+                        <SelectItem key={base} value={base}>
+                          {SHEET_STYLE_BASE_LABELS[base]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-xs">Columns</Label>
+                    <HelpTooltip>
+                      <p>The field grid inside this section. Fields snap to these columns; drag a field's right edge to span several.</p>
+                    </HelpTooltip>
+                  </div>
+                  <Select value={String(section.columns)} onValueChange={(value) => onChange({ ...section, columns: Number(value) })}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4].map((count) => (
+                        <SelectItem key={count} value={String(count)}>
+                          {count} {count === 1 ? "column" : "columns"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <ColorOverrideInput label="Accent" value={section.style.accent} fallback={preset.pickerAccent} onChange={(accent) => onChange({ ...section, style: { ...section.style, accent } })} />
+                <ColorOverrideInput
+                  label="Background"
+                  value={section.style.background}
+                  fallback="#26262b"
+                  onChange={(background) => onChange({ ...section, style: { ...section.style, background } })}
+                />
+              </div>
+              <Button type="button" variant="ghost" size="sm" className={SHEET_ADD_BUTTON} title="Copy this section's style, accent and background to every section" onClick={onApplyStyleToAll}>
+                <LuPaintbrush className="!size-3" /> Apply Style to All Sections
+              </Button>
             </div>
           </SettingsPopoverContent>
         </Popover>
-        <Select value={section.style} onValueChange={(style) => onChange({ ...section, style: style as SheetSectionStyle })}>
-          <SelectTrigger className="h-6 w-24 flex-shrink-0 border-border/40 bg-transparent text-xs" title="Section style">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SHEET_SECTION_STYLES.map((style) => (
-              <SelectItem key={style} value={style}>
-                {SHEET_SECTION_STYLE_LABELS[style]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={String(section.columns)} onValueChange={(value) => onChange({ ...section, columns: Number(value) })}>
-          <SelectTrigger className="h-6 w-16 flex-shrink-0 border-border/40 bg-transparent text-xs" title="Field grid columns inside the section">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[1, 2, 3, 4].map((count) => (
-              <SelectItem key={count} value={String(count)}>
-                {count} col
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" title="Duplicate section" onClick={onDuplicate}>
+        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 opacity-60 hover:opacity-100" title="Duplicate section" onClick={onDuplicate}>
           <LuCopy className="h-3.5 w-3.5" />
         </Button>
-        <ConfirmDeleteButton className="h-6 w-6 flex-shrink-0" iconClassName="h-3.5 w-3.5" title="Delete section" onDelete={onDelete} />
+        <ConfirmDeleteButton className="h-6 w-6 flex-shrink-0 opacity-60 hover:opacity-100" iconClassName="h-3.5 w-3.5" title="Delete section" onDelete={onDelete} />
       </div>
 
-      <SortableContext items={section.fields.map((f) => f.id)} strategy={rectSortingStrategy}>
-        <div className="grid min-h-8 gap-1.5" style={{ gridTemplateColumns: `repeat(${section.columns}, minmax(0, 1fr))` }}>
-          {section.fields.length === 0 && (
-            <div className="col-span-full rounded-md border border-dashed border-border/50 px-2 py-2 text-center text-[11px] text-muted-foreground/60">Drop fields here</div>
-          )}
-          {section.fields.map((field) => (
-            <SortableFieldRow
-              key={field.id}
-              field={field}
-              sectionColumns={section.columns}
-              allKeys={allKeys}
-              onChange={(updated) => onChange({ ...section, fields: section.fields.map((f) => (f.id === updated.id ? updated : f)) })}
-              onDuplicate={() => handleDuplicateField(field)}
-              onDelete={() => onChange({ ...section, fields: section.fields.filter((f) => f.id !== field.id) })}
-            />
-          ))}
-        </div>
-      </SortableContext>
+      <div className="relative">
+        {section.columns > 1 && section.fields.length > 0 && <ColumnGuides columns={section.columns} gapClassName="gap-1.5" trackClassName="rounded-sm border border-dashed border-foreground/10" />}
+        <SortableContext items={section.fields.map((f) => f.id)} strategy={rectSortingStrategy}>
+          <div className="grid min-h-8 gap-1.5" style={{ gridTemplateColumns: `repeat(${section.columns}, minmax(0, 1fr))` }}>
+            {section.fields.length === 0 && (
+              <div className="col-span-full rounded-md border border-dashed border-border/50 px-2 py-2 text-center text-[11px] text-muted-foreground/60">Drop fields here</div>
+            )}
+            {section.fields.map((field) => (
+              <SortableFieldRow
+                key={field.id}
+                field={field}
+                sectionColumns={section.columns}
+                allKeys={allKeys}
+                onChange={(updated) => onChange({ ...section, fields: section.fields.map((f) => (f.id === updated.id ? updated : f)) })}
+                onDuplicate={() => handleDuplicateField(field)}
+                onDelete={() => onChange({ ...section, fields: section.fields.filter((f) => f.id !== field.id) })}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" size="sm" className="mt-2 h-7 text-xs">
-            <LuPlus className="h-3 w-3" /> Add Field
+          <Button type="button" variant="ghost" size="sm" className={cn("mt-2", SHEET_ADD_BUTTON)}>
+            <LuPlus className="!size-3" /> Add Field
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          {SHEET_FIELD_TYPES.map((type) => (
-            <DropdownMenuItem key={type} onClick={() => handleAddField(type)}>
-              {SHEET_FIELD_TYPE_LABELS[type]}
-            </DropdownMenuItem>
-          ))}
+          {SHEET_FIELD_TYPES.map((type) => {
+            const TypeIcon = FIELD_TYPE_ICONS[type];
+            return (
+              <DropdownMenuItem key={type} onClick={() => handleAddField(type)}>
+                <TypeIcon className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
+                {SHEET_FIELD_TYPE_LABELS[type]}
+              </DropdownMenuItem>
+            );
+          })}
         </DropdownMenuContent>
       </DropdownMenu>
     </SectionFrame>
@@ -597,9 +751,10 @@ interface SortableSectionProps {
   onChange: (section: SheetSection) => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onApplyStyleToAll: () => void;
 }
 
-function SortableSection({ section, allKeys, sectionKeys, onChange, onDuplicate, onDelete }: SortableSectionProps) {
+function SortableSection({ section, allKeys, sectionKeys, onChange, onDuplicate, onDelete, onApplyStyleToAll }: SortableSectionProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id, data: { type: "section" } });
   const span = Math.min(section.span, 4);
   const { elementRef, previewSpan, onResizeStart } = useSpanResize(span, 4, (next) => onChange({ ...section, span: next }));
@@ -627,6 +782,7 @@ function SortableSection({ section, allKeys, sectionKeys, onChange, onDuplicate,
         onChange={onChange}
         onDuplicate={onDuplicate}
         onDelete={onDelete}
+        onApplyStyleToAll={onApplyStyleToAll}
       />
       <ResizeHandle onResizeStart={onResizeStart} title="Drag to resize section width" />
     </div>
@@ -700,7 +856,7 @@ function FieldDragPreview({ field }: { field: SheetField }) {
 }
 
 function SectionDragPreview({ section }: { section: SheetSection }) {
-  const preset = SECTION_STYLE_PRESETS[section.style];
+  const { recipe: preset } = resolveSectionStyle(section.style);
   return (
     <SectionFrame style={section.style} className="h-full cursor-grabbing opacity-95 shadow-2xl ring-2 ring-primary/40">
       <h3 className={cn("mb-1 text-sm font-semibold", preset.title)}>{section.title || "Untitled"}</h3>
@@ -831,7 +987,7 @@ export function SheetTemplateEditor({ sections, onChange }: SheetTemplateEditorP
 
   const handleAddSection = () => {
     const title = "New Section";
-    commit([...localSections, { id: crypto.randomUUID(), key: uniqueKey(slugifyKey(title), sectionKeys), title, style: "plain", columns: 2, span: 4, fields: [] }]);
+    commit([...localSections, { id: crypto.randomUUID(), key: uniqueKey(slugifyKey(title), sectionKeys), title, style: defaultSectionStyle(), columns: 2, span: 4, fields: [] }]);
   };
 
   const handleDuplicateSection = (section: SheetSection) => {
@@ -854,42 +1010,45 @@ export function SheetTemplateEditor({ sections, onChange }: SheetTemplateEditorP
 
   return (
     <div className="space-y-3">
-      <p className="text-[11px] text-muted-foreground/70">Drag sections and fields into position. Drag the right edge of a section or field to resize it. Click a label to rename it.</p>
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
         <SortableContext items={localSections.map((s) => s.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-4 gap-3">
-            {(() => {
-              // Interleave sections with drop zones for the free space in each
-              // partially-filled row (only while a section is being dragged)
-              const children: React.ReactNode[] = [];
-              let cursor = 0;
-              localSections.forEach((section, index) => {
-                const span = Math.min(section.span, 4);
-                if (cursor + span > 4) {
-                  cursor = 0;
-                }
-                children.push(
-                  <SortableSection
-                    key={section.id}
-                    section={section}
-                    allKeys={allKeys}
-                    sectionKeys={sectionKeys}
-                    onChange={(updated) => commit(localSections.map((s) => (s.id === updated.id ? updated : s)))}
-                    onDuplicate={() => handleDuplicateSection(section)}
-                    onDelete={() => commit(localSections.filter((s) => s.id !== section.id))}
-                  />,
-                );
-                cursor = (cursor + span) % 4;
-                const next = localSections[index + 1];
-                const nextSpan = next ? Math.min(next.span, 4) : null;
-                const rowEnds = cursor === 0 || nextSpan === null || cursor + nextSpan > 4;
-                if (draggingType === "section" && cursor > 0 && rowEnds) {
-                  children.push(<GapDropZone key={`gap-${section.id}`} id={makeGapId(index + 1, 4 - cursor)} span={4 - cursor} />);
-                  cursor = 0;
-                }
-              });
-              return children;
-            })()}
+          <div className="relative">
+            {draggingType === "section" && <ColumnGuides columns={4} gapClassName="gap-3" trackClassName="rounded-lg border border-dashed border-primary/15" />}
+            <div className="grid grid-cols-4 gap-3">
+              {(() => {
+                // Interleave sections with drop zones for the free space in each
+                // partially-filled row (only while a section is being dragged)
+                const children: React.ReactNode[] = [];
+                let cursor = 0;
+                localSections.forEach((section, index) => {
+                  const span = Math.min(section.span, 4);
+                  if (cursor + span > 4) {
+                    cursor = 0;
+                  }
+                  children.push(
+                    <SortableSection
+                      key={section.id}
+                      section={section}
+                      allKeys={allKeys}
+                      sectionKeys={sectionKeys}
+                      onChange={(updated) => commit(localSections.map((s) => (s.id === updated.id ? updated : s)))}
+                      onDuplicate={() => handleDuplicateSection(section)}
+                      onDelete={() => commit(localSections.filter((s) => s.id !== section.id))}
+                      onApplyStyleToAll={() => commit(localSections.map((s) => ({ ...s, style: structuredClone(section.style) })))}
+                    />,
+                  );
+                  cursor = (cursor + span) % 4;
+                  const next = localSections[index + 1];
+                  const nextSpan = next ? Math.min(next.span, 4) : null;
+                  const rowEnds = cursor === 0 || nextSpan === null || cursor + nextSpan > 4;
+                  if (draggingType === "section" && cursor > 0 && rowEnds) {
+                    children.push(<GapDropZone key={`gap-${section.id}`} id={makeGapId(index + 1, 4 - cursor)} span={4 - cursor} />);
+                    cursor = 0;
+                  }
+                });
+                return children;
+              })()}
+            </div>
           </div>
         </SortableContext>
         {/* Portal to body: the dialog's translate(-50%,-50%) re-anchors position:fixed, which would offset the overlay from the cursor */}
@@ -901,8 +1060,13 @@ export function SheetTemplateEditor({ sections, onChange }: SheetTemplateEditorP
           document.body,
         )}
       </DndContext>
-      <Button type="button" variant="outline" size="sm" onClick={handleAddSection}>
-        <LuPlus className="h-3.5 w-3.5" /> Add Section
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-9 w-full border border-dashed border-border/60 text-xs text-muted-foreground hover:border-primary/50 hover:bg-background/30 hover:text-foreground"
+        onClick={handleAddSection}
+      >
+        <LuPlus className="!size-3.5" /> Add Section
       </Button>
     </div>
   );

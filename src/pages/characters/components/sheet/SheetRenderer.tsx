@@ -1,16 +1,20 @@
-import { LuLock, LuMinus, LuPlus } from "react-icons/lu";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { useEffect, useRef, useState } from "react";
+import { LuCheck, LuCopy, LuLock, LuPlus } from "react-icons/lu";
+import { toast } from "sonner";
 import { ConfirmDeleteButton } from "@/components/shared/ConfirmDeleteButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CommandTagInput } from "@/components/ui/input-tag";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StepButton } from "@/components/ui/step-button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { SheetField, SheetSection, SheetValues } from "@/schema/template-character-sheet-schema";
 import { buildResolvedSheetValues, getRawSheetValue, isExpressionField, resolveSheetExpression, tableColumnKey } from "@/utils/sheet-expression";
 import { SectionFrame } from "./SectionFrame";
-import { SECTION_STYLE_PRESETS, type SectionStylePreset } from "./sheet-style-presets";
+import { resolveSectionStyle, SHEET_ADD_BUTTON, type SheetStyleRecipe } from "./sheet-style-presets";
 
 interface SheetRendererProps {
   sections: SheetSection[];
@@ -20,8 +24,36 @@ interface SheetRendererProps {
   readOnly?: boolean;
 }
 
-// Solid surface so controls stand out against tinted/dark section frames
-const CONTROL_SURFACE = "border-border/70 bg-background/70 shadow-sm backdrop-blur-sm";
+// Revealed on hover of the surrounding group/key element; click copies the prompt placeholder
+function CopyKeyChip({ text, placeholder }: { text: string; placeholder: string }) {
+  const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(timeoutRef.current), []);
+
+  const handleCopy = async () => {
+    try {
+      await writeText(placeholder);
+      setCopied(true);
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
+    } catch (error) {
+      toast.error(`Failed to copy to clipboard: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title={`Copy ${placeholder}`}
+      className="inline-flex max-w-0 flex-shrink-0 items-center gap-1 overflow-hidden font-mono text-[10px] leading-none text-muted-foreground/60 opacity-0 transition-all duration-200 hover:text-foreground focus-visible:max-w-40 focus-visible:opacity-100 group-hover/key:max-w-40 group-hover/key:opacity-100"
+    >
+      {copied ? <LuCheck className="h-2.5 w-2.5 flex-shrink-0 text-primary" /> : <LuCopy className="h-2.5 w-2.5 flex-shrink-0" />}
+      <span className="truncate">{text}</span>
+    </button>
+  );
+}
 
 function toStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item ?? "")) : [];
@@ -57,7 +89,7 @@ interface SheetTableProps {
   field: SheetField;
   rawValue: unknown;
   resolvedValues: SheetValues;
-  preset: SectionStylePreset;
+  preset: SheetStyleRecipe;
   characterName?: string;
   disabled: boolean;
   onChange: (value: unknown) => void;
@@ -145,9 +177,9 @@ function SheetTable({ field, rawValue, resolvedValues, preset, characterName, di
           </tbody>
         </table>
       </div>
-      {!isStatic && (
-        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" disabled={disabled} onClick={() => onChange([...rows, columns.map(() => "")])}>
-          <LuPlus className="h-3 w-3" /> Add Row
+      {!isStatic && !disabled && (
+        <Button type="button" variant="ghost" size="sm" className={SHEET_ADD_BUTTON} onClick={() => onChange([...rows, columns.map(() => "")])}>
+          <LuPlus className="!size-3" /> Add Row
         </Button>
       )}
     </div>
@@ -161,7 +193,7 @@ interface FieldControlProps {
   rawValue: unknown;
   resolvedValue: unknown;
   resolvedValues: SheetValues;
-  preset: SectionStylePreset;
+  preset: SheetStyleRecipe;
   characterName?: string;
   disabled: boolean;
   onChange: (value: unknown) => void;
@@ -170,25 +202,28 @@ interface FieldControlProps {
 function FieldControl({ field, rawValue, resolvedValue, resolvedValues, preset, characterName, disabled, onChange }: FieldControlProps) {
   if (field.type !== "table" && isExpressionField(field.expression)) {
     return (
-      <div className="flex h-8 items-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-2 text-sm" title={field.expression}>
-        <LuLock className="h-3 w-3 flex-shrink-0 text-primary/50" />
-        <span className="truncate font-semibold">{String(resolvedValue ?? "")}</span>
+      <div
+        className="flex h-7 items-center gap-2 rounded-sm border border-[color:color-mix(in_srgb,var(--sheet-accent)_25%,transparent)] bg-[color:color-mix(in_srgb,var(--sheet-accent)_10%,transparent)] px-2 text-sm"
+        title={field.expression}
+      >
+        <LuLock className="h-3 w-3 flex-shrink-0 text-[color:color-mix(in_srgb,var(--sheet-accent)_70%,transparent)]" />
+        <span className="truncate text-xs font-semibold">{String(resolvedValue ?? "")}</span>
       </div>
     );
   }
 
   switch (field.type) {
     case "text":
-      return <Input className={CONTROL_SURFACE} value={String(rawValue ?? "")} disabled={disabled} onChange={(e) => onChange(e.target.value)} />;
+      return <Input className={preset.surface} value={String(rawValue ?? "")} disabled={disabled} onChange={(e) => onChange(e.target.value)} />;
 
     case "textarea":
-      return <Textarea className={CONTROL_SURFACE} rows={3} value={String(rawValue ?? "")} disabled={disabled} onChange={(e) => onChange(e.target.value)} />;
+      return <Textarea className={preset.surface} rows={3} value={String(rawValue ?? "")} disabled={disabled} onChange={(e) => onChange(e.target.value)} />;
 
     case "number":
       return (
         <Input
           type="number"
-          className={CONTROL_SURFACE}
+          className={cn("[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none", preset.surface)}
           value={rawValue === undefined || rawValue === null || rawValue === "" ? "" : Number(rawValue)}
           min={field.min ?? undefined}
           max={field.max ?? undefined}
@@ -201,31 +236,21 @@ function FieldControl({ field, rawValue, resolvedValue, resolvedValues, preset, 
     case "number_stepper": {
       const current = Number(rawValue ?? field.min ?? 0) || 0;
       return (
-        <div className="flex items-center gap-1">
-          <Button type="button" variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" disabled={disabled} onClick={() => onChange(clampNumber(current - field.step, field))}>
-            <LuMinus className="h-3 w-3" />
-          </Button>
-          <Input
-            type="number"
-            className={cn("text-center", CONTROL_SURFACE)}
-            value={current}
-            min={field.min ?? undefined}
-            max={field.max ?? undefined}
-            step={field.step}
-            disabled={disabled}
-            onChange={(e) => onChange(e.target.value === "" ? undefined : clampNumber(Number(e.target.value), field))}
-          />
-          <Button type="button" variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" disabled={disabled} onClick={() => onChange(clampNumber(current + field.step, field))}>
-            <LuPlus className="h-3 w-3" />
-          </Button>
-        </div>
+        <StepButton
+          value={current}
+          min={field.min ?? Number.MIN_SAFE_INTEGER}
+          max={field.max ?? Number.MAX_SAFE_INTEGER}
+          step={field.step}
+          disabled={disabled}
+          onValueChange={(value) => onChange(clampNumber(value, field))}
+        />
       );
     }
 
     case "dropdown":
       return (
         <Select value={rawValue ? String(rawValue) : undefined} disabled={disabled} onValueChange={(value) => onChange(value)}>
-          <SelectTrigger className={CONTROL_SURFACE}>
+          <SelectTrigger className={preset.surface}>
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
           <SelectContent>
@@ -239,7 +264,17 @@ function FieldControl({ field, rawValue, resolvedValue, resolvedValues, preset, 
       );
 
     case "multi_select":
-      return <CommandTagInput value={toStringArray(rawValue)} onChange={(next: string[]) => onChange(next)} suggestions={field.options} placeholder="Select..." maxTags={100} disabled={disabled} />;
+      return (
+        <CommandTagInput
+          className={preset.surface}
+          value={toStringArray(rawValue)}
+          onChange={(next: string[]) => onChange(next)}
+          suggestions={field.options}
+          placeholder="Select..."
+          maxTags={100}
+          disabled={disabled}
+        />
+      );
 
     case "list": {
       const items = toStringArray(rawValue);
@@ -249,7 +284,7 @@ function FieldControl({ field, rawValue, resolvedValue, resolvedValues, preset, 
             // biome-ignore lint/suspicious/noArrayIndexKey: list items have no stable identity
             <div key={index} className="flex items-center gap-1">
               <Input
-                className={CONTROL_SURFACE}
+                className={preset.surface}
                 value={item}
                 disabled={disabled}
                 onChange={(e) => {
@@ -261,9 +296,11 @@ function FieldControl({ field, rawValue, resolvedValue, resolvedValues, preset, 
               <ConfirmDeleteButton className="h-7 w-7 flex-shrink-0" title="Delete item" disabled={disabled} onDelete={() => onChange(items.filter((_, i) => i !== index))} />
             </div>
           ))}
-          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" disabled={disabled} onClick={() => onChange([...items, ""])}>
-            <LuPlus className="h-3 w-3" /> Add
-          </Button>
+          {!disabled && (
+            <Button type="button" variant="ghost" size="sm" className={SHEET_ADD_BUTTON} onClick={() => onChange([...items, ""])}>
+              <LuPlus className="!size-3" /> Add Item
+            </Button>
+          )}
         </div>
       );
     }
@@ -292,16 +329,26 @@ export function SheetRenderer({ sections, values, onValuesChange, characterName,
   return (
     <div className="grid grid-cols-4 gap-3">
       {sections.map((section) => {
-        const preset = SECTION_STYLE_PRESETS[section.style];
+        const { recipe: preset } = resolveSectionStyle(section.style);
         const span = Math.min(section.span, 4);
         return (
           <div key={section.id} className="min-w-0" style={{ gridColumn: `span ${span} / span ${span}` }}>
             <SectionFrame style={section.style} className="h-full">
-              {section.title && <h3 className={cn("mb-2 text-sm font-semibold", preset.title)}>{section.title}</h3>}
+              {section.title && (
+                <div className="group/key mb-2 flex items-center gap-2">
+                  <h3 className={cn("min-w-0 flex-1 text-sm font-semibold", preset.title)}>{section.title}</h3>
+                  <CopyKeyChip text={section.key} placeholder={`{{char.${section.key}}}`} />
+                </div>
+              )}
               <div className="grid gap-x-3 gap-y-2" style={{ gridTemplateColumns: `repeat(${section.columns}, minmax(0, 1fr))` }}>
                 {section.fields.map((field) => (
-                  <div key={field.id} className="min-w-0 space-y-1" style={{ gridColumn: `span ${Math.min(field.span, section.columns)} / span ${Math.min(field.span, section.columns)}` }}>
-                    <Label className="text-xs text-muted-foreground">{field.label}</Label>
+                  <div key={field.id} className="group/key min-w-0 space-y-1" style={{ gridColumn: `span ${Math.min(field.span, section.columns)} / span ${Math.min(field.span, section.columns)}` }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <Label className={cn("min-w-0 flex-1 truncate whitespace-nowrap text-xs", preset.fieldLabel)} title={field.label}>
+                        {field.label}
+                      </Label>
+                      <CopyKeyChip text={field.key} placeholder={`{{char.${section.key}.${field.key}}}`} />
+                    </div>
                     <FieldControl
                       field={field}
                       rawValue={getRawSheetValue(field, values)}

@@ -72,8 +72,8 @@ export function CharacterSheetTab({ templateId, onTemplateChange, values, onValu
   };
 
   return (
-    <div className="flex flex-col space-y-3 min-h-[200px]">
-      <div className="flex items-end gap-2">
+    <div className="flex min-h-[200px] flex-col space-y-3 pb-4">
+      <div className="flex items-center gap-2">
         <div className="flex-1">
           <TemplatePicker
             templates={templates.map((t) => ({ id: t.id, name: t.name, favorite: t.favorite }))}
@@ -89,20 +89,16 @@ export function CharacterSheetTab({ templateId, onTemplateChange, values, onValu
           />
         </div>
         {template && (
-          <Button type="button" variant={isEditingTemplate ? "default" : "outline"} size="sm" onClick={() => setIsEditingTemplate((prev) => !prev)}>
-            {isEditingTemplate ? <LuPencilOff className="h-3.5 w-3.5" /> : <LuPencil className="h-3.5 w-3.5" />}
-            {isEditingTemplate ? "Done Editing" : "Edit Template"}
+          <Button type="button" variant={isEditingTemplate ? "default" : "outline"} size="sm" className="h-8 px-3" onClick={() => setIsEditingTemplate((prev) => !prev)}>
+            {isEditingTemplate ? <LuPencilOff className="!size-3.5" /> : <LuPencil className="!size-3.5" />}
+            {isEditingTemplate ? "Done" : "Edit Template"}
           </Button>
         )}
         <HelpTooltip>
-          <p>Character sheets are built from a shared template: sections, fields and layout.</p>
-          <p>Template structure changes apply to every character using the template. Field values belong to the character (or the current chat when edited from a chat).</p>
-          {scopeHint && <p className="font-semibold">{scopeHint}</p>}
+          <p>Template changes save immediately for all characters using it.{scopeHint ? " Values apply only to this chat, not the character's defaults." : ""}</p>
+          <p>Drag sections or fields to move them, drag their right edge to resize, and click titles or labels to rename. Field keys appear beside labels.</p>
         </HelpTooltip>
       </div>
-
-      {scopeHint && !isEditingTemplate && template && <p className="text-xs text-muted-foreground italic">{scopeHint}</p>}
-      {isEditingTemplate && template && <p className="text-xs text-muted-foreground italic">Template changes save immediately and apply to all characters using this template.</p>}
 
       {!template && (
         <div className="flex flex-grow items-center justify-center rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
