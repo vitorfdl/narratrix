@@ -157,6 +157,16 @@ describe("replaceSheetPattern", () => {
     expect(replaceSheetPattern("{{char.Nope}} {{char}} {{character.name}}", sheet)).toBe("{{char.Nope}} {{char}} {{character.name}}");
   });
 
+  it("accepts the long {{character.*}} spelling", () => {
+    expect(replaceSheetPattern("Level {{character.basic_info.level}}", sheet)).toBe("Level 5");
+    expect(replaceSheetPattern("{{character.sheet}}", sheet)).toBe(replaceSheetPattern("{{char.sheet}}", sheet));
+    expect(replaceSheetPattern("{{CHARACTER.LEVEL}}", sheet)).toBe("5");
+  });
+
+  it("keeps reserved paths for the legacy macro pass in both spellings", () => {
+    expect(replaceSheetPattern("{{character.personality}} {{character.memory}} {{char.name}}", sheet)).toBe("{{character.personality}} {{character.memory}} {{char.name}}");
+  });
+
   it("leaves references untouched when no sheet is configured", () => {
     expect(replaceSheetPattern("{{char.basic_info}}", undefined)).toBe("{{char.basic_info}}");
   });
