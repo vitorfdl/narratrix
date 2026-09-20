@@ -9,4 +9,4 @@ CREATE TABLE IF NOT EXISTS character_sheet_template (
     FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_character_sheet_template_profile_id ON character_sheet_template(profile_id);
+CREATE INDEX IF NOT EXISTS idx_character_sheet_template_profile_id ON character_sheet_template(profile_id);
