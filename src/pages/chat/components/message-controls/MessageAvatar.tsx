@@ -12,7 +12,9 @@ export const MessageAvatar = ({ avatarPath, messageType, isStreaming }: { avatar
           <Avatar className={cn("w-24 h-24 ring-2 ring-border overflow-hidden hover:ring-primary", isStreaming && "ring-primary")} style={{ borderRadius: "var(--avatar-border-radius, 50%)" }}>
             <AvatarImage src={avatarPath} alt={`${messageType} avatar`} className="hover:cursor-pointer" />
             <AvatarFallback className="bg-secondary text-secondary-foreground">
-              <AvatarImage src="/avatars/default.jpg" alt={`Default ${messageType} avatar`} />
+              {/* Plain img: a nested AvatarImage shares the Avatar's loading status, and its
+                  unmount reset re-shows the fallback — an infinite render loop. */}
+              <img src="/avatars/default.jpg" alt={`Default ${messageType} avatar`} className="h-full w-full object-cover" />
             </AvatarFallback>
           </Avatar>
         </button>
