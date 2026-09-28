@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { InferenceServiceProvider } from "@/providers/inferenceChatProvider";
 import Content from "./components/layout/Content";
 import Sidebar from "./components/layout/Sidebar";
@@ -26,7 +27,9 @@ const AppContent: React.FC = () => {
     <div className="flex h-screen select-none text-base">
       <InferenceServiceProvider>
         <Sidebar />
-        <Content />
+        <ErrorBoundary label="Page">
+          <Content />
+        </ErrorBoundary>
       </InferenceServiceProvider>
     </div>
   );
